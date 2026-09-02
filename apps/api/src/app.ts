@@ -1,6 +1,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import { checkDatabase } from './db.ts';
 import { registerAuthRoutes } from './auth-routes.ts';
+import { registerHoldingRoutes } from './holding-routes.ts';
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({
@@ -38,6 +39,7 @@ export function buildApp(): FastifyInstance {
   });
 
   registerAuthRoutes(app);
+  registerHoldingRoutes(app);
 
   return app;
 }

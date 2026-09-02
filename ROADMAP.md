@@ -10,9 +10,16 @@ Proyecto en definición funcional. No comenzar la implementación masiva hasta c
 - [x] Diferenciar el producto de una app agrícola genérica.
 - [x] Establecer que la plataforma debe funcionar sin APIs de cooperativas.
 - [x] Establecer IA como capa opcional.
-- [ ] Inventariar cooperativas objetivo de Sierra Mágina.
-- [ ] Auditar información pública disponible por cooperativa.
-- [ ] Confirmar fuentes meteorológicas y cartográficas.
+- [x] Inventariar primera fuente institucional de cooperativas/entidades objetivo de Sierra Mágina.
+- [x] Confirmar fuentes meteorológicas y cartográficas de alto valor: AEMET + SIGPAC.
+- [x] Confirmar fuente fitosanitaria oficial RAIF.
+- [x] Investigar marco CUE/SIEX/REAFA y estrategia futura.
+- [x] Comparar posicionamiento frente a Agroptima.
+- [x] Detectar ecosistema almazara-agricultor AM System / MolturALO.
+- [ ] Completar auditoría web/portal/app de las 23 entidades DOP por lotes.
+- [ ] Identificar proveedores tecnológicos de portales de socio.
+- [ ] Confirmar formatos de exportación disponibles para agricultores en portales prioritarios.
+- [ ] Revisar condiciones/licencias concretas de reutilización de cada fuente externa.
 - [ ] Revisar requisitos legales de tratamiento de datos y documentos.
 - [ ] Definir piloto con agricultores reales.
 
@@ -28,6 +35,7 @@ Proyecto en definición funcional. No comenzar la implementación masiva hasta c
 - [ ] Diseñar flujo de labores.
 - [ ] Diseñar directorio de cooperativas.
 - [ ] Diseñar centro de avisos.
+- [ ] Diseñar importación manual/documental sin acoplarla a proveedores.
 
 ## Fase 2 — Fundación técnica
 
@@ -40,6 +48,7 @@ Proyecto en definición funcional. No comenzar la implementación masiva hasta c
 - [ ] Configurar entornos development/staging/production.
 - [ ] Configurar CI.
 - [ ] Añadir backups y estrategia de recuperación.
+- [ ] Crear adapters para fuentes externas.
 
 ## Fase 3 — MVP agrícola
 
@@ -62,6 +71,7 @@ Proyecto en definición funcional. No comenzar la implementación masiva hasta c
 - [ ] Resúmenes de campaña.
 - [ ] Recalculo automático de agregados.
 - [ ] Centro de ejecuciones y errores.
+- [ ] Ingesta periódica RAIF.
 
 ## Fase 5 — Cooperativas
 
@@ -69,7 +79,8 @@ Proyecto en definición funcional. No comenzar la implementación masiva hasta c
 - [ ] Fuentes y fecha de actualización.
 - [ ] Noticias/avisos públicos cuando sea legal y técnicamente adecuado.
 - [ ] Sistema de corrección/verificación.
-- [ ] Contacto con cooperativas para futuras integraciones.
+- [ ] Importación de documentos/exportaciones propias del usuario.
+- [ ] Contacto con cooperativas/proveedores para futuras integraciones.
 
 ## Fase 6 — Mágina IA
 
@@ -93,3 +104,10 @@ Proyecto en definición funcional. No comenzar la implementación masiva hasta c
 ## Fase 8 — V1 pública
 
 Solo se considerará V1 cuando el núcleo agrícola sea estable, exista backup, exportación básica, seguridad verificada y una prueba de campo real.
+
+## V2/V3 potencial
+
+- integración autorizada con proveedores de almazaras/cooperativas;
+- CUE comercial/interoperabilidad REAFA cuando tenga sentido económico y técnico;
+- automatización documental avanzada;
+- extensión territorial fuera de Sierra Mágina sin perder especialización en olivar.

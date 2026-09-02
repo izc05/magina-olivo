@@ -14,8 +14,13 @@ const OWNER_CACHE_KEY = 'magina-olivo-current-user-id';
 const memoryCache = new Map<string, unknown>();
 
 export class ApiError extends Error {
-  constructor(message: string, public readonly status: number, public readonly code?: string) {
+  readonly status: number;
+  readonly code?: string;
+
+  constructor(message: string, status: number, code?: string) {
     super(message);
+    this.status = status;
+    if (code !== undefined) this.code = code;
   }
 }
 

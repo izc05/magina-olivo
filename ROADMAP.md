@@ -2,7 +2,7 @@
 
 ## Estado actual
 
-Proyecto en definición funcional avanzada. La implementación masiva todavía no comienza: primero cerramos investigación crítica, modelo V1, privacidad y arquitectura de importación.
+Producto, investigación pública y diseño funcional muy avanzados. La identidad visual se trabaja en paralelo en otro hilo del proyecto. En esta rama ya queda adoptada una arquitectura técnica candidata y una estrategia offline/piloto antes de implementar masivamente el MVP.
 
 ## Fase 0 — Producto e investigación
 
@@ -11,21 +11,24 @@ Proyecto en definición funcional avanzada. La implementación masiva todavía n
 - [x] Establecer que la plataforma debe funcionar sin APIs de cooperativas.
 - [x] Establecer IA como capa opcional.
 - [x] Inventariar primera fuente institucional de cooperativas/entidades objetivo de Sierra Mágina.
-- [x] Confirmar fuentes meteorológicas y cartográficas de alto valor: AEMET + SIGPAC.
-- [x] Confirmar fuente fitosanitaria oficial RAIF.
-- [x] Investigar marco CUE/SIEX/REAFA y estrategia futura.
+- [x] Confirmar AEMET + SIGPAC.
+- [x] Confirmar RAIF olivar.
+- [x] Investigar CUE/SIEX/REAFA.
 - [x] Comparar posicionamiento frente a Agroptima.
-- [x] Detectar ecosistema almazara-agricultor AM System / MolturALO.
-- [x] Detectar proveedores alternativos relevantes como Proyalma/Aicor y Toolagro.
-- [x] Definir niveles de madurez digital P0-P3.
-- [x] Completar primera clasificación pública 23/23 de entidades DOP, documentando nivel de certeza.
-- [x] Confirmar al menos dos casos públicos del ecosistema Almazaras.com: San Sebastián y Oleozumo.
-- [ ] Identificar proveedor tecnológico de cada portal prioritario cuando sea públicamente verificable o mediante contacto autorizado.
-- [ ] Confirmar formatos de exportación disponibles para agricultores en portales prioritarios.
-- [ ] Revisar condiciones/licencias concretas de reutilización de cada fuente externa.
+- [x] Detectar AM System / MolturALO.
+- [x] Detectar Proyalma/Aicor y Toolagro.
+- [x] Definir niveles P0-P3.
+- [x] Completar primera clasificación pública 23/23 de entidades DOP.
+- [x] Confirmar San Sebastián y Oleozumo como casos públicos Almazaras.com.
+- [x] Revisar condiciones operativas/licencias iniciales de AEMET, RAIF y SIGPAC.
+- [x] Documentar caducidad/rate limiting actual de AEMET.
+- [x] Documentar RAIF CC BY 4.0.
+- [x] Documentar atribución/condiciones SIGPAC para uso comercial/no comercial.
 - [x] Definir plan de privacidad/compliance desde diseño.
-- [ ] Realizar revisión jurídica específica antes del piloto real.
-- [ ] Definir piloto con agricultores reales.
+- [x] Definir plan de piloto con agricultores reales.
+- [ ] Identificar proveedor tecnológico de portales prioritarios mediante fuente verificable/contacto autorizado.
+- [ ] Confirmar formatos de exportación CSV/XLSX/PDF disponibles para agricultores.
+- [ ] Realizar revisión jurídica específica antes de piloto real.
 - [ ] Conseguir ejemplos anonimizados de ticket, albarán, rendimiento y liquidación.
 
 ## Fase 1 — Diseño funcional
@@ -40,27 +43,48 @@ Proyecto en definición funcional avanzada. La implementación masiva todavía n
 - [x] Diseñar flujo de labores.
 - [x] Diseñar directorio/ficha de cooperativas/almazaras.
 - [x] Diseñar centro de avisos.
-- [x] Diseñar importación manual/documental sin acoplarla a proveedores.
+- [x] Diseñar importación manual/documental neutral a proveedor.
 - [x] Definir contrato canónico de importación y deduplicación.
 - [x] Cerrar catálogo de tipos de labor/campos mínimos para piloto.
-- [x] Crear wireframes funcionales móviles de los flujos prioritarios.
-- [ ] Definir identidad visual y sistema de diseño final.
+- [x] Crear wireframes funcionales móviles prioritarios.
+- [x] Definir dirección de sistema de diseño provisional y criterios WCAG.
+- [ ] Cerrar identidad visual final (trabajo paralelo).
 - [ ] Crear prototipo visual navegable.
-- [ ] Validar los flujos con 2-5 agricultores antes de congelar UI.
+- [ ] Validar flujos con 3-5 agricultores antes de congelar UI.
 
 ## Fase 2 — Fundación técnica
 
-- [ ] Crear workspace frontend/backend.
-- [ ] Configurar TypeScript y linting.
-- [ ] Configurar PWA.
-- [ ] Implementar autenticación.
-- [ ] Implementar almacenamiento privado.
-- [ ] Implementar migraciones/esquema.
-- [ ] Configurar entornos development/staging/production.
+### Decisiones cerradas
+
+- [x] Adoptar React + TypeScript + Vite para PWA.
+- [x] Adoptar Node.js + TypeScript + Fastify para API candidata.
+- [x] Adoptar PostgreSQL como fuente de verdad.
+- [x] Separar object storage de metadatos de documentos.
+- [x] Definir Cloudflare R2 como candidato de object storage productivo.
+- [x] Definir Better Auth como candidato de autenticación a validar en spike.
+- [x] Definir estrategia offline con IndexedDB/outbox/idempotencia.
+- [x] Definir que Background Sync es mejora, no dependencia.
+- [x] Definir arquitectura jobs/outbox antes de introducir una cola externa.
+- [x] Definir adapters para fuentes externas.
+- [x] Definir spike vertical previo al MVP.
+- [x] Definir modelo preliminar de costes V1.
+
+### Implementación pendiente
+
+- [ ] Crear workspace/monorepo `apps/web`, `apps/api`, packages y db.
+- [ ] Configurar TypeScript, linting, formatting y tests.
+- [ ] Crear primer esquema/migraciones PostgreSQL.
+- [ ] Implementar auth spike.
+- [ ] Implementar autorización por holding.
+- [ ] Implementar PWA/app shell.
+- [ ] Implementar IndexedDB/borradores/outbox.
+- [ ] Implementar idempotency middleware/tabla.
+- [ ] Implementar object storage privado.
+- [ ] Implementar primer backup + restauración.
+- [ ] Configurar development/staging/production.
 - [ ] Configurar CI.
-- [ ] Añadir backups y estrategia de recuperación.
-- [ ] Crear adapters para fuentes externas.
-- [ ] Implementar staging e idempotencia de importaciones.
+- [ ] Ejecutar spike vertical completo.
+- [ ] Elegir ORM/query builder final después del spike, no antes.
 
 ## Fase 3 — MVP agrícola
 
@@ -71,6 +95,7 @@ Proyecto en definición funcional avanzada. La implementación masiva todavía n
 - [ ] Entregas.
 - [ ] Resultados/rendimientos.
 - [ ] Labores.
+- [ ] Tareas.
 - [ ] Fotografías/documentos.
 - [ ] Dashboard de campaña.
 - [ ] Exportación básica.
@@ -78,15 +103,17 @@ Proyecto en definición funcional avanzada. La implementación masiva todavía n
 
 ## Fase 4 — Automatización
 
-- [ ] Meteorología.
-- [ ] Reglas de avisos.
+- [ ] WeatherAdapter AEMET con caché.
+- [ ] Rotación/alerta de API key AEMET.
+- [ ] Reglas de lluvia/helada/viento.
 - [ ] Recordatorios.
 - [ ] Resúmenes de campaña.
 - [ ] Recalculo automático de agregados.
-- [ ] Centro de ejecuciones y errores.
-- [ ] Ingesta periódica RAIF.
+- [ ] Centro de ejecuciones/errores.
+- [ ] Ingesta RAIF versionada con checksum/parser.
 - [ ] Detección de entrega pendiente de rendimiento.
 - [ ] Detección segura de posibles duplicados.
+- [ ] Health status de adapters externos.
 
 ## Fase 5 — Cooperativas / almazaras
 
@@ -97,6 +124,7 @@ Proyecto en definición funcional avanzada. La implementación masiva todavía n
 - [ ] Importación de documentos/exportaciones propias del usuario.
 - [ ] Enlaces a accesos oficiales de socio/cosechero sin almacenar credenciales.
 - [ ] Contacto con cooperativas/proveedores para futuras integraciones.
+- [ ] Primer adapter de proveedor solo tras acuerdo/export verificable.
 
 ## Fase 6 — Mágina IA
 
@@ -104,36 +132,53 @@ Proyecto en definición funcional avanzada. La implementación masiva todavía n
 - [ ] Extracción asistida de albaranes/tickets.
 - [ ] Preguntas sobre datos propios.
 - [ ] Resumen inteligente de campaña.
-- [ ] Control de costes y límites.
+- [ ] Control de costes y límites por usuario.
+- [ ] Kill switch de IA.
 - [ ] Confirmación humana antes de escrituras críticas.
 
 ## Fase 7 — Piloto
 
+- [x] Definir protocolo y tareas de piloto.
+- [x] Definir hipótesis H1-H7.
+- [x] Definir métricas UX/valor.
+- [ ] Reclutar 3-5 agricultores.
 - [ ] Preparar cuentas piloto.
-- [ ] Probar en Android/iOS/navegador.
+- [ ] Probar Android/iOS/navegador.
 - [ ] Probar conectividad irregular.
-- [ ] Recoger fricciones de uso reales.
-- [ ] Medir tiempo para registrar una entrega/labor.
-- [ ] Medir si el agricultor entiende campaña, finca y parcela sin formación previa.
-- [ ] Probar captura de ticket en condiciones reales de campo/almazara.
-- [ ] Corregir errores.
+- [ ] Medir entrega manual.
+- [ ] Medir labor simple.
+- [ ] Medir comprensión finca/parcela/campaña.
+- [ ] Probar ticket real anonimizado.
+- [ ] Probar rendimiento recibido posteriormente.
+- [ ] Recoger fricciones.
+- [ ] Generar `docs/pilot/ROUND_1_FINDINGS.md`.
+- [ ] Corregir modelo/UI según resultados.
 - [ ] Revisar privacidad y recuperación de datos.
 
 Objetivos UX iniciales:
 - entrega manual normal < 30 s;
 - labor simple < 45 s;
 - añadir rendimiento pendiente < 15 s;
-- acceso a kilos/rendimiento de campaña desde Inicio sin navegar por menús profundos.
+- acceso a kilos/rendimiento desde Inicio sin menús profundos;
+- cero pérdida silenciosa de operaciones offline.
 
 ## Fase 8 — V1 pública
 
-Solo se considerará V1 cuando el núcleo agrícola sea estable, exista backup, exportación básica, seguridad verificada y una prueba de campo real.
+Solo se considerará V1 cuando:
+- núcleo agrícola sea estable;
+- backup y restore estén probados;
+- exportación básica funcione;
+- seguridad/autorización estén verificadas;
+- atribuciones/licencias estén implementadas;
+- exista prueba de campo real;
+- se conozca el coste operativo por usuario/campaña.
 
 ## V2/V3 potencial
 
 - integración autorizada con proveedores de almazaras/cooperativas;
-- CUE comercial/interoperabilidad REAFA cuando tenga sentido económico y técnico;
+- CUE comercial/interoperabilidad REAFA;
 - automatización documental avanzada;
-- extensión territorial fuera de Sierra Mágina sin perder especialización en olivar;
-- colaboración multiusuario/gestor/técnico cuando el piloto demuestre necesidad;
-- integración con sensores/IoT solo si existe un caso de uso y retorno claros.
+- expansión fuera de Sierra Mágina;
+- colaboración multiusuario/gestor/técnico;
+- sensores/IoT solo con caso de uso probado;
+- app nativa si la PWA deja de cubrir requisitos reales.

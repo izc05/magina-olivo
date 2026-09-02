@@ -27,7 +27,7 @@
 .discover-main-hero__copy h2 { max-width: 440px; margin: 8px 0 4px; font-family: var(--font-editorial); font-size: 27px; font-weight: 600; line-height: 1.05; }
 .discover-main-hero__copy p { max-width: 480px; margin: 0; color: rgba(255,255,255,.8); font-size: 12px; line-height: 1.4; }
 .discover-photo { background-position: center; background-size: cover; }
-.discover-photo--hero { background: radial-gradient(circle at 23% 66%, rgba(174,188,125,.65) 0 4px, transparent 5px), radial-gradient(circle at 65% 58%, rgba(162,178,112,.55) 0 4px, transparent 5px), linear-gradient(160deg,#a8a57c 0%,#78865c 35%,#475d38 66%,#2e3a22 100%); background-size: 52px 39px, 58px 42px, auto; }
+.discover-photo--hero { background-color: #2e3a22; background-image: url('/photos/discover-sierra-magina.webp'), linear-gradient(160deg,#a8a57c 0%,#78865c 35%,#475d38 66%,#2e3a22 100%); }
 .discover-shortcuts { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 7px; margin-top: 10px; }
 .discover-shortcuts button { display: grid; min-height: 72px; place-items: center; gap: 6px; padding: 8px 4px; border: 1px solid var(--color-border); border-radius: 13px; background: rgba(255,255,255,.66); color: var(--color-olive-950); }
 .discover-shortcuts span { font-size: 10px; font-weight: 700; }
@@ -37,9 +37,9 @@
 .discover-route-card__copy { display: grid; gap: 3px; }
 .discover-route-card__copy > span, .discover-editorial-card span { color: var(--color-olive-700); font-size: 9px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
 .discover-route-card__copy small { color: var(--color-text-muted); font-size: 10px; }
-.discover-photo--olive { background: linear-gradient(145deg,#acaa79,#6e8154 48%,#3d4e31); }
-.discover-photo--mountain { background: linear-gradient(155deg,#b8b39a,#717963 43%,#364232 78%); }
-.discover-photo--village { background: linear-gradient(150deg,#d6c9a5,#a59a74 42%,#5e704b); }
+.discover-photo--olive { background-color: #3d4e31; background-image: url('/photos/home-sierra-magina.webp'), linear-gradient(145deg,#acaa79,#6e8154 48%,#3d4e31); }
+.discover-photo--mountain { background-color: #364232; background-image: url('/photos/discover-sierra-magina.webp'), linear-gradient(155deg,#b8b39a,#717963 43%,#364232 78%); }
+.discover-photo--village { background-color: #5e704b; background-image: url('/photos/discover-jimena.webp'), linear-gradient(150deg,#d6c9a5,#a59a74 42%,#5e704b); }
 .discover-duo-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; margin-top: 14px; }
 .discover-editorial-card { overflow: hidden; padding: 0; border: 1px solid var(--color-border); border-radius: 15px; background: rgba(255,255,255,.7); text-align: left; }
 .discover-editorial-card .discover-photo { height: 125px; }

@@ -105,7 +105,7 @@ Pendiente:
 Ya incluye:
 - noticias;
 - detalle editorial;
-- cooperativas;
+- cooperativas y ficha detallada;
 - mercado;
 - Mágina Local;
 - Descubre;
@@ -114,27 +114,31 @@ Ya incluye:
 - Alertas.
 
 Pendiente:
-- detalle real de cooperativa;
 - detalle de evento;
 - fuente / fecha / trazabilidad de mercado;
 - evaluar si ocho pestañas son demasiadas y si conviene un bloque `Más` o accesos secundarios.
 
 ### Cooperativas
 
-**Prioridad de cierre: alta.**
+**Estado:** flujo P0 cerrado en V2.
 
-La tarjeta existe, pero `Ver ficha completa` todavía no abre un flujo completo.
-
-La ficha V2 debe incluir:
+Ya incluye:
+- directorio;
+- apertura de ficha completa;
 - nombre y municipio;
 - estado / horario;
-- servicios;
-- campaña / recepción;
-- referencia de precios cuando corresponda;
+- recepción y servicios;
+- referencia de precios de demostración;
 - avisos;
 - documentos;
-- entregas del usuario si existe integración futura;
-- botón favorito.
+- estructura preparada para entregas/pesajes;
+- guardar cooperativa;
+- volver al directorio.
+
+Pendiente para datos reales:
+- integrar fuentes autorizadas;
+- mostrar fecha de actualización;
+- incorporar entregas personales solo si existe integración futura con cada cooperativa.
 
 ### Descubre
 
@@ -199,7 +203,7 @@ No requiere fotografía prioritaria.
 ## Flujos que deben cerrarse antes de considerar V2 lista para implementación de datos
 
 Prioridad P0:
-- ficha completa de cooperativa;
+- ✅ ficha completa de cooperativa;
 - acceso directo desde Inicio a Cuaderno / Alertas / Mercado / Meteorología;
 - fotografía oficial en Inicio, Mi Campo, Noticias y Descubre.
 
@@ -236,7 +240,7 @@ No usar imágenes genéricas de olivar si no transmiten Sierra Mágina / Jaén. 
 
 ## Orden de cierre V2.1
 
-1. Cerrar ficha de cooperativa.
+1. ✅ Cerrar ficha de cooperativa.
 2. Cerrar navegación directa entre Inicio y subsecciones.
 3. Cerrar ruta/evento esenciales.
 4. Seleccionar e incorporar fotografía oficial.

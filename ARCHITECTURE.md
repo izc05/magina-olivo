@@ -1,174 +1,354 @@
-# Mágina Olivo — Arquitectura inicial
+# Mágina Olivo — Arquitectura V1
+
+Fecha de consolidación: 2026-09-02
 
 ## Objetivo
 
-Construir una PWA móvil, modular y mantenible, capaz de funcionar sin IA y preparada para añadir integraciones externas de forma progresiva.
+Construir una PWA móvil, modular y mantenible para datos agrícolas de larga duración, conectividad irregular e integraciones progresivas, sin depender de IA ni de una API de cooperativa.
 
 ## Arquitectura lógica
 
 ```text
 Usuario
   ↓
-PWA Web
-  ↓
-API / Backend
-  ├── Autenticación
+React PWA
+  ├── Service Worker / caché
+  ├── IndexedDB / borradores / outbox
+  └── UI móvil
+        ↓ HTTPS
+Fastify API / TypeScript
+  ├── Auth
   ├── Explotaciones / fincas / parcelas
   ├── Campañas
-  ├── Entregas
-  ├── Labores
+  ├── Entregas / resultados
+  ├── Labores / tareas
   ├── Documentos
+  ├── Importaciones
   ├── Cooperativas
-  ├── Notificaciones
+  ├── Alertas
   └── Automatizaciones
-         ↓
-    Servicios externos
-      ├── Meteorología
-      ├── Mapas / SIGPAC
-      ├── Correo / push
-      └── IA opcional
+        ↓
+PostgreSQL                 Object Storage
+(datos estructurados)      (fotos/PDF/tickets)
+        ↓                         ↓
+Worker / jobs / outbox -----------┘
+  ├── AEMET
+  ├── RAIF
+  ├── SIGPAC
+  ├── correo / push
+  ├── proveedores de almazara autorizados
+  └── IA opcional
 ```
 
-## Propuesta técnica inicial
+## Stack adoptado para el spike V1
 
-La elección concreta se cerrará antes de implementar, pero la arquitectura debe permitir:
+### Web
 
-- Frontend React + TypeScript + Vite.
-- PWA instalable con service worker.
-- Backend desacoplado del frontend.
-- Base de datos relacional o backend equivalente con relaciones claras.
-- Almacenamiento privado para documentos y fotografías.
-- Tareas programadas para automatizaciones.
-- API interna versionada.
-- Despliegue mediante contenedores cuando aporte valor.
+- React.
+- TypeScript.
+- Vite.
+- PWA instalable.
+- Service worker.
+- IndexedDB; Dexie como candidato tras spike.
 
-## Regla fundamental
+### API
 
-El frontend nunca debe contener secretos de proveedores. Las claves de meteorología, IA, correo u otros servicios residirán únicamente en backend/secret manager.
+- Node.js LTS.
+- TypeScript.
+- Fastify.
+- API versionada bajo `/api/v1`.
+- contratos/esquemas compartidos con frontend.
 
-## Dominios funcionales
+### Datos
 
-### Identidad
-- usuarios
-- sesiones
-- preferencias
+- PostgreSQL como fuente de verdad.
+- migraciones SQL versionadas;
+- UUIDs internos;
+- constraints de integridad en BD;
+- optimistic concurrency en entidades editables;
+- idempotency keys en escrituras reintentables.
 
-### Explotación
-- explotaciones
-- fincas
-- parcelas
+### Auth
 
-### Operación agrícola
-- campañas
-- labores
-- tratamientos
-- riegos
-- recolecciones
+- Better Auth como candidato inicial para email/password + PostgreSQL.
+- no desarrollar almacenamiento/algoritmos de contraseña propios;
+- verificación de email y recuperación de contraseña antes de producción pública;
+- autorización agrícola propia siempre comprobada además de autenticación.
 
-### Producción
-- entregas
-- rendimientos
-- destinos/cooperativas
+### Archivos
 
-### Información
-- cooperativas
-- fuentes públicas
-- avisos
+- metadata en PostgreSQL;
+- binarios en object storage;
+- Cloudflare R2 como candidato productivo;
+- URLs privadas/firmadas o proxy autorizado;
+- nunca bucket público para documentos de usuarios.
 
-### Evidencias
-- documentos
-- fotografías
-- archivos adjuntos
+## Monorepo objetivo
 
-### Automatización
-- reglas
-- ejecuciones
-- notificaciones
-- logs
+```text
+magina-olivo/
+├── apps/
+│   ├── web/
+│   ├── api/
+│   └── worker/          # puede compartir proceso inicialmente
+├── packages/
+│   ├── contracts/
+│   ├── domain/
+│   └── config/
+├── db/
+│   ├── migrations/
+│   └── seeds/
+├── infra/
+│   ├── docker/
+│   └── backup/
+└── docs/
+```
 
-### IA opcional
-- solicitudes
-- extracción estructurada
-- conversaciones contextuales autorizadas
-- auditoría de acciones propuestas
+## Dominios
+
+### identity
+- usuarios;
+- sesiones;
+- preferencias.
+
+### holdings
+- explotaciones;
+- miembros;
+- permisos.
+
+### field
+- fincas;
+- parcelas;
+- SIGPAC;
+- variedades.
+
+### operations
+- labores;
+- tratamientos;
+- riegos;
+- recolecciones;
+- tareas.
+
+### production
+- campañas;
+- entregas;
+- resultados/rendimientos;
+- destinos.
+
+### evidence
+- documentos;
+- fotografías;
+- hashes;
+- relaciones documentales.
+
+### imports
+- lotes;
+- staging;
+- parsers;
+- conflictos;
+- deduplicación.
+
+### information
+- cooperativas/almazaras;
+- fuentes;
+- meteorología;
+- RAIF;
+- avisos.
+
+### automation
+- jobs;
+- outbox;
+- ejecuciones;
+- reintentos;
+- notificaciones.
+
+### optional-ai
+- extracción;
+- borradores estructurados;
+- consultas autorizadas;
+- auditoría de propuestas.
+
+## API inicial
+
+- `/api/v1/holdings`
+- `/api/v1/farms`
+- `/api/v1/plots`
+- `/api/v1/campaigns`
+- `/api/v1/deliveries`
+- `/api/v1/results`
+- `/api/v1/activities`
+- `/api/v1/tasks`
+- `/api/v1/documents`
+- `/api/v1/imports`
+- `/api/v1/cooperatives`
+- `/api/v1/alerts`
+
+El frontend nunca consulta PostgreSQL ni object storage con privilegios administrativos directos.
+
+## Permisos
+
+Toda consulta privada se autoriza contra la explotación (`holding`).
+
+Roles preparados:
+- owner;
+- admin;
+- collaborator;
+- viewer.
+
+Seleccionar una cooperativa como destino no le concede acceso a los datos del agricultor.
 
 ## Offline
 
-La V1 debe contemplar conectividad irregular en campo.
+V1 adopta una estrategia local explícita:
 
-Objetivo progresivo:
+1. app shell cacheado;
+2. lecturas recientes en IndexedDB;
+3. autoguardado de borradores;
+4. outbox local para crear entrega/labor/tarea;
+5. sincronización al abrir, volver a primer plano, recuperar conexión o pulsar `Sincronizar`;
+6. Background Sync solo como mejora cuando el navegador lo soporte;
+7. conflictos visibles, nunca overwrite silencioso.
 
-1. La interfaz principal carga como PWA.
-2. Datos recientes de lectura pueden quedar en caché local.
-3. Formularios importantes pueden conservar borradores localmente.
-4. Una fase posterior podrá incorporar cola offline de escrituras con resolución de conflictos.
+Ver `docs/OFFLINE_SYNC_SPEC.md`.
 
-No se debe prometer sincronización offline completa hasta implementarla y probarla.
+## Automatizaciones
 
-## Integraciones externas
+No depender de cron del navegador.
 
-Toda integración debe quedar detrás de un adapter propio.
-
-Ejemplo:
+Flujo:
 
 ```text
-WeatherService
-  ├── provider A
-  └── provider B
+API / scheduler
+     ↓
+jobs/outbox en PostgreSQL
+     ↓
+worker
+     ↓
+adapter
+     ↓
+fuente externa / notificación
 ```
 
-Así se evita que el modelo de datos del producto dependa directamente de un proveedor.
+Antes de introducir Redis/RabbitMQ u otra cola, demostrar que el volumen V1 lo necesita.
+
+Propiedades requeridas:
+- idempotencia;
+- locking;
+- retries con backoff;
+- dead/error state;
+- observabilidad;
+- ejecución aislada del request del usuario.
+
+## Fuentes externas
+
+Adapters independientes:
+
+```text
+WeatherProvider -> WeatherAdapter -> modelo interno
+RaifSource      -> RaifAdapter    -> modelo interno
+SigpacSource    -> SigpacAdapter  -> modelo interno
+MillProvider    -> MillAdapter    -> contrato canónico importación
+AiProvider      -> AiAdapter      -> respuesta estructurada
+```
+
+AEMET, RAIF o un proveedor de almazara pueden estar caídos sin romper entregas/labores/histórico.
+
+Ver `docs/EXTERNAL_DATA_OPERATIONS.md`.
 
 ## IA
 
-La IA se consumirá exclusivamente desde backend.
-
-Flujo recomendado:
+Solo backend.
 
 ```text
-Usuario escribe o sube documento
-        ↓
-Backend valida identidad y permisos
-        ↓
-Prepara solo los datos necesarios
-        ↓
-Proveedor de IA
-        ↓
-Respuesta estructurada
-        ↓
-Validación de esquema
-        ↓
-Vista previa para el usuario
-        ↓
-Confirmación
-        ↓
-Escritura real en Mágina Olivo
+Usuario
+  ↓
+API valida identidad/permisos
+  ↓
+minimiza contexto
+  ↓
+AiProvider
+  ↓
+salida estructurada
+  ↓
+validación de esquema/reglas
+  ↓
+preview
+  ↓
+confirmación humana
+  ↓
+escritura agrícola normal
 ```
 
-La IA no escribirá directamente datos agrícolas críticos sin validación y reglas de negocio.
+Nunca usar IA como fuente de verdad de kilos, rendimientos, estados normativos o cálculos de campaña.
+
+## Seguridad
+
+- HTTPS obligatorio;
+- secretos solo servidor/secret store;
+- sesiones/cookies seguras según auth final;
+- rate limiting;
+- validación de payloads;
+- autorización server-side;
+- validación de MIME/tamaño;
+- nombres internos aleatorios;
+- logs sin secretos ni documentos completos;
+- entornos separados;
+- datos sintéticos en desarrollo.
+
+## Backups
+
+Antes de piloto real:
+- backup automático PostgreSQL;
+- backup/versionado de object storage según estrategia elegida;
+- retención documentada;
+- cifrado/transporte seguro;
+- prueba real de restauración;
+- RPO/RTO iniciales documentados.
+
+Un backup que nunca se ha restaurado no se considera validado.
 
 ## Observabilidad
 
-Desde el inicio se deberán distinguir:
-
+Separar:
 - errores de aplicación;
-- fallos de integraciones;
-- ejecuciones de automatizaciones;
-- eventos de seguridad;
-- acciones administrativas;
-- consumo de APIs de pago.
+- auth/security events;
+- fallos de adapters;
+- jobs/retries;
+- sync offline;
+- importaciones/conflictos;
+- consumo de APIs de pago;
+- capacidad de almacenamiento.
 
-No registrar en logs secretos, tokens ni contenido privado completo de documentos.
+## Decisión sobre PocketBase
 
-## Evolución prevista
+No se adopta PocketBase como fuente de verdad productiva V1. Su facilidad sigue siendo valiosa para prototipos, pero la documentación oficial de PocketBase mantiene una advertencia pre-v1.0 sobre compatibilidad y aplicaciones críticas. Para el histórico agrícola de largo plazo se prioriza PostgreSQL + API propia.
 
-La arquitectura debe poder crecer hacia:
+## Decisiones aplazadas
 
-- múltiples miembros por explotación;
-- técnicos/asesores invitados;
-- cooperativas colaboradoras;
-- importación automática;
-- analítica avanzada;
-- exportación reglamentaria;
-- módulos de pago;
-- aplicación móvil nativa si algún día aporta valor.
+Se decidirán mediante spike o cuando haya datos reales:
+- ORM/query builder final;
+- hosting final;
+- proveedor de email;
+- Web Push vs servicio dedicado;
+- proveedor de IA;
+- proveedor de mapas/base tiles;
+- separación física del worker;
+- integraciones directas de almazara.
+
+## Spike vertical previo al MVP
+
+Construir antes de ampliar módulos:
+
+`registro/login -> explotación -> parcela -> entrega -> resultado -> borrador offline -> reintento idempotente -> documento privado`
+
+Debe demostrar:
+- migraciones;
+- permisos;
+- auth;
+- PostgreSQL;
+- storage privado;
+- offline básico;
+- idempotencia;
+- backup/restore mínimo.
+
+Si falla alguno de esos puntos, se corrige la fundación antes de construir más pantallas.

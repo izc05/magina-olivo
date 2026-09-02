@@ -17,18 +17,18 @@ import {
   TrendingUp,
   Wheat,
 } from 'lucide-react';
+import type { AppNavigate, MaginaTarget } from '../../app/navigation';
 import { Brand } from '../../components/Brand';
-import { BottomNav, MainSection } from '../../components/BottomNav';
+import { BottomNav } from '../../components/BottomNav';
 import { CommunityPanel } from './CommunityPanel';
 import { CooperativesPanel } from './CooperativesPanel';
 import { LocalDiscoverPanel } from './LocalDiscoverPanel';
 import '../../styles/news.css';
 
 type NewsPageProps = {
-  onNavigate: (section: MainSection) => void;
+  onNavigate: AppNavigate;
+  initialTab?: MaginaTarget;
 };
-
-type HubTab = 'actualidad' | 'cooperativas' | 'mercado' | 'local' | 'discover' | 'community' | 'agenda' | 'alertas';
 
 type Story = {
   id: number;
@@ -38,6 +38,17 @@ type Story = {
   source: string;
   age: string;
   hero?: boolean;
+};
+
+type EventItem = {
+  day: string;
+  month: string;
+  title: string;
+  place: string;
+  time: string;
+  category: string;
+  description: string;
+  organizer: string;
 };
 
 const stories: Story[] = [
@@ -68,16 +79,30 @@ const stories: Story[] = [
   },
 ];
 
-const events = [
-  { day: '12', month: 'SEP', title: 'Jornada técnica de poda', place: 'Bedmar', time: '09:30' },
-  { day: '21', month: 'SEP', title: 'Encuentro del aceite de Sierra Mágina', place: 'Huelma', time: '10:00' },
-  { day: '03', month: 'OCT', title: 'Ruta del olivar y el paisaje', place: 'Cambil', time: '10:00' },
+const events: EventItem[] = [
+  {
+    day: '12', month: 'SEP', title: 'Jornada técnica de poda', place: 'Bedmar', time: '09:30', category: 'Formación',
+    description: 'Sesión práctica orientada a criterios de poda, seguridad y planificación de labores en olivar tradicional.',
+    organizer: 'Agenda Mágina · información de demostración',
+  },
+  {
+    day: '21', month: 'SEP', title: 'Encuentro del aceite de Sierra Mágina', place: 'Huelma', time: '10:00', category: 'Sector',
+    description: 'Encuentro comarcal dedicado a aceite, cooperativas, calidad y actualidad del sector oleícola.',
+    organizer: 'Agenda Mágina · información de demostración',
+  },
+  {
+    day: '03', month: 'OCT', title: 'Ruta del olivar y el paisaje', place: 'Cambil', time: '10:00', category: 'Territorio',
+    description: 'Actividad divulgativa para recorrer paisaje de olivar y conocer claves naturales y culturales de Sierra Mágina.',
+    organizer: 'Agenda Mágina · información de demostración',
+  },
 ];
 
-export function NewsPage({ onNavigate }: NewsPageProps) {
-  const [tab, setTab] = useState<HubTab>('actualidad');
+export function NewsPage({ onNavigate, initialTab = 'actualidad' }: NewsPageProps) {
+  const [tab, setTab] = useState<MaginaTarget>(initialTab);
   const [selectedStoryId, setSelectedStoryId] = useState<number | null>(null);
+  const [selectedEventIndex, setSelectedEventIndex] = useState<number | null>(null);
   const selectedStory = useMemo(() => stories.find((story) => story.id === selectedStoryId) ?? null, [selectedStoryId]);
+  const selectedEvent = selectedEventIndex === null ? null : events[selectedEventIndex] ?? null;
 
   if (selectedStory) {
     return (
@@ -99,6 +124,34 @@ export function NewsPage({ onNavigate }: NewsPageProps) {
               <p>Esta vista fija la estructura editorial de Mágina Olivo: lectura limpia, imagen protagonista, fuente visible y contenido relacionado sin convertir la pantalla en un portal saturado.</p>
               <p>Cuando conectemos fuentes reales, cada noticia conservará esta misma jerarquía y podrá incluir enlaces oficiales, documentos relacionados, avisos de contexto y guardado en Mi Mágina.</p>
               <div className="story-context-card"><Sparkles size={19} /><div><strong>Por qué te puede interesar</strong><span>Relacionado con tu municipio, tu cooperativa o la gestión de tu explotación.</span></div></div>
+            </div>
+          </article>
+        </main>
+        <BottomNav active="news" onNavigate={onNavigate} />
+      </div>
+    );
+  }
+
+  if (selectedEvent) {
+    return (
+      <div className="app-shell">
+        <main className="mobile-page">
+          <header className="topbar news-detail-topbar">
+            <button className="icon-button" type="button" aria-label="Volver a agenda" onClick={() => setSelectedEventIndex(null)}><ChevronLeft size={20} /></button>
+            <Brand compact />
+            <button className="icon-button" type="button" aria-label="Guardar evento"><Bookmark size={19} /></button>
+          </header>
+
+          <article className="story-detail">
+            <div className="story-detail__image"><CalendarDays size={36} /></div>
+            <div className="story-detail__body">
+              <span className="eyebrow">{selectedEvent.category}</span>
+              <h1>{selectedEvent.title}</h1>
+              <div className="story-meta"><span>{selectedEvent.day} {selectedEvent.month}</span><span>·</span><span>{selectedEvent.time} h</span></div>
+              <p className="story-detail__lead">{selectedEvent.description}</p>
+              <div className="story-context-card"><MapPin size={19} /><div><strong>{selectedEvent.place}</strong><span>La ubicación exacta y el enlace oficial aparecerán cuando conectemos la fuente real del evento.</span></div></div>
+              <div className="story-context-card"><CalendarDays size={19} /><div><strong>Información del evento</strong><span>{selectedEvent.organizer}</span></div></div>
+              <button className="primary-button primary-button--wide" type="button">Guardar en Mi Mágina</button>
             </div>
           </article>
         </main>
@@ -203,8 +256,8 @@ export function NewsPage({ onNavigate }: NewsPageProps) {
           <section className="section-block hub-panel hub-panel--flush">
             <div className="section-heading"><div><span className="eyebrow">Comarca</span><h2>Agenda</h2></div><CalendarDays size={21} /></div>
             <div className="event-list">
-              {events.map((event) => (
-                <button className="event-card" type="button" key={`${event.day}-${event.title}`}>
+              {events.map((event, index) => (
+                <button className="event-card" type="button" key={`${event.day}-${event.title}`} onClick={() => setSelectedEventIndex(index)}>
                   <div className="event-date"><span>{event.month}</span><strong>{event.day}</strong></div>
                   <div className="event-card__copy"><strong>{event.title}</strong><span><MapPin size={14} /> {event.place}</span><small><Clock3 size={13} /> {event.time} h</small></div>
                   <ChevronRight size={18} />

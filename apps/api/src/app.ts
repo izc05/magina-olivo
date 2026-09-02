@@ -1,5 +1,6 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import { checkDatabase } from './db.ts';
+import { registerAuthRoutes } from './auth-routes.ts';
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({
@@ -12,6 +13,7 @@ export function buildApp(): FastifyInstance {
       ],
     },
     requestIdHeader: 'x-request-id',
+    trustProxy: true,
   });
 
   app.get('/health/live', async () => ({
@@ -34,6 +36,8 @@ export function buildApp(): FastifyInstance {
       });
     }
   });
+
+  registerAuthRoutes(app);
 
   return app;
 }

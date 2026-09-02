@@ -24,6 +24,7 @@ OBJECT_STORAGE_REGION=auto
 OBJECT_STORAGE_ACCESS_KEY_ID=ci-access-key
 OBJECT_STORAGE_SECRET_ACCESS_KEY=ci-secret-key
 OBJECT_STORAGE_FORCE_PATH_STYLE=true
+AUTH_MAIL_TRANSPORT=disabled
 STAGING_BIND=127.0.0.1:18089
 LOG_LEVEL=warn
 DB_POOL_MAX=10
@@ -41,7 +42,7 @@ cleanup() {
     "magina-olivo-web:$RELEASE_A" \
     "magina-olivo-runtime:$RELEASE_B" \
     "magina-olivo-web:$RELEASE_B" >/dev/null 2>&1 || true
-  rm -f "$ENV_FILE"
+  rm -f "$ENV_FILE" /tmp/magina-release-gate-ready.json
   rm -rf "$STATE_DIR"
 }
 trap cleanup EXIT
@@ -50,16 +51,19 @@ printf '[staging-release-gate] deploy A\n'
 bash scripts/staging-release.sh deploy "$RELEASE_A"
 [[ "$(cat "$STATE_DIR/current")" = "$RELEASE_A" ]]
 [[ ! -f "$STATE_DIR/previous" ]]
+bash scripts/staging-host-postdeploy-gate.sh
 
 printf '[staging-release-gate] deploy B\n'
 bash scripts/staging-release.sh deploy "$RELEASE_B"
 [[ "$(cat "$STATE_DIR/current")" = "$RELEASE_B" ]]
 [[ "$(cat "$STATE_DIR/previous")" = "$RELEASE_A" ]]
+bash scripts/staging-host-postdeploy-gate.sh
 
 printf '[staging-release-gate] rollback to A\n'
 bash scripts/staging-release.sh rollback
 [[ "$(cat "$STATE_DIR/current")" = "$RELEASE_A" ]]
 [[ "$(cat "$STATE_DIR/previous")" = "$RELEASE_B" ]]
+bash scripts/staging-host-postdeploy-gate.sh
 
 curl --fail --silent http://127.0.0.1:18089/health/ready >/tmp/magina-release-gate-ready.json
 grep -q '"status":"ready"' /tmp/magina-release-gate-ready.json

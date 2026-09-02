@@ -353,6 +353,9 @@ jobs:
           if (summary.weightedYieldPercent !== '21.9000') throw new Error(`Unexpected weighted yield ${summary.weightedYieldPercent}`);
           NODE
 
+      - name: Verify backup and clean restore
+        run: bash scripts/spike-backup-restore.sh
+
       - name: Stop API
         if: always()
         run: |

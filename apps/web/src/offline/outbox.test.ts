@@ -12,6 +12,10 @@ import { applyPwaUpdateWhenSafe } from '../pwa/update-policy.ts';
 const USER_A = 'user-a';
 const USER_B = 'user-b';
 
+async function getPendingOperationCount(ownerUserId: string): Promise<number> {
+  return (await listPendingOperations(ownerUserId)).length;
+}
+
 test('delivery stays pending across database reopen and is deleted only after confirmed sync', async () => {
   await clearOutbox();
 
@@ -150,6 +154,7 @@ test('PWA update is deferred while outbox is pending and applies only after conf
   let appliedUpdates = 0;
   const deferred = await applyPwaUpdateWhenSafe({
     ownerUserId: USER_A,
+    getPendingOperationCount,
     applyUpdate: () => {
       appliedUpdates += 1;
     },
@@ -168,6 +173,7 @@ test('PWA update is deferred while outbox is pending and applies only after conf
 
   const applied = await applyPwaUpdateWhenSafe({
     ownerUserId: USER_A,
+    getPendingOperationCount,
     applyUpdate: () => {
       appliedUpdates += 1;
     },

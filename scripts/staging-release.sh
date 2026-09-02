@@ -51,8 +51,31 @@ wait_for_health() {
   return 1
 }
 
+# Docker Compose gives the process environment precedence over --env-file.
+# Staging must be driven by the secrets-managed env file, not by variables
+# inherited from CI or an operator shell. Strip every Compose input that may
+# leak in from the parent process; keep only the release tag/project name here.
 compose() {
-  MAGINA_IMAGE_TAG="$MAGINA_IMAGE_TAG" \
+  env \
+    -u POSTGRES_PASSWORD \
+    -u DATABASE_URL \
+    -u BETTER_AUTH_SECRET \
+    -u BETTER_AUTH_URL \
+    -u BETTER_AUTH_TRUSTED_ORIGINS \
+    -u LOG_LEVEL \
+    -u DB_POOL_MAX \
+    -u OBJECT_STORAGE_ENDPOINT \
+    -u OBJECT_STORAGE_BUCKET \
+    -u OBJECT_STORAGE_REGION \
+    -u OBJECT_STORAGE_ACCESS_KEY_ID \
+    -u OBJECT_STORAGE_SECRET_ACCESS_KEY \
+    -u OBJECT_STORAGE_FORCE_PATH_STYLE \
+    -u WORKER_POLL_MS \
+    -u WORKER_RETRY_SECONDS \
+    -u WORKER_LEASE_SECONDS \
+    -u STAGING_BIND \
+    MAGINA_IMAGE_TAG="$MAGINA_IMAGE_TAG" \
+    COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT_NAME" \
     docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
 }
 

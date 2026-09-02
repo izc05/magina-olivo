@@ -5,7 +5,7 @@
 1. Inicio
 2. Mi Campo
 3. Acción rápida (+)
-4. Noticias / Mágina
+4. Mágina
 5. Mi Mágina
 
 ## Pantallas de producto
@@ -48,7 +48,7 @@
 - Entregas
 - Documentos y avisos
 
-### Noticias / Mágina
+### Mágina
 - Noticias
 - Detalle de noticia
 - Mercado
@@ -87,6 +87,7 @@
 - Notificaciones
 - Seguridad
 - Plan
+- Estados de acceso y sistema
 
 ### Estados técnicos
 - Login
@@ -105,6 +106,7 @@
 Implementado en la rama `feat/visual-v2-foundation`:
 
 - Inicio V2
+- Referencia AOVE compacta en Inicio
 - Meteorología detallada V2
 - Mi Campo V2
 - Parcelas y mapa
@@ -112,7 +114,8 @@ Implementado en la rama `feat/visual-v2-foundation`:
 - Campaña
 - Costes y rentabilidad
 - Maquinaria y mantenimiento
-- Noticias / Mágina
+- Mágina
+- Noticias y detalle editorial
 - Cooperativas
 - Mercado
 - Agenda
@@ -121,13 +124,14 @@ Implementado en la rama `feat/visual-v2-foundation`:
 - Mágina Local
 - Descubre
 - Mi Mágina / Perfil
+- Estados técnicos V2 en React
 
 Pendiente de siguiente pasada:
 
-- Estados técnicos integrados en React
 - Sustitución de placeholders paisajísticos por fotografía oficial seleccionada
 - Auditoría visual final contra las referencias iniciales
+- Validación de build/CI antes de plantear merge
 
-## Orden de implementación
+## Orden de cierre
 
-Inicio → Meteorología → Mi Campo → Parcela/Mapa → Cuaderno → Campaña → Costes y rentabilidad → Maquinaria → Cooperativas → Mercado → Noticias → Mágina Local → Descubre → Comunidad → Mi Mágina → estados técnicos → auditoría visual final.
+Fotografía oficial → auditoría visual completa → correcciones finales → validación de build/CI → revisión para merge.

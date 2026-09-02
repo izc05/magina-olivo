@@ -1,0 +1,148 @@
+name: Technical Spike Smoke
+
+on:
+  pull_request:
+    branches:
+      - feat/foundation-v1
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+concurrency:
+  group: technical-spike-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: magina_olivo
+          POSTGRES_USER: magina
+          POSTGRES_PASSWORD: magina_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U magina -d magina_olivo"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://magina:magina_ci@127.0.0.1:5432/magina_olivo
+      BETTER_AUTH_SECRET: ci-only-secret-for-magina-olivo-technical-spike-2026
+      BETTER_AUTH_URL: http://127.0.0.1:3001
+      BETTER_AUTH_TRUSTED_ORIGINS: http://127.0.0.1:3001,http://localhost:5173
+      AUTH_MAIL_TRANSPORT: capture
+      AUTH_MAIL_CAPTURE_FILE: /tmp/magina-auth-mail.jsonl
+      DOCUMENT_STORAGE_DIR: /tmp/magina-private-documents
+      HOST: 127.0.0.1
+      PORT: 3001
+      LOG_LEVEL: warn
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.20.0
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Validate operational scripts syntax
+        run: |
+          while IFS= read -r -d '' script; do
+            echo "bash -n $script"
+            bash -n "$script"
+          done < <(find scripts -type f -name '*.sh' -print0 | sort -z)
+
+          while IFS= read -r -d '' script; do
+            echo "node --check $script"
+            node --check "$script"
+          done < <(find scripts -type f -name '*.mjs' -print0 | sort -z)
+
+      - name: Typecheck workspaces
+        run: npm run typecheck
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Migrate Better Auth from pinned dependency
+        run: npm run auth:migrate --workspace @magina/api
+
+      - name: Migrate business schema
+        run: npm run db:migrate
+
+      - name: Verify durable worker and lease recovery
+        run: bash scripts/spike-worker-gate.sh
+
+      - name: Build web PWA
+        run: npm run build --workspace @magina/web
+
+      - name: Inspect frontend bundle for server secrets
+        run: |
+          if grep -R -E 'BETTER_AUTH_SECRET|DATABASE_URL|magina_ci|correct-horse-battery-staple' apps/web/dist; then
+            echo 'Server-only secret material found in frontend bundle'
+            exit 1
+          fi
+
+      - name: Verify production private storage fails closed
+        run: |
+          if NODE_ENV=production PRIVATE_STORAGE_DRIVER=local \
+            node --input-type=module -e "const { getPrivateStorage } = await import('./apps/api/src/private-storage.ts'); getPrivateStorage();"; then
+            echo 'Production unexpectedly accepted local private storage'
+            exit 1
+          fi
+
+          NODE_ENV=production \
+          PRIVATE_STORAGE_DRIVER=s3 \
+          OBJECT_STORAGE_ENDPOINT=https://example.invalid \
+          OBJECT_STORAGE_BUCKET=magina-ci-private \
+          OBJECT_STORAGE_ACCESS_KEY_ID=ci-access-key \
+          OBJECT_STORAGE_SECRET_ACCESS_KEY=ci-secret-key \
+          node --input-type=module -e "const { getPrivateStorage } = await import('./apps/api/src/private-storage.ts'); getPrivateStorage();"
+
+      - name: Start API
+        run: |
+          npm run start --workspace @magina/api > /tmp/magina-api.log 2>&1 &
+          echo $! > /tmp/magina-api.pid
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3001/health/ready > /tmp/ready.json; then
+              cat /tmp/ready.json
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/magina-api.log
+          exit 1
+
+      - name: Verify API security and agricultural vertical slice
+        run: bash scripts/spike-api-flow.sh
+
+      - name: Verify password reset and session revocation
+        run: bash scripts/spike-password-reset-gate.sh
+
+      - name: Verify auth rate limiting
+        run: bash scripts/spike-auth-rate-limit.sh
+
+      - name: Verify isolated staging container stack
+        run: bash scripts/staging-container-gate.sh
+
+      - name: Verify release deploy and rollback lifecycle
+        run: bash scripts/staging-release-gate.sh
+
+      - name: Stop API
+        if: always()
+        run: |
+          if [ -f /tmp/magina-api.pid ]; then
+            kill "$(cat /tmp/magina-api.pid)" 2>/dev/null || true
+          fi
+          cat /tmp/magina-api.log 2>/dev/null || true

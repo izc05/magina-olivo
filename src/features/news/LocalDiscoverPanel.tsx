@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import {
+  ArrowLeft,
+  Bookmark,
   BriefcaseBusiness,
   ChevronRight,
   Compass,
@@ -18,6 +21,19 @@ type LocalDiscoverPanelProps = {
   mode: 'local' | 'discover';
 };
 
+type DiscoverRoute = {
+  title: string;
+  meta: string;
+  tag: string;
+  className: string;
+  distance: string;
+  difficulty: string;
+  duration: string;
+  start: string;
+  description: string;
+  highlights: string[];
+};
+
 const localServices = [
   { icon: Tractor, title: 'Maquinaria y labores', detail: 'Servicios agrícolas y apoyo en campaña', town: 'Sierra Mágina' },
   { icon: Wrench, title: 'Talleres agrícolas', detail: 'Reparación, mantenimiento y repuestos', town: 'Cerca de ti' },
@@ -27,13 +43,31 @@ const localServices = [
 
 const towns = ['Bedmar', 'Huelma', 'Jimena', 'Cambil', 'Jódar', 'Bélmez de la Moraleda'];
 
-const routes = [
-  { title: 'Mar de Olivos', meta: '7,8 km · Fácil', tag: 'Paisaje', className: 'discover-photo--olive' },
-  { title: 'Miradores de Mágina', meta: '10,4 km · Media', tag: 'Sierra', className: 'discover-photo--mountain' },
-  { title: 'Caminos de Jimena', meta: '6,2 km · Fácil', tag: 'Pueblos', className: 'discover-photo--village' },
+const routes: DiscoverRoute[] = [
+  {
+    title: 'Mar de Olivos', meta: '7,8 km · Fácil', tag: 'Paisaje', className: 'discover-photo--olive',
+    distance: '7,8 km', difficulty: 'Fácil', duration: '2 h 15 min', start: 'Entorno de Bedmar',
+    description: 'Ruta de demostración centrada en el paisaje continuo de olivar, con lectura sencilla del territorio y paradas pensadas para disfrutar sin prisas.',
+    highlights: ['Paisaje de olivar', 'Vistas de Sierra Mágina', 'Tramo apto para paseo tranquilo'],
+  },
+  {
+    title: 'Miradores de Mágina', meta: '10,4 km · Media', tag: 'Sierra', className: 'discover-photo--mountain',
+    distance: '10,4 km', difficulty: 'Media', duration: '3 h 10 min', start: 'Sierra Mágina',
+    description: 'Recorrido visual de demostración para conectar miradores, sierra y grandes panorámicas del olivar de la comarca.',
+    highlights: ['Miradores naturales', 'Contraste sierra-olivar', 'Desnivel moderado'],
+  },
+  {
+    title: 'Caminos de Jimena', meta: '6,2 km · Fácil', tag: 'Pueblos', className: 'discover-photo--village',
+    distance: '6,2 km', difficulty: 'Fácil', duration: '1 h 50 min', start: 'Jimena',
+    description: 'Paseo de demostración entre caminos rurales y entorno de pueblo, pensado para combinar patrimonio local y paisaje agrícola.',
+    highlights: ['Entorno rural', 'Acceso desde el pueblo', 'Paisaje agrícola cercano'],
+  },
 ];
 
 export function LocalDiscoverPanel({ mode }: LocalDiscoverPanelProps) {
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState<number | null>(null);
+  const selectedRoute = selectedRouteIndex === null ? null : routes[selectedRouteIndex] ?? null;
+
   if (mode === 'local') {
     return (
       <section className="section-block hub-panel hub-panel--flush section-block--last local-v2">
@@ -74,6 +108,38 @@ export function LocalDiscoverPanel({ mode }: LocalDiscoverPanelProps) {
     );
   }
 
+  if (selectedRoute) {
+    return (
+      <section className="section-block hub-panel hub-panel--flush section-block--last discover-v2 discover-route-detail">
+        <div className="discover-route-detail__topbar">
+          <button className="secondary-button" type="button" onClick={() => setSelectedRouteIndex(null)}><ArrowLeft size={17} /> Volver a rutas</button>
+          <button className="icon-button" type="button" aria-label="Guardar ruta"><Bookmark size={18} /></button>
+        </div>
+
+        <div className={`discover-route-detail__hero discover-photo ${selectedRoute.className}`}>
+          <div className="discover-route-detail__shade" />
+          <div className="discover-route-detail__copy"><span>{selectedRoute.tag}</span><h2>{selectedRoute.title}</h2><p>{selectedRoute.start}</p></div>
+        </div>
+
+        <div className="discover-route-detail__metrics">
+          <article><span>Distancia</span><strong>{selectedRoute.distance}</strong></article>
+          <article><span>Dificultad</span><strong>{selectedRoute.difficulty}</strong></article>
+          <article><span>Duración</span><strong>{selectedRoute.duration}</strong></article>
+        </div>
+
+        <article className="discover-route-detail__body">
+          <span className="eyebrow">La ruta</span>
+          <p>{selectedRoute.description}</p>
+          <div className="discover-route-detail__highlights">
+            {selectedRoute.highlights.map((highlight) => <span key={highlight}><Route size={14} />{highlight}</span>)}
+          </div>
+          <div className="market-note"><MapPin size={18} /><span>Recorrido y datos mostrados en esta fase son de demostración visual. La versión final usará trazado, fuente y recomendaciones oficiales.</span></div>
+          <button className="primary-button primary-button--wide" type="button">Guardar en Mi Mágina</button>
+        </article>
+      </section>
+    );
+  }
+
   return (
     <section className="section-block hub-panel hub-panel--flush section-block--last discover-v2">
       <button className="discover-main-hero" type="button">
@@ -99,8 +165,8 @@ export function LocalDiscoverPanel({ mode }: LocalDiscoverPanelProps) {
       </div>
 
       <div className="discover-route-list">
-        {routes.map((route) => (
-          <button className="discover-route-card" type="button" key={route.title}>
+        {routes.map((route, index) => (
+          <button className="discover-route-card" type="button" key={route.title} onClick={() => setSelectedRouteIndex(index)}>
             <div className={`discover-route-card__photo discover-photo ${route.className}`} />
             <div className="discover-route-card__copy"><span>{route.tag}</span><strong>{route.title}</strong><small>{route.meta}</small></div>
             <ChevronRight size={18} />

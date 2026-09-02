@@ -3,7 +3,7 @@ import type { MainSection } from '../components/BottomNav';
 import { FieldPage } from '../features/field/FieldPage';
 import { HomePage } from '../features/home/HomePage';
 import { NewsPage } from '../features/news/NewsPage';
-import { PlaceholderPage } from '../features/shared/PlaceholderPage';
+import { ProfilePage } from '../features/profile/ProfilePage';
 
 export default function App() {
   const [section, setSection] = useState<MainSection>('home');
@@ -17,7 +17,7 @@ export default function App() {
   }
 
   if (section === 'profile') {
-    return <PlaceholderPage section={section} onNavigate={setSection} />;
+    return <ProfilePage onNavigate={setSection} />;
   }
 
   return <HomePage onNavigate={setSection} />;

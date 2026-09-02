@@ -79,6 +79,7 @@ async function queueDeliveryOffline(campaignId: string, body: DeliveryCreateBody
   const ownerUserId = cachedOwnerUserId();
   if (!ownerUserId) throw new Error('No se puede guardar offline antes de iniciar una sesión online en este dispositivo.');
   await enqueueDeliveryCreate({ ownerUserId, campaignId, idempotencyKey, body: { ...body } as Record<string, unknown> });
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('magina:delivery-offline-queued'));
   return { offlineQueued: true, clientGeneratedId: body.clientGeneratedId };
 }
 

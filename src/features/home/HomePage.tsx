@@ -1,19 +1,27 @@
+import { useState } from 'react';
 import { AlertTriangle, Bell, BookOpen, CalendarCheck2, CloudSun, Droplets, Newspaper, Sprout } from 'lucide-react';
 import { Brand } from '../../components/Brand';
 import { BottomNav, MainSection } from '../../components/BottomNav';
+import { WeatherPage } from '../weather/WeatherPage';
 
 type HomePageProps = {
   onNavigate: (section: MainSection) => void;
 };
 
 const quickActions = [
-  { label: 'Cuaderno', icon: BookOpen, target: 'field' as const },
-  { label: 'Tareas', icon: CalendarCheck2, target: 'field' as const },
-  { label: 'Alertas', icon: Bell, target: 'news' as const },
-  { label: 'Meteorología', icon: CloudSun, target: 'news' as const },
+  { label: 'Cuaderno', icon: BookOpen, action: 'field' as const },
+  { label: 'Tareas', icon: CalendarCheck2, action: 'field' as const },
+  { label: 'Alertas', icon: Bell, action: 'news' as const },
+  { label: 'Meteorología', icon: CloudSun, action: 'weather' as const },
 ];
 
 export function HomePage({ onNavigate }: HomePageProps) {
+  const [weatherOpen, setWeatherOpen] = useState(false);
+
+  if (weatherOpen) {
+    return <WeatherPage onBack={() => setWeatherOpen(false)} onNavigate={onNavigate} />;
+  }
+
   return (
     <div className="app-shell">
       <main className="mobile-page">
@@ -22,14 +30,14 @@ export function HomePage({ onNavigate }: HomePageProps) {
           <button className="icon-button" type="button" aria-label="Notificaciones" onClick={() => onNavigate('news')}><Bell size={20} /></button>
         </header>
 
-        <section className="hero-photo hero-photo--home">
+        <button className="hero-photo hero-photo--home hero-photo--button" type="button" onClick={() => setWeatherOpen(true)} aria-label="Abrir meteorología detallada">
           <div className="hero-photo__overlay" />
           <div className="weather-card">
             <span>Bedmar</span>
             <strong>22°</strong>
             <small>Soleado · Máx. 26° · Mín. 14°</small>
           </div>
-        </section>
+        </button>
 
         <section className="section-block">
           <div className="section-heading"><div><span className="eyebrow">Hoy en tu campo</span><h1>Tu olivar, de un vistazo</h1></div><button type="button" className="text-action" onClick={() => onNavigate('field')}>Ver todo</button></div>
@@ -41,8 +49,15 @@ export function HomePage({ onNavigate }: HomePageProps) {
         </section>
 
         <section className="quick-grid" aria-label="Accesos rápidos">
-          {quickActions.map(({ label, icon: Icon, target }) => (
-            <button key={label} className="quick-card" type="button" onClick={() => onNavigate(target)}><Icon size={20} /><span>{label}</span></button>
+          {quickActions.map(({ label, icon: Icon, action }) => (
+            <button
+              key={label}
+              className="quick-card"
+              type="button"
+              onClick={() => action === 'weather' ? setWeatherOpen(true) : onNavigate(action)}
+            >
+              <Icon size={20} /><span>{label}</span>
+            </button>
           ))}
         </section>
 

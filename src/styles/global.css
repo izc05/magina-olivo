@@ -16,7 +16,7 @@ button:focus-visible { outline: 2px solid var(--color-oil-500); outline-offset: 
 .icon-button { display: grid; width: var(--tap-target); height: var(--tap-target); place-items: center; border: 1px solid var(--color-border); border-radius: 50%; background: rgba(255,255,255,.65); }
 .hero-photo { position: relative; min-height: 245px; overflow: hidden; border-radius: var(--radius-lg); box-shadow: var(--shadow-card); }
 .hero-photo--button { display: block; width: 100%; padding: 0; border: 0; text-align: left; cursor: pointer; }
-.hero-photo--home { background: radial-gradient(circle at 20% 65%, rgba(170,184,132,.9) 0 2px, transparent 3px), radial-gradient(circle at 72% 48%, rgba(150,166,114,.85) 0 2px, transparent 3px), linear-gradient(165deg,#8a9478 0%,#5f704d 42%,#35432c 100%); background-size: 38px 30px, 44px 34px, auto; }
+.hero-photo--home { background-color: #35432c; background-image: url('/photos/home-sierra-magina.webp'), linear-gradient(165deg,#8a9478 0%,#5f704d 42%,#35432c 100%); background-position: center; background-size: cover; }
 .hero-photo__overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(24,32,19,.08), rgba(24,32,19,.28)); }
 .weather-card { position: absolute; left: 14px; bottom: 14px; display: grid; gap: 2px; width: min(190px, calc(100% - 28px)); padding: 14px; border: 1px solid rgba(255,255,255,.68); border-radius: var(--radius-md); background: rgba(250,248,241,.92); backdrop-filter: blur(10px); box-shadow: 0 8px 24px rgba(26,35,20,.15); }
 .weather-card span { color: var(--color-text-muted); font-size: 12px; }
@@ -47,7 +47,7 @@ button:focus-visible { outline: 2px solid var(--color-oil-500); outline-offset: 
 .bottom-nav__item--active { color: var(--color-olive-950); }
 .bottom-nav__fab { display: grid; width: 52px; height: 52px; place-items: center; justify-self: center; border: 0; border-radius: 50%; background: var(--color-olive-950); color: white; box-shadow: 0 8px 18px rgba(46,58,34,.24); }
 
-.farm-hero { position: relative; min-height: 255px; overflow: hidden; border-radius: var(--radius-lg); background: radial-gradient(circle at 18% 68%, rgba(190,178,112,.9) 0 3px, transparent 4px), radial-gradient(circle at 68% 52%, rgba(145,162,105,.8) 0 3px, transparent 4px), linear-gradient(165deg,#9b9b75 0%,#637249 42%,#303c28 100%); background-size: 42px 32px, 50px 36px, auto; box-shadow: var(--shadow-card); }
+.farm-hero { position: relative; min-height: 255px; overflow: hidden; border-radius: var(--radius-lg); background-color: #303c28; background-image: url('/photos/field-olivares-magina.webp'), linear-gradient(165deg,#9b9b75 0%,#637249 42%,#303c28 100%); background-position: center; background-size: cover; box-shadow: var(--shadow-card); }
 .farm-hero__overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(27,35,22,.08), rgba(27,35,22,.62)); }
 .farm-hero__copy { position: absolute; left: 16px; bottom: 78px; color: #fff; }
 .farm-hero__copy span { display: inline-block; margin-bottom: 5px; padding: 5px 9px; border-radius: 999px; background: rgba(255,255,255,.13); font-size: 11px; }

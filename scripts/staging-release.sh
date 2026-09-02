@@ -40,8 +40,8 @@ HEALTH_URL="http://$STAGING_BIND_VALUE/health/ready"
 wait_for_health() {
   local release="$1"
   for attempt in $(seq 1 60); do
-    if curl --fail --silent "$HEALTH_URL" >/tmp/magina-staging-release-ready.json; then
-      grep -q '"status":"ready"' /tmp/magina-staging-release-ready.json || true
+    if curl --fail --silent "$HEALTH_URL" >/tmp/magina-staging-release-ready.json \
+      && grep -q '"status":"ready"' /tmp/magina-staging-release-ready.json; then
       log "release $release is healthy"
       return 0
     fi

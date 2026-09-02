@@ -12,6 +12,7 @@ import {
   Utensils,
   Wrench,
 } from 'lucide-react';
+import '../../styles/discover.css';
 
 type LocalDiscoverPanelProps = {
   mode: 'local' | 'discover';

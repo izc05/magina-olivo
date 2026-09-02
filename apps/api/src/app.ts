@@ -5,6 +5,7 @@ import { registerCampaignRoutes } from './campaign-routes.ts';
 import { registerCampaignSummaryRoutes } from './campaign-summary-routes.ts';
 import { registerDeliveryResultRoutes } from './delivery-result-routes.ts';
 import { registerDeliveryRoutes } from './delivery-routes.ts';
+import { registerDocumentRoutes } from './document-routes.ts';
 import { registerFarmRoutes } from './farm-routes.ts';
 import { registerHoldingRoutes } from './holding-routes.ts';
 import { registerPlotRoutes } from './plot-routes.ts';
@@ -52,6 +53,7 @@ export function buildApp(): FastifyInstance {
   registerDeliveryRoutes(app);
   registerDeliveryResultRoutes(app);
   registerCampaignSummaryRoutes(app);
+  registerDocumentRoutes(app);
 
   return app;
 }

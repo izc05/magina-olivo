@@ -6,11 +6,11 @@ Fecha: 2026-09-02.
 Rama: `feat/technical-spike-v1`.
 PR: #2, base `feat/foundation-v1`.
 
-Última evidencia de regresión completa:
+Última evidencia de regresión técnica completa:
 
 - workflow: `Technical Spike Smoke`;
-- run: `33685574076` (#153);
-- job: `100432498783`;
+- run: `33686206058` (#159);
+- job: `100434219835`;
 - conclusión: `success`.
 
 Este documento distingue deliberadamente entre lo que ya se ha ejecutado y lo que solo está preparado para el primer host de staging.
@@ -19,7 +19,7 @@ Este documento distingue deliberadamente entre lo que ya se ha ejecutado y lo qu
 
 ### Regresión completa
 
-El run #153 pasó:
+El run #159 pasó:
 
 - instalación bloqueada con `npm ci`;
 - validación sintáctica de scripts operativos;
@@ -46,12 +46,13 @@ CI ejecuta antes del resto de gates:
 - `bash -n` sobre todos los `scripts/*.sh`;
 - `node --check` sobre todos los `scripts/*.mjs`.
 
-Resultado en run #153: **PASS**.
+Resultado en run #159: **PASS**.
 
 Esto incluye sintaxis de:
 
 - `staging-host-preflight.sh`;
 - `staging-host-postdeploy-gate.sh`;
+- `staging-r2-gate.sh`;
 - `staging-https-gate.sh`;
 - `staging-backup.sh`;
 - `staging-restore-gate.sh`;
@@ -62,7 +63,7 @@ Esto incluye sintaxis de:
 
 ### Gate de aislamiento post-deploy
 
-El release lifecycle CI ejecuta ahora `staging-host-postdeploy-gate.sh` tres veces: tras A, tras B y tras rollback A.
+El release lifecycle CI ejecuta `staging-host-postdeploy-gate.sh` tres veces: tras A, tras B y tras rollback A.
 
 En las tres transiciones se demostró:
 
@@ -77,7 +78,7 @@ En las tres transiciones se demostró:
 - `/health/ready` 200 a través de Nginx local;
 - raíz PWA 200 por la misma entrada same-origin.
 
-Esto convierte el aislamiento del host en una regresión automática: una futura modificación de Compose que exponga 3001/5432 o abra Nginx fuera de loopback debe romper el release gate.
+Esto convierte el aislamiento del host en una regresión automática: una futura modificación de Compose que exponga API/PostgreSQL/worker o abra Nginx fuera de loopback debe romper CI.
 
 ### Preflight del host preparado
 
@@ -95,8 +96,9 @@ Esto convierte el aislamiento del host en una regresión automática: una futura
 - `capture` de correo prohibido;
 - configuración Resend completa si se activa;
 - mínimo de disco libre;
-- advertencia NTP;
-- puertos 3001/5432 no ocupados previamente en el host.
+- advertencia NTP.
+
+Un host compartido es válido. Si otro servicio ajeno a Mágina ya escucha en 3001/5432, el preflight solo avisa; el post-deploy gate demuestra después que **los contenedores de Mágina** no publican esos puertos.
 
 Su sintaxis está validada por CI; su ejecución con un host real sigue pendiente.
 
@@ -120,7 +122,7 @@ El test unitario del transporte `resend` confirma:
 
 La función de envío captura fallos del proveedor sin imprimir email, reset URL/token, body remoto ni credenciales.
 
-El flujo funcional Better Auth sigue demostrando:
+El flujo funcional Better Auth demuestra:
 
 - token de reset de un solo uso;
 - contraseña antigua invalidada;
@@ -135,7 +137,23 @@ El flujo funcional Better Auth sigue demostrando:
 - `AUTH_MAIL_FROM`;
 - `RESEND_API_KEY`.
 
-Los scripts `staging-release.sh`, `staging-backup.sh` y `staging-restore-gate.sh` eliminan también estas variables del entorno heredado antes de llamar a Docker Compose. El secrets-managed env file sigue siendo autoritativo.
+Los scripts de deploy/backup/restore eliminan variables sensibles heredadas antes de llamar a Docker Compose. El secrets-managed env file sigue siendo autoritativo.
+
+El runbook prohíbe hacer `source` del env file. Un valor como `AUTH_MAIL_FROM="Mágina Olivo <...>"` es configuración de Compose y no debe convertirse en código shell.
+
+### Gate R2 preparado sin secretos en shell
+
+`staging-r2-gate.sh` localiza el contenedor API ya desplegado y ejecuta `r2-roundtrip-gate.mjs` dentro de él.
+
+Por diseño:
+
+- el host no necesita Node/npm;
+- no se hace `source` del env file;
+- las credenciales R2 no se copian al shell interactivo;
+- se prueban exactamente endpoint/bucket/credenciales del API desplegado;
+- el roundtrip exige `PUT -> GET -> SHA-256 -> DELETE` y que el objeto borrado deje de ser legible.
+
+La sintaxis del wrapper y del gate Node está verde en #159. El roundtrip contra R2 real sigue pendiente de recursos externos.
 
 ### Backup externo preparado
 
@@ -200,11 +218,30 @@ Pendiente real:
 - desplegar release A allí;
 - repetir isolation gate sobre el host físico elegido.
 
+### Cloudflare R2
+
+Preparado:
+
+- adapter S3/R2;
+- wrapper que usa el API container;
+- gate `PUT -> GET -> SHA-256 -> DELETE`;
+- exportador/importador;
+- backup/restore aislado.
+
+Pendiente real:
+
+- bucket privado de staging;
+- bucket separado de restore-validation;
+- credenciales staging-only;
+- roundtrip real;
+- backup real de objetos;
+- restore real de objetos.
+
 ### Cloudflare Tunnel / HTTPS
 
 Preparado:
 
-- una única entrada loopback de Nginx;
+- única entrada loopback de Nginx;
 - gate HTTPS real;
 - soporte opcional de Cloudflare Access service token;
 - comprobación de HSTS;
@@ -219,25 +256,6 @@ Pendiente real:
 - Tunnel real;
 - certificado/edge real;
 - ejecución del gate desde Internet.
-
-### Cloudflare R2
-
-Preparado:
-
-- adapter S3/R2;
-- gate `PUT -> GET -> SHA-256 -> DELETE`;
-- exportador;
-- importador verificado;
-- backup/restore aislado.
-
-Pendiente real:
-
-- bucket privado de staging;
-- bucket separado de restore-validation;
-- credenciales staging-only;
-- roundtrip real;
-- backup real de objetos;
-- restore real de objetos.
 
 ### Correo transaccional
 
@@ -276,18 +294,18 @@ Pendiente real:
 Cuando exista el host de staging:
 
 ```text
-1. host limpio
-2. secrets-managed env file
+1. host Linux
+2. secrets-managed env file (0600; nunca source)
 3. staging-host-preflight
-4. dos buckets R2 de staging
-5. R2 roundtrip
-6. deploy release A
-7. host post-deploy isolation gate
+4. crear dos buckets R2 de staging
+5. deploy release A
+6. host post-deploy isolation gate
+7. staging-r2-gate dentro del API container
 8. Cloudflare Tunnel
 9. HTTPS/Secure/origin/logout gate
 10. transporte Resend + correo real de reset
-11. deploy release B + isolation gate
-12. rollback A + isolation gate
+11. deploy release B + isolation + HTTPS
+12. rollback A + isolation + HTTPS
 13. backup off-host
 14. restore DB + objetos en targets aislados
 15. registrar evidencias

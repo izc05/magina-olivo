@@ -6,7 +6,8 @@
     "types": ["node"],
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
-    "erasableSyntaxOnly": true
+    "erasableSyntaxOnly": true,
+    "esModuleInterop": true
   },
   "include": ["src/**/*.ts", "scripts/**/*.ts"]
 }

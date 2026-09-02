@@ -1,4 +1,10 @@
 .local-v2, .discover-v2 { padding-bottom: 10px; }
+.local-pulse-card--button { width: 100%; border: 1px solid rgba(92,122,70,.18); text-align: left; cursor: pointer; }
+.discover-entry-card { display: grid; width: 100%; grid-template-columns: minmax(0,1fr) 18px; align-items: center; gap: 12px; margin-top: 9px; padding: 13px 14px; border: 1px solid rgba(92,122,70,.18); border-radius: 15px; background: linear-gradient(135deg,rgba(46,58,34,.96),rgba(92,122,70,.9)); color: #fff; text-align: left; box-shadow: 0 8px 20px rgba(46,58,34,.12); }
+.discover-entry-card > div { display: grid; gap: 3px; }
+.discover-entry-card .eyebrow { color: rgba(255,255,255,.7); }
+.discover-entry-card strong { font-family: var(--font-editorial); font-size: 17px; font-weight: 600; }
+.discover-entry-card small { color: rgba(255,255,255,.7); font-size: 10px; }
 .local-utility-grid { display: grid; gap: 8px; }
 .local-service-card { display: grid; width: 100%; grid-template-columns: 46px minmax(0,1fr) 18px; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--color-border); border-radius: 14px; background: rgba(255,255,255,.68); text-align: left; }
 .local-service-card__icon { display: grid; width: 46px; height: 46px; place-items: center; border-radius: 12px; background: rgba(167,180,151,.2); color: var(--color-olive-950); }

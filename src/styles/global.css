@@ -15,6 +15,7 @@ button:focus-visible { outline: 2px solid var(--color-oil-500); outline-offset: 
 .brand__copy span { margin-top: 3px; color: var(--color-text-muted); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
 .icon-button { display: grid; width: var(--tap-target); height: var(--tap-target); place-items: center; border: 1px solid var(--color-border); border-radius: 50%; background: rgba(255,255,255,.65); }
 .hero-photo { position: relative; min-height: 245px; overflow: hidden; border-radius: var(--radius-lg); box-shadow: var(--shadow-card); }
+.hero-photo--button { display: block; width: 100%; padding: 0; border: 0; text-align: left; cursor: pointer; }
 .hero-photo--home { background: radial-gradient(circle at 20% 65%, rgba(170,184,132,.9) 0 2px, transparent 3px), radial-gradient(circle at 72% 48%, rgba(150,166,114,.85) 0 2px, transparent 3px), linear-gradient(165deg,#8a9478 0%,#5f704d 42%,#35432c 100%); background-size: 38px 30px, 44px 34px, auto; }
 .hero-photo__overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(24,32,19,.08), rgba(24,32,19,.28)); }
 .weather-card { position: absolute; left: 14px; bottom: 14px; display: grid; gap: 2px; width: min(190px, calc(100% - 28px)); padding: 14px; border: 1px solid rgba(255,255,255,.68); border-radius: var(--radius-md); background: rgba(250,248,241,.92); backdrop-filter: blur(10px); box-shadow: 0 8px 24px rgba(26,35,20,.15); }

@@ -9,8 +9,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test",
     "db:migrate": "node --env-file-if-exists=../../.env scripts/migrate.ts",
-    "auth:generate": "npx auth@latest generate --config src/auth.ts --output ../../db/auth-schema.sql --yes",
-    "auth:migrate": "npx auth@latest migrate --config src/auth.ts --yes"
+    "auth:generate": "npx auth@1.7.2 generate --config src/auth.ts --output ../../db/auth-schema.sql --yes",
+    "auth:migrate": "npx auth@1.7.2 migrate --config src/auth.ts --yes"
   },
   "dependencies": {
     "better-auth": "^1.7.2",

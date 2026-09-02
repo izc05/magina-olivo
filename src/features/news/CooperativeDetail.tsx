@@ -11,7 +11,6 @@ import {
   Scale,
   Truck,
 } from 'lucide-react';
-import { Brand } from '../../components/Brand';
 import '../../styles/cooperative.css';
 
 export type CooperativeSummary = {
@@ -30,12 +29,11 @@ type CooperativeDetailProps = {
 
 export function CooperativeDetail({ cooperative, onBack }: CooperativeDetailProps) {
   return (
-    <main className="mobile-page">
-      <header className="topbar coop-detail-topbar">
-        <button className="icon-button" type="button" aria-label="Volver" onClick={onBack}><ArrowLeft size={20} /></button>
-        <Brand compact />
-        <button className="icon-button" type="button" aria-label="Guardar cooperativa"><Bookmark size={19} /></button>
-      </header>
+    <section className="section-block hub-panel hub-panel--flush section-block--last coop-detail-view">
+      <div className="coop-detail-inline-head">
+        <button className="coop-detail-back" type="button" onClick={onBack}><ArrowLeft size={17} /> Cooperativas</button>
+        <button className="icon-button" type="button" aria-label="Guardar cooperativa"><Bookmark size={18} /></button>
+      </div>
 
       <section className="coop-detail-hero">
         <div className="coop-detail-hero__mark"><Building2 size={34} /></div>
@@ -72,6 +70,6 @@ export function CooperativeDetail({ cooperative, onBack }: CooperativeDetailProp
         <button className="coop-document-row" type="button"><FileText size={20} /><div><strong>Información de campaña</strong><span>Documento de ejemplo · PDF</span></div><ChevronRight size={18} /></button>
         <div className="coop-source-note"><Clock3 size={16} /><span>En la versión con datos reales, horarios, precios y avisos mostrarán siempre fuente y última actualización.</span></div>
       </section>
-    </main>
+    </section>
   );
 }

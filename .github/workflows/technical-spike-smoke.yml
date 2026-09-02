@@ -90,15 +90,18 @@ jobs:
             --header 'content-type: application/json' \
             --data '{"name":"Farmer A","email":"farmer-a@example.com","password":"correct-horse-battery-staple"}' \
             http://127.0.0.1:3001/api/auth/sign-up/email)
-          cat /tmp/signup-a.json
           test "$signup_status" = "200"
 
-          me_status=$(curl --silent --output /tmp/me-a.json --write-out "%{http_code}" \
+          me_status=$(curl --silent --dump-header /tmp/me-headers.txt --output /tmp/me-a.json --write-out "%{http_code}" \
             --cookie /tmp/cookies-a.txt \
             http://127.0.0.1:3001/api/v1/me)
           cat /tmp/me-a.json
           test "$me_status" = "200"
           grep -q 'farmer-a@example.com' /tmp/me-a.json
+          grep -qi '^cache-control: no-store' /tmp/me-headers.txt
+          grep -qi '^x-content-type-options: nosniff' /tmp/me-headers.txt
+          grep -qi '^x-frame-options: DENY' /tmp/me-headers.txt
+          grep -qi "^content-security-policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'" /tmp/me-headers.txt
 
       - name: Verify holding isolation
         run: |
@@ -120,7 +123,6 @@ jobs:
             --header 'content-type: application/json' \
             --data '{"name":"Farmer B","email":"farmer-b@example.com","password":"correct-horse-battery-staple"}' \
             http://127.0.0.1:3001/api/auth/sign-up/email)
-          cat /tmp/signup-b.json
           test "$signup_b_status" = "200"
 
           list_b_before_status=$(curl --silent --output /tmp/holdings-b-before.json --write-out "%{http_code}" \
@@ -150,6 +152,28 @@ jobs:
             echo 'Cross-holding data leak detected'
             exit 1
           fi
+
+      - name: Verify browser origin protection
+        run: |
+          hostile_status=$(curl --silent --output /tmp/hostile-origin.json --write-out "%{http_code}" \
+            --cookie /tmp/cookies-a.txt \
+            --header 'content-type: application/json' \
+            --header 'Origin: https://evil.example' \
+            --header 'Sec-Fetch-Site: cross-site' \
+            --data '{"name":"Cross Site Holding"}' \
+            http://127.0.0.1:3001/api/v1/holdings)
+          cat /tmp/hostile-origin.json
+          test "$hostile_status" = "403"
+          grep -q 'CROSS_SITE_REQUEST_BLOCKED' /tmp/hostile-origin.json
+
+          trusted_validation_status=$(curl --silent --output /tmp/trusted-origin-validation.json --write-out "%{http_code}" \
+            --cookie /tmp/cookies-a.txt \
+            --header 'content-type: application/json' \
+            --header 'Origin: http://127.0.0.1:3001' \
+            --header 'Sec-Fetch-Site: same-origin' \
+            --data '{}' \
+            http://127.0.0.1:3001/api/v1/holdings)
+          test "$trusted_validation_status" = "400"
 
       - name: Verify field to delivery vertical slice
         run: |
@@ -355,6 +379,21 @@ jobs:
 
       - name: Verify backup and clean restore
         run: bash scripts/spike-backup-restore.sh
+
+      - name: Verify logout revokes current browser session
+        run: |
+          signout_status=$(curl --silent --output /tmp/signout-a.json --write-out "%{http_code}" \
+            --cookie /tmp/cookies-a.txt \
+            --cookie-jar /tmp/cookies-a.txt \
+            --header 'content-type: application/json' \
+            --data '{}' \
+            http://127.0.0.1:3001/api/auth/sign-out)
+          test "$signout_status" = "200"
+
+          after_logout_status=$(curl --silent --output /tmp/me-after-logout.json --write-out "%{http_code}" \
+            --cookie /tmp/cookies-a.txt \
+            http://127.0.0.1:3001/api/v1/me)
+          test "$after_logout_status" = "401"
 
       - name: Stop API
         if: always()

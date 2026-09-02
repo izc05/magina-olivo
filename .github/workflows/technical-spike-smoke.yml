@@ -37,6 +37,7 @@ jobs:
       BETTER_AUTH_SECRET: ci-only-secret-for-magina-olivo-technical-spike-2026
       BETTER_AUTH_URL: http://127.0.0.1:3001
       BETTER_AUTH_TRUSTED_ORIGINS: http://127.0.0.1:3001,http://localhost:5173
+      DOCUMENT_STORAGE_DIR: /tmp/magina-private-documents
       HOST: 127.0.0.1
       PORT: 3001
       LOG_LEVEL: warn
@@ -276,6 +277,45 @@ jobs:
           if (!oldValue || oldValue.status !== 'superseded') throw new Error('Old yield was not superseded');
           if (!currentValue || currentValue.status !== 'current') throw new Error('Corrected yield is not current');
           NODE
+
+      - name: Verify private ticket isolation
+        run: |
+          HOLDING_A=$(node -e "const fs=require('fs');const j=JSON.parse(fs.readFileSync('/tmp/holdings-a-after.json','utf8'));process.stdout.write(j.items.find(x=>x.name==='Holding Pilot A').id)")
+          DELIVERY_A=$(cat /tmp/delivery-a.id)
+          printf 'ticket-004281-private' > /tmp/ticket-004281.txt
+
+          upload_status=$(curl --silent --output /tmp/document-a.json --write-out "%{http_code}" \
+            --cookie /tmp/cookies-a.txt \
+            --header 'content-type: application/octet-stream' \
+            --data-binary @/tmp/ticket-004281.txt \
+            "http://127.0.0.1:3001/api/v1/holdings/$HOLDING_A/documents?filename=ticket-004281.txt&mimeType=text%2Fplain&documentType=ticket&deliveryId=$DELIVERY_A")
+          cat /tmp/document-a.json
+          test "$upload_status" = "201"
+          DOCUMENT_A=$(node -e "const fs=require('fs');process.stdout.write(JSON.parse(fs.readFileSync('/tmp/document-a.json','utf8')).id)")
+
+          metadata_status=$(curl --silent --output /tmp/document-metadata-a.json --write-out "%{http_code}" \
+            --cookie /tmp/cookies-a.txt \
+            "http://127.0.0.1:3001/api/v1/documents/$DOCUMENT_A")
+          cat /tmp/document-metadata-a.json
+          test "$metadata_status" = "200"
+          grep -q "$DELIVERY_A" /tmp/document-metadata-a.json
+
+          content_status=$(curl --silent --output /tmp/document-content-a.bin --write-out "%{http_code}" \
+            --cookie /tmp/cookies-a.txt \
+            "http://127.0.0.1:3001/api/v1/documents/$DOCUMENT_A/content")
+          test "$content_status" = "200"
+          cmp /tmp/ticket-004281.txt /tmp/document-content-a.bin
+
+          foreign_metadata_status=$(curl --silent --output /tmp/document-metadata-b.json --write-out "%{http_code}" \
+            --cookie /tmp/cookies-b.txt \
+            "http://127.0.0.1:3001/api/v1/documents/$DOCUMENT_A")
+          test "$foreign_metadata_status" = "404"
+
+          foreign_content_status=$(curl --silent --output /tmp/document-content-b.json --write-out "%{http_code}" \
+            --cookie /tmp/cookies-b.txt \
+            "http://127.0.0.1:3001/api/v1/documents/$DOCUMENT_A/content")
+          test "$foreign_content_status" = "404"
+          grep -q 'DOCUMENT_NOT_FOUND' /tmp/document-content-b.json
 
       - name: Verify campaign weighted summary and coverage
         run: |

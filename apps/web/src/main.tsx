@@ -3,10 +3,12 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { App } from './App';
 import { ConnectivityStatus } from './ConnectivityStatus';
+import { NoticeCenter } from './NoticeCenter';
 import { ResetPassword } from './ResetPassword';
 import './styles.css';
 import './connectivity.css';
 import './navigation-v2.css';
+import './notices.css';
 
 registerSW({
   immediate: true,
@@ -25,6 +27,7 @@ createRoot(root).render(
     ) : (
       <>
         <ConnectivityStatus />
+        <NoticeCenter />
         <App />
       </>
     )}

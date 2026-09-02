@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { checkDatabase } from './db.ts';
 import { registerAuthRoutes } from './auth-routes.ts';
 import { registerCampaignRoutes } from './campaign-routes.ts';
+import { registerCampaignSummaryRoutes } from './campaign-summary-routes.ts';
 import { registerDeliveryResultRoutes } from './delivery-result-routes.ts';
 import { registerDeliveryRoutes } from './delivery-routes.ts';
 import { registerFarmRoutes } from './farm-routes.ts';
@@ -50,6 +51,7 @@ export function buildApp(): FastifyInstance {
   registerCampaignRoutes(app);
   registerDeliveryRoutes(app);
   registerDeliveryResultRoutes(app);
+  registerCampaignSummaryRoutes(app);
 
   return app;
 }

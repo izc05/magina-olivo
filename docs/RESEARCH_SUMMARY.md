@@ -1,79 +1,194 @@
-# Resumen de investigación inicial — Mágina Olivo
+# Resumen de investigación — Mágina Olivo
 
-## Problema observado
+Fecha de consolidación: 2026-09-02
 
-El olivarero puede terminar repartiendo su información entre:
+## Conclusión principal
 
-- libreta o notas del móvil;
-- tickets y albaranes en papel;
-- mensajes y fotografías;
-- webs de cooperativas;
-- aplicaciones agrícolas generalistas;
-- hojas de cálculo;
-- fuentes meteorológicas separadas.
+Mágina Olivo tiene hueco si no intenta ser un ERP agrícola generalista ni el portal de una cooperativa.
 
-Mágina Olivo busca centralizar esa operativa sin intentar sustituir de inicio a sistemas oficiales de cooperativas o administraciones.
+Su propuesta inicial queda definida como:
 
-## Diferenciación buscada
+> Un histórico personal del olivarero que une campo, campaña, entregas, rendimientos, documentos y contexto local, independientemente de la cooperativa o software que use cada almazara.
 
-El proyecto no debe convertirse simplemente en otra versión de una aplicación agrícola generalista.
+## Mercado / competencia
 
-La propuesta diferencial inicial es:
+### Agroptima
 
-1. enfoque específico en olivar;
-2. especial atención a Sierra Mágina;
-3. experiencia muy sencilla para agricultor no técnico;
-4. campaña, kilos y rendimiento como información principal;
-5. directorio útil de cooperativas;
-6. cuaderno personal de campo;
-7. automatizaciones y avisos sin complejidad innecesaria;
-8. instalación como PWA desde el móvil;
-9. IA opcional para reducir trabajo manual.
+Referencia generalista fuerte para:
+- parcelas;
+- cuaderno;
+- costes;
+- stocks;
+- SIGPAC;
+- órdenes de trabajo;
+- offline.
 
-## Cooperativas
+Conclusión: no copiar amplitud. Competir por especialización en olivar, campaña y sencillez.
 
-La plataforma puede recopilar y estructurar información pública útil de las cooperativas, manteniendo siempre:
+### Portales de almazara
 
-- nombre y origen de la fuente;
-- enlace a la web oficial;
-- fecha de comprobación;
-- separación visual entre contenido propio y contenido oficial;
-- respeto a derechos de autor, condiciones de uso y límites técnicos.
+AM System/ALO Suite/MolturALO, Proyalma/Aicor y Toolagro demuestran que muchas almazaras ya disponen de soluciones propias para entradas, rendimientos, liquidaciones, facturas y documentos.
 
-No se debe presentar información replicada como si Mágina Olivo fuese la cooperativa ni copiar páginas enteras.
+Conclusión: Mágina Olivo no debe construir un ERP para la almazara. Debe ser neutral y conectar/importar cuando exista autorización.
 
-## Estrategia de integración
+## Sierra Mágina
 
-### Etapa 1
+La DOP Sierra Mágina publica un universo institucional de 23 almazaras/envasadoras utilizado como base de investigación.
 
-Funcionamiento 100 % manual:
+La primera auditoría pública 23/23 muestra heterogeneidad:
+- webs corporativas;
+- zonas privadas simples;
+- portales de socio/cosechero;
+- proveedores tecnológicos identificables.
 
-- usuario registra sus entregas;
-- usuario añade rendimiento cuando lo conoce;
-- usuario adjunta ticket/albarán;
-- Mágina Olivo calcula y organiza.
+Casos públicos confirmados de Almazaras.com:
+- S.C.A. San Sebastián;
+- Oleozumo.
 
-### Etapa 2
+La ausencia de portal público localizado no significa ausencia de software interno.
 
-Importaciones simples:
+## Integración con cooperativas
 
-- CSV/Excel cuando tenga sentido;
-- lectura asistida de documentos;
-- fuentes públicas estructuradas.
+Niveles adoptados:
 
-### Etapa 3
+- I0: registro manual;
+- I1: documento/foto/PDF;
+- I2: CSV/XLSX/export del usuario;
+- I3: API/acuerdo oficial;
+- I4: adapter de ecosistema/proveedor.
 
-Integración con cooperativas que quieran colaborar:
+No almacenar credenciales de socio para simular navegación privada.
 
-- API oficial;
-- intercambio autorizado;
-- sincronización de entregas/rendimientos;
-- identificación de socio con consentimiento y seguridad adecuados.
+## Fuentes públicas
 
-## Conclusión de producto
+### AEMET OpenData
 
-La V1 debe demostrar valor sin necesitar acuerdos institucionales.
+- API REST oficial;
+- datos del catálogo accesibles gratuitamente;
+- API key;
+- situación operativa actual: claves de 3 meses y límite general 40 consultas/min;
+- requiere caché y rotación operativa de claves.
 
-Si un agricultor puede terminar la campaña con todas sus parcelas, labores, kilos, rendimientos y documentos ordenados en Mágina Olivo, el producto ya resuelve un problema útil.
+### RAIF
 
-Las integraciones futuras deben aumentar ese valor, no ser un requisito para que exista.
+- dataset de olivar con actualización frecuente/semanal declarada;
+- licencia CC BY 4.0;
+- útil como contexto fitosanitario zonal;
+- no debe presentarse como diagnóstico de la parcela del usuario.
+
+### SIGPAC Andalucía
+
+- información geográfica 2026 descargable por provincia/municipio;
+- condiciones específicas de uso comercial/no comercial;
+- requiere atribución `©Junta de Andalucía` y avisos de reutilización según licencia;
+- parcela SIGPAC administrativa debe mantenerse separada del concepto de finca/parcela propio del usuario.
+
+### CUE / SIEX / REAFA
+
+Arquitectura preparada para interoperabilidad futura, pero no bloquear la V1 intentando construir un CUE completo antes de validar demanda.
+
+## Producto V1
+
+Núcleo:
+- explotación;
+- finca;
+- parcela;
+- campaña;
+- entrega;
+- resultado/rendimiento;
+- labor;
+- tarea;
+- documento;
+- cooperativa/almazara;
+- avisos.
+
+Decisiones clave:
+- entrega y resultado son entidades separadas;
+- una entrega puede existir sin parcela concreta;
+- kilos oficiales salen de entregas válidas;
+- rendimiento principal ponderado por kilos cuando los datos sean comparables;
+- procedencia de cada importación se conserva;
+- conflictos no se sobrescriben silenciosamente.
+
+## Automatización
+
+No necesita IA para:
+- sumar kilos;
+- media ponderada;
+- pendientes de rendimiento;
+- tareas;
+- alertas meteorológicas;
+- ingesta RAIF;
+- detección de duplicados;
+- resúmenes deterministas.
+
+IA futura solo para reducir fricción:
+- interpretar texto/voz;
+- extraer documentos;
+- consultar/resumir datos autorizados.
+
+## Arquitectura técnica adoptada para spike
+
+- React + TypeScript + Vite PWA;
+- Node.js + TypeScript + Fastify API;
+- PostgreSQL como fuente de verdad;
+- object storage privado, R2 candidato;
+- Better Auth candidato a validar;
+- IndexedDB/outbox para offline;
+- jobs/outbox en PostgreSQL antes de añadir colas complejas;
+- adapters externos.
+
+PocketBase no se adopta como fuente de verdad productiva V1 debido a su estado pre-v1.0 y la advertencia oficial actual de compatibilidad para aplicaciones críticas.
+
+## Offline
+
+La PWA no dependerá exclusivamente de Background Sync.
+
+Estrategia:
+- app shell;
+- caché limitada de lectura;
+- borradores IndexedDB;
+- outbox de escrituras;
+- idempotency keys;
+- sincronización al abrir/volver online/foreground;
+- conflictos explícitos.
+
+## Seguridad y privacidad
+
+- aislamiento por `holding`;
+- roles owner/admin/collaborator/viewer preparados;
+- documentos privados;
+- autorización siempre server-side;
+- datos sintéticos en desarrollo;
+- secretos fuera del frontend/Git;
+- backup + restore obligatorio antes de piloto.
+
+## Coste
+
+La V1 puede operar con coste variable bajo porque IA no está en el camino crítico y las fuentes principales son abiertas/gratuitas bajo sus condiciones.
+
+Cloudflare R2 se ha documentado como candidato por su free tier inicial y ausencia de egress directo, pero el consumo real se medirá antes de decidir producción.
+
+## Piloto
+
+Primera ronda: 3-5 agricultores.
+
+Validar:
+- comprensión finca/parcela/campaña;
+- entrega <30 s;
+- labor simple <45 s;
+- resultado posterior <15 s;
+- ticket/documento;
+- modo offline;
+- utilidad de dashboard;
+- valor del histórico neutral a cooperativa.
+
+El siguiente salto de certeza no vendrá de más búsquedas web, sino de:
+- tickets/albaranes/liquidaciones anonimizados;
+- agricultores reales;
+- formatos de exportación de portales;
+- contactos autorizados con cooperativas/proveedores.
+
+## Estado
+
+Investigación pública y definición funcional suficientemente maduras para comenzar un spike técnico vertical en paralelo a la finalización del prototipo visual, manteniendo el PR de fundación en Draft hasta validar la base.

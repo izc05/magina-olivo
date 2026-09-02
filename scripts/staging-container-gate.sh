@@ -3,6 +3,7 @@ set -euo pipefail
 
 COMPOSE_FILE="infra/docker/compose.staging.yml"
 export COMPOSE_PROJECT_NAME="magina-ci-staging"
+export MAGINA_IMAGE_TAG="ci-${GITHUB_SHA:-local}"
 export POSTGRES_PASSWORD="magina_staging_ci_password"
 export DATABASE_URL="postgres://magina:magina_staging_ci_password@postgres:5432/magina_olivo"
 export BETTER_AUTH_SECRET="ci-staging-only-better-auth-secret-2026-not-production"
@@ -28,14 +29,27 @@ diagnostics() {
 
 cleanup() {
   docker compose -f "$COMPOSE_FILE" down --volumes --remove-orphans >/dev/null 2>&1 || true
+  docker image rm "magina-olivo-runtime:$MAGINA_IMAGE_TAG" "magina-olivo-web:$MAGINA_IMAGE_TAG" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
 log "Rendering staging Compose configuration"
 docker compose -f "$COMPOSE_FILE" config >/tmp/magina-staging-compose-rendered.yml
 
-log "Building and starting isolated staging stack"
-if ! docker compose -f "$COMPOSE_FILE" up -d --build; then
+log "Building release-tagged runtime image"
+docker build \
+  --file infra/docker/Dockerfile.runtime \
+  --tag "magina-olivo-runtime:$MAGINA_IMAGE_TAG" \
+  .
+
+log "Building release-tagged web image"
+docker build \
+  --file infra/docker/Dockerfile.web \
+  --tag "magina-olivo-web:$MAGINA_IMAGE_TAG" \
+  .
+
+log "Starting isolated staging stack from tagged images"
+if ! docker compose -f "$COMPOSE_FILE" up -d --pull never; then
   diagnostics
   exit 1
 fi

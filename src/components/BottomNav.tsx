@@ -1,13 +1,52 @@
 import { Home, Newspaper, Plus, Sprout, UserRound } from 'lucide-react';
 
-export function BottomNav() {
+export type MainSection = 'home' | 'field' | 'news' | 'profile';
+
+type BottomNavProps = {
+  active: MainSection;
+  onNavigate: (section: MainSection) => void;
+  onCreate?: () => void;
+};
+
+const items = [
+  { id: 'home' as const, label: 'Inicio', icon: Home },
+  { id: 'field' as const, label: 'Mi Campo', icon: Sprout },
+  { id: 'news' as const, label: 'Noticias', icon: Newspaper },
+  { id: 'profile' as const, label: 'Mi Mágina', icon: UserRound },
+];
+
+export function BottomNav({ active, onNavigate, onCreate }: BottomNavProps) {
   return (
     <nav className="bottom-nav" aria-label="Navegación principal">
-      <button className="bottom-nav__item bottom-nav__item--active" type="button"><Home size={19} /><span>Inicio</span></button>
-      <button className="bottom-nav__item" type="button"><Sprout size={19} /><span>Mi Campo</span></button>
-      <button className="bottom-nav__fab" type="button" aria-label="Nueva anotación"><Plus size={26} /></button>
-      <button className="bottom-nav__item" type="button"><Newspaper size={19} /><span>Noticias</span></button>
-      <button className="bottom-nav__item" type="button"><UserRound size={19} /><span>Mi Mágina</span></button>
+      {items.slice(0, 2).map(({ id, label, icon: Icon }) => (
+        <button
+          key={id}
+          className={`bottom-nav__item${active === id ? ' bottom-nav__item--active' : ''}`}
+          type="button"
+          onClick={() => onNavigate(id)}
+          aria-current={active === id ? 'page' : undefined}
+        >
+          <Icon size={19} />
+          <span>{label}</span>
+        </button>
+      ))}
+
+      <button className="bottom-nav__fab" type="button" aria-label="Nueva anotación" onClick={onCreate}>
+        <Plus size={26} />
+      </button>
+
+      {items.slice(2).map(({ id, label, icon: Icon }) => (
+        <button
+          key={id}
+          className={`bottom-nav__item${active === id ? ' bottom-nav__item--active' : ''}`}
+          type="button"
+          onClick={() => onNavigate(id)}
+          aria-current={active === id ? 'page' : undefined}
+        >
+          <Icon size={19} />
+          <span>{label}</span>
+        </button>
+      ))}
     </nav>
   );
 }

@@ -5,8 +5,8 @@ Estado: **SPIKE TÉCNICO CERRADO PARA PASAR A STAGING EXTERNO**. Este documento 
 Fecha de evidencia: 2026-09-02.
 Rama: `feat/technical-spike-v1`.
 PR: #2, base `feat/foundation-v1`.
-Último commit funcional validado: `8bebade81ef1d2c48a8bde58f2f12014f4ce9a8c`.
-CI verde: `Technical Spike Smoke` run `33681298308`, job `100418317339`.
+Último commit funcional validado: `dad3be7c271c7381081690ca5d435c26223f4479`.
+CI verde: `Technical Spike Smoke` run `33681892128`, job `100420315461`.
 Entorno CI: Ubuntu 24.04, Node.js 24.20.0, PostgreSQL 18.6 y Docker Compose.
 
 ## PASS demostrado
@@ -44,6 +44,21 @@ Entorno CI: Ubuntu 24.04, Node.js 24.20.0, PostgreSQL 18.6 y Docker Compose.
 
 `Secure` no se marca todavía como end-to-end: la configuración lo activa en producción, pero debe demostrarse bajo HTTPS real en staging externo.
 
+### Recuperación de contraseña
+Gate real contra Better Auth y PostgreSQL:
+- crea un usuario con dos sesiones independientes activas;
+- `POST /api/auth/request-password-reset` produce el enlace mediante un transport capturador restringido a `NODE_ENV=test`;
+- el fichero capturador usa permisos `0600` y el token/enlace no se imprime en logs;
+- se recorre el enlace real generado por Better Auth hasta obtener el token de reset;
+- `POST /api/auth/reset-password` cambia la contraseña correctamente;
+- `revokeSessionsOnPasswordReset=true` invalida las dos sesiones existentes: ambas pasan a 401;
+- el token de reset no puede reutilizarse;
+- la contraseña anterior deja de autenticar;
+- la nueva contraseña crea una sesión válida y `/api/v1/me` vuelve a 200;
+- los endpoints de solicitud/reset tienen límites específicos además del rate limit general.
+
+El comportamiento de seguridad del reset queda confirmado. Falta conectar un proveedor de correo transaccional real antes de usarlo con agricultores.
+
 ### Origin / CSRF / headers
 - Better Auth mantiene comprobaciones CSRF/origin activadas.
 - mutación `/api/v1` con `Origin: https://evil.example` + `Sec-Fetch-Site: cross-site` devuelve 403.
@@ -60,6 +75,7 @@ Entorno CI: Ubuntu 24.04, Node.js 24.20.0, PostgreSQL 18.6 y Docker Compose.
 ### Higiene de logs
 - logger de API redacta `authorization`, `cookie` y `set-cookie`.
 - el workflow actual ya no imprime las respuestas de signup que contienen token.
+- el gate de password reset captura el enlace/token en un fichero privado y nunca lo emite al log.
 - los logs históricos de ejecuciones anteriores no se consideran borrados; el cambio evita nuevas exposiciones equivalentes en el smoke.
 
 ### Flujo agrícola vertical
@@ -227,9 +243,9 @@ Las migraciones del piloto deben seguir siendo aditivas/backward-compatible: est
 
 El spike técnico está cerrado para dar el salto a un staging externo, pero todavía NO se considera listo para datos reales. Quedan gates operativos externos:
 
+- proveedor de correo transaccional real para entregar enlaces de recuperación;
 - staging HTTPS real y comprobación end-to-end de cookie `Secure` detrás de Cloudflare Tunnel/proxy;
 - PUT/GET/DELETE real contra bucket privado Cloudflare R2 o S3-compatible elegido;
-- recuperación de contraseña con canal de correo real y revocación de sesiones tras reset;
 - copia de backup fuera del host principal;
 - restore ejecutado sobre staging real, incluyendo object storage;
 - deploy/rollback ejecutado también sobre el host real de staging;
@@ -239,8 +255,9 @@ El spike técnico está cerrado para dar el salto a un staging externo, pero tod
 
 ## Política de autenticación para piloto
 
-- recuperación de contraseña: **obligatoria antes de piloto real**;
-- reset de contraseña debe revocar las demás sesiones;
+- recuperación de contraseña: **comportamiento backend PASS**; falta canal de correo real;
+- reset revoca las sesiones existentes: **PASS**;
+- token de reset de un solo uso: **PASS**;
 - verificación de email: preparada, pero no obligatoria durante el piloto cerrado con usuarios invitados/controlados;
 - verificación de email: **obligatoria antes de habilitar registro público**.
 
@@ -257,7 +274,7 @@ El spike técnico está cerrado para dar el salto a un staging externo, pero tod
 
 - PostgreSQL 18.x: **mantener**.
 - Fastify 5 + Node 24: **mantener**.
-- Better Auth: **mantener**, con password recovery como siguiente gate de identidad.
+- Better Auth: **mantener**; password reset + session revocation quedan confirmados.
 - migraciones Better Auth programáticas desde dependencia bloqueada: **mantener** para CI/staging/deploy.
 - PWA React/Vite: **mantener**.
 - IndexedDB + outbox por usuario + idempotencia backend: **mantener**.
@@ -274,6 +291,6 @@ El spike técnico está cerrado para dar el salto a un staging externo, pero tod
 
 La siguiente frontera es operativa y externa al CI local:
 
-`password recovery -> host staging -> Cloudflare Tunnel HTTPS -> cookie Secure -> R2 real -> backup off-host -> restore staging`
+`email provider -> host staging -> Cloudflare Tunnel HTTPS -> cookie Secure -> R2 real -> backup off-host -> restore staging`
 
 En paralelo puede integrarse la UI final del otro hilo sobre contratos ya validados.

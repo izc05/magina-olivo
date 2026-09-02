@@ -29,5 +29,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Generate approved photography
+        run: npm run photos:sync
+
       - name: Typecheck and build
         run: npm run build

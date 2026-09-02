@@ -97,6 +97,9 @@ jobs:
       - name: Verify API security and agricultural vertical slice
         run: bash scripts/spike-api-flow.sh
 
+      - name: Verify auth rate limiting
+        run: bash scripts/spike-auth-rate-limit.sh
+
       - name: Stop API
         if: always()
         run: |

@@ -110,6 +110,8 @@ Implementado en la rama `feat/visual-v2-foundation`:
 - Parcelas y mapa
 - Cuaderno de campo
 - Campaña
+- Costes y rentabilidad
+- Maquinaria y mantenimiento
 - Noticias / Mágina
 - Cooperativas
 - Mercado
@@ -121,8 +123,6 @@ Implementado en la rama `feat/visual-v2-foundation`:
 
 Pendiente de siguiente pasada:
 
-- Costes y rentabilidad
-- Maquinaria
 - Comunidad
 - Estados técnicos integrados en React
 - Sustitución de placeholders paisajísticos por fotografía oficial seleccionada
@@ -130,4 +130,4 @@ Pendiente de siguiente pasada:
 
 ## Orden de implementación
 
-Inicio → Meteorología → Mi Campo → Parcela/Mapa → Cuaderno → Campaña → Cooperativas → Mercado → Noticias → Mágina Local → Descubre → Mi Mágina → Costes y rentabilidad → Maquinaria → Comunidad → estados técnicos → auditoría visual final.
+Inicio → Meteorología → Mi Campo → Parcela/Mapa → Cuaderno → Campaña → Costes y rentabilidad → Maquinaria → Cooperativas → Mercado → Noticias → Mágina Local → Descubre → Mi Mágina → Comunidad → estados técnicos → auditoría visual final.

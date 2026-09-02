@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Brand } from '../../components/Brand';
 import { BottomNav, MainSection } from '../../components/BottomNav';
+import { TechnicalStatesPage } from '../technical/TechnicalStatesPage';
 import '../../styles/profile.css';
 
 type ProfilePageProps = {
@@ -35,6 +36,11 @@ const documents = [
 
 export function ProfilePage({ onNavigate }: ProfilePageProps) {
   const [tab, setTab] = useState<ProfileTab>('resumen');
+  const [technicalOpen, setTechnicalOpen] = useState(false);
+
+  if (technicalOpen) {
+    return <TechnicalStatesPage onBack={() => setTechnicalOpen(false)} />;
+  }
 
   return (
     <div className="app-shell">
@@ -118,6 +124,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
               <button type="button"><Bell size={19} /><div><strong>Notificaciones</strong><span>Clima, fitosanitarios, mercado y noticias</span></div><ChevronRight size={18} /></button>
               <button type="button"><LockKeyhole size={19} /><div><strong>Seguridad</strong><span>Contraseña y dispositivos</span></div><ChevronRight size={18} /></button>
               <button type="button"><ShieldCheck size={19} /><div><strong>Privacidad y datos</strong><span>Exportación y permisos</span></div><ChevronRight size={18} /></button>
+              <button type="button" onClick={() => setTechnicalOpen(true)}><Settings size={19} /><div><strong>Estados de acceso y sistema</strong><span>Login, onboarding, offline, errores y confirmaciones V2</span></div><ChevronRight size={18} /></button>
             </div>
           </section>
         )}

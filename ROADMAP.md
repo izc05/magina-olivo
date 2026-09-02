@@ -2,7 +2,7 @@
 
 ## Estado actual
 
-Producto, investigación pública y diseño funcional muy avanzados. La identidad visual se trabaja en paralelo en otro hilo del proyecto. En esta rama ya queda adoptada una arquitectura técnica candidata y una estrategia offline/piloto antes de implementar masivamente el MVP.
+Producto, investigación pública y diseño funcional muy avanzados. La identidad visual se trabaja en paralelo en otro hilo del proyecto. En esta rama ya queda adoptada una arquitectura técnica candidata, contratos V1 y un gate explícito de spike antes de implementar masivamente el MVP.
 
 ## Fase 0 — Producto e investigación
 
@@ -54,37 +54,57 @@ Producto, investigación pública y diseño funcional muy avanzados. La identida
 
 ## Fase 2 — Fundación técnica
 
-### Decisiones cerradas
+### Decisiones y contratos cerrados
 
 - [x] Adoptar React + TypeScript + Vite para PWA.
 - [x] Adoptar Node.js + TypeScript + Fastify para API candidata.
-- [x] Adoptar PostgreSQL como fuente de verdad.
+- [x] Fijar Node.js 24 LTS como runtime del spike.
+- [x] Adoptar PostgreSQL 18.x como fuente de verdad.
+- [x] Definir esquema canónico PostgreSQL V1.
+- [x] Definir API versionada `/api/v1`.
+- [x] Definir idempotencia y concurrencia/409 para escrituras críticas.
 - [x] Separar object storage de metadatos de documentos.
 - [x] Definir Cloudflare R2 como candidato de object storage productivo.
 - [x] Definir Better Auth como candidato de autenticación a validar en spike.
+- [x] Definir estrategia de sesiones por cookie HttpOnly/server-side.
+- [x] Definir autorización por holding/roles.
 - [x] Definir estrategia offline con IndexedDB/outbox/idempotencia.
 - [x] Definir que Background Sync es mejora, no dependencia.
 - [x] Definir arquitectura jobs/outbox antes de introducir una cola externa.
 - [x] Definir adapters para fuentes externas.
+- [x] Definir entornos local/CI/staging/production.
+- [x] Definir estrategia de despliegue/migraciones/rollback.
+- [x] Definir observabilidad V1 sin exponer datos privados.
+- [x] Definir threat model V1 y amenazas P0.
+- [x] Definir estrategia de pruebas V1.
+- [x] Definir backup/restore como gate de piloto.
 - [x] Definir spike vertical previo al MVP.
+- [x] Definir criterios PASS/FAIL del spike técnico.
 - [x] Definir modelo preliminar de costes V1.
 
 ### Implementación pendiente
 
-- [ ] Crear workspace/monorepo `apps/web`, `apps/api`, packages y db.
-- [ ] Configurar TypeScript, linting, formatting y tests.
-- [ ] Crear primer esquema/migraciones PostgreSQL.
+- [ ] Crear workspace/monorepo `apps/web`, `apps/api`, `apps/worker`, packages y db.
+- [ ] Fijar package manager/lockfile.
+- [ ] Configurar TypeScript strict, linting, formatting y tests.
+- [ ] Crear primer esquema/migraciones PostgreSQL ejecutables.
+- [ ] Elegir query builder/ORM mediante spike.
 - [ ] Implementar auth spike.
 - [ ] Implementar autorización por holding.
+- [ ] Evaluar PostgreSQL RLS como defensa adicional.
 - [ ] Implementar PWA/app shell.
 - [ ] Implementar IndexedDB/borradores/outbox.
 - [ ] Implementar idempotency middleware/tabla.
+- [ ] Implementar control de concurrencia/versiones.
 - [ ] Implementar object storage privado.
+- [ ] Implementar request IDs/logs/health checks.
 - [ ] Implementar primer backup + restauración.
-- [ ] Configurar development/staging/production.
+- [ ] Configurar local/test/staging/production reales.
 - [ ] Configurar CI.
 - [ ] Ejecutar spike vertical completo.
-- [ ] Elegir ORM/query builder final después del spike, no antes.
+- [ ] Crear `docs/spike/SPIKE_RESULTS.md` con evidencias.
+- [ ] Confirmar o sustituir Better Auth según resultados.
+- [ ] Confirmar storage productivo según resultados.
 
 ## Fase 3 — MVP agrícola
 

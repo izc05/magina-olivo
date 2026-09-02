@@ -1,5 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { getPool } from './db.ts';
+import { queuePasswordResetEmail } from './auth-mailer.ts';
 
 const isProduction = process.env.NODE_ENV === 'production';
 const configuredSecret = process.env.BETTER_AUTH_SECRET?.trim();
@@ -27,6 +28,17 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 10,
     maxPasswordLength: 128,
+    resetPasswordTokenExpiresIn: 3600,
+    revokeSessionsOnPasswordReset: true,
+    sendResetPassword: async ({ user, url }) => {
+      // The delivery adapter is intentionally synchronous/no-op in CI/dev.
+      // A real provider must queue delivery rather than exposing the token in
+      // logs or blocking this endpoint on a remote mail service.
+      queuePasswordResetEmail({
+        to: user.email,
+        resetUrl: url,
+      });
+    },
   },
   rateLimit: {
     enabled: true,
@@ -35,6 +47,8 @@ export const auth = betterAuth({
     customRules: {
       '/sign-in/email': { window: 60, max: 10 },
       '/sign-up/email': { window: 60, max: 10 },
+      '/request-password-reset': { window: 60, max: 5 },
+      '/reset-password': { window: 60, max: 10 },
     },
   },
   advanced: {

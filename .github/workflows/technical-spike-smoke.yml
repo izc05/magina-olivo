@@ -66,6 +66,9 @@ jobs:
       - name: Migrate business schema
         run: npm run db:migrate
 
+      - name: Verify durable worker and retry state
+        run: bash scripts/spike-worker-gate.sh
+
       - name: Build web PWA
         run: npm run build --workspace @magina/web
 

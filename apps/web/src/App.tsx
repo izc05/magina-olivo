@@ -12,7 +12,7 @@ import {
   type User,
 } from './api';
 
-type Tab = 'home' | 'field' | 'campaign' | 'more';
+type Tab = 'home' | 'field' | 'campaign' | 'magina' | 'more';
 type SessionState = 'checking' | 'signed_out' | 'signed_in';
 type ActionRunner = (action: () => Promise<void>) => Promise<void>;
 
@@ -180,6 +180,14 @@ export function App() {
   useEffect(() => { void loadPlots(selectedFarmId).catch((reason) => setError(messageFrom(reason))); }, [selectedFarmId, loadPlots]);
   useEffect(() => { void loadCampaign(selectedCampaignId).catch((reason) => setError(messageFrom(reason))); }, [selectedCampaignId, loadCampaign]);
 
+  useEffect(() => {
+    const refreshAfterSync = () => {
+      if (selectedCampaignId) void loadCampaign(selectedCampaignId).catch((reason) => setError(messageFrom(reason)));
+    };
+    window.addEventListener('magina:sync-complete', refreshAfterSync);
+    return () => window.removeEventListener('magina:sync-complete', refreshAfterSync);
+  }, [selectedCampaignId, loadCampaign]);
+
   async function runAction(action: () => Promise<void>) {
     setBusy(true);
     setError(null);
@@ -215,12 +223,14 @@ export function App() {
         {tab === 'home' ? <HomeTab holding={selectedHolding} campaign={selectedCampaign} summary={summary} coverage={coverage} onNavigate={setTab} /> : null}
         {tab === 'field' ? <FieldTab holdings={holdings} selectedHolding={selectedHolding} farms={farms} selectedFarm={selectedFarm} selectedFarmId={selectedFarmId} plots={plots} busy={busy} setSelectedFarmId={setSelectedFarmId} runAction={runAction} reloadHoldings={loadHoldings} reloadHoldingData={() => loadHoldingData(selectedHoldingId)} reloadPlots={() => loadPlots(selectedFarmId)} /> : null}
         {tab === 'campaign' ? <CampaignTab selectedHolding={selectedHolding} campaigns={campaigns} selectedCampaignId={selectedCampaignId} setSelectedCampaignId={setSelectedCampaignId} selectedCampaign={selectedCampaign} farms={farms} plots={plots} deliveries={deliveries} summary={summary} busy={busy} runAction={runAction} reloadHoldingData={() => loadHoldingData(selectedHoldingId)} reloadCampaign={() => loadCampaign(selectedCampaignId)} /> : null}
+        {tab === 'magina' ? <MaginaTab /> : null}
         {tab === 'more' ? <MoreTab user={user} holding={selectedHolding} busy={busy} onSignOut={() => void signOut()} /> : null}
       </main>
-      <nav className="bottom-nav" aria-label="Navegación principal">
+      <nav className="bottom-nav bottom-nav-v2" aria-label="Navegación principal">
         <NavButton active={tab === 'home'} icon="⌂" label="Inicio" onClick={() => setTab('home')} />
         <NavButton active={tab === 'field'} icon="◒" label="Mi Campo" onClick={() => setTab('field')} />
-        <NavButton active={tab === 'campaign'} icon="◎" label="Campaña" onClick={() => setTab('campaign')} />
+        <button type="button" className={`nav-plus${tab === 'campaign' ? ' active' : ''}`} onClick={() => setTab('campaign')} aria-label="Añadir entrega o trabajar con la campaña"><span aria-hidden="true">+</span></button>
+        <NavButton active={tab === 'magina'} icon="◇" label="Mágina" onClick={() => setTab('magina')} />
         <NavButton active={tab === 'more'} icon="•••" label="Mi Mágina" onClick={() => setTab('more')} />
       </nav>
     </div>
@@ -294,8 +304,12 @@ function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelect
   </>;
 }
 
+function MaginaTab() {
+  return <><PageIntro eyebrow="Mágina" title="Tu territorio" copy="La información local llegará aquí sin mezclarla con tus datos privados." /><section className="section card card-body"><span className="badge gold">Siguiente bloque</span><h2 className="section-title magina-card-title">Noticias, tiempo y alertas</h2><p className="section-copy">Este espacio está reservado para integrar las fuentes ya investigadas: AEMET, RAIF, cooperativas, mercado del aceite y noticias locales, manteniendo la misma identidad visual.</p></section></>;
+}
+
 function MoreTab({ user, holding, busy, onSignOut }: { user: User; holding: Holding | null; busy: boolean; onSignOut: () => void }) {
-  return <><PageIntro eyebrow="Mi Mágina" title="Cuenta y proyecto" /><section className="section card card-body"><p className="list-card-title">{user.name || 'Agricultor'}</p><p className="list-card-meta">{user.email}</p>{holding ? <p className="list-card-meta">Explotación activa · {holding.name}</p> : null}</section><section className="section card card-body"><h2 className="section-title" style={{ fontSize: '1.25rem' }}>Identidad visual</h2><p className="section-copy">Esta rama usa la Biblia Visual V2. El logo gráfico aprobado se importará como activo único; aquí no se genera uno alternativo.</p></section><section className="section"><button className="ghost-button danger-button" type="button" onClick={onSignOut} disabled={busy}>Cerrar sesión</button></section></>;
+  return <><PageIntro eyebrow="Mi Mágina" title="Cuenta y proyecto" /><section className="section card card-body"><p className="list-card-title">{user.name || 'Agricultor'}</p><p className="list-card-meta">{user.email}</p>{holding ? <p className="list-card-meta">Explotación activa · {holding.name}</p> : null}</section><section className="section card card-body"><h2 className="section-title more-card-title">Identidad visual</h2><p className="section-copy">Esta rama usa la Biblia Visual V2. El logo gráfico aprobado se importará como activo único; aquí no se genera uno alternativo.</p></section><section className="section"><button className="ghost-button danger-button" type="button" onClick={onSignOut} disabled={busy}>Cerrar sesión</button></section></>;
 }
 
 function PageIntro({ eyebrow, title, copy }: { eyebrow: string; title: string; copy?: string }) {

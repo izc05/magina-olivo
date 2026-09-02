@@ -18,24 +18,53 @@ case "$BASE_URL" in
   https://*) ;;
   *) fail "STAGING_BASE_URL must use https://" ;;
 esac
-
 BASE_URL="${BASE_URL%/}"
-rm -f /tmp/magina-staging-cookies.txt
+
+ACCESS_HEADERS=()
+if [[ -n "${CF_ACCESS_CLIENT_ID:-}" || -n "${CF_ACCESS_CLIENT_SECRET:-}" ]]; then
+  [[ -n "${CF_ACCESS_CLIENT_ID:-}" && -n "${CF_ACCESS_CLIENT_SECRET:-}" ]] \
+    || fail "both CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET must be set"
+  ACCESS_HEADERS+=(
+    --header "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID"
+    --header "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET"
+  )
+fi
+
+cleanup() {
+  rm -f \
+    /tmp/magina-staging-cookies.txt \
+    /tmp/staging-ready.json \
+    /tmp/staging-root-headers.txt \
+    /tmp/staging-signin-headers.txt \
+    /tmp/staging-signin.json \
+    /tmp/staging-me-headers.txt \
+    /tmp/staging-me.json \
+    /tmp/staging-hostile.json \
+    /tmp/staging-signout.json \
+    /tmp/staging-me-after-logout.json
+}
+trap cleanup EXIT
+cleanup
 
 log "Checking public HTTPS readiness"
-ready_status=$(curl --proto '=https' --tlsv1.2 --silent --output /tmp/staging-ready.json --write-out '%{http_code}' \
+ready_status=$(curl --proto '=https' --tlsv1.2 --silent --show-error \
+  "${ACCESS_HEADERS[@]}" \
+  --output /tmp/staging-ready.json --write-out '%{http_code}' \
   "$BASE_URL/health/ready")
 [[ "$ready_status" = "200" ]] || fail "readiness expected 200, got $ready_status"
 grep -q '"status":"ready"' /tmp/staging-ready.json || fail "readiness body is not ready"
 
-root_status=$(curl --proto '=https' --tlsv1.2 --silent --dump-header /tmp/staging-root-headers.txt \
+root_status=$(curl --proto '=https' --tlsv1.2 --silent --show-error \
+  "${ACCESS_HEADERS[@]}" \
+  --dump-header /tmp/staging-root-headers.txt \
   --output /dev/null --write-out '%{http_code}' "$BASE_URL/")
 [[ "$root_status" = "200" ]] || fail "root expected 200, got $root_status"
 grep -qi '^strict-transport-security:' /tmp/staging-root-headers.txt || fail "HSTS header missing"
 grep -qi '^x-content-type-options: nosniff' /tmp/staging-root-headers.txt || fail "nosniff header missing on web entry"
 
 log "Signing in without printing the token-bearing response"
-signin_status=$(curl --proto '=https' --tlsv1.2 --silent \
+signin_status=$(curl --proto '=https' --tlsv1.2 --silent --show-error \
+  "${ACCESS_HEADERS[@]}" \
   --dump-header /tmp/staging-signin-headers.txt \
   --output /tmp/staging-signin.json \
   --write-out '%{http_code}' \
@@ -52,7 +81,8 @@ grep -qi '^set-cookie:.*secure' /tmp/staging-signin-headers.txt || fail "session
 grep -qi '^set-cookie:.*samesite=lax' /tmp/staging-signin-headers.txt || fail "session cookie missing SameSite=Lax"
 
 log "Checking authenticated private response"
-me_status=$(curl --proto '=https' --tlsv1.2 --silent \
+me_status=$(curl --proto '=https' --tlsv1.2 --silent --show-error \
+  "${ACCESS_HEADERS[@]}" \
   --dump-header /tmp/staging-me-headers.txt \
   --output /tmp/staging-me.json \
   --write-out '%{http_code}' \
@@ -63,8 +93,22 @@ grep -q "$EMAIL" /tmp/staging-me.json || fail "authenticated user mismatch"
 grep -qi '^cache-control: no-store' /tmp/staging-me-headers.txt || fail "private response missing no-store"
 grep -qi '^content-security-policy:' /tmp/staging-me-headers.txt || fail "private API response missing CSP"
 
+log "Proving hostile browser origin is still blocked through Cloudflare/proxy"
+hostile_status=$(curl --proto '=https' --tlsv1.2 --silent --show-error \
+  "${ACCESS_HEADERS[@]}" \
+  --output /tmp/staging-hostile.json \
+  --write-out '%{http_code}' \
+  --cookie /tmp/magina-staging-cookies.txt \
+  --header 'content-type: application/json' \
+  --header 'Origin: https://evil.example' \
+  --header 'Sec-Fetch-Site: cross-site' \
+  --data '{"name":"must-not-exist"}' \
+  "$BASE_URL/api/v1/holdings")
+[[ "$hostile_status" = "403" ]] || fail "hostile origin expected 403, got $hostile_status"
+
 log "Signing out and proving session revocation"
-signout_status=$(curl --proto '=https' --tlsv1.2 --silent \
+signout_status=$(curl --proto '=https' --tlsv1.2 --silent --show-error \
+  "${ACCESS_HEADERS[@]}" \
   --output /tmp/staging-signout.json \
   --write-out '%{http_code}' \
   --cookie /tmp/magina-staging-cookies.txt \
@@ -76,7 +120,8 @@ signout_status=$(curl --proto '=https' --tlsv1.2 --silent \
   "$BASE_URL/api/auth/sign-out")
 [[ "$signout_status" = "200" ]] || fail "sign-out expected 200, got $signout_status"
 
-after_logout_status=$(curl --proto '=https' --tlsv1.2 --silent \
+after_logout_status=$(curl --proto '=https' --tlsv1.2 --silent --show-error \
+  "${ACCESS_HEADERS[@]}" \
   --output /tmp/staging-me-after-logout.json \
   --write-out '%{http_code}' \
   --cookie /tmp/magina-staging-cookies.txt \

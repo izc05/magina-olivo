@@ -80,20 +80,84 @@ jobs:
 
       - name: Verify authentication round trip
         run: |
-          signup_status=$(curl --silent --output /tmp/signup.json --write-out "%{http_code}" \
-            --cookie-jar /tmp/cookies.txt \
+          signup_status=$(curl --silent --output /tmp/signup-a.json --write-out "%{http_code}" \
+            --cookie-jar /tmp/cookies-a.txt \
             --header 'content-type: application/json' \
-            --data '{"name":"CI Farmer","email":"ci-farmer@example.com","password":"correct-horse-battery-staple"}' \
+            --data '{"name":"Farmer A","email":"farmer-a@example.com","password":"correct-horse-battery-staple"}' \
             http://127.0.0.1:3001/api/auth/sign-up/email)
-          cat /tmp/signup.json
+          cat /tmp/signup-a.json
           test "$signup_status" = "200"
 
-          me_status=$(curl --silent --output /tmp/me.json --write-out "%{http_code}" \
-            --cookie /tmp/cookies.txt \
+          me_status=$(curl --silent --output /tmp/me-a.json --write-out "%{http_code}" \
+            --cookie /tmp/cookies-a.txt \
             http://127.0.0.1:3001/api/v1/me)
-          cat /tmp/me.json
+          cat /tmp/me-a.json
           test "$me_status" = "200"
-          grep -q 'ci-farmer@example.com' /tmp/me.json
+          grep -q 'farmer-a@example.com' /tmp/me-a.json
+
+      - name: Verify holding isolation
+        run: |
+          unauth_status=$(curl --silent --output /tmp/holdings-unauth.json --write-out "%{http_code}" \
+            http://127.0.0.1:3001/api/v1/holdings)
+          test "$unauth_status" = "401"
+
+          create_a_status=$(curl --silent --output /tmp/holding-a.json --write-out "%{http_code}" \
+            --cookie /tmp/cookies-a.txt \
+            --header 'content-type: application/json' \
+            --data '{"name":"Holding Pilot A","municipality":"Bedmar","province":"Jaen"}' \
+            http://127.0.0.1:3001/api/v1/holdings)
+          cat /tmp/holding-a.json
+          test "$create_a_status" = "201"
+          grep -q 'Holding Pilot A' /tmp/holding-a.json
+
+          list_a_status=$(curl --silent --output /tmp/holdings-a.json --write-out "%{http_code}" \
+            --cookie /tmp/cookies-a.txt \
+            http://127.0.0.1:3001/api/v1/holdings)
+          cat /tmp/holdings-a.json
+          test "$list_a_status" = "200"
+          grep -q 'Holding Pilot A' /tmp/holdings-a.json
+
+          signup_b_status=$(curl --silent --output /tmp/signup-b.json --write-out "%{http_code}" \
+            --cookie-jar /tmp/cookies-b.txt \
+            --header 'content-type: application/json' \
+            --data '{"name":"Farmer B","email":"farmer-b@example.com","password":"correct-horse-battery-staple"}' \
+            http://127.0.0.1:3001/api/auth/sign-up/email)
+          cat /tmp/signup-b.json
+          test "$signup_b_status" = "200"
+
+          list_b_before_status=$(curl --silent --output /tmp/holdings-b-before.json --write-out "%{http_code}" \
+            --cookie /tmp/cookies-b.txt \
+            http://127.0.0.1:3001/api/v1/holdings)
+          cat /tmp/holdings-b-before.json
+          test "$list_b_before_status" = "200"
+          if grep -q 'Holding Pilot A' /tmp/holdings-b-before.json; then
+            echo 'Cross-holding data leak: Farmer B can see Farmer A holding'
+            exit 1
+          fi
+
+          create_b_status=$(curl --silent --output /tmp/holding-b.json --write-out "%{http_code}" \
+            --cookie /tmp/cookies-b.txt \
+            --header 'content-type: application/json' \
+            --data '{"name":"Holding Pilot B","municipality":"Huelma","province":"Jaen"}' \
+            http://127.0.0.1:3001/api/v1/holdings)
+          cat /tmp/holding-b.json
+          test "$create_b_status" = "201"
+
+          curl --fail --silent --cookie /tmp/cookies-b.txt \
+            http://127.0.0.1:3001/api/v1/holdings > /tmp/holdings-b.json
+          grep -q 'Holding Pilot B' /tmp/holdings-b.json
+          if grep -q 'Holding Pilot A' /tmp/holdings-b.json; then
+            echo 'Cross-holding data leak after Farmer B creates own holding'
+            exit 1
+          fi
+
+          curl --fail --silent --cookie /tmp/cookies-a.txt \
+            http://127.0.0.1:3001/api/v1/holdings > /tmp/holdings-a-after.json
+          grep -q 'Holding Pilot A' /tmp/holdings-a-after.json
+          if grep -q 'Holding Pilot B' /tmp/holdings-a-after.json; then
+            echo 'Cross-holding data leak: Farmer A can see Farmer B holding'
+            exit 1
+          fi
 
       - name: Stop API
         if: always()

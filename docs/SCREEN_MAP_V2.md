@@ -17,6 +17,16 @@
 - Noticias destacadas
 - Precio AOVE
 
+### Meteorología
+- Resumen por finca
+- Temperatura actual y sensación
+- Humedad, viento, presión y temperatura de suelo
+- Previsión horaria
+- Probabilidad de lluvia
+- Previsión de 5 días
+- Ventana de trabajo
+- Recomendación agrícola
+
 ### Mi Campo
 - Fincas
 - Parcelas
@@ -95,6 +105,7 @@
 Implementado en la rama `feat/visual-v2-foundation`:
 
 - Inicio V2
+- Meteorología detallada V2
 - Mi Campo V2
 - Parcelas y mapa
 - Cuaderno de campo
@@ -110,7 +121,6 @@ Implementado en la rama `feat/visual-v2-foundation`:
 
 Pendiente de siguiente pasada:
 
-- Meteorología detallada
 - Costes y rentabilidad
 - Maquinaria
 - Comunidad
@@ -120,4 +130,4 @@ Pendiente de siguiente pasada:
 
 ## Orden de implementación
 
-Inicio → Mi Campo → Parcela/Mapa → Cuaderno → Campaña → Cooperativas → Mercado → Noticias → Mágina Local → Descubre → Mi Mágina → Meteorología detallada → módulos secundarios → estados técnicos → auditoría visual final.
+Inicio → Meteorología → Mi Campo → Parcela/Mapa → Cuaderno → Campaña → Cooperativas → Mercado → Noticias → Mágina Local → Descubre → Mi Mágina → Costes y rentabilidad → Maquinaria → Comunidad → estados técnicos → auditoría visual final.

@@ -12,3 +12,4 @@ apps/*/.env.*
 !apps/*/.env.example
 .tmp/
 .cache/
+.deploy/

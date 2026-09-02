@@ -1,5 +1,3 @@
-import { listPendingOperations } from '../offline/outbox';
-
 export type PwaUpdateResult =
   | {
       status: 'deferred';
@@ -12,6 +10,7 @@ export type PwaUpdateResult =
     };
 
 export type ApplyPwaUpdate = () => Promise<void> | void;
+export type GetPendingOperationCount = (ownerUserId: string) => Promise<number>;
 
 /**
  * Decide whether a newly downloaded PWA version may take control.
@@ -21,16 +20,24 @@ export type ApplyPwaUpdate = () => Promise<void> | void;
  * Additionally, Mágina Olivo defers activation while the current user's
  * durable outbox still contains unsynchronised writes, avoiding a reload at
  * the most sensitive point of an offline workflow.
+ *
+ * Storage access is injected so this policy remains independent of the
+ * IndexedDB implementation and can be tested with Node's native test runner.
  */
 export async function applyPwaUpdateWhenSafe(input: {
   ownerUserId: string;
   applyUpdate: ApplyPwaUpdate;
+  getPendingOperationCount: GetPendingOperationCount;
 }): Promise<PwaUpdateResult> {
   if (!input.ownerUserId.trim()) {
     throw new Error('ownerUserId is required before applying a PWA update');
   }
 
-  const pendingOperations = (await listPendingOperations(input.ownerUserId)).length;
+  const pendingOperations = await input.getPendingOperationCount(input.ownerUserId);
+  if (!Number.isInteger(pendingOperations) || pendingOperations < 0) {
+    throw new Error('pending operation count must be a non-negative integer');
+  }
+
   if (pendingOperations > 0) {
     return {
       status: 'deferred',

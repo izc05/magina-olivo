@@ -1,0 +1,7 @@
+.home-market-card { display: grid; width: 100%; grid-template-columns: minmax(0,1fr) minmax(120px,170px); align-items: center; gap: 12px; padding: 13px; border: 1px solid var(--color-border); border-radius: 15px; background: rgba(255,255,255,.7); text-align: left; box-shadow: 0 7px 20px rgba(46,58,34,.05); }
+.home-market-card__copy { display: grid; gap: 4px; min-width: 0; }
+.home-market-card__copy > span { color: var(--color-text-muted); font-size: 10px; }
+.home-market-card__copy > strong { font-family: var(--font-editorial); font-size: 25px; font-weight: 600; color: var(--color-olive-950); }
+.home-market-card__copy > small { display: inline-flex; align-items: center; gap: 4px; color: var(--color-olive-700); font-size: 10px; font-weight: 700; }
+.home-market-card svg { display: block; width: 100%; height: auto; }
+@media (max-width: 420px) { .home-market-card { grid-template-columns: minmax(0,1fr) 110px; } .home-market-card__copy > strong { font-size: 22px; } }

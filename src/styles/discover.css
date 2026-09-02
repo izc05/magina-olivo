@@ -48,6 +48,22 @@
 .discover-photo--food { background: linear-gradient(145deg,#c8b87e,#827845 45%,#4c572f); }
 .discover-photo--mill { background: linear-gradient(145deg,#aaa68e,#6a745f 46%,#34432f); }
 .discover-weekend-card { margin-top: 10px; background: rgba(167,180,151,.12); border-color: rgba(92,122,70,.18); }
+.discover-route-detail__topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.discover-route-detail__topbar .secondary-button { display: inline-flex; width: auto; align-items: center; gap: 6px; margin: 0; }
+.discover-route-detail__hero { position: relative; min-height: 245px; overflow: hidden; border-radius: var(--radius-lg); box-shadow: var(--shadow-card); }
+.discover-route-detail__shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(25,32,20,.06), rgba(25,32,20,.68)); }
+.discover-route-detail__copy { position: absolute; right: 16px; bottom: 16px; left: 16px; color: #fff; }
+.discover-route-detail__copy > span { display: inline-flex; padding: 5px 9px; border: 1px solid rgba(255,255,255,.3); border-radius: 999px; background: rgba(255,255,255,.12); font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.discover-route-detail__copy h2 { margin: 7px 0 3px; font-family: var(--font-editorial); font-size: 28px; font-weight: 600; line-height: 1.05; }
+.discover-route-detail__copy p { margin: 0; color: rgba(255,255,255,.82); font-size: 12px; }
+.discover-route-detail__metrics { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; margin-top: 10px; }
+.discover-route-detail__metrics article { display: grid; gap: 3px; padding: 11px 9px; border: 1px solid var(--color-border); border-radius: 13px; background: rgba(255,255,255,.66); text-align: center; }
+.discover-route-detail__metrics span { color: var(--color-text-muted); font-size: 10px; }
+.discover-route-detail__metrics strong { font-size: 12px; }
+.discover-route-detail__body { margin-top: 12px; padding: 14px; border: 1px solid var(--color-border); border-radius: 15px; background: rgba(255,255,255,.68); }
+.discover-route-detail__body > p { margin: 7px 0 12px; color: var(--color-text-muted); font-size: 13px; line-height: 1.55; }
+.discover-route-detail__highlights { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
+.discover-route-detail__highlights span { display: inline-flex; min-height: 34px; align-items: center; gap: 5px; padding: 0 9px; border-radius: 999px; background: rgba(167,180,151,.16); color: var(--color-olive-950); font-size: 10px; font-weight: 700; }
 
 @media (min-width: 820px) {
   .local-utility-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
@@ -56,4 +72,5 @@
   .discover-route-card { grid-template-columns: 1fr; align-items: stretch; }
   .discover-route-card__photo { width: 100%; height: 120px; }
   .discover-route-card > svg { display: none; }
+  .discover-route-detail__hero { min-height: 330px; }
 }

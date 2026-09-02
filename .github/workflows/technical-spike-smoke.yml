@@ -14,7 +14,7 @@ concurrency:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     services:
       postgres:
@@ -118,6 +118,9 @@ jobs:
 
       - name: Verify isolated staging container stack
         run: bash scripts/staging-container-gate.sh
+
+      - name: Verify release deploy and rollback lifecycle
+        run: bash scripts/staging-release-gate.sh
 
       - name: Stop API
         if: always()

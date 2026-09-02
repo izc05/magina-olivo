@@ -1,5 +1,6 @@
 export type OutboxOperation = {
   id: string;
+  ownerUserId: string;
   kind: 'delivery.create';
   method: 'POST';
   path: string;
@@ -19,8 +20,9 @@ export type SyncResult = {
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
 const DB_NAME = 'magina-olivo';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'outbox';
+const OWNER_INDEX = 'ownerUserId';
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -28,9 +30,17 @@ function openDatabase(): Promise<IDBDatabase> {
 
     request.onupgradeneeded = () => {
       const db = request.result;
+      let store: IDBObjectStore;
+
       if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
         store.createIndex('createdAt', 'createdAt');
+      } else {
+        store = request.transaction!.objectStore(STORE_NAME);
+      }
+
+      if (!store.indexNames.contains(OWNER_INDEX)) {
+        store.createIndex(OWNER_INDEX, 'ownerUserId', { unique: false });
       }
     };
 
@@ -47,14 +57,24 @@ function transactionDone(transaction: IDBTransaction): Promise<void> {
   });
 }
 
+function scopedOperationId(ownerUserId: string, idempotencyKey: string): string {
+  return `${ownerUserId}:${idempotencyKey}`;
+}
+
 export async function enqueueDeliveryCreate(input: {
+  ownerUserId: string;
   campaignId: string;
   idempotencyKey: string;
   body: Record<string, unknown>;
   createdAt?: string;
 }): Promise<OutboxOperation> {
+  if (!input.ownerUserId.trim()) {
+    throw new Error('ownerUserId is required for offline operations');
+  }
+
   const operation: OutboxOperation = {
-    id: input.idempotencyKey,
+    id: scopedOperationId(input.ownerUserId, input.idempotencyKey),
+    ownerUserId: input.ownerUserId,
     kind: 'delivery.create',
     method: 'POST',
     path: `/api/v1/campaigns/${encodeURIComponent(input.campaignId)}/deliveries`,
@@ -76,11 +96,11 @@ export async function enqueueDeliveryCreate(input: {
   }
 }
 
-export async function listPendingOperations(): Promise<OutboxOperation[]> {
+export async function listPendingOperations(ownerUserId: string): Promise<OutboxOperation[]> {
   const db = await openDatabase();
   try {
     const transaction = db.transaction(STORE_NAME, 'readonly');
-    const request = transaction.objectStore(STORE_NAME).getAll();
+    const request = transaction.objectStore(STORE_NAME).index(OWNER_INDEX).getAll(ownerUserId);
     const items = await new Promise<OutboxOperation[]>((resolve, reject) => {
       request.onsuccess = () => resolve(request.result as OutboxOperation[]);
       request.onerror = () => reject(request.error ?? new Error('Unable to read offline outbox'));
@@ -92,18 +112,27 @@ export async function listPendingOperations(): Promise<OutboxOperation[]> {
   }
 }
 
-async function deleteOperation(id: string): Promise<void> {
+async function deleteOperation(ownerUserId: string, id: string): Promise<void> {
   const db = await openDatabase();
   try {
     const transaction = db.transaction(STORE_NAME, 'readwrite');
-    transaction.objectStore(STORE_NAME).delete(id);
+    const store = transaction.objectStore(STORE_NAME);
+    const current = await new Promise<OutboxOperation | undefined>((resolve, reject) => {
+      const request = store.get(id);
+      request.onsuccess = () => resolve(request.result as OutboxOperation | undefined);
+      request.onerror = () => reject(request.error ?? new Error('Unable to read offline operation'));
+    });
+
+    if (current?.ownerUserId === ownerUserId) {
+      store.delete(id);
+    }
     await transactionDone(transaction);
   } finally {
     db.close();
   }
 }
 
-async function markAttempt(id: string, message: string): Promise<void> {
+async function markAttempt(ownerUserId: string, id: string, message: string): Promise<void> {
   const db = await openDatabase();
   try {
     const transaction = db.transaction(STORE_NAME, 'readwrite');
@@ -114,7 +143,7 @@ async function markAttempt(id: string, message: string): Promise<void> {
       request.onerror = () => reject(request.error ?? new Error('Unable to read offline operation'));
     });
 
-    if (current) {
+    if (current?.ownerUserId === ownerUserId) {
       store.put({
         ...current,
         attempts: current.attempts + 1,
@@ -127,8 +156,11 @@ async function markAttempt(id: string, message: string): Promise<void> {
   }
 }
 
-export async function syncPendingOperations(fetchImpl: FetchLike = fetch): Promise<SyncResult> {
-  const operations = await listPendingOperations();
+export async function syncPendingOperations(
+  ownerUserId: string,
+  fetchImpl: FetchLike = fetch,
+): Promise<SyncResult> {
+  const operations = await listPendingOperations(ownerUserId);
   let synced = 0;
 
   for (const operation of operations) {
@@ -144,20 +176,20 @@ export async function syncPendingOperations(fetchImpl: FetchLike = fetch): Promi
       });
 
       if (!response.ok) {
-        await markAttempt(operation.id, `HTTP ${response.status}`);
+        await markAttempt(ownerUserId, operation.id, `HTTP ${response.status}`);
         continue;
       }
 
-      await deleteOperation(operation.id);
+      await deleteOperation(ownerUserId, operation.id);
       synced += 1;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Network error';
-      await markAttempt(operation.id, message);
+      await markAttempt(ownerUserId, operation.id, message);
       break;
     }
   }
 
-  const pending = (await listPendingOperations()).length;
+  const pending = (await listPendingOperations(ownerUserId)).length;
   return {
     attempted: operations.length,
     synced,
@@ -165,11 +197,25 @@ export async function syncPendingOperations(fetchImpl: FetchLike = fetch): Promi
   };
 }
 
-export async function clearOutbox(): Promise<void> {
+export async function clearOutbox(ownerUserId?: string): Promise<void> {
   const db = await openDatabase();
   try {
     const transaction = db.transaction(STORE_NAME, 'readwrite');
-    transaction.objectStore(STORE_NAME).clear();
+    const store = transaction.objectStore(STORE_NAME);
+
+    if (!ownerUserId) {
+      store.clear();
+      await transactionDone(transaction);
+      return;
+    }
+
+    const request = store.index(OWNER_INDEX).openKeyCursor(IDBKeyRange.only(ownerUserId));
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) return;
+      store.delete(cursor.primaryKey);
+      cursor.continue();
+    };
     await transactionDone(transaction);
   } finally {
     db.close();

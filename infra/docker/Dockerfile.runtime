@@ -13,6 +13,7 @@ RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund
 COPY apps/api apps/api
 COPY apps/worker apps/worker
 COPY db db
+COPY scripts scripts
 
 USER node
 

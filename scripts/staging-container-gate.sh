@@ -21,6 +21,11 @@ log() {
   printf '[staging-container-gate] %s\n' "$*"
 }
 
+diagnostics() {
+  docker compose -f "$COMPOSE_FILE" ps --all || true
+  docker compose -f "$COMPOSE_FILE" logs --no-color || true
+}
+
 cleanup() {
   docker compose -f "$COMPOSE_FILE" down --volumes --remove-orphans >/dev/null 2>&1 || true
 }
@@ -30,7 +35,10 @@ log "Rendering staging Compose configuration"
 docker compose -f "$COMPOSE_FILE" config >/tmp/magina-staging-compose-rendered.yml
 
 log "Building and starting isolated staging stack"
-docker compose -f "$COMPOSE_FILE" up -d --build
+if ! docker compose -f "$COMPOSE_FILE" up -d --build; then
+  diagnostics
+  exit 1
+fi
 
 log "Waiting for same-origin web/API entrypoint"
 for attempt in $(seq 1 60); do
@@ -38,8 +46,7 @@ for attempt in $(seq 1 60); do
     break
   fi
   if [ "$attempt" = "60" ]; then
-    docker compose -f "$COMPOSE_FILE" ps
-    docker compose -f "$COMPOSE_FILE" logs --no-color
+    diagnostics
     exit 1
   fi
   sleep 1

@@ -12,6 +12,8 @@ Configurar primero el env file de staging fuera del repositorio:
 export STAGING_ENV_FILE=/etc/magina-olivo/staging.env
 ```
 
+No hacer `source` del fichero de secretos.
+
 Ejecutar:
 
 ```bash
@@ -33,17 +35,18 @@ El preflight exige:
 - `capture` de correo prohibido en staging externo;
 - si el transporte es `resend`, remitente y API key presentes;
 - espacio libre mínimo, por defecto 5 GiB;
-- advertencia si el host no confirma NTP sincronizado;
-- puertos host 3001 y 5432 libres antes del deploy.
+- advertencia si el host no confirma NTP sincronizado.
+
+Un host compartido es válido. Si otro servicio ya escucha en 3001/5432, el preflight avisa pero no bloquea; el post-deploy gate demuestra después que **los contenedores de Mágina** no publican esos puertos.
 
 El script nunca imprime passwords, tokens, API keys ni URLs de reset.
 
-## 2. Deploy local
+## 2. Deploy local A
 
 Con preflight verde:
 
 ```bash
-bash scripts/staging-release.sh deploy <release>
+bash scripts/staging-release.sh deploy <release-A>
 ```
 
 Todavía no conectar Cloudflare Tunnel.
@@ -70,15 +73,27 @@ El gate comprueba:
 - `/health/ready` responde 200 a través de Nginx local;
 - la raíz PWA responde 200 por la misma entrada local.
 
-Solo con este gate verde se configura el Tunnel hacia:
+## 4. Gate R2 usando el contenedor desplegado
+
+Con el isolation gate verde:
+
+```bash
+bash scripts/staging-r2-gate.sh
+```
+
+Este wrapper ejecuta `r2-roundtrip-gate.mjs` dentro del contenedor API, usando exactamente su configuración R2. El host no necesita Node y las credenciales no se importan al shell.
+
+Debe demostrar `PUT -> GET -> SHA-256 -> DELETE` y que el objeto borrado deja de ser legible.
+
+Solo con aislamiento local + R2 verdes se configura el Tunnel hacia:
 
 ```text
 http://127.0.0.1:<STAGING_BIND port>
 ```
 
-## 4. Repetir después de cada release
+## 5. Repetir después de cada release
 
-El gate debe ejecutarse después de:
+El isolation gate debe ejecutarse después de:
 
 - primer deploy A;
 - deploy B;
@@ -87,15 +102,15 @@ El gate debe ejecutarse después de:
 
 El smoke CI lo ejecuta automáticamente durante el ciclo sintético `A -> B -> rollback A`, de modo que futuras modificaciones del Compose que expongan accidentalmente API/PostgreSQL/worker deben romper CI antes de llegar al host.
 
-## 5. Orden operativo completo
+## 6. Orden operativo completo
 
 ```text
 host Linux
   -> env file 0600
   -> staging-host-preflight.sh
-  -> R2 roundtrip
   -> staging-release.sh deploy A
   -> staging-host-postdeploy-gate.sh
+  -> staging-r2-gate.sh
   -> Cloudflare Tunnel
   -> staging-https-gate.sh
   -> password recovery real

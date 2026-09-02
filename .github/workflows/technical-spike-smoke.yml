@@ -56,6 +56,9 @@ jobs:
       - name: Typecheck workspaces
         run: npm run typecheck
 
+      - name: Run unit tests
+        run: npm test
+
       - name: Migrate Better Auth
         run: npm run auth:migrate --workspace @magina/api
 

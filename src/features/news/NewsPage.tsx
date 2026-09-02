@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Brand } from '../../components/Brand';
 import { BottomNav, MainSection } from '../../components/BottomNav';
+import { CommunityPanel } from './CommunityPanel';
 import { LocalDiscoverPanel } from './LocalDiscoverPanel';
 import '../../styles/news.css';
 
@@ -26,7 +27,7 @@ type NewsPageProps = {
   onNavigate: (section: MainSection) => void;
 };
 
-type HubTab = 'actualidad' | 'cooperativas' | 'mercado' | 'local' | 'discover' | 'agenda' | 'alertas';
+type HubTab = 'actualidad' | 'cooperativas' | 'mercado' | 'local' | 'discover' | 'community' | 'agenda' | 'alertas';
 
 type Story = {
   id: number;
@@ -125,7 +126,7 @@ export function NewsPage({ onNavigate }: NewsPageProps) {
         <section className="magina-heading">
           <span className="eyebrow">Sierra Mágina</span>
           <h1>Mágina al día</h1>
-          <p>Campo, cooperativas, mercado, servicios y territorio en una sola pantalla.</p>
+          <p>Campo, cooperativas, mercado, servicios, comunidad y territorio en una sola pantalla.</p>
         </section>
 
         <nav className="hub-tabs" aria-label="Secciones de Mágina">
@@ -134,6 +135,7 @@ export function NewsPage({ onNavigate }: NewsPageProps) {
           <button className={tab === 'mercado' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('mercado')}>Mercado</button>
           <button className={tab === 'local' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('local')}>Mágina Local</button>
           <button className={tab === 'discover' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('discover')}>Descubre</button>
+          <button className={tab === 'community' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('community')}>Comunidad</button>
           <button className={tab === 'agenda' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('agenda')}>Agenda</button>
           <button className={tab === 'alertas' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('alertas')}>Alertas</button>
         </nav>
@@ -213,6 +215,7 @@ export function NewsPage({ onNavigate }: NewsPageProps) {
 
         {tab === 'local' && <LocalDiscoverPanel mode="local" />}
         {tab === 'discover' && <LocalDiscoverPanel mode="discover" />}
+        {tab === 'community' && <CommunityPanel />}
 
         {tab === 'agenda' && (
           <section className="section-block hub-panel hub-panel--flush">

@@ -10,11 +10,13 @@ export default defineConfig({
       manifest: {
         name: 'Mágina Olivo',
         short_name: 'Mágina Olivo',
-        description: 'Gestión personal del olivar, campañas, entregas y rendimientos.',
+        description: 'Tu olivar, campaña tras campaña: fincas, entregas y rendimientos en un único lugar.',
         start_url: '/',
         display: 'standalone',
-        background_color: '#ffffff',
-        theme_color: '#203d2a',
+        background_color: '#f4f1e6',
+        theme_color: '#2e3a22',
+        categories: ['productivity', 'utilities'],
+        lang: 'es-ES',
       },
       workbox: {
         navigateFallbackDenylist: [/^\/api\//, /^\/health\//],

@@ -13,12 +13,16 @@ const workerId = process.env.WORKER_ID?.trim() || `${hostname()}:${process.pid}`
 const runOnce = process.env.RUN_ONCE === '1';
 const pollMilliseconds = Number(process.env.WORKER_POLL_MS ?? '5000');
 const retrySeconds = Number(process.env.WORKER_RETRY_SECONDS ?? '5');
+const leaseSeconds = Number(process.env.WORKER_LEASE_SECONDS ?? '120');
 
 if (!Number.isFinite(pollMilliseconds) || pollMilliseconds < 100) {
   throw new Error('WORKER_POLL_MS must be at least 100');
 }
 if (!Number.isFinite(retrySeconds) || retrySeconds < 1) {
   throw new Error('WORKER_RETRY_SECONDS must be at least 1');
+}
+if (!Number.isFinite(leaseSeconds) || leaseSeconds < 10) {
+  throw new Error('WORKER_LEASE_SECONDS must be at least 10');
 }
 
 const pool = new Pool({ connectionString: databaseUrl });
@@ -31,20 +35,51 @@ type JobRow = {
   max_attempts: number;
 };
 
+async function markExpiredExhaustedJobs(client: pg.PoolClient): Promise<void> {
+  await client.query(
+    `
+      update job_queue
+      set status = 'failed',
+          locked_at = null,
+          locked_by = null,
+          last_error = coalesce(last_error, 'Worker lease expired after maximum attempts'),
+          completed_at = now(),
+          updated_at = now()
+      where status = 'running'
+        and locked_at <= now() - ($1 * interval '1 second')
+        and attempts >= max_attempts
+    `,
+    [leaseSeconds],
+  );
+}
+
 async function claimNextJob(): Promise<JobRow | null> {
   const client = await pool.connect();
   try {
     await client.query('begin');
+    await markExpiredExhaustedJobs(client);
+
     const selected = await client.query<JobRow>(
       `
         select id, kind, payload, attempts, max_attempts
         from job_queue
-        where status in ('queued', 'retry')
-          and run_after <= now()
-        order by run_after asc, created_at asc, id asc
+        where attempts < max_attempts
+          and (
+            (status in ('queued', 'retry') and run_after <= now())
+            or (
+              status = 'running'
+              and locked_at <= now() - ($1 * interval '1 second')
+            )
+          )
+        order by
+          case when status = 'running' then 0 else 1 end,
+          coalesce(locked_at, run_after) asc,
+          created_at asc,
+          id asc
         for update skip locked
         limit 1
       `,
+      [leaseSeconds],
     );
 
     const job = selected.rows[0];
@@ -61,6 +96,7 @@ async function claimNextJob(): Promise<JobRow | null> {
             locked_at = now(),
             locked_by = $2,
             last_error = null,
+            completed_at = null,
             updated_at = now()
         where id = $1
         returning id, kind, payload, attempts, max_attempts

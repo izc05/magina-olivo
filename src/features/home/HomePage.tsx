@@ -3,6 +3,7 @@ import { AlertTriangle, Bell, BookOpen, CalendarCheck2, CloudSun, Droplets, News
 import { Brand } from '../../components/Brand';
 import { BottomNav, MainSection } from '../../components/BottomNav';
 import { WeatherPage } from '../weather/WeatherPage';
+import '../../styles/home.css';
 
 type HomePageProps = {
   onNavigate: (section: MainSection) => void;

@@ -86,14 +86,18 @@ docker exec \
   "$API_CONTAINER" \
   node scripts/export-private-objects.mjs
 
+# Read the manifest using Node already present inside the deployed runtime.
+# The staging host therefore does not need its own Node/npm installation.
+OBJECT_COUNT="$(docker exec "$API_CONTAINER" node -e '
+const fs=require("fs");
+const value=JSON.parse(fs.readFileSync("/tmp/magina-object-backup/objects-manifest.json","utf8"));
+if(!Number.isInteger(value.objectCount)||value.objectCount<0) process.exit(2);
+process.stdout.write(String(value.objectCount));
+')"
+[[ "$OBJECT_COUNT" =~ ^[0-9]+$ ]] || fail "invalid private object count returned by exporter"
+
 docker cp "$API_CONTAINER:/tmp/magina-object-backup/." "$BUNDLE/objects/" >/dev/null
 [[ -f "$BUNDLE/objects/objects-manifest.json" ]] || fail "object storage manifest missing"
-
-OBJECT_COUNT=$(node -e '
-const fs=require("fs");
-const value=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
-process.stdout.write(String(value.objectCount));
-' "$BUNDLE/objects/objects-manifest.json")
 
 cat > "$BUNDLE/backup-meta.txt" <<META
 format_version=1

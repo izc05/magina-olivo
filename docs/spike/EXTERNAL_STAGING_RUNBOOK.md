@@ -22,6 +22,7 @@ Nginx / PWA
 Fastify ---- private Docker networks ---- PostgreSQL 18.6
 Worker  ----- private Docker network  ---- PostgreSQL 18.6
 Fastify ---- HTTPS S3 API ------------ Cloudflare R2 private bucket
+Fastify ---- HTTPS API --------------- transactional mail provider
 ```
 
 Reglas duras:
@@ -42,8 +43,10 @@ Prerequisitos mínimos:
 - Git;
 - `curl`;
 - espacio persistente para PostgreSQL;
-- salida a Internet hacia Cloudflare/R2;
+- salida a Internet hacia Cloudflare/R2/proveedor de correo;
 - reloj/NTP correcto.
+
+El host no necesita Node/npm para deploy, backup o restore: las utilidades Node operativas viajan dentro de la imagen runtime.
 
 No abrir 5432 ni 3001 en firewall/NAT.
 
@@ -86,25 +89,44 @@ BETTER_AUTH_SECRET=<random staging-only>
 BETTER_AUTH_URL=https://<staging-hostname>
 BETTER_AUTH_TRUSTED_ORIGINS=https://<staging-hostname>
 
+AUTH_MAIL_TRANSPORT=resend
+AUTH_MAIL_FROM=Mágina Olivo <no-reply@<verified-staging-domain>>
+RESEND_API_KEY=<staging-only-api-key>
+
 PRIVATE_STORAGE_DRIVER=s3
 OBJECT_STORAGE_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
 OBJECT_STORAGE_BUCKET=<private-staging-bucket>
 OBJECT_STORAGE_REGION=auto
-OBJECT_STORAGE_ACCESS_KEY_ID=<bucket-scoped-access-key>
-OBJECT_STORAGE_SECRET_ACCESS_KEY=<bucket-scoped-secret>
+OBJECT_STORAGE_ACCESS_KEY_ID=<staging-r2-access-key>
+OBJECT_STORAGE_SECRET_ACCESS_KEY=<staging-r2-secret>
 OBJECT_STORAGE_FORCE_PATH_STYLE=true
 
 STAGING_BIND=127.0.0.1:8088
 LOG_LEVEL=info
 ```
 
-`AUTH_MAIL_TRANSPORT=capture` está prohibido fuera de `NODE_ENV=test`. El proveedor de correo real se añadirá mediante un adapter separado antes del piloto.
+`AUTH_MAIL_TRANSPORT=capture` está prohibido fuera de `NODE_ENV=test`.
+
+No activar `AUTH_MAIL_TRANSPORT=resend` hasta que:
+
+- el dominio/remitente de staging esté verificado en el proveedor;
+- la API key sea exclusiva de staging;
+- el correo de recuperación end-to-end se vaya a probar con una cuenta sintética.
+
+Los scripts de deploy/backup/restore eliminan del entorno heredado las variables sensibles conocidas antes de renderizar Compose: el env file gestionado es la fuente autoritativa.
 
 ## 4. Cloudflare R2
 
-Crear un bucket **solo para staging**.
+Crear dos buckets de staging:
 
-La credencial S3 debe tener únicamente lectura/escritura de objetos sobre el bucket necesario, nunca permisos globales si no hacen falta.
+```text
+<private-staging-bucket>
+<restore-validation-bucket>
+```
+
+El primero es el almacenamiento privado de la aplicación. El segundo existe únicamente para simulacros de restore y debe estar vacío antes de cada gate.
+
+Las credenciales usadas para el simulacro deben poder operar sobre esos recursos de staging y no deben dar acceso a buckets de producción.
 
 Endpoint S3 estándar:
 
@@ -118,7 +140,7 @@ Región:
 auto
 ```
 
-Antes de elegir la localización definitiva, decidir si se necesita una jurisdicción explícita de datos. Si se usa jurisdicción EU, el endpoint incorpora `.eu.` y la decisión no debe improvisarse después de crear el bucket.
+Antes de elegir la localización definitiva, decidir si se necesita una jurisdicción explícita de datos. Si se usa jurisdicción EU, el endpoint cambia y la decisión no debe improvisarse después de crear el bucket.
 
 Gate obligatorio una vez creadas las credenciales:
 
@@ -128,6 +150,8 @@ source /etc/magina-olivo/staging.env
 set +a
 NODE_ENV=production node scripts/r2-roundtrip-gate.mjs
 ```
+
+Si el host no tiene Node, ejecutar el mismo script dentro de la imagen runtime desplegada.
 
 Debe terminar únicamente con:
 
@@ -176,6 +200,11 @@ Crear previamente una cuenta sintética de staging y ejecutar:
 export STAGING_BASE_URL=https://<staging-hostname>
 export STAGING_GATE_EMAIL=<synthetic-email>
 export STAGING_GATE_PASSWORD=<synthetic-password>
+
+# Solo si Cloudflare Access protege el hostname:
+export CF_ACCESS_CLIENT_ID=<service-token-client-id>
+export CF_ACCESS_CLIENT_SECRET=<service-token-client-secret>
+
 bash scripts/staging-https-gate.sh
 ```
 
@@ -188,6 +217,7 @@ El gate exige:
 - login válido;
 - `Set-Cookie` con `HttpOnly`, `Secure`, `SameSite=Lax`;
 - `/api/v1/me` privado con `no-store`;
+- origen hostil rechazado para mutaciones autenticadas;
 - logout real;
 - sesión antigua inválida después del logout.
 
@@ -212,28 +242,99 @@ No usar migraciones destructivas durante el piloto. Las migraciones deben manten
 
 No considerar operativo el backup si el único dump permanece en el mismo servidor.
 
-El bundle mínimo incluye:
+Montar o preparar un destino que físicamente/lógicamente esté fuera del host de staging y ejecutar:
 
-- dump PostgreSQL custom-format con herramientas PG18;
-- manifiesto con fecha, revisión de aplicación y checksum;
-- inventario/copia independiente de objetos privados;
-- destino fuera del host de staging.
+```bash
+export STAGING_ENV_FILE=/etc/magina-olivo/staging.env
+export BACKUP_DESTINATION_DIR=/mnt/off-host/magina-staging-backups
+export BACKUP_DESTINATION_CONFIRMED_OFF_HOST=1
+bash scripts/staging-backup.sh
+```
 
-Nunca guardar secrets junto al bundle.
+El script se niega a continuar sin la confirmación explícita de destino externo.
 
-Tras crear el primer backup externo hay que restaurarlo en un destino limpio y repetir verificaciones de registros + checksum antes de marcar PASS.
+Cada bundle contiene:
 
-## 10. Password recovery
+```text
+postgres.dump
+backup-meta.txt
+database-manifest.txt
+SHA256SUMS
+objects/
+  objects-manifest.json
+  <object-key files...>
+```
+
+`database-manifest.txt` conserva conteos de entidades críticas, suma de kilos y estado de migraciones para verificar el restore. `objects-manifest.json` conserva key, tamaño y SHA-256 de cada objeto privado.
+
+El bundle no contiene el env file ni credenciales.
+
+## 10. Restore no destructivo
+
+Un backup no se marca PASS hasta restaurarlo.
+
+El simulacro usa:
+
+- una base PostgreSQL separada, por defecto `magina_restore_validation`;
+- un bucket R2 de recuperación separado y vacío;
+- el staging activo permanece intacto.
+
+Ejemplo:
+
+```bash
+export STAGING_ENV_FILE=/etc/magina-olivo/staging.env
+export RESTORE_BUNDLE_DIR=/mnt/off-host/magina-staging-backups/<bundle>
+export RESTORE_DATABASE=magina_restore_validation
+export RESTORE_OBJECT_STORAGE_BUCKET=<restore-validation-bucket>
+export RESTORE_TARGETS_CONFIRMED_ISOLATED=1
+bash scripts/staging-restore-gate.sh
+```
+
+Si la base aislada ya existe de un simulacro anterior, solo se recrea con:
+
+```bash
+export RESTORE_DATABASE_CONFIRM_RECREATE=1
+```
+
+El gate:
+
+1. verifica primero `SHA256SUMS`;
+2. rechaza usar `magina_olivo` como base de restore;
+3. restaura el dump PG18 en la base aislada;
+4. reconstruye un manifiesto relacional y exige `diff` exacto contra el backup;
+5. valida tamaño y SHA-256 de todos los archivos del snapshot;
+6. exige que el bucket de restore esté vacío;
+7. sube los objetos al bucket separado;
+8. vuelve a descargarlos y verifica SHA-256;
+9. compara el inventario final del bucket con el manifiesto.
+
+El importador rechaza por defecto restaurar en el mismo nombre de bucket que figura como origen del backup. En caso de fallo durante carga de objetos intenta limpiar el conjunto parcial que hubiera subido.
+
+## 11. Password recovery real
 
 El comportamiento backend ya está probado en CI:
 
 - reset de un solo uso;
 - cambio real de contraseña;
-- revocación de sesiones anteriores.
+- revocación de sesiones anteriores;
+- `capture` de CI no imprime el token.
 
-Antes del piloto falta conectar el adapter a un proveedor transaccional real y probar un correo de extremo a extremo bajo el hostname de staging.
+El transporte de staging usa el adapter `resend` mediante llamada HTTPS directa, sin SDK adicional. La petición pública de reset no espera la respuesta remota del proveedor, evitando introducir una diferencia de tiempo dependiente de si el usuario existe.
 
-## 11. Criterio PASS de staging externo
+Gate manual inicial:
+
+1. verificar dominio/remitente de staging en Resend;
+2. configurar `AUTH_MAIL_TRANSPORT=resend`, `AUTH_MAIL_FROM` y `RESEND_API_KEY` en el env file;
+3. desplegar de nuevo;
+4. solicitar reset para una cuenta sintética;
+5. confirmar recepción del correo;
+6. completar el reset;
+7. comprobar que sesiones anteriores quedan invalidadas;
+8. comprobar que el token no puede reutilizarse.
+
+Nunca registrar la URL de reset, el API key ni el cuerpo de error del proveedor.
+
+## 12. Criterio PASS de staging externo
 
 Staging externo se marca PASS únicamente cuando se conservan evidencias de:
 
@@ -258,3 +359,5 @@ Solo después puede plantearse un piloto cerrado con agricultores.
 - Cloudflare R2 S3: https://developers.cloudflare.com/r2/get-started/s3/
 - Cloudflare R2 S3 compatibility: https://developers.cloudflare.com/r2/api/s3/api/
 - Cloudflare R2 data location: https://developers.cloudflare.com/r2/reference/data-location/
+- Resend Email API: https://resend.com/docs/api-reference/emails/send-email
+- Resend authentication/base URL: https://resend.com/docs/api-reference/introduction

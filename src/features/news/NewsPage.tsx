@@ -19,13 +19,14 @@ import {
 } from 'lucide-react';
 import { Brand } from '../../components/Brand';
 import { BottomNav, MainSection } from '../../components/BottomNav';
+import { LocalDiscoverPanel } from './LocalDiscoverPanel';
 import '../../styles/news.css';
 
 type NewsPageProps = {
   onNavigate: (section: MainSection) => void;
 };
 
-type HubTab = 'actualidad' | 'cooperativas' | 'mercado' | 'agenda' | 'alertas';
+type HubTab = 'actualidad' | 'cooperativas' | 'mercado' | 'local' | 'discover' | 'agenda' | 'alertas';
 
 type Story = {
   id: number;
@@ -124,13 +125,15 @@ export function NewsPage({ onNavigate }: NewsPageProps) {
         <section className="magina-heading">
           <span className="eyebrow">Sierra Mágina</span>
           <h1>Mágina al día</h1>
-          <p>Campo, cooperativas, mercado y vida local en una sola pantalla.</p>
+          <p>Campo, cooperativas, mercado, servicios y territorio en una sola pantalla.</p>
         </section>
 
         <nav className="hub-tabs" aria-label="Secciones de Mágina">
           <button className={tab === 'actualidad' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('actualidad')}>Noticias</button>
           <button className={tab === 'cooperativas' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('cooperativas')}>Cooperativas</button>
           <button className={tab === 'mercado' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('mercado')}>Mercado</button>
+          <button className={tab === 'local' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('local')}>Mágina Local</button>
+          <button className={tab === 'discover' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('discover')}>Descubre</button>
           <button className={tab === 'agenda' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('agenda')}>Agenda</button>
           <button className={tab === 'alertas' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('alertas')}>Alertas</button>
         </nav>
@@ -161,10 +164,14 @@ export function NewsPage({ onNavigate }: NewsPageProps) {
             </section>
 
             <section className="section-block section-block--last">
-              <div className="local-pulse-card">
-                <div><span className="eyebrow">Pulso local</span><h2>Bedmar</h2><p>1 aviso agrícola, 2 eventos próximos y novedades de tu cooperativa favorita.</p></div>
+              <button className="local-pulse-card local-pulse-card--button" type="button" onClick={() => setTab('local')}>
+                <div><span className="eyebrow">Pulso local</span><h2>Bedmar</h2><p>Servicios, avisos, oportunidades y novedades de tu municipio y la comarca.</p></div>
                 <MapPin size={26} />
-              </div>
+              </button>
+              <button className="discover-entry-card" type="button" onClick={() => setTab('discover')}>
+                <div><span className="eyebrow">Descubre</span><strong>Rutas, pueblos y cultura del aceite</strong><small>Explora Sierra Mágina</small></div>
+                <ChevronRight size={19} />
+              </button>
             </section>
           </>
         )}
@@ -203,6 +210,9 @@ export function NewsPage({ onNavigate }: NewsPageProps) {
             <div className="market-note"><AlertTriangle size={18} /><span>Los valores mostrados en esta fase son datos de demostración visual. La versión real indicará fuente y fecha de actualización.</span></div>
           </section>
         )}
+
+        {tab === 'local' && <LocalDiscoverPanel mode="local" />}
+        {tab === 'discover' && <LocalDiscoverPanel mode="discover" />}
 
         {tab === 'agenda' && (
           <section className="section-block hub-panel hub-panel--flush">

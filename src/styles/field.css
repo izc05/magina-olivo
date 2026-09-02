@@ -1,5 +1,6 @@
-.field-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 14px; padding: 5px; border: 1px solid var(--color-border); border-radius: 15px; background: rgba(255,255,255,.56); }
-.field-tab { display: flex; min-height: 42px; align-items: center; justify-content: center; gap: 7px; border: 0; border-radius: 11px; background: transparent; color: var(--color-text-muted); font-size: 12px; font-weight: 700; }
+.field-tabs { display: flex; gap: 6px; margin-top: 14px; padding: 5px; overflow-x: auto; border: 1px solid var(--color-border); border-radius: 15px; background: rgba(255,255,255,.56); scrollbar-width: none; }
+.field-tabs::-webkit-scrollbar { display: none; }
+.field-tab { display: flex; min-height: 42px; flex: 0 0 auto; align-items: center; justify-content: center; gap: 7px; padding: 0 12px; border: 0; border-radius: 11px; background: transparent; color: var(--color-text-muted); font-size: 12px; font-weight: 700; }
 .field-tab--active { background: var(--color-olive-950); color: #fff; box-shadow: 0 5px 14px rgba(46,58,34,.15); }
 .journal-filters { display: flex; gap: 7px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 2px; }
 .journal-filter { min-height: 36px; flex: 0 0 auto; padding: 0 12px; border: 1px solid var(--color-border); border-radius: 999px; background: rgba(255,255,255,.58); color: var(--color-text-muted); font-size: 11px; font-weight: 700; }
@@ -25,9 +26,50 @@
 .campaign-status-card > div { display: grid; gap: 3px; }
 .campaign-status-card span, .campaign-status-card small { color: var(--color-text-muted); font-size: 10px; }
 .campaign-status-card strong { font-size: 15px; }
+.farm-management-panel { min-height: 420px; }
+.profit-summary-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+.profit-summary-grid article { display: grid; gap: 4px; padding: 12px 10px; border: 1px solid var(--color-border); border-radius: 14px; background: rgba(255,255,255,.68); }
+.profit-summary-grid span, .profit-summary-grid small { color: var(--color-text-muted); font-size: 10px; }
+.profit-summary-grid strong { font-family: var(--font-editorial); font-size: 20px; font-weight: 600; }
+.profit-summary-card--accent { background: rgba(92,122,70,.1) !important; border-color: rgba(92,122,70,.18) !important; }
+.profit-card { margin-top: 10px; padding: 13px; border: 1px solid var(--color-border); border-radius: 15px; background: rgba(255,255,255,.68); }
+.profit-card__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.profit-card__head > div { display: grid; gap: 3px; }
+.profit-card__head > svg { color: var(--color-oil-500); }
+.cost-breakdown { display: grid; gap: 10px; margin-top: 14px; }
+.cost-row { display: grid; gap: 5px; }
+.cost-row__head { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; }
+.cost-row__head span { color: var(--color-text-muted); }
+.cost-row__track { height: 7px; overflow: hidden; border-radius: 999px; background: rgba(46,58,34,.07); }
+.cost-row__track span { display: block; height: 100%; border-radius: inherit; background: var(--color-olive-700); }
+.expense-entry-card, .machine-card { display: grid; width: 100%; align-items: center; gap: 10px; margin-top: 10px; padding: 10px; border: 1px solid var(--color-border); border-radius: 14px; background: rgba(255,255,255,.68); text-align: left; }
+.expense-entry-card { grid-template-columns: 46px minmax(0,1fr) 18px; }
+.expense-entry-card__icon, .machine-card__icon { display: grid; width: 46px; height: 46px; place-items: center; border-radius: 12px; background: rgba(167,180,151,.2); color: var(--color-olive-950); }
+.expense-entry-card > div:nth-child(2), .machine-card__copy { display: grid; gap: 3px; min-width: 0; }
+.expense-entry-card span, .machine-card__copy span, .machine-card__copy small { color: var(--color-text-muted); font-size: 10px; }
+.profit-insight-card, .maintenance-reminder-card { display: flex; align-items: flex-start; gap: 11px; margin-top: 10px; padding: 13px; border-radius: 14px; background: rgba(167,180,151,.11); border: 1px solid rgba(92,122,70,.16); }
+.profit-insight-card > div, .maintenance-reminder-card > div { display: grid; gap: 3px; }
+.profit-insight-card > svg, .maintenance-reminder-card > svg { flex: 0 0 auto; color: var(--color-olive-700); }
+.profit-insight-card p, .maintenance-reminder-card p { margin: 0; color: var(--color-text-muted); font-size: 11px; line-height: 1.4; }
+.machine-overview-card { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 15px; border-radius: 15px; background: linear-gradient(135deg,rgba(46,58,34,.96),rgba(92,122,70,.91)); color: #fff; box-shadow: 0 8px 20px rgba(46,58,34,.13); }
+.machine-overview-card > div { display: grid; gap: 3px; }
+.machine-overview-card span, .machine-overview-card small { color: rgba(255,255,255,.72); font-size: 10px; }
+.machine-overview-card strong { font-family: var(--font-editorial); font-size: 28px; font-weight: 600; }
+.machine-list { display: grid; gap: 8px; margin-top: 10px; }
+.machine-card { grid-template-columns: 46px minmax(0,1fr) auto 18px; margin-top: 0; }
+.machine-status { padding: 5px 7px; border-radius: 999px; font-size: 9px; font-weight: 800; }
+.machine-status--good { background: rgba(92,122,70,.12); color: var(--color-olive-700); }
+.machine-status--review { background: rgba(212,160,23,.13); color: #85620e; }
+.machine-metrics-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin-top: 10px; }
+.machine-metrics-grid article { display: grid; grid-template-columns: 24px 1fr; gap: 3px 8px; align-items: center; padding: 12px; border: 1px solid var(--color-border); border-radius: 14px; background: rgba(255,255,255,.66); }
+.machine-metrics-grid article > svg { grid-row: span 3; color: var(--color-olive-700); }
+.machine-metrics-grid span, .machine-metrics-grid small { color: var(--color-text-muted); font-size: 10px; }
+.machine-metrics-grid strong { font-size: 14px; }
 
 @media (max-width: 430px) {
   .journal-entry { grid-template-columns: 46px 38px minmax(0,1fr); }
   .journal-entry small { display: none; }
-  .campaign-metrics { grid-template-columns: 1fr; }
+  .campaign-metrics, .profit-summary-grid { grid-template-columns: 1fr; }
+  .machine-card { grid-template-columns: 42px minmax(0,1fr) 18px; }
+  .machine-status { display: none; }
 }

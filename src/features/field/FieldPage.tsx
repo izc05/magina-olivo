@@ -11,6 +11,7 @@ import {
   Mountain,
   Ruler,
   Scissors,
+  Settings2,
   Sprout,
   Tractor,
   Trees,
@@ -39,6 +40,9 @@ type Parcel = {
   note: string;
 };
 
+type FieldPrimaryTab = 'overview' | 'journal' | 'campaign' | 'management';
+type ManagementMode = 'costs' | 'machinery';
+
 const parcels: Parcel[] = [
   { id: 1, name: 'Parcela 1', area: '5,20 ha', variety: 'Picual', altitude: '650 m', frame: '7 × 7 m', slope: '12 %', status: 'Bueno', note: 'Desarrollo vegetativo correcto.' },
   { id: 2, name: 'Parcela 2', area: '4,40 ha', variety: 'Picual', altitude: '625 m', frame: '7 × 7 m', slope: '8 %', status: 'Bueno', note: 'Sin incidencias relevantes.' },
@@ -54,9 +58,14 @@ const journalEntries = [
   { date: '22 AGO', title: 'Abonado', detail: 'Parcela 3 · Los Llanos', meta: 'Registrado', icon: Sprout },
 ];
 
+function getInitialPrimaryTab(initialTab: FieldTarget): FieldPrimaryTab {
+  return initialTab === 'costs' || initialTab === 'machinery' ? 'management' : initialTab;
+}
+
 export function FieldPage({ onNavigate, initialTab = 'overview' }: FieldPageProps) {
   const [selectedId, setSelectedId] = useState(3);
-  const [tab, setTab] = useState<FieldTarget>(initialTab);
+  const [tab, setTab] = useState<FieldPrimaryTab>(() => getInitialPrimaryTab(initialTab));
+  const [managementMode, setManagementMode] = useState<ManagementMode>(initialTab === 'machinery' ? 'machinery' : 'costs');
   const selected = useMemo(() => parcels.find((parcel) => parcel.id === selectedId) ?? parcels[0], [selectedId]);
 
   return (
@@ -85,8 +94,7 @@ export function FieldPage({ onNavigate, initialTab = 'overview' }: FieldPageProp
           <button type="button" className={tab === 'overview' ? 'field-tab field-tab--active' : 'field-tab'} onClick={() => setTab('overview')}><MapPinned size={17} />Campo</button>
           <button type="button" className={tab === 'journal' ? 'field-tab field-tab--active' : 'field-tab'} onClick={() => setTab('journal')}><ClipboardList size={17} />Cuaderno</button>
           <button type="button" className={tab === 'campaign' ? 'field-tab field-tab--active' : 'field-tab'} onClick={() => setTab('campaign')}><TrendingUp size={17} />Campaña</button>
-          <button type="button" className={tab === 'costs' ? 'field-tab field-tab--active' : 'field-tab'} onClick={() => setTab('costs')}><CircleDollarSign size={17} />Costes</button>
-          <button type="button" className={tab === 'machinery' ? 'field-tab field-tab--active' : 'field-tab'} onClick={() => setTab('machinery')}><Tractor size={17} />Maquinaria</button>
+          <button type="button" className={tab === 'management' ? 'field-tab field-tab--active' : 'field-tab'} onClick={() => setTab('management')}><Settings2 size={17} />Gestión</button>
         </div>
 
         {tab === 'overview' && (
@@ -221,8 +229,15 @@ export function FieldPage({ onNavigate, initialTab = 'overview' }: FieldPageProp
           </section>
         )}
 
-        {tab === 'costs' && <FarmManagementPanel mode="costs" />}
-        {tab === 'machinery' && <FarmManagementPanel mode="machinery" />}
+        {tab === 'management' && (
+          <section className="field-management-shell section-block--last">
+            <div className="field-management-switch" role="tablist" aria-label="Gestión de la explotación">
+              <button type="button" className={managementMode === 'costs' ? 'field-management-switch__item field-management-switch__item--active' : 'field-management-switch__item'} onClick={() => setManagementMode('costs')}><CircleDollarSign size={17} />Costes y rentabilidad</button>
+              <button type="button" className={managementMode === 'machinery' ? 'field-management-switch__item field-management-switch__item--active' : 'field-management-switch__item'} onClick={() => setManagementMode('machinery')}><Tractor size={17} />Maquinaria</button>
+            </div>
+            <FarmManagementPanel mode={managementMode} />
+          </section>
+        )}
       </main>
 
       <BottomNav active="field" onNavigate={onNavigate} onCreate={() => setTab('journal')} />

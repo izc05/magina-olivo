@@ -30,6 +30,9 @@ type NewsPageProps = {
   initialTab?: MaginaTarget;
 };
 
+type PrimaryHubTab = 'actualidad' | 'cooperativas' | 'mercado' | 'discover' | 'more';
+type MoreMode = 'local' | 'community' | 'agenda' | 'alertas';
+
 type Story = {
   id: number;
   category: string;
@@ -97,12 +100,34 @@ const events: EventItem[] = [
   },
 ];
 
+function getInitialHubState(initialTab: MaginaTarget): { primary: PrimaryHubTab; moreMode: MoreMode } {
+  if (initialTab === 'local' || initialTab === 'community' || initialTab === 'agenda' || initialTab === 'alertas') {
+    return { primary: 'more', moreMode: initialTab };
+  }
+
+  return {
+    primary: initialTab,
+    moreMode: 'local',
+  };
+}
+
 export function NewsPage({ onNavigate, initialTab = 'actualidad' }: NewsPageProps) {
-  const [tab, setTab] = useState<MaginaTarget>(initialTab);
+  const initialHubState = getInitialHubState(initialTab);
+  const [primaryTab, setPrimaryTab] = useState<PrimaryHubTab>(initialHubState.primary);
+  const [moreMode, setMoreMode] = useState<MoreMode>(initialHubState.moreMode);
   const [selectedStoryId, setSelectedStoryId] = useState<number | null>(null);
   const [selectedEventIndex, setSelectedEventIndex] = useState<number | null>(null);
   const selectedStory = useMemo(() => stories.find((story) => story.id === selectedStoryId) ?? null, [selectedStoryId]);
   const selectedEvent = selectedEventIndex === null ? null : events[selectedEventIndex] ?? null;
+
+  const openHubTarget = (target: MaginaTarget) => {
+    if (target === 'local' || target === 'community' || target === 'agenda' || target === 'alertas') {
+      setMoreMode(target);
+      setPrimaryTab('more');
+      return;
+    }
+    setPrimaryTab(target);
+  };
 
   if (selectedStory) {
     return (
@@ -167,7 +192,7 @@ export function NewsPage({ onNavigate, initialTab = 'actualidad' }: NewsPageProp
           <Brand />
           <div className="topbar-actions">
             <button className="icon-button" type="button" aria-label="Buscar"><Search size={19} /></button>
-            <button className="icon-button" type="button" aria-label="Alertas" onClick={() => setTab('alertas')}><Bell size={20} /></button>
+            <button className="icon-button" type="button" aria-label="Alertas" onClick={() => openHubTarget('alertas')}><Bell size={20} /></button>
           </div>
         </header>
 
@@ -177,18 +202,15 @@ export function NewsPage({ onNavigate, initialTab = 'actualidad' }: NewsPageProp
           <p>Campo, cooperativas, mercado, servicios, comunidad y territorio en una sola pantalla.</p>
         </section>
 
-        <nav className="hub-tabs" aria-label="Secciones de Mágina">
-          <button className={tab === 'actualidad' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('actualidad')}>Noticias</button>
-          <button className={tab === 'cooperativas' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('cooperativas')}>Cooperativas</button>
-          <button className={tab === 'mercado' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('mercado')}>Mercado</button>
-          <button className={tab === 'local' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('local')}>Mágina Local</button>
-          <button className={tab === 'discover' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('discover')}>Descubre</button>
-          <button className={tab === 'community' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('community')}>Comunidad</button>
-          <button className={tab === 'agenda' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('agenda')}>Agenda</button>
-          <button className={tab === 'alertas' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setTab('alertas')}>Alertas</button>
+        <nav className="hub-tabs hub-tabs--primary" aria-label="Secciones principales de Mágina">
+          <button className={primaryTab === 'actualidad' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setPrimaryTab('actualidad')}>Noticias</button>
+          <button className={primaryTab === 'cooperativas' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setPrimaryTab('cooperativas')}>Cooperativas</button>
+          <button className={primaryTab === 'mercado' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setPrimaryTab('mercado')}>Mercado</button>
+          <button className={primaryTab === 'discover' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setPrimaryTab('discover')}>Descubre</button>
+          <button className={primaryTab === 'more' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setPrimaryTab('more')}>Más</button>
         </nav>
 
-        {tab === 'actualidad' && (
+        {primaryTab === 'actualidad' && (
           <>
             <button className="news-hero-card" type="button" onClick={() => setSelectedStoryId(stories[0].id)}>
               <div className="news-hero-card__image"><Wheat size={38} /></div>
@@ -214,11 +236,11 @@ export function NewsPage({ onNavigate, initialTab = 'actualidad' }: NewsPageProp
             </section>
 
             <section className="section-block section-block--last">
-              <button className="local-pulse-card local-pulse-card--button" type="button" onClick={() => setTab('local')}>
+              <button className="local-pulse-card local-pulse-card--button" type="button" onClick={() => openHubTarget('local')}>
                 <div><span className="eyebrow">Pulso local</span><h2>Bedmar</h2><p>Servicios, avisos, oportunidades y novedades de tu municipio y la comarca.</p></div>
                 <MapPin size={26} />
               </button>
-              <button className="discover-entry-card" type="button" onClick={() => setTab('discover')}>
+              <button className="discover-entry-card" type="button" onClick={() => setPrimaryTab('discover')}>
                 <div><span className="eyebrow">Descubre</span><strong>Rutas, pueblos y cultura del aceite</strong><small>Explora Sierra Mágina</small></div>
                 <ChevronRight size={19} />
               </button>
@@ -226,9 +248,9 @@ export function NewsPage({ onNavigate, initialTab = 'actualidad' }: NewsPageProp
           </>
         )}
 
-        {tab === 'cooperativas' && <CooperativesPanel />}
+        {primaryTab === 'cooperativas' && <CooperativesPanel />}
 
-        {tab === 'mercado' && (
+        {primaryTab === 'mercado' && (
           <section className="section-block hub-panel hub-panel--flush">
             <div className="section-heading"><div><span className="eyebrow">Aceite</span><h2>Mercado</h2></div><span className="market-place">Jaén</span></div>
             <div className="market-grid">
@@ -248,34 +270,49 @@ export function NewsPage({ onNavigate, initialTab = 'actualidad' }: NewsPageProp
           </section>
         )}
 
-        {tab === 'local' && <LocalDiscoverPanel mode="local" />}
-        {tab === 'discover' && <LocalDiscoverPanel mode="discover" />}
-        {tab === 'community' && <CommunityPanel />}
+        {primaryTab === 'discover' && <LocalDiscoverPanel mode="discover" />}
 
-        {tab === 'agenda' && (
-          <section className="section-block hub-panel hub-panel--flush">
-            <div className="section-heading"><div><span className="eyebrow">Comarca</span><h2>Agenda</h2></div><CalendarDays size={21} /></div>
-            <div className="event-list">
-              {events.map((event, index) => (
-                <button className="event-card" type="button" key={`${event.day}-${event.title}`} onClick={() => setSelectedEventIndex(index)}>
-                  <div className="event-date"><span>{event.month}</span><strong>{event.day}</strong></div>
-                  <div className="event-card__copy"><strong>{event.title}</strong><span><MapPin size={14} /> {event.place}</span><small><Clock3 size={13} /> {event.time} h</small></div>
-                  <ChevronRight size={18} />
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
+        {primaryTab === 'more' && (
+          <>
+            <section className="section-block magina-more-menu">
+              <div className="section-heading"><div><span className="eyebrow">Más Mágina</span><h2>Comarca y comunidad</h2></div></div>
+              <div className="magina-more-grid">
+                <button type="button" className={moreMode === 'local' ? 'magina-more-card magina-more-card--active' : 'magina-more-card'} onClick={() => setMoreMode('local')}><MapPin size={20} /><div><strong>Mágina Local</strong><span>Servicios y oportunidades</span></div></button>
+                <button type="button" className={moreMode === 'community' ? 'magina-more-card magina-more-card--active' : 'magina-more-card'} onClick={() => setMoreMode('community')}><Sparkles size={20} /><div><strong>Comunidad</strong><span>Experiencias y preguntas</span></div></button>
+                <button type="button" className={moreMode === 'agenda' ? 'magina-more-card magina-more-card--active' : 'magina-more-card'} onClick={() => setMoreMode('agenda')}><CalendarDays size={20} /><div><strong>Agenda</strong><span>Jornadas y actividades</span></div></button>
+                <button type="button" className={moreMode === 'alertas' ? 'magina-more-card magina-more-card--active' : 'magina-more-card'} onClick={() => setMoreMode('alertas')}><Bell size={20} /><div><strong>Alertas</strong><span>Campo y cooperativas</span></div></button>
+              </div>
+            </section>
 
-        {tab === 'alertas' && (
-          <section className="section-block hub-panel hub-panel--flush section-block--last">
-            <div className="section-heading"><div><span className="eyebrow">Prioridad</span><h2>Alertas</h2></div><button className="text-action" type="button">Marcar leídas</button></div>
-            <div className="hub-alert-list">
-              <article className="hub-alert hub-alert--weather"><AlertTriangle size={20} /><div><strong>Riesgo meteorológico</strong><span>Revisa la previsión antes de planificar tratamientos en zonas altas.</span><small>Campo · Hoy</small></div></article>
-              <article className="hub-alert hub-alert--plant"><ShieldAlert size={20} /><div><strong>Aviso fitosanitario</strong><span>Condiciones compatibles con mayor presión de repilo en parcelas húmedas.</span><small>Sanidad vegetal · Hoy</small></div></article>
-              <article className="hub-alert"><Building2 size={20} /><div><strong>Novedad de cooperativa</strong><span>Hay nueva información disponible en la ficha de tu cooperativa favorita.</span><small>Cooperativa · Ayer</small></div></article>
-            </div>
-          </section>
+            {moreMode === 'local' && <LocalDiscoverPanel mode="local" />}
+            {moreMode === 'community' && <CommunityPanel />}
+
+            {moreMode === 'agenda' && (
+              <section className="section-block hub-panel hub-panel--flush">
+                <div className="section-heading"><div><span className="eyebrow">Comarca</span><h2>Agenda</h2></div><CalendarDays size={21} /></div>
+                <div className="event-list">
+                  {events.map((event, index) => (
+                    <button className="event-card" type="button" key={`${event.day}-${event.title}`} onClick={() => setSelectedEventIndex(index)}>
+                      <div className="event-date"><span>{event.month}</span><strong>{event.day}</strong></div>
+                      <div className="event-card__copy"><strong>{event.title}</strong><span><MapPin size={14} /> {event.place}</span><small><Clock3 size={13} /> {event.time} h</small></div>
+                      <ChevronRight size={18} />
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {moreMode === 'alertas' && (
+              <section className="section-block hub-panel hub-panel--flush section-block--last">
+                <div className="section-heading"><div><span className="eyebrow">Prioridad</span><h2>Alertas</h2></div><button className="text-action" type="button">Marcar leídas</button></div>
+                <div className="hub-alert-list">
+                  <article className="hub-alert hub-alert--weather"><AlertTriangle size={20} /><div><strong>Riesgo meteorológico</strong><span>Revisa la previsión antes de planificar tratamientos en zonas altas.</span><small>Campo · Hoy</small></div></article>
+                  <article className="hub-alert hub-alert--plant"><ShieldAlert size={20} /><div><strong>Aviso fitosanitario</strong><span>Condiciones compatibles con mayor presión de repilo en parcelas húmedas.</span><small>Sanidad vegetal · Hoy</small></div></article>
+                  <article className="hub-alert"><Building2 size={20} /><div><strong>Novedad de cooperativa</strong><span>Hay nueva información disponible en la ficha de tu cooperativa favorita.</span><small>Cooperativa · Ayer</small></div></article>
+                </div>
+              </section>
+            )}
+          </>
         )}
       </main>
 

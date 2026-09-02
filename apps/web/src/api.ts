@@ -1,3 +1,5 @@
+import { enqueueDeliveryCreate } from './offline/outbox';
+
 export type User = {
   id: string;
   name?: string | null;
@@ -63,6 +65,22 @@ export type CampaignSummary = {
   weightedYieldPercent: string | null;
 };
 
+export type DeliveryCreateBody = {
+  deliveredAt: string;
+  kilograms: string;
+  customDestination: string;
+  farmId?: string;
+  plotId?: string;
+  ticketNumber?: string;
+  variety?: string;
+  notes?: string;
+  clientGeneratedId: string;
+};
+
+export type DeliveryCreateResult = Delivery | { offlineQueued: true; clientGeneratedId: string };
+
+const OWNER_CACHE_KEY = 'magina-olivo-current-user-id';
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -71,6 +89,19 @@ export class ApiError extends Error {
   ) {
     super(message);
   }
+}
+
+function rememberOwnerUserId(userId: string): void {
+  if (typeof localStorage !== 'undefined') localStorage.setItem(OWNER_CACHE_KEY, userId);
+}
+
+export function cachedOwnerUserId(): string | null {
+  if (typeof localStorage === 'undefined') return null;
+  return localStorage.getItem(OWNER_CACHE_KEY);
+}
+
+function forgetOwnerUserId(): void {
+  if (typeof localStorage !== 'undefined') localStorage.removeItem(OWNER_CACHE_KEY);
 }
 
 async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
@@ -101,8 +132,30 @@ async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
   return (await response.json()) as T;
 }
 
+async function queueDeliveryOffline(
+  campaignId: string,
+  body: DeliveryCreateBody,
+  idempotencyKey: string,
+): Promise<DeliveryCreateResult> {
+  const ownerUserId = cachedOwnerUserId();
+  if (!ownerUserId) throw new Error('No se puede guardar offline antes de iniciar una sesión online en este dispositivo.');
+
+  await enqueueDeliveryCreate({
+    ownerUserId,
+    campaignId,
+    idempotencyKey,
+    body: { ...body } as Record<string, unknown>,
+  });
+
+  return { offlineQueued: true, clientGeneratedId: body.clientGeneratedId };
+}
+
 export const api = {
-  me: () => request<{ user: User }>('/api/v1/me'),
+  me: async () => {
+    const result = await request<{ user: User }>('/api/v1/me');
+    rememberOwnerUserId(result.user.id);
+    return result;
+  },
 
   signIn: (email: string, password: string) =>
     request<unknown>('/api/auth/sign-in/email', {
@@ -110,11 +163,14 @@ export const api = {
       body: JSON.stringify({ email, password }),
     }),
 
-  signOut: () =>
-    request<unknown>('/api/auth/sign-out', {
+  signOut: async () => {
+    const result = await request<unknown>('/api/auth/sign-out', {
       method: 'POST',
       body: JSON.stringify({}),
-    }),
+    });
+    forgetOwnerUserId();
+    return result;
+  },
 
   requestPasswordReset: (email: string) =>
     request<unknown>('/api/auth/request-password-reset', {
@@ -147,47 +203,37 @@ export const api = {
       oliveTreeCount?: number;
       notes?: string;
     },
-  ) =>
-    request<Plot>(`/api/v1/farms/${farmId}/plots`, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    }),
+  ) => request<Plot>(`/api/v1/farms/${farmId}/plots`, { method: 'POST', body: JSON.stringify(body) }),
 
-  campaigns: (holdingId: string) =>
-    request<{ items: Campaign[] }>(`/api/v1/holdings/${holdingId}/campaigns`),
+  campaigns: (holdingId: string) => request<{ items: Campaign[] }>(`/api/v1/holdings/${holdingId}/campaigns`),
 
   createCampaign: (
     holdingId: string,
     body: { name: string; seasonStartYear: number; startDate?: string; notes?: string },
-  ) =>
-    request<Campaign>(`/api/v1/holdings/${holdingId}/campaigns`, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    }),
+  ) => request<Campaign>(`/api/v1/holdings/${holdingId}/campaigns`, { method: 'POST', body: JSON.stringify(body) }),
 
-  deliveries: (campaignId: string) =>
-    request<{ items: Delivery[] }>(`/api/v1/campaigns/${campaignId}/deliveries`),
+  deliveries: (campaignId: string) => request<{ items: Delivery[] }>(`/api/v1/campaigns/${campaignId}/deliveries`),
 
-  createDelivery: (
+  createDelivery: async (
     campaignId: string,
-    body: {
-      deliveredAt: string;
-      kilograms: string;
-      customDestination: string;
-      farmId?: string;
-      plotId?: string;
-      ticketNumber?: string;
-      variety?: string;
-      notes?: string;
-      clientGeneratedId: string;
-    },
+    body: DeliveryCreateBody,
     idempotencyKey: string,
-  ) =>
-    request<Delivery>(`/api/v1/campaigns/${campaignId}/deliveries`, {
-      method: 'POST',
-      headers: { 'Idempotency-Key': idempotencyKey },
-      body: JSON.stringify(body),
-    }),
+  ): Promise<DeliveryCreateResult> => {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      return queueDeliveryOffline(campaignId, body, idempotencyKey);
+    }
+
+    try {
+      return await request<Delivery>(`/api/v1/campaigns/${campaignId}/deliveries`, {
+        method: 'POST',
+        headers: { 'Idempotency-Key': idempotencyKey },
+        body: JSON.stringify(body),
+      });
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      return queueDeliveryOffline(campaignId, body, idempotencyKey);
+    }
+  },
 
   createYield: (deliveryId: string, value: string) =>
     request<unknown>(`/api/v1/deliveries/${deliveryId}/results`, {
@@ -195,6 +241,5 @@ export const api = {
       body: JSON.stringify({ value, measuredAt: new Date().toISOString() }),
     }),
 
-  campaignSummary: (campaignId: string) =>
-    request<CampaignSummary>(`/api/v1/campaigns/${campaignId}/summary`),
+  campaignSummary: (campaignId: string) => request<CampaignSummary>(`/api/v1/campaigns/${campaignId}/summary`),
 };

@@ -20,9 +20,7 @@ services:
       - data
 
   migrate:
-    build:
-      context: ../..
-      dockerfile: infra/docker/Dockerfile.runtime
+    image: magina-olivo-runtime:${MAGINA_IMAGE_TAG:-local}
     command: >-
       sh -c "npm run auth:migrate --workspace @magina/api &&
       npm run db:migrate --workspace @magina/api"
@@ -40,9 +38,7 @@ services:
       - data
 
   api:
-    build:
-      context: ../..
-      dockerfile: infra/docker/Dockerfile.runtime
+    image: magina-olivo-runtime:${MAGINA_IMAGE_TAG:-local}
     command: ["npm", "run", "start", "--workspace", "@magina/api"]
     restart: unless-stopped
     environment:
@@ -82,9 +78,7 @@ services:
       - data
 
   worker:
-    build:
-      context: ../..
-      dockerfile: infra/docker/Dockerfile.runtime
+    image: magina-olivo-runtime:${MAGINA_IMAGE_TAG:-local}
     command: ["npm", "run", "start", "--workspace", "@magina/worker"]
     restart: unless-stopped
     environment:
@@ -101,9 +95,7 @@ services:
       - data
 
   web:
-    build:
-      context: ../..
-      dockerfile: infra/docker/Dockerfile.web
+    image: magina-olivo-web:${MAGINA_IMAGE_TAG:-local}
     restart: unless-stopped
     depends_on:
       api:

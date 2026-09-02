@@ -1,7 +1,10 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import { checkDatabase } from './db.ts';
 import { registerAuthRoutes } from './auth-routes.ts';
+import { registerCampaignRoutes } from './campaign-routes.ts';
+import { registerFarmRoutes } from './farm-routes.ts';
 import { registerHoldingRoutes } from './holding-routes.ts';
+import { registerPlotRoutes } from './plot-routes.ts';
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({
@@ -40,6 +43,9 @@ export function buildApp(): FastifyInstance {
 
   registerAuthRoutes(app);
   registerHoldingRoutes(app);
+  registerFarmRoutes(app);
+  registerPlotRoutes(app);
+  registerCampaignRoutes(app);
 
   return app;
 }

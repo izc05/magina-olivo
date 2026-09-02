@@ -3,6 +3,7 @@ import {
   Bell,
   CalendarDays,
   ChevronRight,
+  CircleDollarSign,
   ClipboardList,
   Droplets,
   Leaf,
@@ -11,12 +12,14 @@ import {
   Ruler,
   Scissors,
   Sprout,
+  Tractor,
   Trees,
   TrendingUp,
   Weight,
 } from 'lucide-react';
 import { Brand } from '../../components/Brand';
 import { BottomNav, MainSection } from '../../components/BottomNav';
+import { FarmManagementPanel } from './FarmManagementPanel';
 
 type FieldPageProps = {
   onNavigate: (section: MainSection) => void;
@@ -34,7 +37,7 @@ type Parcel = {
   note: string;
 };
 
-type FieldTab = 'overview' | 'journal' | 'campaign';
+type FieldTab = 'overview' | 'journal' | 'campaign' | 'costs' | 'machinery';
 
 const parcels: Parcel[] = [
   { id: 1, name: 'Parcela 1', area: '5,20 ha', variety: 'Picual', altitude: '650 m', frame: '7 × 7 m', slope: '12 %', status: 'Bueno', note: 'Desarrollo vegetativo correcto.' },
@@ -82,6 +85,8 @@ export function FieldPage({ onNavigate }: FieldPageProps) {
           <button type="button" className={tab === 'overview' ? 'field-tab field-tab--active' : 'field-tab'} onClick={() => setTab('overview')}><MapPinned size={17} />Campo</button>
           <button type="button" className={tab === 'journal' ? 'field-tab field-tab--active' : 'field-tab'} onClick={() => setTab('journal')}><ClipboardList size={17} />Cuaderno</button>
           <button type="button" className={tab === 'campaign' ? 'field-tab field-tab--active' : 'field-tab'} onClick={() => setTab('campaign')}><TrendingUp size={17} />Campaña</button>
+          <button type="button" className={tab === 'costs' ? 'field-tab field-tab--active' : 'field-tab'} onClick={() => setTab('costs')}><CircleDollarSign size={17} />Costes</button>
+          <button type="button" className={tab === 'machinery' ? 'field-tab field-tab--active' : 'field-tab'} onClick={() => setTab('machinery')}><Tractor size={17} />Maquinaria</button>
         </div>
 
         {tab === 'overview' && (
@@ -215,6 +220,9 @@ export function FieldPage({ onNavigate }: FieldPageProps) {
             </article>
           </section>
         )}
+
+        {tab === 'costs' && <FarmManagementPanel mode="costs" />}
+        {tab === 'machinery' && <FarmManagementPanel mode="machinery" />}
       </main>
 
       <BottomNav active="field" onNavigate={onNavigate} onCreate={() => setTab('journal')} />

@@ -9,6 +9,7 @@ import { registerDocumentRoutes } from './document-routes.ts';
 import { registerFarmRoutes } from './farm-routes.ts';
 import { registerHoldingRoutes } from './holding-routes.ts';
 import { registerPlotRoutes } from './plot-routes.ts';
+import { registerRequestSecurity } from './request-security.ts';
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({
@@ -23,6 +24,8 @@ export function buildApp(): FastifyInstance {
     requestIdHeader: 'x-request-id',
     trustProxy: true,
   });
+
+  registerRequestSecurity(app);
 
   app.get('/health/live', async () => ({
     status: 'ok',

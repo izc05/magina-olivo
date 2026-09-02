@@ -53,11 +53,13 @@ export type Delivery = {
 };
 
 export type CampaignSummary = {
+  campaignId: string;
+  deliveriesCount: number;
   totalKilograms: string;
-  deliveryCount: number;
-  coveredKilograms: string;
-  yieldCoveragePercent: string;
-  pendingYieldCount: number;
+  deliveriesWithResult: number;
+  pendingResultCount: number;
+  resultCoveredKilograms: string;
+  coveragePercent: string | null;
   weightedYieldPercent: string | null;
 };
 

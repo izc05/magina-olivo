@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { fromNodeHeaders } from 'better-auth/node';
 import { auth } from './auth.ts';
+import { apiError } from './http-errors.ts';
 
 export function registerAuthRoutes(app: FastifyInstance): void {
   app.route({
@@ -40,10 +41,9 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     });
 
     if (!session) {
-      return reply.status(401).send({
-        error: 'Unauthorized',
-        code: 'AUTH_REQUIRED',
-      });
+      return reply
+        .status(401)
+        .send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
     }
 
     return {

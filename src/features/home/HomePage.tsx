@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertTriangle, Bell, BookOpen, CalendarCheck2, CloudSun, Droplets, Newspaper, Sprout } from 'lucide-react';
+import { AlertTriangle, Bell, BookOpen, CalendarCheck2, CloudSun, Droplets, Newspaper, Sprout, TrendingUp } from 'lucide-react';
 import { Brand } from '../../components/Brand';
 import { BottomNav, MainSection } from '../../components/BottomNav';
 import { WeatherPage } from '../weather/WeatherPage';
@@ -59,6 +59,14 @@ export function HomePage({ onNavigate }: HomePageProps) {
               <Icon size={20} /><span>{label}</span>
             </button>
           ))}
+        </section>
+
+        <section className="section-block">
+          <div className="section-heading"><div><span className="eyebrow">Aceite y mercado</span><h2>Referencia AOVE</h2></div><button type="button" className="text-action" onClick={() => onNavigate('news')}>Mercado</button></div>
+          <button className="home-market-card" type="button" onClick={() => onNavigate('news')}>
+            <div className="home-market-card__copy"><span>Jaén · dato de demostración</span><strong>5,35 €/kg</strong><small><TrendingUp size={13} /> +3,4% esta semana</small></div>
+            <svg viewBox="0 0 170 62" role="img" aria-label="Tendencia semanal de precio AOVE"><path d="M5 50L30 44L53 46L79 34L103 37L128 22L164 14" fill="none" stroke="#5C7A46" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/><path d="M5 50L30 44L53 46L79 34L103 37L128 22L164 14L164 57L5 57Z" fill="#A7B497" opacity=".18"/></svg>
+          </button>
         </section>
 
         <section className="section-block">

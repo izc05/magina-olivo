@@ -45,6 +45,9 @@ Producto, investigación pública y diseño funcional muy avanzados. La identida
 - [x] Diseñar centro de avisos.
 - [x] Diseñar importación manual/documental neutral a proveedor.
 - [x] Definir contrato canónico de importación y deduplicación.
+- [x] Definir reglas deterministas de kilos/rendimiento/cobertura/redondeo.
+- [x] Definir exportación y portabilidad CSV/JSON/ZIP.
+- [x] Definir archivo, corrección, retención y supresión V1.
 - [x] Cerrar catálogo de tipos de labor/campos mínimos para piloto.
 - [x] Crear wireframes funcionales móviles prioritarios.
 - [x] Definir dirección de sistema de diseño provisional y criterios WCAG.
@@ -118,7 +121,7 @@ Producto, investigación pública y diseño funcional muy avanzados. La identida
 - [ ] Tareas.
 - [ ] Fotografías/documentos.
 - [ ] Dashboard de campaña.
-- [ ] Exportación básica.
+- [ ] Exportación básica CSV/JSON.
 - [ ] Importación CSV propia/genérica.
 
 ## Fase 4 — Automatización

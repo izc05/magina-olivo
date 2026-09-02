@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { getPool } from './db.ts';
+import { apiError } from './http-errors.ts';
 import { getAuthenticatedSession } from './session.ts';
 
 type CreateHoldingBody = {
@@ -23,10 +24,9 @@ export function registerHoldingRoutes(app: FastifyInstance): void {
   app.get('/api/v1/holdings', async (request, reply) => {
     const session = await getAuthenticatedSession(request);
     if (!session) {
-      return reply.code(401).send({
-        error: 'Unauthorized',
-        code: 'AUTH_REQUIRED',
-      });
+      return reply
+        .code(401)
+        .send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
     }
 
     const db = getPool();
@@ -82,18 +82,16 @@ export function registerHoldingRoutes(app: FastifyInstance): void {
     async (request, reply) => {
       const session = await getAuthenticatedSession(request);
       if (!session) {
-        return reply.code(401).send({
-          error: 'Unauthorized',
-          code: 'AUTH_REQUIRED',
-        });
+        return reply
+          .code(401)
+          .send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
       }
 
       const name = request.body.name.trim();
       if (!name) {
-        return reply.code(400).send({
-          error: 'Holding name is required',
-          code: 'INVALID_HOLDING_NAME',
-        });
+        return reply
+          .code(400)
+          .send(apiError(request, 'INVALID_HOLDING_NAME', 'Holding name is required'));
       }
 
       const municipality = request.body.municipality?.trim() || null;

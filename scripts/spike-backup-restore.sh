@@ -18,6 +18,7 @@ fail() {
   exit 1
 }
 
+bash scripts/spike-timeline-gate.sh
 bash scripts/spike-delivery-concurrency.sh
 
 PG_CONTAINER="$(docker ps --filter "ancestor=${POSTGRES_IMAGE}" --format '{{.ID}}' | head -n 1)"

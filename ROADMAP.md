@@ -2,7 +2,7 @@
 
 ## Estado actual
 
-Proyecto en definición funcional. No comenzar la implementación masiva hasta cerrar el modelo de datos, alcance V1 y decisiones técnicas fundamentales.
+Proyecto en definición funcional avanzada. La implementación masiva todavía no comienza: primero cerramos investigación crítica, modelo V1, privacidad y arquitectura de importación.
 
 ## Fase 0 — Producto e investigación
 
@@ -16,26 +16,33 @@ Proyecto en definición funcional. No comenzar la implementación masiva hasta c
 - [x] Investigar marco CUE/SIEX/REAFA y estrategia futura.
 - [x] Comparar posicionamiento frente a Agroptima.
 - [x] Detectar ecosistema almazara-agricultor AM System / MolturALO.
-- [ ] Completar auditoría web/portal/app de las 23 entidades DOP por lotes.
-- [ ] Identificar proveedores tecnológicos de portales de socio.
+- [x] Detectar proveedores alternativos relevantes como Proyalma/Aicor y Toolagro.
+- [x] Auditar una primera muestra amplia de portales/zona de socio de entidades DOP y definir niveles P0-P3.
+- [ ] Completar auditoría web/portal/app de las 23 entidades DOP hasta 23/23 con nivel de confianza documentado.
+- [ ] Identificar proveedor tecnológico de cada portal prioritario cuando sea públicamente verificable o mediante contacto autorizado.
 - [ ] Confirmar formatos de exportación disponibles para agricultores en portales prioritarios.
 - [ ] Revisar condiciones/licencias concretas de reutilización de cada fuente externa.
 - [ ] Revisar requisitos legales de tratamiento de datos y documentos.
 - [ ] Definir piloto con agricultores reales.
+- [ ] Conseguir ejemplos anonimizados de ticket, albarán, rendimiento y liquidación.
 
 ## Fase 1 — Diseño funcional
 
-- [ ] Cerrar mapa completo de pantallas.
-- [ ] Definir navegación móvil.
-- [ ] Definir onboarding.
-- [ ] Definir modelo de permisos.
-- [ ] Cerrar modelo de datos V1.
-- [ ] Diseñar flujo de campaña.
-- [ ] Diseñar flujo de entrega y rendimiento.
-- [ ] Diseñar flujo de labores.
-- [ ] Diseñar directorio de cooperativas.
-- [ ] Diseñar centro de avisos.
-- [ ] Diseñar importación manual/documental sin acoplarla a proveedores.
+- [x] Cerrar mapa funcional V1 de pantallas.
+- [x] Definir navegación móvil principal.
+- [x] Definir onboarding inicial.
+- [ ] Definir modelo de permisos V1 definitivo.
+- [x] Endurecer modelo de datos V1 para entregas, resultados, documentos e importaciones.
+- [x] Diseñar flujo de campaña.
+- [x] Diseñar flujo de entrega y rendimiento.
+- [x] Diseñar flujo de labores.
+- [x] Diseñar directorio/ficha de cooperativas.
+- [x] Diseñar centro de avisos.
+- [x] Diseñar importación manual/documental sin acoplarla a proveedores.
+- [x] Definir contrato canónico de importación y deduplicación.
+- [ ] Cerrar catálogo de tipos de labor/campos mínimos para piloto.
+- [ ] Definir wireframes visuales y sistema de diseño.
+- [ ] Validar los flujos con 2-5 agricultores antes de congelar UI.
 
 ## Fase 2 — Fundación técnica
 
@@ -49,6 +56,7 @@ Proyecto en definición funcional. No comenzar la implementación masiva hasta c
 - [ ] Configurar CI.
 - [ ] Añadir backups y estrategia de recuperación.
 - [ ] Crear adapters para fuentes externas.
+- [ ] Implementar staging e idempotencia de importaciones.
 
 ## Fase 3 — MVP agrícola
 
@@ -57,11 +65,12 @@ Proyecto en definición funcional. No comenzar la implementación masiva hasta c
 - [ ] Parcelas.
 - [ ] Campañas.
 - [ ] Entregas.
-- [ ] Rendimientos.
+- [ ] Resultados/rendimientos.
 - [ ] Labores.
 - [ ] Fotografías/documentos.
 - [ ] Dashboard de campaña.
 - [ ] Exportación básica.
+- [ ] Importación CSV propia/genérica.
 
 ## Fase 4 — Automatización
 
@@ -72,20 +81,23 @@ Proyecto en definición funcional. No comenzar la implementación masiva hasta c
 - [ ] Recalculo automático de agregados.
 - [ ] Centro de ejecuciones y errores.
 - [ ] Ingesta periódica RAIF.
+- [ ] Detección de entrega pendiente de rendimiento.
+- [ ] Detección segura de posibles duplicados.
 
 ## Fase 5 — Cooperativas
 
-- [ ] Directorio inicial.
+- [ ] Directorio inicial dentro del producto.
 - [ ] Fuentes y fecha de actualización.
 - [ ] Noticias/avisos públicos cuando sea legal y técnicamente adecuado.
 - [ ] Sistema de corrección/verificación.
 - [ ] Importación de documentos/exportaciones propias del usuario.
+- [ ] Enlaces a accesos oficiales de socio sin almacenar credenciales.
 - [ ] Contacto con cooperativas/proveedores para futuras integraciones.
 
 ## Fase 6 — Mágina IA
 
 - [ ] Entrada de labores por lenguaje natural.
-- [ ] Extracción de albaranes/tickets.
+- [ ] Extracción asistida de albaranes/tickets.
 - [ ] Preguntas sobre datos propios.
 - [ ] Resumen inteligente de campaña.
 - [ ] Control de costes y límites.
@@ -98,8 +110,16 @@ Proyecto en definición funcional. No comenzar la implementación masiva hasta c
 - [ ] Probar conectividad irregular.
 - [ ] Recoger fricciones de uso reales.
 - [ ] Medir tiempo para registrar una entrega/labor.
+- [ ] Medir si el agricultor entiende campaña, finca y parcela sin formación previa.
+- [ ] Probar captura de ticket en condiciones reales de campo/almazara.
 - [ ] Corregir errores.
 - [ ] Revisar privacidad y recuperación de datos.
+
+Objetivos UX iniciales:
+- entrega manual normal < 30 s;
+- labor simple < 45 s;
+- añadir rendimiento pendiente < 15 s;
+- acceso a kilos/rendimiento de campaña desde Inicio sin navegar por menús profundos.
 
 ## Fase 8 — V1 pública
 
@@ -110,4 +130,6 @@ Solo se considerará V1 cuando el núcleo agrícola sea estable, exista backup, 
 - integración autorizada con proveedores de almazaras/cooperativas;
 - CUE comercial/interoperabilidad REAFA cuando tenga sentido económico y técnico;
 - automatización documental avanzada;
-- extensión territorial fuera de Sierra Mágina sin perder especialización en olivar.
+- extensión territorial fuera de Sierra Mágina sin perder especialización en olivar;
+- colaboración multiusuario/gestor/técnico cuando el piloto demuestre necesidad;
+- integración con sensores/IoT solo si existe un caso de uso y retorno claros.

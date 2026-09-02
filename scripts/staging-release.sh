@@ -62,6 +62,9 @@ compose() {
     -u BETTER_AUTH_SECRET \
     -u BETTER_AUTH_URL \
     -u BETTER_AUTH_TRUSTED_ORIGINS \
+    -u AUTH_MAIL_TRANSPORT \
+    -u AUTH_MAIL_FROM \
+    -u RESEND_API_KEY \
     -u LOG_LEVEL \
     -u DB_POOL_MAX \
     -u OBJECT_STORAGE_ENDPOINT \

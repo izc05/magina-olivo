@@ -80,3 +80,27 @@ export async function getCampaignAccess(
   const row = result.rows[0];
   return row ? { holdingId: row.holding_id, role: row.role } : null;
 }
+
+export async function getDeliveryAccess(
+  userId: string,
+  deliveryId: string,
+): Promise<HoldingAccess | null> {
+  const result = await getPool().query<{ holding_id: string; role: MembershipRole }>(
+    `
+      select d.holding_id, hm.role
+      from deliveries d
+      join holdings h on h.id = d.holding_id
+      join holding_members hm on hm.holding_id = d.holding_id
+      where d.id = $1
+        and d.verification_status <> 'archived'
+        and h.active = true
+        and hm.user_id = $2
+        and hm.status = 'active'
+      limit 1
+    `,
+    [deliveryId, userId],
+  );
+
+  const row = result.rows[0];
+  return row ? { holdingId: row.holding_id, role: row.role } : null;
+}

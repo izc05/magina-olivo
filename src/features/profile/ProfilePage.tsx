@@ -3,11 +3,14 @@ import {
   Bell,
   Bookmark,
   Building2,
+  ChevronLeft,
   ChevronRight,
+  Download,
   FileText,
   LockKeyhole,
   MapPin,
   Settings,
+  Share2,
   ShieldCheck,
   UserRound,
 } from 'lucide-react';
@@ -22,24 +25,75 @@ type ProfilePageProps = {
 
 type ProfileTab = 'resumen' | 'guardados' | 'documentos' | 'ajustes';
 
+type PersonalDocument = {
+  id: number;
+  title: string;
+  meta: string;
+  date: string;
+  size: string;
+  origin: string;
+  kind: 'PDF' | 'Imagen';
+};
+
 const savedItems = [
   { type: 'Ruta', title: 'Mar de Olivos', subtitle: 'Bedmar · 7,8 km' },
   { type: 'Noticia', title: 'Ayudas para modernización', subtitle: 'Agricultura' },
   { type: 'Oleoturismo', title: 'Visita a almazara', subtitle: 'Sierra Mágina' },
 ];
 
-const documents = [
-  { title: 'Liquidación campaña 2025/26', meta: 'Cooperativa · PDF' },
-  { title: 'Análisis de suelo', meta: 'Parcela 3 · PDF' },
-  { title: 'Factura fertilizante', meta: 'Gastos · Imagen' },
+const documents: PersonalDocument[] = [
+  { id: 1, title: 'Liquidación campaña 2025/26', meta: 'Cooperativa · PDF', date: '18 ene 2026', size: '842 KB', origin: 'S.C.A. San Isidro', kind: 'PDF' },
+  { id: 2, title: 'Análisis de suelo', meta: 'Parcela 3 · PDF', date: '05 mar 2026', size: '1,2 MB', origin: 'Laboratorio agrícola', kind: 'PDF' },
+  { id: 3, title: 'Factura fertilizante', meta: 'Gastos · Imagen', date: '28 ago 2026', size: '464 KB', origin: 'Suministros Mágina', kind: 'Imagen' },
 ];
 
 export function ProfilePage({ onNavigate }: ProfilePageProps) {
   const [tab, setTab] = useState<ProfileTab>('resumen');
   const [technicalOpen, setTechnicalOpen] = useState(false);
+  const [selectedDocumentId, setSelectedDocumentId] = useState<number | null>(null);
+  const selectedDocument = documents.find((document) => document.id === selectedDocumentId) ?? null;
 
   if (technicalOpen) {
     return <TechnicalStatesPage onBack={() => setTechnicalOpen(false)} />;
+  }
+
+  if (selectedDocument) {
+    return (
+      <div className="app-shell">
+        <main className="mobile-page">
+          <header className="topbar">
+            <button className="icon-button" type="button" aria-label="Volver a documentos" onClick={() => setSelectedDocumentId(null)}><ChevronLeft size={20} /></button>
+            <Brand />
+          </header>
+
+          <section className="document-detail">
+            <div className="document-detail__preview">
+              <div className="document-detail__preview-icon"><FileText size={34} /></div>
+              <span>{selectedDocument.kind}</span>
+              <strong>{selectedDocument.title}</strong>
+              <small>Vista previa de documento</small>
+            </div>
+
+            <div className="document-detail__body">
+              <div><span className="eyebrow">Archivo personal</span><h1>{selectedDocument.title}</h1><p>Consulta rápida del documento guardado en Mi Mágina antes de abrir o descargar el archivo original.</p></div>
+
+              <div className="document-detail__meta">
+                <article><span>Fecha</span><strong>{selectedDocument.date}</strong></article>
+                <article><span>Tamaño</span><strong>{selectedDocument.size}</strong></article>
+                <article><span>Origen</span><strong>{selectedDocument.origin}</strong></article>
+              </div>
+
+              <div className="document-detail__actions">
+                <button className="primary-button" type="button"><Download size={17} /> Descargar</button>
+                <button className="secondary-button" type="button"><Share2 size={17} /> Compartir</button>
+              </div>
+            </div>
+          </section>
+        </main>
+
+        <BottomNav active="profile" onNavigate={onNavigate} />
+      </div>
+    );
   }
 
   return (
@@ -106,7 +160,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
             <div className="section-heading"><div><span className="eyebrow">Archivo personal</span><h2>Documentos</h2></div><button type="button" className="text-action">+ Añadir</button></div>
             <div className="document-list">
               {documents.map((document) => (
-                <button type="button" className="document-row" key={document.title}>
+                <button type="button" className="document-row" key={document.id} onClick={() => setSelectedDocumentId(document.id)}>
                   <div className="document-row__icon"><FileText size={19} /></div>
                   <div><strong>{document.title}</strong><span>{document.meta}</span></div>
                   <ChevronRight size={18} />

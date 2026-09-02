@@ -6,8 +6,7 @@ create table holdings (
   active boolean not null default true,
   version bigint not null default 1 check (version > 0),
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (id, id)
+  updated_at timestamptz not null default now()
 );
 
 create table holding_members (
@@ -76,7 +75,8 @@ create table campaigns (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (id, holding_id),
-  unique (holding_id, season_start_year, season_end_year)
+  unique (holding_id, season_start_year, season_end_year),
+  check (end_date is null or start_date is null or end_date >= start_date)
 );
 
 create index campaigns_holding_status_idx on campaigns(holding_id, status);
@@ -121,9 +121,9 @@ create table deliveries (
   updated_at timestamptz not null default now(),
   unique (id, holding_id),
   foreign key (campaign_id, holding_id) references campaigns(id, holding_id) on delete restrict,
-  foreign key (farm_id, holding_id) references farms(id, holding_id) on delete set null,
-  foreign key (plot_id, holding_id) references plots(id, holding_id) on delete set null,
-  check (cooperative_id is not null or custom_destination is not null)
+  foreign key (farm_id, holding_id) references farms(id, holding_id) on delete restrict,
+  foreign key (plot_id, holding_id) references plots(id, holding_id) on delete restrict,
+  check (cooperative_id is not null or nullif(trim(custom_destination), '') is not null)
 );
 
 create index deliveries_campaign_date_idx on deliveries(holding_id, campaign_id, delivered_at desc);
@@ -137,7 +137,7 @@ create table delivery_results (
   holding_id uuid not null references holdings(id) on delete cascade,
   delivery_id uuid not null,
   result_type text not null default 'fat_yield' check (result_type in ('fat_yield')),
-  value numeric(8,4) not null check (value >= 0),
+  value numeric(8,4) not null check (value >= 0 and value <= 100),
   unit text not null default 'percent' check (unit in ('percent')),
   measured_at timestamptz,
   source_kind text not null default 'manual' check (source_kind in ('manual', 'document', 'file', 'provider_sync')),

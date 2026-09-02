@@ -4,6 +4,7 @@ import { registerSW } from 'virtual:pwa-register';
 import { App } from './App';
 import { ConnectivityStatus } from './ConnectivityStatus';
 import './styles.css';
+import './connectivity.css';
 
 registerSW({
   immediate: true,

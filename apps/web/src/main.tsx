@@ -6,6 +6,7 @@ import { ConnectivityStatus } from './ConnectivityStatus';
 import { ResetPassword } from './ResetPassword';
 import './styles.css';
 import './connectivity.css';
+import './navigation-v2.css';
 
 registerSW({
   immediate: true,

@@ -6,6 +6,7 @@ REQUESTED_RELEASE="${2:-}"
 COMPOSE_FILE="${MAGINA_STAGING_COMPOSE_FILE:-infra/docker/compose.staging.yml}"
 ENV_FILE="${STAGING_ENV_FILE:-}"
 STATE_DIR="${MAGINA_STAGING_STATE_DIR:-.deploy/staging}"
+POSTGRES_IMAGE="${MAGINA_POSTGRES_IMAGE:-postgres:18.6-alpine}"
 export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-magina-olivo-staging}"
 
 log() {
@@ -53,6 +54,13 @@ wait_for_health() {
 compose() {
   MAGINA_IMAGE_TAG="$MAGINA_IMAGE_TAG" \
     docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
+}
+
+ensure_base_image() {
+  if ! docker image inspect "$POSTGRES_IMAGE" >/dev/null 2>&1; then
+    log "pulling pinned PostgreSQL image $POSTGRES_IMAGE"
+    docker pull "$POSTGRES_IMAGE"
+  fi
 }
 
 ensure_release_images() {
@@ -104,6 +112,7 @@ case "$ACTION" in
     [[ "$RELEASE" =~ ^[A-Za-z0-9._-]+$ ]] || fail "release tag contains unsupported characters"
 
     OLD_RELEASE="$(current_release)"
+    ensure_base_image
     build_release "$RELEASE"
     ensure_release_images "$RELEASE"
 
@@ -139,6 +148,7 @@ case "$ACTION" in
     CURRENT_RELEASE="$(current_release)"
     TARGET_RELEASE="${REQUESTED_RELEASE:-$(previous_release)}"
     [[ -n "$TARGET_RELEASE" ]] || fail "no previous release recorded; optionally pass an explicit release tag"
+    ensure_base_image
     ensure_release_images "$TARGET_RELEASE"
 
     export MAGINA_IMAGE_TAG="$TARGET_RELEASE"

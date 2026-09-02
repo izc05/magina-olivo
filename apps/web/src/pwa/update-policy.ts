@@ -1,4 +1,4 @@
-import { listPendingOperations } from '../offline/outbox.ts';
+import { listPendingOperations } from '../offline/outbox';
 
 export type PwaUpdateResult =
   | {

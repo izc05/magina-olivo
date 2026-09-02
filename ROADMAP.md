@@ -17,12 +17,14 @@ Proyecto en definición funcional avanzada. La implementación masiva todavía n
 - [x] Comparar posicionamiento frente a Agroptima.
 - [x] Detectar ecosistema almazara-agricultor AM System / MolturALO.
 - [x] Detectar proveedores alternativos relevantes como Proyalma/Aicor y Toolagro.
-- [x] Auditar una primera muestra amplia de portales/zona de socio de entidades DOP y definir niveles P0-P3.
-- [ ] Completar auditoría web/portal/app de las 23 entidades DOP hasta 23/23 con nivel de confianza documentado.
+- [x] Definir niveles de madurez digital P0-P3.
+- [x] Completar primera clasificación pública 23/23 de entidades DOP, documentando nivel de certeza.
+- [x] Confirmar al menos dos casos públicos del ecosistema Almazaras.com: San Sebastián y Oleozumo.
 - [ ] Identificar proveedor tecnológico de cada portal prioritario cuando sea públicamente verificable o mediante contacto autorizado.
 - [ ] Confirmar formatos de exportación disponibles para agricultores en portales prioritarios.
 - [ ] Revisar condiciones/licencias concretas de reutilización de cada fuente externa.
-- [ ] Revisar requisitos legales de tratamiento de datos y documentos.
+- [x] Definir plan de privacidad/compliance desde diseño.
+- [ ] Realizar revisión jurídica específica antes del piloto real.
 - [ ] Definir piloto con agricultores reales.
 - [ ] Conseguir ejemplos anonimizados de ticket, albarán, rendimiento y liquidación.
 
@@ -31,12 +33,12 @@ Proyecto en definición funcional avanzada. La implementación masiva todavía n
 - [x] Cerrar mapa funcional V1 de pantallas.
 - [x] Definir navegación móvil principal.
 - [x] Definir onboarding inicial.
-- [ ] Definir modelo de permisos V1 definitivo.
+- [x] Definir modelo de permisos V1 y aislamiento por explotación.
 - [x] Endurecer modelo de datos V1 para entregas, resultados, documentos e importaciones.
 - [x] Diseñar flujo de campaña.
 - [x] Diseñar flujo de entrega y rendimiento.
 - [x] Diseñar flujo de labores.
-- [x] Diseñar directorio/ficha de cooperativas.
+- [x] Diseñar directorio/ficha de cooperativas/almazaras.
 - [x] Diseñar centro de avisos.
 - [x] Diseñar importación manual/documental sin acoplarla a proveedores.
 - [x] Definir contrato canónico de importación y deduplicación.
@@ -84,14 +86,14 @@ Proyecto en definición funcional avanzada. La implementación masiva todavía n
 - [ ] Detección de entrega pendiente de rendimiento.
 - [ ] Detección segura de posibles duplicados.
 
-## Fase 5 — Cooperativas
+## Fase 5 — Cooperativas / almazaras
 
 - [ ] Directorio inicial dentro del producto.
 - [ ] Fuentes y fecha de actualización.
 - [ ] Noticias/avisos públicos cuando sea legal y técnicamente adecuado.
 - [ ] Sistema de corrección/verificación.
 - [ ] Importación de documentos/exportaciones propias del usuario.
-- [ ] Enlaces a accesos oficiales de socio sin almacenar credenciales.
+- [ ] Enlaces a accesos oficiales de socio/cosechero sin almacenar credenciales.
 - [ ] Contacto con cooperativas/proveedores para futuras integraciones.
 
 ## Fase 6 — Mágina IA

@@ -36,6 +36,7 @@ export function ConnectivityStatus() {
 
   useEffect(() => {
     void refreshPending();
+    const timer = window.setInterval(() => void refreshPending(), 1500);
     const handleOnline = () => {
       setOnline(true);
       void sync();
@@ -44,15 +45,13 @@ export function ConnectivityStatus() {
       setOnline(false);
       void refreshPending();
     };
-    const handleOutboxChange = () => void refreshPending();
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    window.addEventListener('magina:outbox-change', handleOutboxChange);
     return () => {
+      window.clearInterval(timer);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      window.removeEventListener('magina:outbox-change', handleOutboxChange);
     };
   }, [refreshPending, sync]);
 

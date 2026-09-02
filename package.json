@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "photos:sync": "node scripts/fetch-approved-photos.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
@@ -17,6 +18,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "sharp": "^0.35.4",
     "typescript": "^5.7.2",
     "vite": "^6.0.5"
   }

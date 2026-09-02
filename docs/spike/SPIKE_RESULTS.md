@@ -1,12 +1,12 @@
 # Mágina Olivo — Technical Spike Results
 
-Estado: **EN PROGRESO, núcleo técnico + staging local reproducible verdes**. Este documento registra únicamente evidencias ejecutadas; un criterio no probado no se marca como PASS por inferencia.
+Estado: **SPIKE TÉCNICO CERRADO PARA PASAR A STAGING EXTERNO**. Este documento registra únicamente evidencias ejecutadas; un criterio no probado no se marca como PASS por inferencia.
 
 Fecha de evidencia: 2026-09-02.
 Rama: `feat/technical-spike-v1`.
 PR: #2, base `feat/foundation-v1`.
-Último commit validado de esta tanda: `1fb3a1bb890a71895ab359cf789ee37c86277a40`.
-CI verde: `Technical Spike Smoke` run `33676771660`, job `100403716460`.
+Último commit funcional validado: `8bebade81ef1d2c48a8bde58f2f12014f4ce9a8c`.
+CI verde: `Technical Spike Smoke` run `33681298308`, job `100418317339`.
 Entorno CI: Ubuntu 24.04, Node.js 24.20.0, PostgreSQL 18.6 y Docker Compose.
 
 ## PASS demostrado
@@ -125,6 +125,17 @@ Tests unitarios con IndexedDB mediante `fake-indexeddb`:
 - sincronizar B no lee, envía ni elimina operaciones pendientes de A.
 - limpiar la outbox de un usuario no requiere borrar la del otro.
 
+### Actualización PWA segura
+Gate unitario ejecutado sobre la misma outbox IndexedDB:
+- una actualización descargada se marca `deferred` cuando el usuario conserva escrituras offline pendientes;
+- el callback de activación de la nueva versión no se ejecuta mientras exista outbox pendiente;
+- la operación IndexedDB permanece intacta;
+- tras una sincronización 2xx confirmada, la outbox queda vacía;
+- la misma política permite entonces aplicar la actualización exactamente una vez;
+- la decisión de actualización está desacoplada del adapter IndexedDB mediante inyección del contador de pendientes, por lo que la política puede probarse de forma aislada sin duplicar estado.
+
+La UI final todavía debe mostrar el estado/aviso de actualización; el comportamiento de protección de datos ya está demostrado.
+
 ### Documento privado / object storage
 - storage local de spike fuera del frontend y con key interna generada.
 - filename del usuario no forma parte de la ruta física.
@@ -192,6 +203,19 @@ Gate ejecutado en GitHub Actions con Docker Compose real:
 - la red de datos de PostgreSQL es interna en Compose.
 - el stack se destruye con volúmenes al acabar el CI sintético.
 
+### Deploy / rollback de código
+Gate ejecutado con el mismo stack de staging:
+- imágenes `runtime` y `web` se etiquetan por release y no se sustituyen mediante pull implícito;
+- PostgreSQL 18.6 se trata como dependencia base fijada y puede descargarse explícitamente en un host limpio;
+- el env file de staging es autoritativo: variables heredadas del shell/CI se eliminan antes de invocar Compose;
+- despliegue release A => healthy;
+- despliegue release B => healthy, conservando A como `previous`;
+- rollback => vuelve a A y queda healthy;
+- `current`/`previous` se intercambian correctamente;
+- un release nuevo unhealthy tiene camino de rollback automático de código al release previo.
+
+Las migraciones del piloto deben seguir siendo aditivas/backward-compatible: este gate demuestra rollback de código, no rollback destructivo de esquema.
+
 ### Observabilidad básica
 - liveness y readiness implementados.
 - request IDs habilitados.
@@ -199,20 +223,26 @@ Gate ejecutado en GitHub Actions con Docker Compose real:
 - logs API estructurados por Fastify/Pino.
 - worker expone estado/reintentos en base y eventos estructurados en logs.
 
-## Pendiente P0 antes de piloto/producción
+## Pendiente P0 antes de piloto con agricultores reales
 
-El núcleo y el staging local reproducible están verdes, pero todavía NO se considera listo para agricultores reales. Quedan:
+El spike técnico está cerrado para dar el salto a un staging externo, pero todavía NO se considera listo para datos reales. Quedan gates operativos externos:
 
-- staging externo HTTPS real y comprobación end-to-end de cookie `Secure` detrás de Cloudflare Tunnel/proxy;
+- staging HTTPS real y comprobación end-to-end de cookie `Secure` detrás de Cloudflare Tunnel/proxy;
 - PUT/GET/DELETE real contra bucket privado Cloudflare R2 o S3-compatible elegido;
-- recuperación de contraseña/correo real o bloqueo explícito de piloto hasta implementarla;
-- copia de backup fuera del host principal en staging/operación, no solo bundle CI;
-- UI real de `pendiente/sincronizado/error` integrada con la outbox;
-- prueba de actualización del service worker/PWA sin pérdida de outbox;
-- política de logout en UI respecto a operaciones pendientes (no mezclar usuarios; decidir conservar vs advertir/borrar);
-- deploy y rollback probados sobre un host de staging real;
-- restore probado sobre staging real, incluyendo object storage;
-- decisión final sobre RLS como defensa adicional en PostgreSQL.
+- recuperación de contraseña con canal de correo real y revocación de sesiones tras reset;
+- copia de backup fuera del host principal;
+- restore ejecutado sobre staging real, incluyendo object storage;
+- deploy/rollback ejecutado también sobre el host real de staging;
+- UI real de `pendiente/sincronizado/error` y aviso de actualización PWA;
+- política de logout en UI respecto a operaciones pendientes;
+- decisión/experimento RLS como defensa adicional antes de convertirlo en requisito.
+
+## Política de autenticación para piloto
+
+- recuperación de contraseña: **obligatoria antes de piloto real**;
+- reset de contraseña debe revocar las demás sesiones;
+- verificación de email: preparada, pero no obligatoria durante el piloto cerrado con usuarios invitados/controlados;
+- verificación de email: **obligatoria antes de habilitar registro público**.
 
 ## P1 posterior al núcleo
 
@@ -227,20 +257,23 @@ El núcleo y el staging local reproducible están verdes, pero todavía NO se co
 
 - PostgreSQL 18.x: **mantener**.
 - Fastify 5 + Node 24: **mantener**.
-- Better Auth: **mantener para continuar**, con HTTPS/password-recovery todavía como gates operativos.
+- Better Auth: **mantener**, con password recovery como siguiente gate de identidad.
 - migraciones Better Auth programáticas desde dependencia bloqueada: **mantener** para CI/staging/deploy.
 - PWA React/Vite: **mantener**.
 - IndexedDB + outbox por usuario + idempotencia backend: **mantener**.
+- actualización PWA protegida por estado de outbox: **mantener**.
 - rendimiento separado de entrega: **confirmado**.
 - optimistic concurrency mediante versión: **mantener para recursos sensibles**.
 - worker PostgreSQL con lease/recovery: **válido como base duradera para tareas críticas**.
 - almacenamiento privado detrás de adapter: **mantener**; local solo desarrollo/CI y S3/R2 para staging/producción.
 - staging Docker same-origin con una única entrada loopback: **mantener** como arquitectura de despliegue inicial.
+- release-tagged images + rollback de código: **mantener**.
+- RLS: **no activar de forma parcial**; evaluar con contexto por transacción y test adversarial antes de adoptarlo.
 
 ## Próximo gate
 
-El próximo bloque es externo al CI local:
+La siguiente frontera es operativa y externa al CI local:
 
-`host staging -> Cloudflare Tunnel HTTPS -> cookie Secure -> R2 real -> deploy/rollback -> restore staging`
+`password recovery -> host staging -> Cloudflare Tunnel HTTPS -> cookie Secure -> R2 real -> backup off-host -> restore staging`
 
-En paralelo puede integrarse la UI final del otro hilo sobre los contratos ya validados.
+En paralelo puede integrarse la UI final del otro hilo sobre contratos ya validados.

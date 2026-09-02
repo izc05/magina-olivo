@@ -1,0 +1,49 @@
+.bottom-nav.bottom-nav-v2 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: center;
+}
+
+.nav-plus {
+  width: 54px;
+  height: 54px;
+  justify-self: center;
+  border: 0;
+  border-radius: 50%;
+  background: #d4a017;
+  color: #2e3a22;
+  box-shadow: 0 8px 22px rgba(212, 160, 23, .32);
+  font-size: 2rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.nav-plus.active {
+  background: #2e3a22;
+  color: #fff;
+}
+
+.page-eyebrow {
+  color: #5c7a46;
+}
+
+.form-card-title,
+.magina-card-title,
+.more-card-title {
+  font-size: 1.25rem;
+}
+
+.form-card-title,
+.magina-card-title {
+  margin-bottom: 14px;
+}
+
+@media (max-width: 390px) {
+  .nav-button {
+    font-size: .64rem;
+  }
+
+  .nav-plus {
+    width: 50px;
+    height: 50px;
+  }
+}

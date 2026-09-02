@@ -33,7 +33,7 @@ docker compose version >/dev/null 2>&1 || fail "Docker Compose v2 is required"
 [[ -n "$ENV_FILE" && -f "$ENV_FILE" ]] || fail "STAGING_ENV_FILE must point to the secrets-managed env file"
 
 # Refuse group/world-readable secret files. Root ownership is recommended but
-# not mandatory because rootless Docker/CI-like staging hosts are valid.
+# not mandatory because rootless Docker/shared staging hosts are valid.
 ENV_MODE="$(stat -c '%a' "$ENV_FILE")"
 if (( (8#$ENV_MODE & 077) != 0 )); then
   fail "staging env file must not be group/world accessible; mode is $ENV_MODE"
@@ -70,10 +70,18 @@ STAGING_BIND_VALUE="$(read_env_value STAGING_BIND)"
 MAIL_TRANSPORT_VALUE="$(read_env_value AUTH_MAIL_TRANSPORT)"
 
 [[ "$BETTER_AUTH_URL_VALUE" = https://* ]] || fail "BETTER_AUTH_URL must use HTTPS in external staging"
-case ",$TRUSTED_ORIGINS_VALUE," in
-  *,"$BETTER_AUTH_URL_VALUE",*) ;;
-  *) fail "BETTER_AUTH_TRUSTED_ORIGINS must include BETTER_AUTH_URL" ;;
-esac
+TRUSTED_MATCH=0
+IFS=',' read -r -a TRUSTED_ORIGINS <<< "$TRUSTED_ORIGINS_VALUE"
+for origin in "${TRUSTED_ORIGINS[@]}"; do
+  origin="${origin#${origin%%[![:space:]]*}}"
+  origin="${origin%${origin##*[![:space:]]}}"
+  if [[ "$origin" = "$BETTER_AUTH_URL_VALUE" ]]; then
+    TRUSTED_MATCH=1
+    break
+  fi
+done
+[[ "$TRUSTED_MATCH" = "1" ]] || fail "BETTER_AUTH_TRUSTED_ORIGINS must include BETTER_AUTH_URL"
+
 [[ "$OBJECT_STORAGE_ENDPOINT_VALUE" = https://* ]] || fail "OBJECT_STORAGE_ENDPOINT must use HTTPS"
 case "$STAGING_BIND_VALUE" in
   127.0.0.1:*|localhost:*) ;;
@@ -105,14 +113,15 @@ else
   warn "timedatectl unavailable; verify host clock synchronization manually"
 fi
 
-# These application ports must not already be published by an unrelated
-# process. Loopback Nginx is checked separately after deployment.
+# A shared Docker host may legitimately have unrelated services on these
+# ports. Warn rather than reject the host. After deploy, the isolation gate
+# proves that Mágina's own API/PostgreSQL/worker containers publish no ports.
 if command -v ss >/dev/null 2>&1; then
   if ss -ltnH | awk '{print $4}' | grep -Eq '(^|:)(3001|5432)$'; then
-    fail "port 3001 or 5432 is already listening on the host; API/PostgreSQL must stay container-private"
+    warn "another host service already listens on 3001 or 5432; allowed on a shared host, but Mágina containers must remain private in post-deploy gate"
   fi
 else
-  warn "ss unavailable; host-port exposure will be verified after deploy via Docker inspect"
+  warn "ss unavailable; Mágina host-port exposure will be verified after deploy via Docker inspect"
 fi
 
 log "PASS linux=$(uname -m) docker=yes compose=yes env_mode=$ENV_MODE free_kb=$AVAILABLE_KB"

@@ -57,6 +57,18 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
 
+      - name: Validate operational scripts syntax
+        run: |
+          while IFS= read -r -d '' script; do
+            echo "bash -n $script"
+            bash -n "$script"
+          done < <(find scripts -type f -name '*.sh' -print0 | sort -z)
+
+          while IFS= read -r -d '' script; do
+            echo "node --check $script"
+            node --check "$script"
+          done < <(find scripts -type f -name '*.mjs' -print0 | sort -z)
+
       - name: Typecheck workspaces
         run: npm run typecheck
 

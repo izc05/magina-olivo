@@ -18,6 +18,8 @@ fail() {
   exit 1
 }
 
+bash scripts/spike-delivery-concurrency.sh
+
 PG_CONTAINER="$(docker ps --filter "ancestor=${POSTGRES_IMAGE}" --format '{{.ID}}' | head -n 1)"
 [[ -n "$PG_CONTAINER" ]] || fail "PostgreSQL service container not found"
 
@@ -102,6 +104,16 @@ assert_sql \
   "ticket link" \
   "select count(*) from document_links where entity_type='delivery'" \
   "1"
+
+assert_sql \
+  "delivery edit version" \
+  "select version from deliveries where ticket_number='004281'" \
+  "2"
+
+assert_sql \
+  "delivery edit notes" \
+  "select notes from deliveries where ticket_number='004281'" \
+  "first concurrent edit"
 
 log "Restoring document storage from backup bundle"
 cp -a "$BACKUP_ROOT/documents"/. "$DOCUMENT_STORAGE_DIR/"

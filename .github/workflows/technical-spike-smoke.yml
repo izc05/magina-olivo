@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - feat/technical-spike-v1
+  pull_request:
+    branches:
+      - feat/foundation-v1
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 jobs:

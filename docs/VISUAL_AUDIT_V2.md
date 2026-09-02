@@ -2,291 +2,202 @@
 
 ## Objetivo
 
-Esta auditoría compara la implementación V2 con las primeras referencias visuales que fijaron la identidad de Mágina Olivo. La regla principal es que la aplicación debe sentirse como un producto agrícola premium y cercano, no como un panel administrativo genérico.
+Esta auditoría compara la implementación V2 con las primeras referencias visuales que fijaron la identidad de Mágina Olivo. La aplicación debe sentirse como un producto agrícola premium, cercano y territorial, no como un panel administrativo genérico.
 
 La prioridad visual sigue siendo:
 
 **campo + fotografía + información útil + identidad de Sierra Mágina**.
 
-## Principios que quedan fijados
+## Principios fijados
 
 - Mantener siempre el logo oficial de Mágina Olivo.
-- Fondo marfil cálido, nunca una interfaz blanca y fría como base dominante.
+- Fondo marfil cálido como base dominante.
 - Verde oliva profundo para navegación y acciones principales.
 - Verde hoja para estados positivos e información agronómica.
-- Dorado aceite únicamente como acento.
+- Dorado aceite solo como acento.
 - Iconografía lineal consistente.
-- Tarjetas compactas con radios suaves y sombras discretas.
+- Tarjetas compactas, radios suaves y sombras discretas.
 - Fotografía real como protagonista en Inicio, Mi Campo, Noticias y Descubre.
-- Mapas grandes cuando sean relevantes.
-- Mobile-first; tablet y escritorio son adaptaciones de la app, no otro producto.
-- Reducir el número de elementos simultáneos cuando una pantalla se perciba como dashboard.
+- Mapas grandes cuando aporten valor.
+- Mobile-first; tablet y escritorio son adaptaciones del mismo producto.
+- Reducir elementos simultáneos cuando una pantalla empiece a sentirse como software empresarial.
 
-## Auditoría global
+## Estado global V2.1
 
-### Coincidencias fuertes con las referencias iniciales
+### Cerrado
 
-- La paleta oliva / marfil / dorado está consolidada.
-- El logo se reutiliza desde un único recurso de marca.
-- La barra inferior con botón central `+` mantiene la identidad inicial.
-- Se ha eliminado el uso de emojis como iconografía final.
-- Las tarjetas y los estados se han compactado respecto a los primeros prototipos funcionales.
-- Mi Campo conserva la lógica visual foto/mapa → datos esenciales → acciones.
-- Noticias usa una jerarquía editorial en vez de una tabla/listado administrativo.
-- Descubre dispone de una estructura mucho más fotográfica que el resto de módulos.
-- Meteorología traduce datos en recomendaciones de trabajo de campo.
-- Mercado evita parecer una aplicación financiera.
-- Inicio ya abre directamente Cuaderno, Alertas, Mercado y Meteorología sin obligar al usuario a buscar la pestaña manualmente.
+- Paleta oliva / marfil / dorado consolidada.
+- Logo reutilizado desde un único recurso de marca.
+- Barra inferior y botón central `+` coherentes en todo el producto.
+- Iconografía sin emojis.
+- Inicio con accesos directos tipados a Cuaderno, Alertas, Mercado y Meteorología.
+- Meteorología detallada con recomendación agrícola y ventanas de trabajo.
+- Mi Campo con parcelas, mapa, Cuaderno, Campaña, Costes y Maquinaria.
+- Mi Campo simplificado a cuatro ramas principales: `Campo / Cuaderno / Campaña / Gestión`.
+- Costes y Maquinaria agrupados dentro de Gestión sin perder accesos directos.
+- Noticias con detalle editorial.
+- Cooperativas con ficha completa.
+- Mercado compacto.
+- Descubre con detalle de ruta.
+- Agenda con detalle de evento.
+- Comunidad con detalle de publicación, respuestas, reportar y distinción entre opinión y avisos oficiales.
+- Mi Mágina con preview de documentos, metadatos y acciones básicas.
+- Mágina simplificada a `Noticias / Cooperativas / Mercado / Descubre / Más`.
+- `Más` agrupa Mágina Local, Comunidad, Agenda y Alertas, manteniendo navegación directa desde otros puntos de la app.
+- Estados técnicos completos: login, registro, recuperación, onboarding, permisos, loading, offline, vacío, error y confirmación.
 
-### Desviaciones todavía pendientes
+### Pendiente real
 
-1. **Fotografía:** Inicio, Mi Campo, Noticias y Descubre aún usan fondos/gradientes temporales en lugar de las fotografías finales.
-2. **Densidad de pestañas:** Mágina y Mi Campo concentran muchas ramas; el scroll horizontal funciona, pero hay que validar visualmente que no se perciba como un panel de software.
-3. **Flujos secundarios:** Comunidad, documentos y algunos contenidos editoriales todavía pueden ganar detalle.
-4. **Mapa de finca:** sigue siendo una representación esquemática; en la implementación de datos real deberá evolucionar a cartografía útil.
-5. **Datos demo:** mercado, campaña, meteorología, rutas, agenda y costes deben distinguir siempre contenido demostrativo de datos reales.
+1. **Fotografía final:** incorporar los WebP licenciados en Inicio, Mi Campo, Noticias y Descubre.
+2. **Auditoría móvil final:** revisar alturas, scroll horizontal, tap targets, textos largos y pantallas de detalle.
+3. **Tablet/escritorio:** comprobar que la adaptación no convierta la app en un dashboard ancho.
+4. **Build:** verificar `tsc -b && vite build` antes de considerar merge.
+5. **Mapa real:** la cartografía de finca sigue siendo esquemática y deberá conectarse a datos geográficos en una fase posterior.
+6. **Datos demo:** mercado, campaña, meteorología, rutas, agenda y costes deberán indicar siempre fuente/fecha cuando pasen a datos reales.
 
 ## Auditoría por pantalla
 
 ### Inicio
 
-**Estado:** flujo P0 cerrado salvo fotografía.
+**Estado:** P0 cerrado salvo fotografía.
 
-Ya incluye:
-- hero visual + meteorología;
-- estado de parcela;
-- accesos rápidos;
-- precio AOVE compacto;
-- alertas;
-- noticia destacada;
-- barra inferior y `+`;
-- acceso directo a Cuaderno;
-- acceso directo a Alertas;
-- acceso directo a Mercado;
-- acceso directo a Meteorología.
+Incluye hero, meteorología, estado de parcela, accesos rápidos, AOVE compacto, alertas, noticia destacada, barra inferior y `+`.
 
 Pendiente:
-- fotografía oficial del olivar / Sierra Mágina;
-- valorar un bloque muy compacto de 1–2 próximas tareas si no aumenta demasiado la densidad.
+- fotografía oficial de olivar / Sierra Mágina;
+- valorar 1–2 próximas tareas solo si no aumenta la densidad.
 
 ### Meteorología
 
 **Estado:** estructura cerrada.
 
-Fortalezas:
-- recomendación agrícola;
-- ventana de trabajo;
-- previsión horaria y a cinco días;
-- lluvia, viento, humedad y suelo.
+Incluye recomendación agrícola, ventana de trabajo, previsión horaria y varios días, lluvia, viento, humedad y suelo.
 
-Pendiente:
-- decidir si el hero mantiene atmósfera gráfica o incorpora una fotografía muy sutil de la finca.
+Pendiente opcional:
+- decidir si mantiene atmósfera gráfica o usa una fotografía muy sutil.
 
 ### Mi Campo
 
-**Estado:** funcionalmente amplio, visualmente todavía a revisar.
+**Estado:** estructura y densidad V2.1 cerradas.
 
-Ya incluye:
-- finca activa;
-- parcelas;
-- mapa;
-- cuaderno;
-- campaña;
-- costes y rentabilidad;
-- maquinaria;
-- apertura directa de Cuaderno desde Inicio.
+Navegación principal:
+- Campo
+- Cuaderno
+- Campaña
+- Gestión
+
+Dentro de Gestión:
+- Costes y rentabilidad
+- Maquinaria
 
 Pendiente:
-- fotografía oficial en el hero;
-- revisar si cinco pestañas son demasiadas;
-- posible agrupación futura `Campo / Cuaderno / Campaña / Gestión`, dejando Costes y Maquinaria dentro de Gestión;
-- detalle profundo de maquinaria y gasto solo cuando sea necesario;
-- mapa real cuando conectemos datos geográficos.
+- fotografía final del hero;
+- detalle profundo de máquina/gasto solo si aporta valor;
+- mapa real cuando existan datos geográficos.
 
 ### Mágina
 
-**Estado:** cobertura alta con los flujos principales cerrados.
+**Estado:** cobertura alta y densidad V2.1 cerrada.
 
-Ya incluye:
-- noticias;
-- detalle editorial;
-- cooperativas y ficha detallada;
-- mercado;
-- Mágina Local;
-- Descubre;
-- Comunidad;
-- Agenda con detalle de evento;
-- Alertas;
-- apertura directa de Mercado y Alertas desde Inicio.
+Navegación principal:
+- Noticias
+- Cooperativas
+- Mercado
+- Descubre
+- Más
+
+Dentro de Más:
+- Mágina Local
+- Comunidad
+- Agenda
+- Alertas
+
+Los destinos internos `local`, `community`, `agenda` y `alertas` siguen siendo válidos, por lo que accesos externos abren directamente el contenido correcto.
 
 Pendiente:
-- fuente / fecha / trazabilidad de mercado;
-- evaluar si ocho pestañas son demasiadas y si conviene un bloque `Más` o accesos secundarios.
+- fuente / fecha / trazabilidad real de mercado;
+- fotografía final de noticia destacada.
 
 ### Cooperativas
 
-**Estado:** flujo P0 cerrado en V2.
+**Estado:** P0 cerrado.
 
-Ya incluye:
-- directorio;
-- apertura de ficha completa;
-- nombre y municipio;
-- estado / horario;
-- recepción y servicios;
-- referencia de precios de demostración;
-- avisos;
-- documentos;
-- estructura preparada para entregas/pesajes;
-- guardar cooperativa;
-- volver al directorio.
+Incluye directorio, ficha, municipio, estado/horario, recepción, servicios, referencias demo, avisos, documentos, entregas futuras, guardar y volver.
 
 Pendiente para datos reales:
-- integrar fuentes autorizadas;
-- mostrar fecha de actualización;
-- incorporar entregas personales solo si existe integración futura con cada cooperativa.
+- fuentes autorizadas;
+- fecha de actualización;
+- entregas personales solo con integración real.
 
 ### Descubre
 
 **Estado:** flujo de rutas cerrado; prioridad fotográfica máxima.
 
-Ya incluye:
-- portada territorial;
-- accesos a rutas, miradores, gastronomía y oleoturismo;
-- rutas destacadas;
-- detalle de ruta;
-- distancia, dificultad y duración;
-- destacados de la ruta;
-- guardado en Mi Mágina;
-- aviso explícito cuando los datos son de demostración.
+Incluye portada territorial, accesos, rutas destacadas, detalle, distancia, dificultad, duración, destacados y guardado.
 
 Pendiente:
-- hero oficial de Sierra Mágina;
-- imágenes de rutas;
+- hero real de Sierra Mágina;
+- fotografías de rutas;
 - pueblos;
 - gastronomía;
 - almazara / oleoturismo;
-- detalle de pueblo/lugar;
-- detalle de experiencia.
+- detalle de pueblo o experiencia en una fase posterior.
 
 ### Agenda
 
-**Estado:** flujo P1 esencial cerrado.
+**Estado:** P1 cerrado.
 
-Ya incluye:
-- listado de eventos;
-- fecha y horario;
-- municipio;
-- categoría;
-- detalle del evento;
-- descripción;
-- contexto de ubicación;
-- guardado en Mi Mágina;
-- diferenciación de información de demostración.
-
-Pendiente para datos reales:
-- fuente oficial;
-- enlace del organizador;
-- dirección exacta o mapa cuando exista información verificable.
+Incluye listado, fecha, horario, municipio, categoría, detalle, descripción, contexto de ubicación y guardado.
 
 ### Comunidad
 
-**Estado:** base V2 correcta.
+**Estado:** P1 cerrado.
 
-Ya dispone de:
-- publicación;
-- filtros;
-- respuestas y reacciones;
-- moderación visible.
+Incluye feed, filtros, publicación, reacciones, apertura de detalle, respuestas, reportar y bloque de seguridad que diferencia experiencia personal de información oficial.
 
-Pendiente:
-- flujo de detalle de publicación;
-- reportar / moderar;
-- diferenciar opinión personal de información agronómica oficial cuando haya datos reales.
+### Mi Mágina / Documentos
 
-### Mi Mágina
+**Estado:** P1 cerrado.
 
-**Estado:** sólido.
-
-Ya incluye perfil, guardados, documentos, preferencias, seguridad y acceso a los estados técnicos.
+Incluye perfil, guardados, documentos, preferencias, seguridad y estados técnicos. Los documentos ya abren preview con fecha, tamaño, origen, descarga y compartir como acciones de interfaz.
 
 Pendiente:
-- detalle de documento;
-- detalle de guardado;
-- simplificar cualquier opción que no aporte valor en la primera versión pública.
+- detalle enriquecido de guardados si se considera necesario para V2.2.
 
-### Estados técnicos
+## Fotografía oficial
 
-**Estado:** cubiertos en React.
+### Slots P0 preparados
 
-Incluye:
-- login;
-- registro;
-- recuperación;
-- onboarding;
-- permisos;
-- loading;
-- offline;
-- vacío;
-- error;
-- confirmación.
+- `public/photos/home-sierra-magina.webp`
+- `public/photos/field-olivares-magina.webp`
+- `public/photos/discover-sierra-magina.webp`
+- `public/photos/discover-jimena.webp`
 
-No requiere fotografía prioritaria.
+Los estilos ya contemplan fallback gráfico para que la preview no se rompa mientras los binarios definitivos no estén dentro del repositorio.
 
-## Flujos que deben cerrarse antes de considerar V2 lista para implementación de datos
+### Regla
 
-Prioridad P0:
-- ✅ ficha completa de cooperativa;
-- ✅ acceso directo desde Inicio a Cuaderno / Alertas / Mercado / Meteorología;
-- fotografía oficial en Inicio, Mi Campo, Noticias y Descubre.
+No usar imágenes genéricas de olivar si no transmiten Sierra Mágina / Jaén. No incorporar una imagen web al repositorio sin comprobar licencia, autoría y condiciones de reutilización.
 
-Prioridad P1:
-- ✅ detalle de ruta;
-- ✅ detalle de evento;
-- detalle de publicación de Comunidad;
-- detalle/preview de documento.
+La selección inicial documentada prioriza material real de Sierra Mágina con licencias Creative Commons reutilizables y atribución registrada en `PHOTO_DIRECTION_V1.md` / `public/photos/README.md`.
 
-Prioridad P2:
-- detalle de maquinaria;
-- detalle de gasto;
-- guardados enriquecidos;
-- más niveles de personalización.
+## Validación técnica
 
-## Slots fotográficos oficiales
-
-### P0
-- Home hero.
-- Mi Campo / finca hero.
-- Noticia destacada.
-- Descubre hero.
-- Rutas destacadas.
-
-### P1
-- Pueblos.
-- Gastronomía.
-- Almazara / oleoturismo.
-- Cooperativas, si existen imágenes autorizadas y útiles.
-
-### Regla de fotografía
-
-No usar imágenes genéricas de olivar si no transmiten Sierra Mágina / Jaén. Deben sentirse territoriales, naturales y cercanas. Evitar stock excesivamente publicitario o imágenes que parezcan de Toscana, Grecia u otras regiones.
-
-No se incorporará una imagen web al repositorio sin comprobar licencia, autoría y condiciones de reutilización. Las fuentes institucionales pueden servir como referencia visual, pero no implican permiso automático de uso.
-
-## Estado de validación técnica
-
-- El proyecto declara `npm run build` como `tsc -b && vite build`.
-- La navegación interna está tipada mediante `AppNavigate`, `FieldTarget` y `MaginaTarget`.
-- El último commit consultado no tenía checks/estados de CI asociados en GitHub.
-- Por tanto, la compilación final debe verificarse antes de considerar la rama lista para merge.
+- `npm run build` está definido como `tsc -b && vite build`.
+- La navegación interna usa `AppNavigate`, `FieldTarget` y `MaginaTarget`.
+- La reorganización visual de Mi Campo y Mágina conserva esos destinos tipados.
+- En la última consulta disponible no había checks de CI asociados al commit consultado.
+- No considerar la rama lista para merge hasta verificar build real.
 
 ## Orden de cierre V2.1
 
-1. ✅ Cerrar ficha de cooperativa.
-2. ✅ Cerrar navegación directa entre Inicio y subsecciones.
-3. ✅ Cerrar ruta/evento esenciales.
-4. Seleccionar e incorporar fotografía oficial/licenciada.
-5. Revisar densidad de pestañas.
-6. Auditoría móvil completa.
-7. Adaptación tablet/escritorio.
-8. Validación de build/CI.
-9. Solo entonces valorar merge a `main`.
+1. ✅ Ficha completa de cooperativa.
+2. ✅ Navegación directa entre Inicio y subsecciones.
+3. ✅ Detalle de ruta y evento.
+4. ✅ Detalle de Comunidad y preview de documentos.
+5. ✅ Simplificación de densidad en Mi Campo y Mágina.
+6. Incorporar fotografía oficial/licenciada.
+7. Auditoría móvil completa.
+8. Adaptación tablet/escritorio.
+9. Validación de build/CI.
+10. Solo entonces valorar merge a `main`.

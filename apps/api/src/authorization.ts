@@ -57,6 +57,30 @@ export async function getFarmAccess(
   return row ? { holdingId: row.holding_id, role: row.role } : null;
 }
 
+export async function getPlotAccess(
+  userId: string,
+  plotId: string,
+): Promise<HoldingAccess | null> {
+  const result = await getPool().query<{ holding_id: string; role: MembershipRole }>(
+    `
+      select p.holding_id, hm.role
+      from plots p
+      join holdings h on h.id = p.holding_id
+      join holding_members hm on hm.holding_id = p.holding_id
+      where p.id = $1
+        and p.active = true
+        and h.active = true
+        and hm.user_id = $2
+        and hm.status = 'active'
+      limit 1
+    `,
+    [plotId, userId],
+  );
+
+  const row = result.rows[0];
+  return row ? { holdingId: row.holding_id, role: row.role } : null;
+}
+
 export async function getCampaignAccess(
   userId: string,
   campaignId: string,

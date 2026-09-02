@@ -42,8 +42,10 @@ Proyecto en definición funcional avanzada. La implementación masiva todavía n
 - [x] Diseñar centro de avisos.
 - [x] Diseñar importación manual/documental sin acoplarla a proveedores.
 - [x] Definir contrato canónico de importación y deduplicación.
-- [ ] Cerrar catálogo de tipos de labor/campos mínimos para piloto.
-- [ ] Definir wireframes visuales y sistema de diseño.
+- [x] Cerrar catálogo de tipos de labor/campos mínimos para piloto.
+- [x] Crear wireframes funcionales móviles de los flujos prioritarios.
+- [ ] Definir identidad visual y sistema de diseño final.
+- [ ] Crear prototipo visual navegable.
 - [ ] Validar los flujos con 2-5 agricultores antes de congelar UI.
 
 ## Fase 2 — Fundación técnica

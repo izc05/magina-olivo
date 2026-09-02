@@ -4,13 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/server.ts",
-    "start": "node src/server.ts",
+    "dev": "node --env-file-if-exists=../../.env --watch src/server.ts",
+    "start": "node --env-file-if-exists=../../.env src/server.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test",
-    "db:migrate": "node scripts/migrate.ts"
+    "db:migrate": "node --env-file-if-exists=../../.env scripts/migrate.ts",
+    "auth:generate": "npx auth@latest generate --config src/auth.ts --output ../../db/auth-schema.sql --yes",
+    "auth:migrate": "npx auth@latest migrate --config src/auth.ts --yes"
   },
   "dependencies": {
+    "better-auth": "^1.7.2",
     "fastify": "^5.12.1",
     "pg": "^8.23.0"
   },

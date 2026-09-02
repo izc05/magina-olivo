@@ -8,7 +8,11 @@ export interface PrivateStorage {
 }
 
 class LocalPrivateStorage implements PrivateStorage {
-  constructor(private readonly rootDirectory: string) {}
+  private readonly rootDirectory: string;
+
+  constructor(rootDirectory: string) {
+    this.rootDirectory = rootDirectory;
+  }
 
   private resolve(objectKey: string): string {
     if (!/^[0-9a-f-]+\/[0-9a-f-]+$/i.test(objectKey)) {

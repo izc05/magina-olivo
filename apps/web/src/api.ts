@@ -1,4 +1,4 @@
-import { enqueueDeliveryCreate } from './offline/outbox';
+import { enqueueDeliveryCreate } from './offline/outbox.ts';
 
 export type User = { id: string; name?: string | null; email: string };
 export type Holding = { id: string; name: string; municipality: string | null; province: string | null; role: 'owner' | 'admin' | 'collaborator' | 'viewer' };

@@ -1,0 +1,63 @@
+.toast-notice {
+  position: fixed;
+  right: 16px;
+  bottom: calc(94px + env(safe-area-inset-bottom));
+  z-index: 90;
+  width: min(calc(100% - 32px), 390px);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3px 12px;
+  padding: 14px 14px 14px 16px;
+  border-radius: 17px;
+  border: 1px solid rgba(46, 58, 34, .16);
+  box-shadow: 0 16px 38px rgba(46, 58, 34, .18);
+  animation: magina-toast-in .22s ease-out;
+}
+
+.toast-notice.offline {
+  background: #f4e4ad;
+  color: #2e3a22;
+}
+
+.toast-notice.success {
+  background: #eff5e8;
+  color: #2e3a22;
+}
+
+.toast-notice strong,
+.toast-notice span {
+  grid-column: 1;
+  display: block;
+}
+
+.toast-notice strong {
+  font-size: .88rem;
+}
+
+.toast-notice span {
+  font-size: .76rem;
+  line-height: 1.35;
+  opacity: .8;
+}
+
+.toast-notice button {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: start;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(46, 58, 34, .08);
+  color: currentColor;
+  font-size: 1.2rem;
+}
+
+@keyframes magina-toast-in {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-notice { animation: none; }
+}

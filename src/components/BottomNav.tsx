@@ -1,4 +1,4 @@
-import { Home, Newspaper, Plus, Sprout, UserRound } from 'lucide-react';
+import { Home, Mountain, Plus, Sprout, UserRound } from 'lucide-react';
 
 export type MainSection = 'home' | 'field' | 'news' | 'profile';
 
@@ -11,7 +11,7 @@ type BottomNavProps = {
 const items = [
   { id: 'home' as const, label: 'Inicio', icon: Home },
   { id: 'field' as const, label: 'Mi Campo', icon: Sprout },
-  { id: 'news' as const, label: 'Noticias', icon: Newspaper },
+  { id: 'news' as const, label: 'Mágina', icon: Mountain },
   { id: 'profile' as const, label: 'Mi Mágina', icon: UserRound },
 ];
 

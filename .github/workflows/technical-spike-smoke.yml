@@ -14,7 +14,7 @@ concurrency:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     services:
       postgres:
@@ -61,13 +61,13 @@ jobs:
       - name: Run unit tests
         run: npm test
 
-      - name: Migrate Better Auth
+      - name: Migrate Better Auth from pinned dependency
         run: npm run auth:migrate --workspace @magina/api
 
       - name: Migrate business schema
         run: npm run db:migrate
 
-      - name: Verify durable worker and retry state
+      - name: Verify durable worker and lease recovery
         run: bash scripts/spike-worker-gate.sh
 
       - name: Build web PWA
@@ -79,6 +79,22 @@ jobs:
             echo 'Server-only secret material found in frontend bundle'
             exit 1
           fi
+
+      - name: Verify production private storage fails closed
+        run: |
+          if NODE_ENV=production PRIVATE_STORAGE_DRIVER=local \
+            node --input-type=module -e "const { getPrivateStorage } = await import('./apps/api/src/private-storage.ts'); getPrivateStorage();"; then
+            echo 'Production unexpectedly accepted local private storage'
+            exit 1
+          fi
+
+          NODE_ENV=production \
+          PRIVATE_STORAGE_DRIVER=s3 \
+          OBJECT_STORAGE_ENDPOINT=https://example.invalid \
+          OBJECT_STORAGE_BUCKET=magina-ci-private \
+          OBJECT_STORAGE_ACCESS_KEY_ID=ci-access-key \
+          OBJECT_STORAGE_SECRET_ACCESS_KEY=ci-secret-key \
+          node --input-type=module -e "const { getPrivateStorage } = await import('./apps/api/src/private-storage.ts'); getPrivateStorage();"
 
       - name: Start API
         run: |
@@ -99,6 +115,9 @@ jobs:
 
       - name: Verify auth rate limiting
         run: bash scripts/spike-auth-rate-limit.sh
+
+      - name: Verify isolated staging container stack
+        run: bash scripts/staging-container-gate.sh
 
       - name: Stop API
         if: always()

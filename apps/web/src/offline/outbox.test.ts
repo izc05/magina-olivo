@@ -7,6 +7,7 @@ import {
   listPendingOperations,
   syncPendingOperations,
 } from './outbox.ts';
+import { applyPwaUpdateWhenSafe } from '../pwa/update-policy.ts';
 
 const USER_A = 'user-a';
 const USER_B = 'user-b';
@@ -129,5 +130,50 @@ test('switching users never exposes or syncs another users pending operations', 
   assert.equal((await listPendingOperations(USER_A)).length, 1);
 
   await clearOutbox(USER_A);
+  assert.equal((await listPendingOperations(USER_A)).length, 0);
+});
+
+test('PWA update is deferred while outbox is pending and applies only after confirmed sync', async () => {
+  await clearOutbox();
+
+  await enqueueDeliveryCreate({
+    ownerUserId: USER_A,
+    campaignId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+    idempotencyKey: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+    body: {
+      deliveredAt: '2026-11-21T08:00:00+01:00',
+      kilograms: '750.000',
+      customDestination: 'Cooperativa piloto',
+    },
+  });
+
+  let appliedUpdates = 0;
+  const deferred = await applyPwaUpdateWhenSafe({
+    ownerUserId: USER_A,
+    applyUpdate: () => {
+      appliedUpdates += 1;
+    },
+  });
+
+  assert.deepEqual(deferred, {
+    status: 'deferred',
+    pendingOperations: 1,
+    reason: 'pending_outbox',
+  });
+  assert.equal(appliedUpdates, 0);
+  assert.equal((await listPendingOperations(USER_A)).length, 1);
+
+  const sync = await syncPendingOperations(USER_A, async () => new Response(null, { status: 201 }));
+  assert.deepEqual(sync, { attempted: 1, synced: 1, pending: 0 });
+
+  const applied = await applyPwaUpdateWhenSafe({
+    ownerUserId: USER_A,
+    applyUpdate: () => {
+      appliedUpdates += 1;
+    },
+  });
+
+  assert.deepEqual(applied, { status: 'applied', pendingOperations: 0 });
+  assert.equal(appliedUpdates, 1);
   assert.equal((await listPendingOperations(USER_A)).length, 0);
 });

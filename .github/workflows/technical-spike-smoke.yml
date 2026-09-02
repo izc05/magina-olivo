@@ -274,6 +274,42 @@ jobs:
           if (!currentValue || currentValue.status !== 'current') throw new Error('Corrected yield is not current');
           NODE
 
+      - name: Verify campaign weighted summary and coverage
+        run: |
+          CAMPAIGN_A=$(node -e "const fs=require('fs');process.stdout.write(JSON.parse(fs.readFileSync('/tmp/campaign-a.json','utf8')).id)")
+
+          second_delivery_status=$(curl --silent --output /tmp/delivery-second.json --write-out "%{http_code}" \
+            --cookie /tmp/cookies-a.txt \
+            --header 'content-type: application/json' \
+            --header 'Idempotency-Key: 22222222-2222-4222-8222-222222222222' \
+            --data '{"deliveredAt":"2026-11-21T09:00:00+01:00","kilograms":"1000.000","customDestination":"Cooperativa piloto"}' \
+            "http://127.0.0.1:3001/api/v1/campaigns/$CAMPAIGN_A/deliveries")
+          cat /tmp/delivery-second.json
+          test "$second_delivery_status" = "201"
+
+          summary_status=$(curl --silent --output /tmp/summary-a.json --write-out "%{http_code}" \
+            --cookie /tmp/cookies-a.txt \
+            "http://127.0.0.1:3001/api/v1/campaigns/$CAMPAIGN_A/summary")
+          cat /tmp/summary-a.json
+          test "$summary_status" = "200"
+
+          foreign_summary_status=$(curl --silent --output /tmp/summary-by-b.json --write-out "%{http_code}" \
+            --cookie /tmp/cookies-b.txt \
+            "http://127.0.0.1:3001/api/v1/campaigns/$CAMPAIGN_A/summary")
+          test "$foreign_summary_status" = "404"
+
+          node - <<'NODE'
+          const fs = require('fs');
+          const summary = JSON.parse(fs.readFileSync('/tmp/summary-a.json', 'utf8'));
+          if (summary.deliveriesCount !== 2) throw new Error(`Expected 2 deliveries, got ${summary.deliveriesCount}`);
+          if (summary.totalKilograms !== '2842.000') throw new Error(`Unexpected total kg ${summary.totalKilograms}`);
+          if (summary.deliveriesWithResult !== 1) throw new Error('Expected one delivery with result');
+          if (summary.pendingResultCount !== 1) throw new Error('Expected one pending result');
+          if (summary.resultCoveredKilograms !== '1842.000') throw new Error(`Unexpected covered kg ${summary.resultCoveredKilograms}`);
+          if (summary.coveragePercent !== '64.8135') throw new Error(`Unexpected coverage ${summary.coveragePercent}`);
+          if (summary.weightedYieldPercent !== '21.9000') throw new Error(`Unexpected weighted yield ${summary.weightedYieldPercent}`);
+          NODE
+
       - name: Stop API
         if: always()
         run: |

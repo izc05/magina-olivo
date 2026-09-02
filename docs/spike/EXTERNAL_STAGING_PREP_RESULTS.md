@@ -9,8 +9,8 @@ PR: #2, base `feat/foundation-v1`.
 Última evidencia de regresión completa:
 
 - workflow: `Technical Spike Smoke`;
-- run: `33684901561` (#148);
-- job: `100430269298`;
+- run: `33685574076` (#153);
+- job: `100432498783`;
 - conclusión: `success`.
 
 Este documento distingue deliberadamente entre lo que ya se ha ejecutado y lo que solo está preparado para el primer host de staging.
@@ -19,9 +19,10 @@ Este documento distingue deliberadamente entre lo que ya se ha ejecutado y lo qu
 
 ### Regresión completa
 
-El run #148 volvió a pasar:
+El run #153 pasó:
 
 - instalación bloqueada con `npm ci`;
+- validación sintáctica de scripts operativos;
 - TypeScript strict;
 - unit tests;
 - migraciones Better Auth;
@@ -34,21 +35,23 @@ El run #148 volvió a pasar:
 - password reset + revocación de sesiones;
 - rate limiting;
 - stack Docker staging aislado;
-- deploy A;
-- deploy B;
-- rollback A.
+- deploy A + gate de aislamiento post-deploy;
+- deploy B + gate de aislamiento post-deploy;
+- rollback A + gate de aislamiento post-deploy.
 
 ### Validación de scripts operativos
 
-CI ejecuta ahora antes del resto de gates:
+CI ejecuta antes del resto de gates:
 
 - `bash -n` sobre todos los `scripts/*.sh`;
 - `node --check` sobre todos los `scripts/*.mjs`.
 
-Resultado en run #148: **PASS**.
+Resultado en run #153: **PASS**.
 
 Esto incluye sintaxis de:
 
+- `staging-host-preflight.sh`;
+- `staging-host-postdeploy-gate.sh`;
 - `staging-https-gate.sh`;
 - `staging-backup.sh`;
 - `staging-restore-gate.sh`;
@@ -57,9 +60,49 @@ Esto incluye sintaxis de:
 - `import-private-objects.mjs`;
 - scripts existentes de smoke/release/worker/restore.
 
+### Gate de aislamiento post-deploy
+
+El release lifecycle CI ejecuta ahora `staging-host-postdeploy-gate.sh` tres veces: tras A, tras B y tras rollback A.
+
+En las tres transiciones se demostró:
+
+- PostgreSQL `running` + `healthy`;
+- API `running` + `healthy`;
+- worker `running`;
+- Nginx/web `running`;
+- PostgreSQL sin puertos publicados al host;
+- API sin puertos publicados al host;
+- worker sin puertos publicados al host;
+- Nginx publicado únicamente en `127.0.0.1:<STAGING_BIND>`;
+- `/health/ready` 200 a través de Nginx local;
+- raíz PWA 200 por la misma entrada same-origin.
+
+Esto convierte el aislamiento del host en una regresión automática: una futura modificación de Compose que exponga 3001/5432 o abra Nginx fuera de loopback debe romper el release gate.
+
+### Preflight del host preparado
+
+`staging-host-preflight.sh` valida antes del primer deploy real:
+
+- Linux y arquitectura soportada;
+- Docker + Compose v2;
+- utilidades mínimas;
+- env file no accesible a grupo/otros;
+- claves obligatorias presentes sin imprimir valores;
+- `BETTER_AUTH_URL` HTTPS;
+- trusted origins coherentes;
+- object storage HTTPS;
+- `STAGING_BIND` loopback;
+- `capture` de correo prohibido;
+- configuración Resend completa si se activa;
+- mínimo de disco libre;
+- advertencia NTP;
+- puertos 3001/5432 no ocupados previamente en el host.
+
+Su sintaxis está validada por CI; su ejecución con un host real sigue pendiente.
+
 ### Transporte de correo
 
-El adapter de autenticación soporta ahora:
+El adapter de autenticación soporta:
 
 - `disabled`;
 - `capture` exclusivamente en `NODE_ENV=test`;
@@ -86,7 +129,7 @@ El flujo funcional Better Auth sigue demostrando:
 
 ### Staging secrets wiring
 
-`compose.staging.yml` admite ahora:
+`compose.staging.yml` admite:
 
 - `AUTH_MAIL_TRANSPORT`;
 - `AUTH_MAIL_FROM`;
@@ -139,7 +182,23 @@ Protecciones incorporadas:
 
 ## PREPARADO pero todavía NO PASS externo
 
-Los siguientes puntos requieren recursos reales y no se marcan como demostrados por CI:
+Los siguientes puntos requieren recursos reales y no se marcan como demostrados por CI.
+
+### Host real
+
+Preparado:
+
+- preflight de host;
+- deploy reproducible;
+- post-deploy isolation gate;
+- regresión automática del isolation gate en A/B/rollback.
+
+Pendiente real:
+
+- seleccionar host de staging;
+- ejecutar preflight en él;
+- desplegar release A allí;
+- repetir isolation gate sobre el host físico elegido.
 
 ### Cloudflare Tunnel / HTTPS
 
@@ -187,7 +246,7 @@ Preparado:
 - transporte Resend sin SDK adicional;
 - env wiring;
 - test unitario del request;
-- Better Auth reset/revocación ya verde.
+- Better Auth reset/revocación verde.
 
 Pendiente real:
 
@@ -218,20 +277,22 @@ Cuando exista el host de staging:
 
 ```text
 1. host limpio
-2. env file de secretos
-3. dos buckets R2 de staging
-4. gate R2 roundtrip
-5. deploy release A
-6. Cloudflare Tunnel
-7. gate HTTPS/Secure/origin/logout
-8. transporte Resend + correo real de reset
-9. deploy release B
-10. rollback A
-11. backup off-host
-12. restore DB + objetos en targets aislados
-13. registrar evidencias
-14. integrar UI final
-15. decidir entrada a piloto cerrado
+2. secrets-managed env file
+3. staging-host-preflight
+4. dos buckets R2 de staging
+5. R2 roundtrip
+6. deploy release A
+7. host post-deploy isolation gate
+8. Cloudflare Tunnel
+9. HTTPS/Secure/origin/logout gate
+10. transporte Resend + correo real de reset
+11. deploy release B + isolation gate
+12. rollback A + isolation gate
+13. backup off-host
+14. restore DB + objetos en targets aislados
+15. registrar evidencias
+16. integrar UI final
+17. decidir entrada a piloto cerrado
 ```
 
-Hasta completar 3–12 con datos sintéticos, **no introducir datos reales de agricultores**.
+Hasta completar 3–14 con datos sintéticos, **no introducir datos reales de agricultores**.

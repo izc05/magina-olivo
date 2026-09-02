@@ -117,17 +117,17 @@ Implementado en la rama `feat/visual-v2-foundation`:
 - Mercado
 - Agenda
 - Alertas
+- Comunidad
 - Mágina Local
 - Descubre
 - Mi Mágina / Perfil
 
 Pendiente de siguiente pasada:
 
-- Comunidad
 - Estados técnicos integrados en React
 - Sustitución de placeholders paisajísticos por fotografía oficial seleccionada
 - Auditoría visual final contra las referencias iniciales
 
 ## Orden de implementación
 
-Inicio → Meteorología → Mi Campo → Parcela/Mapa → Cuaderno → Campaña → Costes y rentabilidad → Maquinaria → Cooperativas → Mercado → Noticias → Mágina Local → Descubre → Mi Mágina → Comunidad → estados técnicos → auditoría visual final.
+Inicio → Meteorología → Mi Campo → Parcela/Mapa → Cuaderno → Campaña → Costes y rentabilidad → Maquinaria → Cooperativas → Mercado → Noticias → Mágina Local → Descubre → Comunidad → Mi Mágina → estados técnicos → auditoría visual final.

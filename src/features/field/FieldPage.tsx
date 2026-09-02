@@ -17,12 +17,14 @@ import {
   TrendingUp,
   Weight,
 } from 'lucide-react';
+import type { AppNavigate, FieldTarget } from '../../app/navigation';
 import { Brand } from '../../components/Brand';
-import { BottomNav, MainSection } from '../../components/BottomNav';
+import { BottomNav } from '../../components/BottomNav';
 import { FarmManagementPanel } from './FarmManagementPanel';
 
 type FieldPageProps = {
-  onNavigate: (section: MainSection) => void;
+  onNavigate: AppNavigate;
+  initialTab?: FieldTarget;
 };
 
 type Parcel = {
@@ -36,8 +38,6 @@ type Parcel = {
   status: 'Bueno' | 'Revisar';
   note: string;
 };
-
-type FieldTab = 'overview' | 'journal' | 'campaign' | 'costs' | 'machinery';
 
 const parcels: Parcel[] = [
   { id: 1, name: 'Parcela 1', area: '5,20 ha', variety: 'Picual', altitude: '650 m', frame: '7 × 7 m', slope: '12 %', status: 'Bueno', note: 'Desarrollo vegetativo correcto.' },
@@ -54,9 +54,9 @@ const journalEntries = [
   { date: '22 AGO', title: 'Abonado', detail: 'Parcela 3 · Los Llanos', meta: 'Registrado', icon: Sprout },
 ];
 
-export function FieldPage({ onNavigate }: FieldPageProps) {
+export function FieldPage({ onNavigate, initialTab = 'overview' }: FieldPageProps) {
   const [selectedId, setSelectedId] = useState(3);
-  const [tab, setTab] = useState<FieldTab>('overview');
+  const [tab, setTab] = useState<FieldTarget>(initialTab);
   const selected = useMemo(() => parcels.find((parcel) => parcel.id === selectedId) ?? parcels[0], [selectedId]);
 
   return (
@@ -64,7 +64,7 @@ export function FieldPage({ onNavigate }: FieldPageProps) {
       <main className="mobile-page">
         <header className="topbar">
           <Brand />
-          <button className="icon-button" type="button" aria-label="Notificaciones"><Bell size={20} /></button>
+          <button className="icon-button" type="button" aria-label="Notificaciones" onClick={() => onNavigate('news', 'alertas')}><Bell size={20} /></button>
         </header>
 
         <section className="farm-hero">

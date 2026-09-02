@@ -8,7 +8,7 @@
     "build": "tsc -p tsconfig.json --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --test src/offline/outbox.test.ts"
+    "test": "node --test src/offline/outbox.test.ts src/api-offline.test.ts"
   },
   "dependencies": {
     "react": "^19.2.7",

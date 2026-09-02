@@ -36,20 +36,21 @@ La prioridad visual sigue siendo:
 - Descubre dispone de una estructura mucho más fotográfica que el resto de módulos.
 - Meteorología traduce datos en recomendaciones de trabajo de campo.
 - Mercado evita parecer una aplicación financiera.
+- Inicio ya abre directamente Cuaderno, Alertas, Mercado y Meteorología sin obligar al usuario a buscar la pestaña manualmente.
 
 ### Desviaciones todavía pendientes
 
 1. **Fotografía:** Inicio, Mi Campo, Noticias y Descubre aún usan fondos/gradientes temporales en lugar de las fotografías finales.
 2. **Densidad de pestañas:** Mágina y Mi Campo concentran muchas ramas; el scroll horizontal funciona, pero hay que validar visualmente que no se perciba como un panel de software.
-3. **Flujos incompletos:** varias tarjetas ya existen pero todavía no abren un detalle completo.
+3. **Flujos secundarios:** Comunidad, documentos y algunos contenidos editoriales todavía pueden ganar detalle.
 4. **Mapa de finca:** sigue siendo una representación esquemática; en la implementación de datos real deberá evolucionar a cartografía útil.
-5. **Datos demo:** mercado, campaña, meteorología y costes deben distinguir siempre contenido demostrativo de datos reales.
+5. **Datos demo:** mercado, campaña, meteorología, rutas, agenda y costes deben distinguir siempre contenido demostrativo de datos reales.
 
 ## Auditoría por pantalla
 
 ### Inicio
 
-**Estado:** muy cercano a la referencia.
+**Estado:** flujo P0 cerrado salvo fotografía.
 
 Ya incluye:
 - hero visual + meteorología;
@@ -58,12 +59,15 @@ Ya incluye:
 - precio AOVE compacto;
 - alertas;
 - noticia destacada;
-- barra inferior y `+`.
+- barra inferior y `+`;
+- acceso directo a Cuaderno;
+- acceso directo a Alertas;
+- acceso directo a Mercado;
+- acceso directo a Meteorología.
 
 Pendiente:
 - fotografía oficial del olivar / Sierra Mágina;
-- valorar un bloque muy compacto de 1–2 próximas tareas si no aumenta demasiado la densidad;
-- enlazar accesos rápidos directamente a la subsección correcta, no solo al módulo principal.
+- valorar un bloque muy compacto de 1–2 próximas tareas si no aumenta demasiado la densidad.
 
 ### Meteorología
 
@@ -89,7 +93,8 @@ Ya incluye:
 - cuaderno;
 - campaña;
 - costes y rentabilidad;
-- maquinaria.
+- maquinaria;
+- apertura directa de Cuaderno desde Inicio.
 
 Pendiente:
 - fotografía oficial en el hero;
@@ -100,7 +105,7 @@ Pendiente:
 
 ### Mágina
 
-**Estado:** cobertura alta, flujo aún parcialmente abierto.
+**Estado:** cobertura alta con los flujos principales cerrados.
 
 Ya incluye:
 - noticias;
@@ -110,11 +115,11 @@ Ya incluye:
 - Mágina Local;
 - Descubre;
 - Comunidad;
-- Agenda;
-- Alertas.
+- Agenda con detalle de evento;
+- Alertas;
+- apertura directa de Mercado y Alertas desde Inicio.
 
 Pendiente:
-- detalle de evento;
 - fuente / fecha / trazabilidad de mercado;
 - evaluar si ocho pestañas son demasiadas y si conviene un bloque `Más` o accesos secundarios.
 
@@ -142,9 +147,17 @@ Pendiente para datos reales:
 
 ### Descubre
 
-**Prioridad fotográfica: máxima.**
+**Estado:** flujo de rutas cerrado; prioridad fotográfica máxima.
 
-Es la rama que más depende de fotografía real.
+Ya incluye:
+- portada territorial;
+- accesos a rutas, miradores, gastronomía y oleoturismo;
+- rutas destacadas;
+- detalle de ruta;
+- distancia, dificultad y duración;
+- destacados de la ruta;
+- guardado en Mi Mágina;
+- aviso explícito cuando los datos son de demostración.
 
 Pendiente:
 - hero oficial de Sierra Mágina;
@@ -152,9 +165,28 @@ Pendiente:
 - pueblos;
 - gastronomía;
 - almazara / oleoturismo;
-- detalle de ruta;
 - detalle de pueblo/lugar;
 - detalle de experiencia.
+
+### Agenda
+
+**Estado:** flujo P1 esencial cerrado.
+
+Ya incluye:
+- listado de eventos;
+- fecha y horario;
+- municipio;
+- categoría;
+- detalle del evento;
+- descripción;
+- contexto de ubicación;
+- guardado en Mi Mágina;
+- diferenciación de información de demostración.
+
+Pendiente para datos reales:
+- fuente oficial;
+- enlace del organizador;
+- dirección exacta o mapa cuando exista información verificable.
 
 ### Comunidad
 
@@ -204,12 +236,12 @@ No requiere fotografía prioritaria.
 
 Prioridad P0:
 - ✅ ficha completa de cooperativa;
-- acceso directo desde Inicio a Cuaderno / Alertas / Mercado / Meteorología;
+- ✅ acceso directo desde Inicio a Cuaderno / Alertas / Mercado / Meteorología;
 - fotografía oficial en Inicio, Mi Campo, Noticias y Descubre.
 
 Prioridad P1:
-- detalle de ruta;
-- detalle de evento;
+- ✅ detalle de ruta;
+- ✅ detalle de evento;
 - detalle de publicación de Comunidad;
 - detalle/preview de documento.
 
@@ -238,12 +270,21 @@ Prioridad P2:
 
 No usar imágenes genéricas de olivar si no transmiten Sierra Mágina / Jaén. Deben sentirse territoriales, naturales y cercanas. Evitar stock excesivamente publicitario o imágenes que parezcan de Toscana, Grecia u otras regiones.
 
+No se incorporará una imagen web al repositorio sin comprobar licencia, autoría y condiciones de reutilización. Las fuentes institucionales pueden servir como referencia visual, pero no implican permiso automático de uso.
+
+## Estado de validación técnica
+
+- El proyecto declara `npm run build` como `tsc -b && vite build`.
+- La navegación interna está tipada mediante `AppNavigate`, `FieldTarget` y `MaginaTarget`.
+- El último commit consultado no tenía checks/estados de CI asociados en GitHub.
+- Por tanto, la compilación final debe verificarse antes de considerar la rama lista para merge.
+
 ## Orden de cierre V2.1
 
 1. ✅ Cerrar ficha de cooperativa.
-2. Cerrar navegación directa entre Inicio y subsecciones.
-3. Cerrar ruta/evento esenciales.
-4. Seleccionar e incorporar fotografía oficial.
+2. ✅ Cerrar navegación directa entre Inicio y subsecciones.
+3. ✅ Cerrar ruta/evento esenciales.
+4. Seleccionar e incorporar fotografía oficial/licenciada.
 5. Revisar densidad de pestañas.
 6. Auditoría móvil completa.
 7. Adaptación tablet/escritorio.

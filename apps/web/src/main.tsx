@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { App } from './App';
 import { ConnectivityStatus } from './ConnectivityStatus';
+import { ResetPassword } from './ResetPassword';
 import './styles.css';
 import './connectivity.css';
 
@@ -18,7 +19,13 @@ if (!root) throw new Error('Root element not found');
 
 createRoot(root).render(
   <StrictMode>
-    <ConnectivityStatus />
-    <App />
+    {window.location.pathname === '/reset-password' ? (
+      <ResetPassword />
+    ) : (
+      <>
+        <ConnectivityStatus />
+        <App />
+      </>
+    )}
   </StrictMode>,
 );

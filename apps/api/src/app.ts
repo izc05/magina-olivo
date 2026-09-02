@@ -10,6 +10,7 @@ import { registerDocumentRoutes } from './document-routes.ts';
 import { registerFarmRoutes } from './farm-routes.ts';
 import { registerHoldingRoutes } from './holding-routes.ts';
 import { registerPlotRoutes } from './plot-routes.ts';
+import { registerPlotTimelineRoutes } from './plot-timeline-routes.ts';
 import { registerRequestSecurity } from './request-security.ts';
 
 export function buildApp(): FastifyInstance {
@@ -53,6 +54,7 @@ export function buildApp(): FastifyInstance {
   registerHoldingRoutes(app);
   registerFarmRoutes(app);
   registerPlotRoutes(app);
+  registerPlotTimelineRoutes(app);
   registerCampaignRoutes(app);
   registerDeliveryRoutes(app);
   registerDeliveryUpdateRoutes(app);

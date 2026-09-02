@@ -47,14 +47,27 @@
 - Agenda
 - Comunidad
 - Mágina Local
+- Descubre
+
+### Mágina Local
+- Servicios agrícolas
+- Maquinaria y labores
+- Talleres y repuestos
+- Suministros
+- Combustible
+- Empleo y campaña
+- Municipios
+- Tablón local
 
 ### Descubre
+- Portada territorial
 - Rutas
 - Pueblos
-- Naturaleza
+- Naturaleza y miradores
 - Gastronomía
 - Oleoturismo
 - Patrimonio
+- Planes recomendados
 
 ### Mi Mágina
 - Perfil
@@ -77,6 +90,34 @@
 - Error
 - Confirmación
 
+## Estado de implementación visual V2
+
+Implementado en la rama `feat/visual-v2-foundation`:
+
+- Inicio V2
+- Mi Campo V2
+- Parcelas y mapa
+- Cuaderno de campo
+- Campaña
+- Noticias / Mágina
+- Cooperativas
+- Mercado
+- Agenda
+- Alertas
+- Mágina Local
+- Descubre
+- Mi Mágina / Perfil
+
+Pendiente de siguiente pasada:
+
+- Meteorología detallada
+- Costes y rentabilidad
+- Maquinaria
+- Comunidad
+- Estados técnicos integrados en React
+- Sustitución de placeholders paisajísticos por fotografía oficial seleccionada
+- Auditoría visual final contra las referencias iniciales
+
 ## Orden de implementación
 
-Inicio → Mi Campo → Parcela/Mapa → Cuaderno → Campaña → Cooperativas → Meteorología → Mercado → Noticias → Mágina Local → Descubre → Mi Mágina → estados técnicos.
+Inicio → Mi Campo → Parcela/Mapa → Cuaderno → Campaña → Cooperativas → Mercado → Noticias → Mágina Local → Descubre → Mi Mágina → Meteorología detallada → módulos secundarios → estados técnicos → auditoría visual final.

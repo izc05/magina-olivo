@@ -2,6 +2,7 @@
 set -euo pipefail
 
 COMPOSE_FILE="infra/docker/compose.staging.yml"
+POSTGRES_IMAGE="postgres:18.6-alpine"
 export COMPOSE_PROJECT_NAME="magina-ci-staging"
 export MAGINA_IMAGE_TAG="ci-${GITHUB_SHA:-local}"
 export POSTGRES_PASSWORD="magina_staging_ci_password"
@@ -36,6 +37,9 @@ trap cleanup EXIT
 log "Rendering staging Compose configuration"
 docker compose -f "$COMPOSE_FILE" config >/tmp/magina-staging-compose-rendered.yml
 
+log "Pulling pinned PostgreSQL base image"
+docker pull "$POSTGRES_IMAGE"
+
 log "Building release-tagged runtime image"
 docker build \
   --file infra/docker/Dockerfile.runtime \
@@ -48,7 +52,7 @@ docker build \
   --tag "magina-olivo-web:$MAGINA_IMAGE_TAG" \
   .
 
-log "Starting isolated staging stack from tagged images"
+log "Starting isolated staging stack from tagged application images"
 if ! docker compose -f "$COMPOSE_FILE" up -d --pull never; then
   diagnostics
   exit 1

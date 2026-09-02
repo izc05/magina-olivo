@@ -1,215 +1,266 @@
-# Decisión de arquitectura técnica V1 — Mágina Olivo
+# Decisión de arquitectura técnica — Mágina Olivo
 
 Fecha: 2026-09-02
-Estado: propuesta adoptada para iniciar fundación técnica, pendiente únicamente de validación en spike.
+Estado: arquitectura candidata adoptada para spike; decisiones finas se validan con implementación.
 
 ## Objetivo
 
-Elegir una arquitectura mantenible para una PWA agrícola móvil que pueda:
+Elegir una base técnica durable para datos agrícolas históricos, PWA offline, documentos privados e integraciones progresivas, sin depender de IA ni de software de cooperativa.
 
-- conservar datos durante años;
-- soportar varias explotaciones y miembros;
-- manejar documentos privados;
-- funcionar con conectividad irregular;
-- integrar AEMET, RAIF, SIGPAC y proveedores de almazara mediante adapters;
-- crecer sin depender de una API de IA;
-- poder desplegarse en infraestructura propia mediante contenedores.
-
-## Decisión
+## Stack del spike
 
 ### Frontend
-
 - React + TypeScript + Vite.
 - PWA instalable.
-- Service worker para shell de aplicación, assets y estrategias de caché.
-- IndexedDB para borradores, datos recientes y cola local de escrituras.
+- IndexedDB para datos locales limitados, borradores y outbox.
 - Dexie como wrapper candidato de IndexedDB, sujeto a spike técnico.
+- contratos compartidos mediante package neutral.
 
-### Backend
+### Runtime backend
+- Node.js 24 LTS.
+- Fastify 5 como framework API candidato.
+- TypeScript strict.
 
-- Node.js LTS + TypeScript.
-- Fastify como servidor HTTP/API.
-- API propia versionada: `/api/v1/...`.
-- Validación de entrada/salida basada en esquemas.
-- Separación por dominios: identity, holdings, field, campaign, deliveries, results, documents, imports, cooperatives, alerts, automations.
+Node 24 figura actualmente como LTS en la política oficial de Node.js; para producción se priorizan ramas LTS frente a Current.
 
 ### Base de datos
+- PostgreSQL 18.x.
+- Fuente de verdad del dominio.
+- migraciones versionadas.
+- `numeric` para kilos/rendimientos/cantidades exactas.
 
-- PostgreSQL como fuente de verdad de datos estructurados.
-- Migraciones SQL versionadas en repositorio.
-- UUIDs internos para entidades sincronizables/offline.
-- Constraints e índices en base de datos, no solo en frontend.
-- Campos derivados reconstruibles desde eventos/registros base.
+PostgreSQL 18 es la versión current soportada y 18.6 fue publicada el 13 de agosto de 2026.
 
-Para el piloto se recomienda una versión estable y soportada de PostgreSQL, evitando versiones beta.
+### Auth
+- Better Auth como candidato inicial.
+- PostgreSQL para usuarios/sesiones.
+- sesión server-side con cookie HttpOnly/Secure.
+- autorización de holdings implementada en dominio/API, no delegada a la librería auth.
 
-### Autenticación
+Better Auth documenta PostgreSQL, TypeScript y gestión tradicional de sesión/cookies; debe superar el spike antes de adopción final.
 
-- Sesiones seguras server-side/cookie según librería elegida.
-- Better Auth es el candidato inicial porque soporta email/password, recuperación de contraseña y PostgreSQL.
-- No implementar criptografía de contraseñas propia.
-- Verificación de email antes de habilitar funciones sensibles en la versión pública.
-- Rate limiting en login/reset y controles antiabuso.
+### Documentos
+- object storage privado.
+- Cloudflare R2 como candidato productivo por coste/simplicidad.
+- metadata/document links en PostgreSQL.
+- URLs temporales para acceso.
 
-La librería de autenticación podrá sustituirse sin alterar las entidades de negocio.
+### Automatización
+- worker Node/TypeScript.
+- job outbox en PostgreSQL inicialmente.
+- no Redis/queue externa hasta medir necesidad.
 
-### Documentos y fotografías
+### Integraciones
+Siempre:
 
-Separar metadatos de archivo y binario:
+`Proveedor -> Adapter -> contrato canónico -> dominio`
 
-- PostgreSQL: propietario, tipo, hash, tamaño, relaciones, estado.
-- Object storage: bytes del PDF/foto/ticket.
+Nunca exponer el formato AEMET/RAIF/portal directamente al frontend como dependencia estable.
 
-Candidato de producción: Cloudflare R2 mediante API S3-compatible.
+## Por qué PostgreSQL y no PocketBase como fuente de verdad V1
 
-Razones:
+PocketBase es excelente para prototipos pequeños y sigue siendo útil en otros proyectos, pero su documentación oficial mantiene la advertencia pre-v1.0 y no recomienda aplicaciones críticas salvo aceptación de migraciones/cambios manuales.
 
-- documentos privados independientes del ciclo de vida de la base de datos;
-- URLs firmadas/de corta duración;
-- buena escalabilidad;
-- posibilidad de backups independientes;
-- coste reducido para un piloto.
+Mágina Olivo pretende conservar años de:
+- entregas;
+- rendimientos;
+- labores;
+- documentos;
+- campañas;
+- trazabilidad.
 
-En desarrollo local puede usarse almacenamiento S3-compatible local o un adapter filesystem explícitamente no productivo.
+Para ese núcleo se elige PostgreSQL.
 
-### Automatizaciones
+Esto no significa que PostgreSQL sea suficiente por sí mismo: necesitamos migraciones, backups, restore, autorización y observabilidad bien implementados.
 
-No ejecutar trabajos periódicos dentro del navegador.
-
-Backend/worker responsable de:
-
-- ingestión AEMET;
-- ingestión RAIF;
-- comprobación de tareas vencidas;
-- entregas pendientes de rendimiento;
-- resúmenes diarios/semanales;
-- mantenimiento de importaciones;
-- notificaciones.
-
-Diseño inicial:
-
-`API -> tabla jobs/outbox -> worker -> adapters externos`
-
-No introducir una plataforma compleja de colas hasta que el volumen lo justifique. PostgreSQL puede almacenar jobs V1 con locking y reintentos controlados.
-
-### IA
-
-Proveedor de IA detrás de `AiProvider` y exclusivamente en backend.
-
-Ninguna tabla agrícola tendrá dependencia obligatoria de campos generados por IA.
-
-Funciones futuras:
-
-- extracción de ticket/PDF;
-- lenguaje natural a borrador de labor;
-- consulta/resumen de datos autorizados.
-
-Siempre: salida estructurada -> validación -> preview -> confirmación humana.
-
-## Por qué PostgreSQL y no PocketBase como fuente principal
-
-PocketBase es muy atractivo para prototipos por su binario pequeño, SQLite, auth, API y panel integrado. Sin embargo, su documentación oficial continúa indicando que está en desarrollo activo y que la compatibilidad completa no está garantizada antes de v1.0; además desaconseja su uso en aplicaciones críticas si no se acepta gestionar migraciones manuales ocasionales.
-
-Mágina Olivo pretende conservar campañas, documentos y trazabilidad durante años. Para ese núcleo se prioriza una base relacional madura y una API propia.
-
-PocketBase podría seguir utilizándose en prototipos aislados o herramientas internas, pero no será una dependencia de la arquitectura V1.
-
-## Por qué no Supabase/Firebase como dependencia obligatoria
-
-No existe un rechazo técnico a esos servicios. La decisión es mantener:
-
-- portabilidad;
-- posibilidad de self-hosting;
-- control de costes;
-- dominio de datos claro;
-- API propia estable ante cambios de proveedor.
-
-Un PostgreSQL gestionado podría reemplazar al PostgreSQL self-hosted sin cambiar el modelo funcional.
-
-## Monorepo objetivo
+## Monorepo candidato
 
 ```text
-magina-olivo/
-├── apps/
-│   ├── web/          # React PWA
-│   ├── api/          # Fastify API
-│   └── worker/       # jobs/automatizaciones
-├── packages/
-│   ├── contracts/    # tipos/esquemas compartidos
-│   ├── domain/       # lógica de negocio pura
-│   └── config/
-├── db/
-│   ├── migrations/
-│   └── seeds/
-├── docs/
-└── infra/
-    ├── docker/
-    └── backup/
+apps/
+  web/
+  api/
+  worker/
+packages/
+  contracts/
+  db/
+  config/
+  ui/
+  test-utils/
+infra/
+  docker/
+  scripts/
 ```
 
-No crear `apps/worker` separado si el spike demuestra que basta con un proceso API + worker mode compartiendo código; la separación lógica sí debe mantenerse.
+`apps/worker` puede compartir proceso/código con API si el spike demuestra que simplifica operación; la separación lógica de jobs debe mantenerse.
 
 ## API
 
-Convenciones:
+Base path:
 
-- `/api/v1/holdings`
-- `/api/v1/farms`
-- `/api/v1/plots`
-- `/api/v1/campaigns`
-- `/api/v1/deliveries`
-- `/api/v1/results`
-- `/api/v1/activities`
-- `/api/v1/documents`
-- `/api/v1/imports`
-- `/api/v1/cooperatives`
-- `/api/v1/alerts`
+`/api/v1`
 
-Toda operación privada valida la membresía del `holding` en backend.
+Principios:
+- schemas runtime;
+- OpenAPI antes del MVP completo;
+- idempotency key en escrituras con retry;
+- versión/ETag para concurrencia;
+- request id;
+- autorización server-side;
+- paginación cursor para históricos.
 
-## IDs y concurrencia
+Ver `API_CONTRACT_V1.md`.
 
-- UUID generado antes de sincronizar cuando sea necesario crear offline.
-- `created_at` / `updated_at` del servidor.
-- versión o `updated_at` usado para optimistic concurrency en entidades editables.
-- idempotency key en operaciones susceptibles de reenvío offline/importación.
-- no confiar en timestamps del teléfono como única fuente de orden global.
+## Modelo de datos
+
+Ver `DATABASE_SCHEMA_V1.md`.
+
+Decisiones estructurales:
+- `holding` como scope privado;
+- entrega separada de resultado/rendimiento;
+- documento binario fuera de PostgreSQL;
+- importaciones pasan por staging;
+- agregados reconstruibles;
+- auditoría separada de logs.
+
+## Multi-tenant
+
+Unidad de aislamiento: `holding`.
+
+Defensa obligatoria:
+- membership/role en API;
+- queries scoped;
+- tests cross-holding.
+
+Defensa adicional a evaluar:
+- PostgreSQL Row Level Security.
+
+RLS nunca sustituirá autorización del servicio si se adopta.
+
+## Autenticación
+
+Ver `AUTH_SESSION_V1.md`.
+
+Objetivo:
+- sesión server-side;
+- cookie HttpOnly/Secure;
+- no token de larga duración en localStorage;
+- CSRF/CORS/origin checks;
+- rate limiting;
+- outbox namespaced por usuario/holding.
+
+## Offline
+
+Modelo:
+
+```text
+UI
+ ↓
+IndexedDB/outbox
+ ↓
+API /api/v1
+ ↓
+Idempotency
+ ↓
+PostgreSQL
+```
+
+Background Sync se considera optimización progresiva, no mecanismo único.
+
+La sincronización también ocurre por:
+- reconexión;
+- apertura;
+- foreground;
+- acción manual.
+
+## Entornos y despliegue
+
+Ver `ENVIRONMENTS_DEPLOYMENT_V1.md`.
+
+Separados:
+- local;
+- test/CI;
+- staging;
+- production.
+
+Secretos y datos no se comparten entre ellos.
+
+Preferencia topológica V1: mismo origen web/API cuando sea viable para simplificar cookies/CORS/CSRF.
+
+## Observabilidad
+
+Ver `OBSERVABILITY_V1.md`.
+
+Desde el spike:
+- logs estructurados;
+- request id;
+- health live/ready;
+- métricas básicas de latencia/error/jobs;
+- no payloads privados/secretos.
+
+## Seguridad
+
+Ver `THREAT_MODEL_V1.md`.
+
+P0 antes de piloto:
+- aislamiento cross-holding;
+- cookies/sesiones;
+- idempotencia offline;
+- tickets privados;
+- upload seguro;
+- secretos;
+- backups/restore.
+
+## Estrategia ORM/query builder
+
+No se fija por documentación.
+
+El spike comparará el candidato elegido por:
+- soporte PostgreSQL;
+- migraciones claras;
+- SQL observable;
+- tipos;
+- transacciones;
+- facilidad para queries multi-tenant;
+- compatibilidad con RLS si se adopta;
+- mantenimiento.
+
+La base de datos es el contrato durable; el ORM es reemplazable.
 
 ## Backups
 
-Como mínimo antes de piloto real:
+Antes de piloto:
+- backup PostgreSQL automatizable;
+- copia fuera del host principal;
+- estrategia object storage;
+- restauración sobre entorno limpio;
+- evidencia de restore documentada.
 
-- backup automatizado de PostgreSQL;
-- copia/versionado de object storage;
-- restauración probada, no solo backup creado;
-- política de retención documentada;
-- credenciales y secretos fuera de Git.
+Un backup sin restore probado no supera el gate.
 
-## Seguridad mínima
+## Gate
 
-- HTTPS obligatorio.
-- cookies seguras/HttpOnly/SameSite cuando aplique.
-- CSRF según modelo de sesión.
-- rate limiting.
-- validación estricta de MIME/tamaño de archivos.
-- nombres de archivo internos aleatorios.
-- autorización de descarga comprobada por backend.
-- logs sin tokens ni contenido privado completo.
-- separación de secretos por entorno.
+Antes de ampliar el MVP debe pasar `TECHNICAL_SPIKE_ACCEPTANCE.md`.
 
-## Decisiones aplazadas intencionadamente
+Entre otras cosas debe probar realmente:
+- login;
+- holding A/B aislados;
+- finca/parcela/campaña;
+- entrega 1.842 kg;
+- rendimiento 21,7 % posterior;
+- ticket privado;
+- retry sin duplicado;
+- offline outbox;
+- conflicto concurrente;
+- backup/restore;
+- health/observabilidad.
 
-- ORM/query builder definitivo: elegir tras spike pequeño, sin acoplar dominio a él.
-- proveedor de email transaccional.
-- proveedor final de hosting.
-- servicio push dedicado o Web Push propio.
-- proveedor de IA.
-- integración directa con un proveedor de almazaras.
+## Referencias oficiales verificadas al tomar la decisión
 
-## Spike técnico de entrada
+- Node.js Releases: https://nodejs.org/en/about/previous-releases
+- Fastify v5 Migration/LTS: https://fastify.dev/docs/latest/Guides/Migration-Guide-V5/
+- PostgreSQL 18: https://www.postgresql.org/docs/18/
+- Better Auth PostgreSQL: https://better-auth.com/docs/adapters/postgresql
+- Better Auth Session Management: https://better-auth.com/docs/concepts/session-management
+- Better Auth Cookies: https://better-auth.com/docs/concepts/cookies
 
-Antes del MVP completo, construir una prueba vertical mínima:
-
-`login -> explotación -> parcela -> entrega -> resultado -> offline draft -> sync -> documento privado`
-
-Criterio de éxito: demostrar autorización, migraciones, almacenamiento privado y reintento idempotente antes de ampliar módulos.
+Estas referencias deben revisarse al ejecutar el spike si ha pasado tiempo o hay nuevas major versions.

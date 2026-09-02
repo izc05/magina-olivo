@@ -9,9 +9,9 @@ services:
       POSTGRES_USER: magina
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
     volumes:
-      - magina_staging_postgres:/var/lib/postgresql/data
+      - magina_staging_postgres:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U magina -d magina_olivo"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U magina -d magina_olivo"]
       interval: 5s
       timeout: 3s
       retries: 12

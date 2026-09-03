@@ -1,9 +1,18 @@
+export type CooperativeProduct = {
+  name: string;
+  type: string;
+  format?: string;
+};
+
 export type CooperativeRecord = {
   id: string;
   name: string;
   town: string;
   brand: string;
   dop: boolean;
+  officialWebsite?: string;
+  productSourceUrl?: string;
+  products?: CooperativeProduct[];
 };
 
 export type CooperativesPayload = {

@@ -38,6 +38,53 @@
   padding-bottom: 146px;
 }
 
+@media (max-width: 430px) {
+  .field-tabs {
+    overflow-x: hidden;
+    gap: 4px;
+  }
+
+  .field-tab {
+    min-width: 0;
+    padding: 0 5px;
+    gap: 4px;
+    font-size: 10px;
+  }
+
+  .field-tab svg {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 auto;
+  }
+
+  .hub-tabs--primary {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 3px;
+    overflow: visible;
+    padding: 4px;
+  }
+
+  .hub-tabs--primary .hub-tab {
+    min-width: 0;
+    padding: 0 2px;
+    font-size: 9.5px;
+  }
+
+  .profile-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+    overflow: visible;
+  }
+
+  .profile-tab {
+    min-width: 0;
+    padding: 0 5px;
+    font-size: 10.5px;
+  }
+}
+
 @media (max-width: 390px) {
   .bottom-nav {
     grid-template-columns: repeat(5, minmax(0, 1fr));

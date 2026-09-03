@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { areaDifferencePercent, differenceBand, numericArea } from './parcel-source-comparison.ts';
 import './parcel-source-comparison.css';
 
 type BoundarySource = 'manual_map' | 'manual_gps' | 'imported' | 'sigpac' | 'catastro';
@@ -15,7 +16,6 @@ type PlotComparison = {
   boundarySourceCheckedAt: string | null;
 };
 type ApiErrorBody = { error?: { message?: string } };
-type DifferenceBand = 'none' | 'low' | 'medium' | 'high';
 
 async function request<T>(url: string): Promise<T> {
   const response = await fetch(url, {
@@ -33,26 +33,6 @@ async function request<T>(url: string): Promise<T> {
     throw new Error(message);
   }
   return await response.json() as T;
-}
-
-function numericArea(value: string | null): number | null {
-  if (value == null || value.trim() === '') return null;
-  const number = Number(value);
-  return Number.isFinite(number) && number >= 0 ? number : null;
-}
-
-export function areaDifferencePercent(declaredAreaHa: string | null, geometricAreaHa: string | null): number | null {
-  const declared = numericArea(declaredAreaHa);
-  const geometric = numericArea(geometricAreaHa);
-  if (declared == null || geometric == null || declared === 0) return null;
-  return Math.abs(geometric - declared) / declared * 100;
-}
-
-export function differenceBand(percent: number | null): DifferenceBand {
-  if (percent == null) return 'none';
-  if (percent < 2) return 'low';
-  if (percent < 5) return 'medium';
-  return 'high';
 }
 
 function sourceLabel(source: BoundarySource | null): string {

@@ -67,12 +67,12 @@ export function MaginaHubPage() {
           <strong>Abrir directorio →</strong>
         </a>
 
-        <article className="card magina-hub-card pending">
-          <span className="badge">En preparación</span>
-          <h2>Estado fitosanitario</h2>
-          <p>RAIF · seguimiento público del olivar. La ingesta está preparada con trazabilidad antes de convertirla en señales locales.</p>
-          <strong>No diagnostica tu parcela</strong>
-        </article>
+        <a className="card magina-hub-card ready" href="/magina/campo">
+          <span className="badge gold">RAIF</span>
+          <h2>Campo y alertas</h2>
+          <p>Estado de la fuente fitosanitaria del olivar, fecha de actualización y accesos oficiales de Jaén.</p>
+          <strong>Ver estado fitosanitario →</strong>
+        </a>
 
         <a className="card magina-hub-card ready" href="/magina/mercado">
           <span className="badge gold">Fuente oficial</span>

@@ -8,6 +8,7 @@ import {
   type Plot,
   type PlotTimelineItem,
 } from './api.ts';
+import { PlotMapPanel } from './PlotMapPanel.tsx';
 
 const activityLabels: Record<ActivityType, string> = {
   treatment: 'Tratamiento',
@@ -200,144 +201,147 @@ export function FieldNotebook({
   }
 
   return (
-    <section className="section notebook-shell" aria-labelledby="field-notebook-title">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow page-eyebrow">Cuaderno personal</p>
-          <h2 id="field-notebook-title" className="section-title">Labores e historia</h2>
-          <p className="section-copy">Recolección y entrega siguen siendo registros distintos.</p>
-        </div>
-      </div>
-
-      <div className="card card-body notebook-card">
-        <div className="notebook-selector-row">
-          <div className="field">
-            <label htmlFor="notebook-plot">Parcela</label>
-            <select id="notebook-plot" value={selectedPlotId} onChange={(event) => setSelectedPlotId(event.target.value)}>
-              {plots.map((plot) => <option key={plot.id} value={plot.id}>{plot.name}</option>)}
-            </select>
-          </div>
-          <div className="field">
-            <label htmlFor="notebook-campaign">Campaña</label>
-            <select id="notebook-campaign" value={campaignId} onChange={(event) => setCampaignId(event.target.value)}>
-              <option value="">Sin campaña</option>
-              {campaigns.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}
-            </select>
+    <>
+      <PlotMapPanel farmId={farmId} />
+      <section className="section notebook-shell" aria-labelledby="field-notebook-title">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow page-eyebrow">Cuaderno personal</p>
+            <h2 id="field-notebook-title" className="section-title">Labores e historia</h2>
+            <p className="section-copy">Recolección y entrega siguen siendo registros distintos.</p>
           </div>
         </div>
 
-        <form className="form-grid notebook-form" onSubmit={submit}>
-          <div className="inline-fields">
+        <div className="card card-body notebook-card">
+          <div className="notebook-selector-row">
             <div className="field">
-              <label htmlFor="activity-type">Tipo de labor</label>
-              <select id="activity-type" value={activityType} onChange={(event) => setActivityType(event.target.value as ActivityType)}>
-                {Object.entries(activityLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              <label htmlFor="notebook-plot">Parcela</label>
+              <select id="notebook-plot" value={selectedPlotId} onChange={(event) => setSelectedPlotId(event.target.value)}>
+                {plots.map((plot) => <option key={plot.id} value={plot.id}>{plot.name}</option>)}
               </select>
             </div>
             <div className="field">
-              <label htmlFor="activity-occurred-at">Fecha y hora</label>
-              <input id="activity-occurred-at" name="occurredAt" type="datetime-local" defaultValue={localDateTimeValue()} required />
+              <label htmlFor="notebook-campaign">Campaña</label>
+              <select id="notebook-campaign" value={campaignId} onChange={(event) => setCampaignId(event.target.value)}>
+                <option value="">Sin campaña</option>
+                {campaigns.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}
+              </select>
             </div>
           </div>
 
-          <div className="inline-fields">
-            <div className="field">
-              <label htmlFor="activity-area">Superficie afectada (ha)</label>
-              <input id="activity-area" name="affectedAreaHa" type="number" min="0" step="0.001" placeholder={selectedPlot?.areaHa ?? 'Opcional'} />
-            </div>
-            <div className="field">
-              <label htmlFor="activity-cost">Coste (€)</label>
-              <input id="activity-cost" name="costEur" type="number" min="0" step="0.01" placeholder="0,00" />
-            </div>
-          </div>
-
-          {(activityType === 'treatment' || activityType === 'fertilization' || activityType === 'irrigation') ? (
-            <div className="notebook-context-fields">
+          <form className="form-grid notebook-form" onSubmit={submit}>
+            <div className="inline-fields">
               <div className="field">
-                <label htmlFor="activity-product">{activityType === 'irrigation' ? 'Concepto / agua' : 'Producto'}</label>
-                <input id="activity-product" name="productName" type="text" maxLength={240} placeholder={activityType === 'treatment' ? 'Cobre, caolín…' : activityType === 'fertilization' ? 'Abono / fertilizante' : 'Riego'} />
+                <label htmlFor="activity-type">Tipo de labor</label>
+                <select id="activity-type" value={activityType} onChange={(event) => setActivityType(event.target.value as ActivityType)}>
+                  {Object.entries(activityLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
               </div>
-              {activityType === 'treatment' ? (
-                <div className="field">
-                  <label htmlFor="activity-registration">Nº registro producto</label>
-                  <input id="activity-registration" name="productRegistrationNumber" type="text" maxLength={120} placeholder="Opcional" />
-                </div>
-              ) : null}
-              <div className="inline-fields">
-                <div className="field">
-                  <label htmlFor="activity-quantity">Cantidad</label>
-                  <input id="activity-quantity" name="quantity" type="number" min="0" step="0.001" />
-                </div>
-                <div className="field">
-                  <label htmlFor="activity-unit">Unidad</label>
-                  <input id="activity-unit" name="quantityUnit" type="text" maxLength={40} placeholder="L, kg, m³…" />
-                </div>
+              <div className="field">
+                <label htmlFor="activity-occurred-at">Fecha y hora</label>
+                <input id="activity-occurred-at" name="occurredAt" type="datetime-local" defaultValue={localDateTimeValue()} required />
               </div>
             </div>
-          ) : null}
 
-          <div className="field">
-            <label htmlFor="activity-notes">Notas</label>
-            <textarea id="activity-notes" name="notes" maxLength={4000} placeholder="Qué se ha hecho, observaciones, estado del olivar…" />
-          </div>
+            <div className="inline-fields">
+              <div className="field">
+                <label htmlFor="activity-area">Superficie afectada (ha)</label>
+                <input id="activity-area" name="affectedAreaHa" type="number" min="0" step="0.001" placeholder={selectedPlot?.areaHa ?? 'Opcional'} />
+              </div>
+              <div className="field">
+                <label htmlFor="activity-cost">Coste (€)</label>
+                <input id="activity-cost" name="costEur" type="number" min="0" step="0.01" placeholder="0,00" />
+              </div>
+            </div>
 
-          {error ? <div className="alert" role="alert">{error}</div> : null}
-          {notice ? <div className="alert success" role="status">{notice}</div> : null}
+            {(activityType === 'treatment' || activityType === 'fertilization' || activityType === 'irrigation') ? (
+              <div className="notebook-context-fields">
+                <div className="field">
+                  <label htmlFor="activity-product">{activityType === 'irrigation' ? 'Concepto / agua' : 'Producto'}</label>
+                  <input id="activity-product" name="productName" type="text" maxLength={240} placeholder={activityType === 'treatment' ? 'Cobre, caolín…' : activityType === 'fertilization' ? 'Abono / fertilizante' : 'Riego'} />
+                </div>
+                {activityType === 'treatment' ? (
+                  <div className="field">
+                    <label htmlFor="activity-registration">Nº registro producto</label>
+                    <input id="activity-registration" name="productRegistrationNumber" type="text" maxLength={120} placeholder="Opcional" />
+                  </div>
+                ) : null}
+                <div className="inline-fields">
+                  <div className="field">
+                    <label htmlFor="activity-quantity">Cantidad</label>
+                    <input id="activity-quantity" name="quantity" type="number" min="0" step="0.001" />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="activity-unit">Unidad</label>
+                    <input id="activity-unit" name="quantityUnit" type="text" maxLength={40} placeholder="L, kg, m³…" />
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
-          <div className="form-actions">
-            <button className="primary-button" type="submit" disabled={busy}>{busy ? 'Guardando…' : 'Guardar labor'}</button>
-          </div>
-        </form>
-      </div>
+            <div className="field">
+              <label htmlFor="activity-notes">Notas</label>
+              <textarea id="activity-notes" name="notes" maxLength={4000} placeholder="Qué se ha hecho, observaciones, estado del olivar…" />
+            </div>
 
-      <div className="notebook-summary-grid" aria-label={`Resumen de ${selectedPlot?.name ?? 'la parcela'}`}>
-        <article><span>Labores</span><strong>{timelineCounts.activity}</strong><small>registradas</small></article>
-        <article><span>Entregas</span><strong>{timelineCounts.delivery}</strong><small>asociadas</small></article>
-        <article><span>Rendimientos</span><strong>{timelineCounts.yield_result}</strong><small>resultados</small></article>
-        <article><span>Último movimiento</span><strong>{lastTimelineDate}</strong><small>{timelineCounts.all} hitos</small></article>
-      </div>
+            {error ? <div className="alert" role="alert">{error}</div> : null}
+            {notice ? <div className="alert success" role="status">{notice}</div> : null}
 
-      <div className="section-heading notebook-history-heading">
-        <div>
-          <h3 className="section-title notebook-history-title">Historia de {selectedPlot?.name ?? 'la parcela'}</h3>
-          <p className="section-copy">Labores, entregas y rendimientos en una única línea temporal.</p>
+            <div className="form-actions">
+              <button className="primary-button" type="submit" disabled={busy}>{busy ? 'Guardando…' : 'Guardar labor'}</button>
+            </div>
+          </form>
         </div>
-        <button className="text-button" type="button" onClick={() => void loadTimeline(selectedPlotId)} disabled={loadingTimeline}>{loadingTimeline ? 'Actualizando…' : 'Actualizar'}</button>
-      </div>
 
-      <div className="notebook-filters" role="group" aria-label="Filtrar historia de la parcela">
-        {(['all', 'activity', 'delivery', 'yield_result'] as TimelineFilter[]).map((filter) => (
-          <button
-            key={filter}
-            type="button"
-            className={`notebook-filter${timelineFilter === filter ? ' active' : ''}`}
-            aria-pressed={timelineFilter === filter}
-            onClick={() => setTimelineFilter(filter)}
-          >
-            {filterLabel(filter)} <span>{timelineCounts[filter]}</span>
-          </button>
-        ))}
-      </div>
+        <div className="notebook-summary-grid" aria-label={`Resumen de ${selectedPlot?.name ?? 'la parcela'}`}>
+          <article><span>Labores</span><strong>{timelineCounts.activity}</strong><small>registradas</small></article>
+          <article><span>Entregas</span><strong>{timelineCounts.delivery}</strong><small>asociadas</small></article>
+          <article><span>Rendimientos</span><strong>{timelineCounts.yield_result}</strong><small>resultados</small></article>
+          <article><span>Último movimiento</span><strong>{lastTimelineDate}</strong><small>{timelineCounts.all} hitos</small></article>
+        </div>
 
-      <div className="timeline-list">
-        {filteredTimeline.map((item) => (
-          <article className="card timeline-item" key={`${item.type}-${item.id}`}>
-            <div className={`timeline-dot ${item.type}`} aria-hidden="true" />
-            <div className="timeline-copy">
-              <div className="timeline-topline">
-                <strong>{timelineTitle(item)}</strong>
-                <time dateTime={item.occurredAt}>{new Date(item.occurredAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</time>
+        <div className="section-heading notebook-history-heading">
+          <div>
+            <h3 className="section-title notebook-history-title">Historia de {selectedPlot?.name ?? 'la parcela'}</h3>
+            <p className="section-copy">Labores, entregas y rendimientos en una única línea temporal.</p>
+          </div>
+          <button className="text-button" type="button" onClick={() => void loadTimeline(selectedPlotId)} disabled={loadingTimeline}>{loadingTimeline ? 'Actualizando…' : 'Actualizar'}</button>
+        </div>
+
+        <div className="notebook-filters" role="group" aria-label="Filtrar historia de la parcela">
+          {(['all', 'activity', 'delivery', 'yield_result'] as TimelineFilter[]).map((filter) => (
+            <button
+              key={filter}
+              type="button"
+              className={`notebook-filter${timelineFilter === filter ? ' active' : ''}`}
+              aria-pressed={timelineFilter === filter}
+              onClick={() => setTimelineFilter(filter)}
+            >
+              {filterLabel(filter)} <span>{timelineCounts[filter]}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="timeline-list">
+          {filteredTimeline.map((item) => (
+            <article className="card timeline-item" key={`${item.type}-${item.id}`}>
+              <div className={`timeline-dot ${item.type}`} aria-hidden="true" />
+              <div className="timeline-copy">
+                <div className="timeline-topline">
+                  <strong>{timelineTitle(item)}</strong>
+                  <time dateTime={item.occurredAt}>{new Date(item.occurredAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</time>
+                </div>
+                {timelineDetail(item) ? <p>{timelineDetail(item)}</p> : null}
               </div>
-              {timelineDetail(item) ? <p>{timelineDetail(item)}</p> : null}
-            </div>
-          </article>
-        ))}
-        {!loadingTimeline && filteredTimeline.length === 0 ? (
-          <div className="card empty-state"><strong>{timelineFilter === 'all' ? 'La historia empieza aquí' : `Sin ${filterLabel(timelineFilter).toLowerCase()} todavía`}</strong>{timelineFilter === 'all' ? 'Registra la primera labor o asocia una entrega a esta parcela.' : 'Cambia el filtro o registra un nuevo dato en esta parcela.'}</div>
-        ) : null}
-      </div>
+            </article>
+          ))}
+          {!loadingTimeline && filteredTimeline.length === 0 ? (
+            <div className="card empty-state"><strong>{timelineFilter === 'all' ? 'La historia empieza aquí' : `Sin ${filterLabel(timelineFilter).toLowerCase()} todavía`}</strong>{timelineFilter === 'all' ? 'Registra la primera labor o asocia una entrega a esta parcela.' : 'Cambia el filtro o registra un nuevo dato en esta parcela.'}</div>
+          ) : null}
+        </div>
 
-      <p className="notebook-disclaimer">Cuaderno personal V1. Guardar estos datos no equivale por sí mismo a una anotación oficial CUE/SIEX.</p>
-    </section>
+        <p className="notebook-disclaimer">Cuaderno personal V1. Guardar estos datos no equivale por sí mismo a una anotación oficial CUE/SIEX.</p>
+      </section>
+    </>
   );
 }

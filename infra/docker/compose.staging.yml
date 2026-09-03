@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: magina
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
     volumes:
-      - magina_staging_postgres:/var/lib/postgresql
+      - "${MAGINA_POSTGRES_DATA_DIR:-magina_staging_postgres}:/var/lib/postgresql"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U magina -d magina_olivo"]
       interval: 5s

@@ -52,7 +52,6 @@ export async function augmentAccountExportWithTasks(
     );
 
     const payload = JSON.parse(row.artifact_text) as Record<string, unknown>;
-    payload.schemaVersion = 2;
     payload.tasks = tasks.rows.map((task: Record<string, unknown>) => ({
       id: task.id,
       holdingId: task.holding_id,
@@ -78,8 +77,7 @@ export async function augmentAccountExportWithTasks(
     const updated = await pool.query(
       `
         update account_exports
-        set schema_version = 2,
-            artifact_text = $3,
+        set artifact_text = $3,
             size_bytes = $4,
             sha256 = $5,
             updated_at = now()

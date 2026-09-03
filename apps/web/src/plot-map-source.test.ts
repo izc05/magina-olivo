@@ -27,6 +27,7 @@ test('plot map is wired into Mi Campo and supports point plus boundary editing',
 
 test('plot point and boundary persistence remain private and server-validated', async () => {
   const routes = await read('../../api/src/plot-routes.ts');
+  const geometry = await read('../../api/src/plot-boundary-geometry.ts');
   const migration = await read('../../../db/migrations/0015_plot_boundaries.sql');
 
   assert.match(routes, /\/api\/v1\/plots\/:plotId\/location/);
@@ -35,12 +36,13 @@ test('plot point and boundary persistence remain private and server-validated', 
   assert.match(routes, /INCOMPLETE_PLOT_BOUNDARY/);
   assert.match(routes, /INVALID_PLOT_BOUNDARY/);
   assert.match(routes, /validateBoundary/);
-  assert.match(routes, /polygonAreaSquareMeters/);
-  assert.match(routes, /uniqueVertices\.size < 3/);
-  assert.match(routes, /ring\.length > 501/);
   assert.match(routes, /boundary_area_ha = \$2/);
   assert.match(routes, /version = version \+ 1/);
   assert.match(routes, /canWrite\(resolved\.access\.role\)/);
+
+  assert.match(geometry, /polygonAreaSquareMeters/);
+  assert.match(geometry, /uniqueVertices\.size < 3/);
+  assert.match(geometry, /ring\.length > 501/);
 
   assert.match(migration, /boundary_geojson jsonb/);
   assert.match(migration, /boundary_area_ha numeric\(12,4\)/);

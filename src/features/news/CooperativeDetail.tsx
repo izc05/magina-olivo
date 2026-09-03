@@ -6,17 +6,22 @@ import {
   Building2,
   CheckCircle2,
   ChevronRight,
+  Clock3,
   Euro,
   ExternalLink,
   FileText,
+  Mail,
   MapPin,
   Newspaper,
   PackageOpen,
+  Phone,
   ShieldCheck,
   ShoppingBag,
   Truck,
+  UserRoundCheck,
 } from 'lucide-react';
 import { getCooperativeDirectNewsSource } from './cooperativeDirectNews';
+import { getCooperativeOperationalProfile } from './cooperativeOperations';
 import type { CooperativeRecord } from './cooperativesFeed';
 import { latestValue, loadMarket, type MarketPayload } from './marketFeed';
 import { loadRealNews, type RealNewsStory } from './newsFeed';
@@ -32,7 +37,9 @@ type CooperativeDetailProps = {
   onBack: () => void;
 };
 
-type DetailTab = 'resumen' | 'aceites' | 'precios' | 'noticias';
+type DetailTab = 'resumen' | 'aceites' | 'precios' | 'noticias' | 'socios';
+
+const campaignTerms = ['campaña', 'recepción', 'recepcion', 'aceituna', 'molturación', 'molturacion', 'patio', 'apertura', 'cierre', 'horario'];
 
 function normalize(value: string) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es');
@@ -80,11 +87,18 @@ export function CooperativeDetail({ cooperative, onBack }: CooperativeDetailProp
     }).slice(0, 8);
   }, [cooperative, stories]);
 
+  const campaignStories = useMemo(() => stories.filter((story) => {
+    if (!story.official || story.cooperativeId !== cooperative.id) return false;
+    const haystack = normalize(`${story.title} ${story.excerpt}`);
+    return campaignTerms.some((term) => haystack.includes(normalize(term)));
+  }).slice(0, 5), [cooperative.id, stories]);
+
   const storeProducts = useMemo(
     () => cooperative.products?.filter((product) => product.storePriceLabel) ?? [],
     [cooperative.products],
   );
   const directNews = useMemo(() => getCooperativeDirectNewsSource(cooperative.id), [cooperative.id]);
+  const operations = useMemo(() => getCooperativeOperationalProfile(cooperative.id), [cooperative.id]);
 
   return (
     <section className="section-block hub-panel hub-panel--flush section-block--last coop-detail-view">
@@ -108,6 +122,7 @@ export function CooperativeDetail({ cooperative, onBack }: CooperativeDetailProp
         <button type="button" className={tab === 'aceites' ? 'coop-detail-tab coop-detail-tab--active' : 'coop-detail-tab'} onClick={() => setTab('aceites')}>Aceites</button>
         <button type="button" className={tab === 'precios' ? 'coop-detail-tab coop-detail-tab--active' : 'coop-detail-tab'} onClick={() => setTab('precios')}>Precios</button>
         <button type="button" className={tab === 'noticias' ? 'coop-detail-tab coop-detail-tab--active' : 'coop-detail-tab'} onClick={() => setTab('noticias')}>Noticias</button>
+        <button type="button" className={tab === 'socios' ? 'coop-detail-tab coop-detail-tab--active' : 'coop-detail-tab'} onClick={() => setTab('socios')}>Socios</button>
       </nav>
 
       {tab === 'resumen' && (
@@ -123,8 +138,8 @@ export function CooperativeDetail({ cooperative, onBack }: CooperativeDetailProp
               <button type="button" onClick={() => setTab('aceites')}><ShoppingBag size={20} /><div><strong>Aceites y marcas</strong><span>Consulta los AOVE, formatos y precios de tienda que tengamos verificados.</span></div><ChevronRight size={18} /></button>
               <button type="button" onClick={() => setTab('precios')}><Euro size={20} /><div><strong>Precios</strong><span>Precio de tienda, referencia oficial de mercado y liquidación al socio claramente separados.</span></div><ChevronRight size={18} /></button>
               <button type="button" onClick={() => setTab('noticias')}><Newspaper size={20} /><div><strong>Noticias y avisos</strong><span>Actualidad relacionada automáticamente por cooperativa, marca y municipio.</span></div><ChevronRight size={18} /></button>
-              <article><Truck size={20} /><div><strong>Campaña y recepción</strong><span>Preparado para horarios, recepción, cierres y servicios cuando exista una fuente directa actualizada.</span></div><ChevronRight size={18} /></article>
-              <article><BellRing size={20} /><div><strong>Avisos al socio</strong><span>Podremos incorporar documentación, recepción, servicios y comunicados con fecha y fuente.</span></div><ChevronRight size={18} /></article>
+              <button type="button" onClick={() => setTab('socios')}><Truck size={20} /><div><strong>Campaña y recepción</strong><span>Comunicados operativos sólo cuando exista una fuente oficial reciente.</span></div><ChevronRight size={18} /></button>
+              <button type="button" onClick={() => setTab('socios')}><UserRoundCheck size={20} /><div><strong>Socios y contacto</strong><span>Teléfono, correo, dirección, atención general y acceso de socios cuando estén publicados.</span></div><ChevronRight size={18} /></button>
             </div>
           </section>
         </>
@@ -248,6 +263,56 @@ export function CooperativeDetail({ cooperative, onBack }: CooperativeDetailProp
         </section>
       )}
 
+      {tab === 'socios' && (
+        <section className="section-block coop-profile-panel coop-members-panel">
+          <div className="section-heading"><div><span className="eyebrow">Socios y campaña</span><h2>Información operativa</h2></div><UserRoundCheck size={21} /></div>
+
+          <div className={campaignStories.length ? 'coop-campaign-status coop-campaign-status--active' : 'coop-campaign-status'}>
+            <Truck size={21} />
+            <div>
+              <span>Campaña / recepción de aceituna</span>
+              <strong>{campaignStories.length ? 'Hay comunicados oficiales recientes' : 'Sin comunicado operativo reciente conectado'}</strong>
+              <small>Los horarios generales de oficina no se usan como horario de recepción de aceituna.</small>
+            </div>
+          </div>
+
+          {campaignStories.length > 0 && (
+            <div className="coop-campaign-news">
+              {campaignStories.map((story) => (
+                <a key={story.id} href={story.url} target="_blank" rel="noreferrer">
+                  <div><span>{story.source}</span><strong>{story.title}</strong></div><ExternalLink size={17} />
+                </a>
+              ))}
+            </div>
+          )}
+
+          {operations ? (
+            <div className="coop-contact-card">
+              <div className="coop-contact-card__title"><ShieldCheck size={18} /><div><span>Contacto publicado</span><strong>{cooperative.name}</strong></div></div>
+              {operations.address && <div className="coop-contact-row"><MapPin size={17} /><span>{operations.address}</span></div>}
+              {operations.phones?.map((phone) => (
+                <a className="coop-contact-row" href={`tel:${phone.replace(/[^0-9+]/g, '')}`} key={phone}><Phone size={17} /><span>{phone}</span></a>
+              ))}
+              {operations.emails?.map((email) => (
+                <a className="coop-contact-row" href={`mailto:${email.value}`} key={email.value}><Mail size={17} /><span><small>{email.label}</small>{email.value}</span></a>
+              ))}
+              {operations.publicHours?.length ? (
+                <div className="coop-contact-hours">
+                  <Clock3 size={17} />
+                  <div><strong>Horario general publicado</strong>{operations.publicHours.map((hours) => <span key={hours}>{hours}</span>)}<small>No equivale al horario de recepción de campaña.</small></div>
+                </div>
+              ) : null}
+              {operations.memberAccessUrl && (
+                <a className="coop-member-access" href={operations.memberAccessUrl} target="_blank" rel="noreferrer"><UserRoundCheck size={18} /><div><strong>Acceso de socios</strong><span>Abrir plataforma externa de la cooperativa</span></div><ExternalLink size={17} /></a>
+              )}
+              <a className="coop-document-row" href={operations.contactSourceUrl} target="_blank" rel="noreferrer"><CheckCircle2 size={19} /><div><strong>Fuente oficial de contacto</strong><span>Comprobar los datos en la web de la entidad</span></div><ExternalLink size={17} /></a>
+            </div>
+          ) : (
+            <div className="coop-empty-state"><UserRoundCheck size={22} /><div><strong>Contacto operativo aún no incorporado</strong><span>La ficha D.O.P. está verificada, pero teléfono, correo, horario o acceso de socios sólo aparecerán cuando tengamos una fuente directa de la propia entidad.</span></div></div>
+          )}
+        </section>
+      )}
+
       <section className="section-block">
         <div className="section-heading"><div><span className="eyebrow">Fuente</span><h2>Trazabilidad de la ficha</h2></div></div>
         <a className="coop-document-row" href={cooperative.sourceUrl} target="_blank" rel="noreferrer">
@@ -258,7 +323,7 @@ export function CooperativeDetail({ cooperative, onBack }: CooperativeDetailProp
       </section>
 
       <section className="section-block section-block--last">
-        <div className="coop-source-note"><ShieldCheck size={16} /><span>Mágina Olivo distingue siempre entre precio de tienda, referencia general de mercado y liquidación al socio. No mostraremos liquidaciones, horarios o estados operativos como reales sin fuente oficial o autorizada.</span></div>
+        <div className="coop-source-note"><ShieldCheck size={16} /><span>Mágina Olivo distingue entre precio de tienda, referencia general de mercado, liquidación al socio, horario general y horario de campaña. Los datos operativos sólo se muestran desde fuentes oficiales o autorizadas.</span></div>
       </section>
     </section>
   );

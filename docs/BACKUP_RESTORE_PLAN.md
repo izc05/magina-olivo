@@ -1,10 +1,11 @@
 # Plan de backup y restauración — Mágina Olivo
 
-Fecha: 2026-09-02
+Fecha inicial: 2026-09-02  
+Última revisión técnica: 2026-09-03
 
 ## Principio
 
-La copia de seguridad no está validada hasta que una restauración completa ha sido probada.
+La copia de seguridad no está validada para piloto real hasta que una restauración completa sobre infraestructura externa/aislada haya sido probada.
 
 Mágina Olivo tendrá dos tipos de datos:
 
@@ -12,6 +13,38 @@ Mágina Olivo tendrá dos tipos de datos:
 2. Object storage: tickets, fotos, PDFs y otros archivos.
 
 Ambos deben recuperarse de forma coherente.
+
+## Evidencia automatizada disponible
+
+A 2026-09-03 existe un drill técnico reproducible dentro de `Technical Spike Smoke`.
+
+El gate ejecuta el flujo agrícola sintético y, antes de cerrar la sesión de prueba, ejecuta `scripts/spike-backup-restore.sh`. Ese drill:
+
+- crea un `pg_dump` PostgreSQL 18 en formato custom (`-Fc`);
+- copia de forma independiente el almacenamiento privado de documentos del entorno de test;
+- simula la pérdida del almacenamiento de documentos;
+- crea una base de restauración limpia separada de la base origen;
+- restaura el dump con `pg_restore`;
+- valida recuentos y relaciones de explotación, finca, parcela, campaña, entregas, resultados y documentos;
+- valida kilos y estados de rendimiento `current` / `superseded`;
+- valida el enlace del ticket a la entrega y datos de concurrencia/versionado;
+- restaura el documento privado;
+- comprueba SHA-256 y compara los bytes recuperados con el fixture original.
+
+Evidencia CI vigente al cerrar esta revisión:
+
+- `Technical Spike Smoke #184`: **success**; incluye `Verify API security, agricultural flow, concurrency and restore` en verde.
+- `MVP Core Smoke #293`: **success**.
+
+Esto demuestra la mecánica de backup/restore de PostgreSQL y documentos en CI. **No equivale** todavía a una prueba de desastre de staging: no demuestra backup off-host, restauración en otro host físico/VM, ni roundtrip completo contra buckets R2 reales.
+
+Además existen los procedimientos de staging:
+
+- `scripts/staging-backup.sh` para producir bundle con dump, manifiestos, objetos privados, procedencia de release/SHA y `SHA256SUMS`;
+- `scripts/staging-restore-gate.sh` para restaurar en una base y bucket de recuperación aislados;
+- `scripts/export-private-objects.mjs` / `scripts/import-private-objects.mjs` para exportación/restauración verificable de objetos privados.
+
+El importador de objetos exige por defecto un bucket de recuperación vacío y distinto del bucket origen, verifica tamaño y SHA-256 antes y después de la subida y limpia únicamente los objetos que haya subido durante un intento fallido.
 
 ## Objetivos iniciales
 
@@ -120,9 +153,11 @@ Procedimiento:
 9. abrir campaña/entregas/documento;
 10. registrar resultado en informe de restore.
 
+El drill de CI cubre los pasos de integridad de datos/bytes. Antes del piloto se debe repetir el procedimiento con **staging real**, un destino de backup fuera del host y un bucket de recuperación R2 independiente.
+
 ## Dataset canario
 
-Mantener datos sintéticos conocidos para comprobar restore:
+Objetivo del dataset canario de staging:
 - 1 explotación;
 - 2 fincas;
 - 3 parcelas;
@@ -132,7 +167,9 @@ Mantener datos sintéticos conocidos para comprobar restore:
 - 2 labores;
 - 2 documentos pequeños con hash conocido.
 
-El restore test valida automáticamente que estos elementos están presentes y relacionados.
+El restore test de staging deberá validar automáticamente que estos elementos están presentes y relacionados.
+
+El fixture técnico actual de CI es deliberadamente menor y valida la misma clase de relaciones con dos usuarios/explotaciones aislados, una finca, una parcela, una campaña, dos entregas, historial de dos rendimientos y un documento privado con hash conocido. No sustituye el canario completo de staging.
 
 ## Secretos
 
@@ -176,6 +213,8 @@ Simular al menos:
 - documento eliminado del host local;
 - restauración en host distinto.
 
+CI ya simula la restauración de PostgreSQL y la pérdida/recuperación del documento. El redeploy desde cero y la restauración en host distinto deben quedar demostrados en staging antes de agricultores reales.
+
 ## RGPD / borrado
 
 La retención de backups debe conciliarse con solicitudes de supresión y obligaciones de conservación aplicables.
@@ -184,11 +223,13 @@ Antes de V1 pública, definir procedimiento jurídico/técnico para datos elimin
 
 ## Checklist antes de piloto real
 
-- [ ] backup automatizado existe;
-- [ ] backup fuera del host principal;
-- [ ] restore en entorno limpio pasa;
-- [ ] dataset canario validado;
-- [ ] documentos recuperables;
+- [ ] backup automatizado programado en staging;
+- [ ] backup real almacenado fuera del host principal;
+- [ ] restore completo en entorno/host aislado pasa;
+- [ ] dataset canario completo de staging validado;
+- [ ] documentos recuperables desde backup real/R2 de recuperación;
 - [ ] secrets recuperables por vía separada;
-- [ ] procedimiento escrito y repetible;
-- [ ] una persona puede ejecutar restore sin improvisar comandos críticos.
+- [x] procedimiento técnico escrito y repetible;
+- [x] mecánica de dump/restore PostgreSQL validada automáticamente en CI;
+- [x] pérdida y recuperación de documento privado con SHA-256 validada en CI;
+- [ ] una persona puede ejecutar el restore completo de staging sin improvisar comandos críticos.

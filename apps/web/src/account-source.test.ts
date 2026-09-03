@@ -41,3 +41,5 @@ test('account preferences persist user choices and portability does not overprom
   assert.match(account, /No mostraremos una acción destructiva/);
   assert.doesNotMatch(account, /Eliminar cuenta<\/button>/);
 });
+
+// Keep this source gate in the CI-triggering slice so portability changes always re-run both repository gates.

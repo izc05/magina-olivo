@@ -54,6 +54,9 @@ jobs:
       - name: Validate official market prices
         run: node scripts/validate-market.mjs
 
+      - name: Refresh cooperative shops
+        run: npm run cooperatives:sync
+
       - name: Validate cooperative directory
         run: node scripts/validate-cooperatives.mjs
 

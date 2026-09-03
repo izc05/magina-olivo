@@ -54,3 +54,17 @@ test('plot point and boundary persistence remain private and server-validated', 
   assert.match(migration, /sigpac/);
   assert.match(migration, /catastro/);
 });
+
+test('official SIGPAC or Catastro provenance is preserved until the user actually edits the perimeter', async () => {
+  const editor = await read('./PlotMapEditor.tsx');
+
+  assert.match(editor, /function isOfficialBoundarySource/);
+  assert.match(editor, /source === 'sigpac' \|\| source === 'catastro'/);
+  assert.match(editor, /if \(isOfficialBoundarySource\(boundaryDraftSource\)\)/);
+  assert.match(editor, /El perímetro oficial ya está guardado/);
+  assert.match(editor, /function undoBoundaryVertex/);
+  assert.match(editor, /isOfficialBoundarySource\(current\) \? 'manual_map' : current/);
+  assert.match(editor, /onClick=\{undoBoundaryVertex\}/);
+  assert.match(editor, /SIGPAC y Catastro se consultan e importan como fuentes oficiales separadas y verificables/);
+  assert.doesNotMatch(editor, /SIGPAC y Catastro se conectarán/);
+});

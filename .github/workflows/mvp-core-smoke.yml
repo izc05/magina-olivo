@@ -36,7 +36,13 @@ jobs:
         run: npm test
 
       - name: Validate staging gate scripts
-        run: bash -n scripts/mvp-core-flow-gate.sh
+        run: |
+          bash -n scripts/mvp-core-flow-gate.sh
+          bash -n scripts/staging-release.sh
+          bash -n scripts/staging-release-source-gate.sh
+
+      - name: Verify staging release source guard
+        run: bash scripts/staging-release-source-gate.sh
 
       - name: Build web PWA
         run: npm run build --workspace @magina/web

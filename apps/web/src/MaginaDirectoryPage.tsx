@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 type EntityType = 'cooperative' | 'sat' | 'company' | 'other';
+type VerificationStatus = 'unverified' | 'verified' | 'stale';
 
 type PublicDestination = {
   id: string;
@@ -12,13 +13,18 @@ type PublicDestination = {
   websiteUrl: string | null;
   sourceUrl: string | null;
   sourceCheckedAt: string | null;
-  verificationStatus: 'unverified' | 'verified' | 'stale';
+  verificationStatus: VerificationStatus;
 };
 
 type DirectoryResponse = {
   items: PublicDestination[];
   municipalities: string[];
-  source: { label: string; checkedAt: string };
+  source: {
+    label: string;
+    provider: string | null;
+    sourceUrl: string | null;
+    checkedAt: string | null;
+  };
 };
 
 const entityLabels: Record<EntityType, string> = {
@@ -27,6 +33,23 @@ const entityLabels: Record<EntityType, string> = {
   company: 'Empresa / almazara',
   other: 'Entidad',
 };
+
+const verificationLabels: Record<VerificationStatus, string> = {
+  verified: 'Fuente verificada',
+  unverified: 'Pendiente de verificación',
+  stale: 'Revisión pendiente',
+};
+
+function formatCheckedAt(value: string | null): string | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return new Intl.DateTimeFormat('es-ES', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(parsed);
+}
 
 export function MaginaDirectoryPage() {
   const [data, setData] = useState<DirectoryResponse | null>(null);
@@ -74,6 +97,8 @@ export function MaginaDirectoryPage() {
     });
   }, [data, entityType, municipality, query]);
 
+  const globalCheckedAt = formatCheckedAt(data?.source.checkedAt ?? null);
+
   return (
     <main className="directory-shell" id="main-content">
       <header className="directory-header">
@@ -119,23 +144,45 @@ export function MaginaDirectoryPage() {
             <h2 id="directory-results-title">Entidades</h2>
             <p>{loading ? 'Cargando directorio…' : `${filtered.length} de ${data?.items.length ?? 0} entidades`}</p>
           </div>
-          {data ? <span className="badge">Revisado {new Date(`${data.source.checkedAt}T00:00:00Z`).toLocaleDateString('es-ES')}</span> : null}
+          {globalCheckedAt ? <span className="badge">Fuente revisada {globalCheckedAt}</span> : null}
         </div>
 
         {error ? <div className="alert" role="alert">{error}</div> : null}
 
         <div className="directory-grid">
-          {filtered.map((item) => (
-            <article className="card directory-card" key={item.id}>
-              <div className="directory-card-topline">
-                <span className={`directory-type ${item.entityType}`}>{entityLabels[item.entityType]}</span>
-                <span className="directory-status">Fuente pública revisada</span>
-              </div>
-              <h3>{item.officialName}</h3>
-              {item.brandName ? <p className="directory-brand-name">{item.brandName}</p> : null}
-              <p className="directory-location">{item.municipality ?? 'Municipio pendiente'}{item.province ? ` · ${item.province}` : ''}</p>
-            </article>
-          ))}
+          {filtered.map((item) => {
+            const itemCheckedAt = formatCheckedAt(item.sourceCheckedAt);
+            return (
+              <article className="card directory-card" key={item.id}>
+                <div className="directory-card-topline">
+                  <span className={`directory-type ${item.entityType}`}>{entityLabels[item.entityType]}</span>
+                  <span className={`directory-status ${item.verificationStatus}`}>
+                    {verificationLabels[item.verificationStatus]}
+                  </span>
+                </div>
+                <h3>{item.officialName}</h3>
+                {item.brandName ? <p className="directory-brand-name">{item.brandName}</p> : null}
+                <p className="directory-location">{item.municipality ?? 'Municipio pendiente'}{item.province ? ` · ${item.province}` : ''}</p>
+                {itemCheckedAt ? <p className="directory-location">Última comprobación de esta ficha: {itemCheckedAt}</p> : (
+                  <p className="directory-location">Esta ficha no tiene una fecha de comprobación fiable.</p>
+                )}
+                {item.verificationStatus === 'stale' ? (
+                  <p className="directory-location">La última comprobación supera el intervalo de revisión de la V1. Confirma los datos en la fuente antes de usarlos.</p>
+                ) : null}
+                {item.verificationStatus === 'unverified' ? (
+                  <p className="directory-location">La entidad aparece en el directorio, pero Mágina Olivo no la presenta como verificada todavía.</p>
+                ) : null}
+                {item.websiteUrl || item.sourceUrl ? (
+                  <p className="directory-location">
+                    {item.websiteUrl ? (
+                      <><a href={item.websiteUrl} target="_blank" rel="noreferrer noopener">Web de la entidad</a>{item.sourceUrl ? ' · ' : ''}</>
+                    ) : null}
+                    {item.sourceUrl ? <a href={item.sourceUrl} target="_blank" rel="noreferrer noopener">Ver fuente</a> : null}
+                  </p>
+                ) : null}
+              </article>
+            );
+          })}
         </div>
 
         {!loading && !error && filtered.length === 0 ? (
@@ -145,7 +192,13 @@ export function MaginaDirectoryPage() {
 
       <footer className="directory-footer">
         <p><strong>Importante:</strong> aparecer en este directorio no significa que la entidad colabore con Mágina Olivo ni que exista integración con su área privada.</p>
-        {data ? <p>Fuente base: {data.source.label}. La aplicación conserva fecha y procedencia para poder revisar información que cambie.</p> : null}
+        {data ? (
+          <p>
+            Fuente base: {data.source.label}{data.source.provider ? ` · ${data.source.provider}` : ''}.
+            {' '}La aplicación conserva procedencia y fecha de comprobación; una ficha antigua deja de mostrarse como verificada automáticamente.
+            {data.source.sourceUrl ? <> <a href={data.source.sourceUrl} target="_blank" rel="noreferrer noopener">Consultar fuente pública</a>.</> : null}
+          </p>
+        ) : null}
       </footer>
     </main>
   );

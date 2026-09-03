@@ -14,8 +14,14 @@ export type RealNewsPayload = {
   stories: RealNewsStory[];
 };
 
+function getNewsFeedPath(): string {
+  const pathname = window.location.pathname;
+  const base = pathname.startsWith('/magina-olivo/') ? '/magina-olivo/' : '/';
+  return `${base}data/news.json`;
+}
+
 export async function loadRealNews(): Promise<RealNewsPayload> {
-  const response = await fetch(`${import.meta.env.BASE_URL}data/news.json?ts=${Date.now()}`, {
+  const response = await fetch(`${getNewsFeedPath()}?ts=${Date.now()}`, {
     cache: 'no-store',
   });
 

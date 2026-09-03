@@ -1,0 +1,99 @@
+.delivery-form-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.delivery-file-field small {
+  color: #6d7668;
+  font-size: .7rem;
+  line-height: 1.35;
+}
+
+.delivery-file-field input[type='file'] {
+  min-height: 48px;
+  padding: 9px;
+  background: #fff;
+}
+
+.delivery-save-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.delivery-save-row > span {
+  flex: 1 1 220px;
+  color: #6d7668;
+  font-size: .72rem;
+  line-height: 1.4;
+}
+
+.delivery-warning {
+  background: #fff6db;
+  border-color: rgba(212, 160, 23, .26);
+  color: #66500f;
+}
+
+.delivery-ticket-action {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.ticket-upload-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 10px;
+  overflow: hidden;
+  border: 1px solid rgba(46, 58, 34, .14);
+  border-radius: 10px;
+  background: #fffdf7;
+  color: #435637;
+  font-size: .7rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ticket-upload-button.disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
+.ticket-upload-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ticket-success,
+.ticket-error {
+  max-width: 190px;
+  font-size: .65rem;
+  text-align: right;
+}
+
+.ticket-success { color: #4e6a55; }
+.ticket-error { color: #9a3d2f; }
+
+@media (max-width: 540px) {
+  .delivery-save-row .primary-button {
+    width: 100%;
+  }
+
+  .delivery-ticket-action {
+    justify-items: stretch;
+  }
+
+  .ticket-upload-button {
+    justify-content: center;
+  }
+}

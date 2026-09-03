@@ -26,6 +26,12 @@
   color: #2e3a22;
 }
 
+.connectivity-banner.error {
+  background: rgba(248, 225, 215, .98);
+  border-color: rgba(143, 65, 43, .24);
+  color: #55291d;
+}
+
 .connectivity-banner strong,
 .connectivity-banner span {
   display: block;
@@ -51,4 +57,18 @@
   font-size: .72rem;
   font-weight: 800;
   white-space: nowrap;
+}
+
+.connectivity-banner.error button {
+  background: #6c3325;
+}
+
+@media (max-width: 520px) {
+  .connectivity-banner {
+    align-items: flex-start;
+  }
+
+  .connectivity-banner button {
+    min-height: 40px;
+  }
 }

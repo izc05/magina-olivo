@@ -1,11 +1,20 @@
 {
-  "generatedAt": "2026-09-03T20:00:00+02:00",
+  "generatedAt": "2026-09-03T22:40:00+02:00",
   "sourceLabel": "D.O.P. Sierra Mágina · Marcas",
   "sourceUrl": "https://aove.sierramagina.org/marcas/",
   "cooperatives": [
     { "id": "cristo-misericordia-jodar", "name": "Cooperativa Stmo. Cristo de la Misericordia", "town": "Jódar", "brand": "La Quinta Esencia", "dop": true },
-    { "id": "remedios-mancha-real", "name": "Cooperativa Nuestra Señora de los Remedios", "town": "Mancha Real", "brand": "Oro de Cánava", "dop": true },
-    { "id": "bedmarense-bedmar", "name": "Cooperativa Bedmarense", "town": "Bedmar", "brand": "Oro Magnasur", "dop": true },
+    { "id": "remedios-jimena", "name": "Cooperativa Nuestra Señora de los Remedios", "town": "Jimena", "brand": "Oro de Cánava", "dop": true, "officialWebsite": "https://www.orodecanava.com/", "productSourceUrl": "https://www.orodecanava.com/", "products": [
+      { "name": "Oro de Cánava", "type": "Aceite de Oliva Virgen Extra" },
+      { "name": "AOVE Lata", "type": "Aceite de Oliva Virgen Extra", "format": "3 L" }
+    ] },
+    { "id": "bedmarense-bedmar", "name": "Cooperativa Bedmarense", "town": "Bedmar", "brand": "Oro Magnasur", "dop": true, "productSourceUrl": "https://www.degustajaen.com/empresas/sociedad-cooperativa-andaluza-bedmarense-magnasur/", "products": [
+      { "name": "Oro Magnasur", "type": "AOVE Premium" },
+      { "name": "Magnasur", "type": "Aceite de Oliva Virgen Extra" },
+      { "name": "Magnasur", "type": "Aceite de Oliva Virgen Extra", "format": "Lata 5 L" },
+      { "name": "Magnasur", "type": "Aceite de Oliva Virgen Extra", "format": "PET" },
+      { "name": "Selección Noviembre", "type": "Aceite de Oliva Virgen Extra" }
+    ] },
     { "id": "paz-belmez", "name": "Cooperativa Ntra. Sra. de la Paz", "town": "Bélmez de la Moraleda", "brand": "La Perla de Mágina", "dop": true },
     { "id": "san-francisco-albanchez", "name": "Cooperativa San Francisco", "town": "Albanchez de Mágina", "brand": "Reino de Jaén", "dop": true },
     { "id": "santa-isabel-torres", "name": "Cooperativa Santa Isabel", "town": "Torres", "brand": "Señorío de Camarasa", "dop": true },

@@ -1,9 +1,14 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "lib": ["ES2025"],
     "types": ["node"],
-    "erasableSyntaxOnly": true
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "erasableSyntaxOnly": true,
+    "esModuleInterop": true
   },
   "include": ["src/**/*.ts", "scripts/**/*.ts"]
 }

@@ -1,9 +1,9 @@
 .brand-lockup {
   min-width: 0;
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr);
+  grid-template-columns: 42px minmax(0, 1fr);
   grid-template-rows: auto auto;
-  column-gap: 10px;
+  column-gap: 11px;
   align-items: center;
 }
 
@@ -11,9 +11,10 @@
   content: '';
   grid-column: 1;
   grid-row: 1 / 3;
-  width: 36px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   background: url('/brand/magina-olivo-mark.svg') center / contain no-repeat;
+  filter: drop-shadow(0 4px 8px rgba(46, 58, 34, .12));
 }
 
 .brand-lockup .brand-title,
@@ -23,8 +24,8 @@
 
 .login-brand {
   position: relative;
-  min-height: 68px;
-  padding-left: 66px;
+  min-height: 72px;
+  padding-left: 76px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -35,24 +36,35 @@
   position: absolute;
   left: 0;
   top: 50%;
-  width: 52px;
+  width: 62px;
   height: 62px;
   transform: translateY(-50%);
   background: url('/brand/magina-olivo-mark.svg') center / contain no-repeat;
+  filter: drop-shadow(0 7px 14px rgba(46, 58, 34, .14));
 }
 
 @media (max-width: 390px) {
   .brand-lockup {
-    grid-template-columns: 32px minmax(0, 1fr);
+    grid-template-columns: 36px minmax(0, 1fr);
     column-gap: 8px;
   }
 
   .brand-lockup::before {
-    width: 30px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
   }
 
   .brand-lockup .brand-title {
     font-size: 1.18rem;
+  }
+
+  .login-brand {
+    min-height: 64px;
+    padding-left: 68px;
+  }
+
+  .login-brand::before {
+    width: 56px;
+    height: 56px;
   }
 }

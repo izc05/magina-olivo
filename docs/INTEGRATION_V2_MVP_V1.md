@@ -87,17 +87,29 @@ La rama parte directamente de `feat/mvp-core-v1`.
 - se añade resumen real por parcela y filtros `Todo / Labores / Entregas / Rendimientos`;
 - el aviso CUE/SIEX se mantiene explícito: el cuaderno personal V1 no se presenta como registro oficial.
 
+### Campaña y documentos
+
+- campaña, entregas, kilos y rendimiento siguen procediendo del MVP Core y de sus cálculos deterministas;
+- el formulario de entrega mantiene finca/parcela, destino, ticket, variedad, notas y outbox offline;
+- los destinos reconocidos se diferencian de los destinos manuales sin bloquear la entrada libre;
+- los tickets se validan en cliente y servidor para JPG/PNG/WEBP/PDF y máximo 10 MB;
+- los documentos siguen almacenándose de forma privada con SHA-256 y autorización por explotación;
+- se añade listado autenticado de documentos por campaña, sin exponer claves internas de almacenamiento;
+- la bandeja `Tickets y documentos` se refresca automáticamente después de una subida y permite descarga autenticada;
+- los metadatos de cada documento pueden mostrar la entrega vinculada (fecha, kilos y destino);
+- se añade prueba de cliente para verificar el listado de campaña con credenciales de sesión.
+
 ## Orden P0
 
 1. Login/sesión. ✅ presentación V2 sobre flujo real
 2. Inicio/dashboard real. ✅ primera integración V2
 3. Mi Campo: explotación -> finca -> parcela. ✅ integración visual real
 4. Cuaderno/labores. ✅ integración visual + resumen/filtros reales
-5. Campaña -> entrega -> rendimiento. 🟡 siguiente corte
-6. Documentos privados.
-7. Offline/sync.
-8. Meteorología y datos públicos.
-9. Directorio/mercado/noticias.
+5. Campaña -> entrega -> rendimiento. ✅ flujo real reforzado
+6. Documentos privados. ✅ listado/descarga por campaña + almacenamiento privado existente
+7. Offline/sync. 🟡 base real ya integrada; pendiente cierre visual/operativo
+8. Meteorología y datos públicos. 🟡 fuentes y pantallas reales ya existen; pendiente integración en navegación principal
+9. Directorio/mercado/noticias. 🟡 directorio/mercado reales ya existen; pendiente integración y noticias
 
 ## Reglas de integración
 
@@ -124,4 +136,4 @@ La fase podrá considerarse cerrada cuando:
 
 ## Siguiente paso
 
-Migrar **Campaña -> Entrega -> Rendimiento** a la misma jerarquía Visual V2 manteniendo `Campaign`, `Delivery`, `CampaignSummary`, documentos privados y cálculos del MVP Core como única autoridad. Después se cerrará Documentos + Offline y se preparará el primer staging real navegable.
+Cerrar la integración de **Offline/sync** en la experiencia V2 y sustituir el placeholder de la pestaña **Mágina** por las pantallas públicas reales ya construidas: AEMET, RAIF, directorio de cooperativas/almazaras y mercado. Después se preparará el primer staging real navegable sin fusionar todavía a `main`.

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { api, type Farm, type Plot } from './api.ts';
 import { uploadDeliveryTicket } from './document-api.ts';
@@ -10,9 +10,18 @@ type DestinationSuggestion = {
   municipality: string | null;
 };
 
+const MAX_TICKET_BYTES = 10 * 1024 * 1024;
+const ALLOWED_TICKET_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
+
 function localDateTimeValue(): string {
   const now = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000);
   return now.toISOString().slice(0, 16);
+}
+
+function ticketFileError(file: File): string | null {
+  if (!ALLOWED_TICKET_TYPES.has(file.type)) return 'El ticket debe ser JPG, PNG, WEBP o PDF.';
+  if (file.size > MAX_TICKET_BYTES) return 'El ticket supera el máximo de 10 MB.';
+  return null;
 }
 
 export function DeliveryEntryCard({
@@ -37,6 +46,11 @@ export function DeliveryEntryCard({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
+
+  const canonicalDestination = useMemo(
+    () => destinations.find((item) => item.officialName === destinationText.trim()) ?? null,
+    [destinations, destinationText],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -78,6 +92,21 @@ export function DeliveryEntryCard({
     return () => { cancelled = true; };
   }, [farmId]);
 
+  function chooseTicket(file: File | null) {
+    setWarning(null);
+    if (!file) {
+      setTicketFile(null);
+      return;
+    }
+    const validationError = ticketFileError(file);
+    if (validationError) {
+      setTicketFile(null);
+      setWarning(validationError);
+      return;
+    }
+    setTicketFile(file);
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -88,7 +117,6 @@ export function DeliveryEntryCard({
     const ticketNumber = String(data.get('ticketNumber') || '').trim();
     const variety = String(data.get('variety') || '').trim();
     const notes = String(data.get('notes') || '').trim();
-    const canonicalDestination = destinations.find((item) => item.officialName === destination);
 
     setBusy(true);
     setError(null);
@@ -96,6 +124,11 @@ export function DeliveryEntryCard({
     setWarning(null);
 
     try {
+      if (ticketFile) {
+        const validationError = ticketFileError(ticketFile);
+        if (validationError) throw new Error(validationError);
+      }
+
       const clientGeneratedId = crypto.randomUUID();
       const body: {
         deliveredAt: string;
@@ -177,7 +210,7 @@ export function DeliveryEntryCard({
               list="magina-destination-suggestions"
               maxLength={200}
               placeholder="San Sebastián"
-              aria-describedby="delivery-destination-help"
+              aria-describedby="delivery-destination-help delivery-destination-status"
               value={destinationText}
               onChange={(event) => setDestinationText(event.target.value)}
               required
@@ -190,6 +223,13 @@ export function DeliveryEntryCard({
               ))}
             </datalist>
             <small id="delivery-destination-help">Puedes elegir una entidad pública de Mágina o escribir cualquier otro destino.</small>
+            {destinationText.trim() ? (
+              <small id="delivery-destination-status" className={`destination-status${canonicalDestination ? ' destination-status--known' : ''}`}>
+                {canonicalDestination
+                  ? `Entidad reconocida${canonicalDestination.municipality ? ` · ${canonicalDestination.municipality}` : ''}`
+                  : 'Destino manual · se guardará tal como lo has escrito'}
+              </small>
+            ) : <span id="delivery-destination-status" className="sr-only">Sin destino seleccionado</span>}
           </div>
         </div>
 
@@ -233,9 +273,12 @@ export function DeliveryEntryCard({
               type="file"
               accept="image/jpeg,image/png,image/webp,application/pdf"
               aria-describedby="delivery-ticket-help"
-              onChange={(event) => setTicketFile(event.target.files?.[0] ?? null)}
+              onChange={(event) => {
+                chooseTicket(event.target.files?.[0] ?? null);
+                if (event.target.files?.[0] && ticketFileError(event.target.files[0])) event.target.value = '';
+              }}
             />
-            <small id="delivery-ticket-help">{ticketFile ? `${ticketFile.name} · ${(ticketFile.size / 1024 / 1024).toFixed(2)} MB` : 'Opcional · máximo 10 MB · archivo privado'}</small>
+            <small id="delivery-ticket-help">{ticketFile ? `${ticketFile.name} · ${(ticketFile.size / 1024 / 1024).toFixed(2)} MB` : 'Opcional · JPG, PNG, WEBP o PDF · máximo 10 MB · archivo privado'}</small>
           </div>
         </div>
 
@@ -271,6 +314,11 @@ export function DeliveryTicketButton({
 
   async function choose(file: File | null) {
     if (!file) return;
+    const validationError = ticketFileError(file);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
     setBusy(true);
     setNotice(null);
     setError(null);

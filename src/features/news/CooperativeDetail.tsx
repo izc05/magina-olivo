@@ -42,6 +42,13 @@ function formatPrice(value: number | null, unit: string) {
   return `${value.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`;
 }
 
+function formatCaptureDate(value?: string) {
+  if (!value) return '';
+  const date = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString('es-ES');
+}
+
 export function CooperativeDetail({ cooperative, onBack }: CooperativeDetailProps) {
   const [tab, setTab] = useState<DetailTab>('resumen');
   const [market, setMarket] = useState<MarketPayload | null>(null);
@@ -70,6 +77,11 @@ export function CooperativeDetail({ cooperative, onBack }: CooperativeDetailProp
       return haystack.includes(brand) || (name.length > 6 && haystack.includes(name)) || haystack.includes(town);
     }).slice(0, 8);
   }, [cooperative, stories]);
+
+  const storeProducts = useMemo(
+    () => cooperative.products?.filter((product) => product.storePriceLabel) ?? [],
+    [cooperative.products],
+  );
 
   return (
     <section className="section-block hub-panel hub-panel--flush section-block--last coop-detail-view">
@@ -105,8 +117,8 @@ export function CooperativeDetail({ cooperative, onBack }: CooperativeDetailProp
           <section className="section-block">
             <div className="section-heading"><div><span className="eyebrow">Información</span><h2>Ficha de la cooperativa</h2></div><ShieldCheck size={20} /></div>
             <div className="coop-service-list">
-              <button type="button" onClick={() => setTab('aceites')}><ShoppingBag size={20} /><div><strong>Aceites y marcas</strong><span>Consulta los AOVE y formatos que tengamos verificados para esta cooperativa.</span></div><ChevronRight size={18} /></button>
-              <button type="button" onClick={() => setTab('precios')}><Euro size={20} /><div><strong>Precios</strong><span>Referencia oficial de mercado y, cuando exista, dato propio publicado por la cooperativa.</span></div><ChevronRight size={18} /></button>
+              <button type="button" onClick={() => setTab('aceites')}><ShoppingBag size={20} /><div><strong>Aceites y marcas</strong><span>Consulta los AOVE, formatos y precios de tienda que tengamos verificados.</span></div><ChevronRight size={18} /></button>
+              <button type="button" onClick={() => setTab('precios')}><Euro size={20} /><div><strong>Precios</strong><span>Precio de tienda, referencia oficial de mercado y liquidación al socio claramente separados.</span></div><ChevronRight size={18} /></button>
               <button type="button" onClick={() => setTab('noticias')}><Newspaper size={20} /><div><strong>Noticias y avisos</strong><span>Actualidad relacionada automáticamente por cooperativa, marca y municipio.</span></div><ChevronRight size={18} /></button>
               <article><Truck size={20} /><div><strong>Campaña y recepción</strong><span>Preparado para horarios, recepción, cierres y servicios cuando exista una fuente directa actualizada.</span></div><ChevronRight size={18} /></article>
               <article><BellRing size={20} /><div><strong>Avisos al socio</strong><span>Podremos incorporar documentación, recepción, servicios y comunicados con fecha y fuente.</span></div><ChevronRight size={18} /></article>
@@ -124,7 +136,20 @@ export function CooperativeDetail({ cooperative, onBack }: CooperativeDetailProp
               {cooperative.products.map((product, index) => (
                 <article key={`${product.name}-${product.format ?? index}`} className="coop-product-card">
                   <div className="coop-product-card__icon"><PackageOpen size={22} /></div>
-                  <div><span>{product.type}</span><strong>{product.name}</strong>{product.format && <small>{product.format}</small>}</div>
+                  <div className="coop-product-card__copy">
+                    <span>{product.type}</span>
+                    <strong>{product.name}</strong>
+                    {product.format && <small>{product.format}</small>}
+                    {product.storePriceLabel && (
+                      <div className="coop-product-card__price">
+                        <strong>{product.storePriceLabel}</strong>
+                        <span>Precio de tienda · verificado {formatCaptureDate(product.priceCapturedAt)}</span>
+                      </div>
+                    )}
+                    {product.priceSourceUrl && (
+                      <a href={product.priceSourceUrl} target="_blank" rel="noreferrer">Ver en tienda <ExternalLink size={13} /></a>
+                    )}
+                  </div>
                 </article>
               ))}
             </div>
@@ -150,11 +175,31 @@ export function CooperativeDetail({ cooperative, onBack }: CooperativeDetailProp
 
       {tab === 'precios' && (
         <section className="section-block coop-profile-panel coop-price-panel">
-          <div className="section-heading"><div><span className="eyebrow">Referencia</span><h2>Precios del aceite</h2></div><Euro size={21} /></div>
+          <div className="section-heading"><div><span className="eyebrow">Precios separados</span><h2>Precios del aceite</h2></div><Euro size={21} /></div>
+
+          {storeProducts.length > 0 ? (
+            <div className="coop-store-prices">
+              <div className="coop-store-prices__head"><ShoppingBag size={18} /><div><span>Venta al público</span><strong>Precios publicados por la tienda</strong></div></div>
+              {storeProducts.map((product, index) => (
+                <a key={`${product.name}-${product.format ?? index}`} href={product.priceSourceUrl ?? cooperative.productSourceUrl} target="_blank" rel="noreferrer">
+                  <div><strong>{product.name}</strong><span>{product.format ?? product.type}</span><small>Capturado {formatCaptureDate(product.priceCapturedAt)}</small></div>
+                  <b>{product.storePriceLabel}</b>
+                </a>
+              ))}
+              <small className="coop-store-prices__note">Son precios de venta del producto envasado. Pueden cambiar en la tienda original.</small>
+            </div>
+          ) : (
+            <div className="coop-price-own coop-price-own--shop">
+              <span>Precio de tienda de {cooperative.brand}</span>
+              <strong>No publicado o no verificado</strong>
+              <small>Se incorporará cuando podamos leerlo de una tienda o catálogo oficial con trazabilidad.</small>
+            </div>
+          )}
+
           <div className="coop-price-own">
-            <span>Precio propio / liquidación de {cooperative.name}</span>
+            <span>Liquidación / precio al socio de {cooperative.name}</span>
             <strong>No publicado o no verificado</strong>
-            <small>No lo sustituimos por el precio general del mercado. Aparecerá aquí sólo si la cooperativa publica el dato o nos autoriza a mostrarlo.</small>
+            <small>No lo sustituimos por el precio general del mercado ni por el precio de las botellas. Aparecerá aquí sólo si la cooperativa publica el dato o nos autoriza a mostrarlo.</small>
           </div>
 
           <div className="coop-market-reference">
@@ -205,7 +250,7 @@ export function CooperativeDetail({ cooperative, onBack }: CooperativeDetailProp
       </section>
 
       <section className="section-block section-block--last">
-        <div className="coop-source-note"><ShieldCheck size={16} /><span>Mágina Olivo distingue siempre entre referencia general de mercado y datos propios de cada cooperativa. No mostraremos liquidaciones, precios, horarios o estados operativos como reales sin fuente oficial o autorizada.</span></div>
+        <div className="coop-source-note"><ShieldCheck size={16} /><span>Mágina Olivo distingue siempre entre precio de tienda, referencia general de mercado y liquidación al socio. No mostraremos liquidaciones, horarios o estados operativos como reales sin fuente oficial o autorizada.</span></div>
       </section>
     </section>
   );

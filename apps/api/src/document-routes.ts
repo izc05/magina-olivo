@@ -41,6 +41,9 @@ type DocumentListRow = {
   document_type: string;
   created_at: Date;
   delivery_id: string | null;
+  delivered_at: Date | null;
+  delivery_kilograms: string | null;
+  delivery_destination: string | null;
 };
 
 async function getDocumentAccess(userId: string, documentId: string): Promise<DocumentAccessRow | null> {
@@ -126,7 +129,10 @@ export function registerDocumentRoutes(app: FastifyInstance): void {
             d.sha256,
             d.document_type,
             d.created_at,
-            dl.entity_id as delivery_id
+            dl.entity_id as delivery_id,
+            dy.delivered_at,
+            dy.kilograms::text as delivery_kilograms,
+            dy.custom_destination as delivery_destination
           from documents d
           left join document_links dl
             on dl.document_id = d.id
@@ -152,6 +158,12 @@ export function registerDocumentRoutes(app: FastifyInstance): void {
           sha256: row.sha256,
           documentType: row.document_type,
           deliveryId: row.delivery_id,
+          delivery: row.delivery_id ? {
+            id: row.delivery_id,
+            deliveredAt: row.delivered_at,
+            kilograms: row.delivery_kilograms,
+            destination: row.delivery_destination,
+          } : null,
           createdAt: row.created_at,
         })),
       };
@@ -302,6 +314,7 @@ export function registerDocumentRoutes(app: FastifyInstance): void {
           sha256: row.sha256,
           documentType: row.document_type,
           deliveryId: request.query.deliveryId ?? null,
+          delivery: null,
           createdAt: row.created_at,
         });
       } catch (error) {

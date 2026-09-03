@@ -21,6 +21,7 @@
   --radius-lg: 24px;
   --radius-md: 16px;
   --safe-bottom: max(16px, env(safe-area-inset-bottom));
+  --focus-ring: #765000;
 }
 
 * { box-sizing: border-box; }
@@ -30,6 +31,13 @@ button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: wait; opacity: .58; }
 a { color: inherit; }
+
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.page:focus { outline: 0; }
 
 .sr-only {
   position: absolute;
@@ -115,7 +123,7 @@ a { color: inherit; }
 .primary-button { padding: 0 18px; background: var(--olive-950); color: #fff; }
 .secondary-button { padding: 0 18px; background: var(--gold-soft); color: var(--olive-950); }
 .ghost-button { padding: 0 14px; background: transparent; color: var(--olive-950); border: 1px solid var(--line); }
-.text-button { padding: 4px; border: 0; background: transparent; color: var(--olive-800); font-weight: 800; }
+.text-button { min-height: 44px; padding: 4px 8px; border: 0; background: transparent; color: var(--olive-800); font-weight: 800; }
 .danger-button { color: var(--danger); }
 
 .section { margin-top: 26px; }
@@ -148,6 +156,7 @@ a { color: inherit; }
 }
 .field textarea { min-height: 88px; resize: vertical; }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--olive-650); box-shadow: 0 0 0 3px rgba(92,122,70,.13); }
+.field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
 .form-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .inline-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
@@ -171,8 +180,8 @@ a { color: inherit; }
 .delivery-kilos { font-size: 1.08rem; font-weight: 900; color: var(--olive-950); }
 .delivery-date { color: var(--muted); font-size: .77rem; margin-top: 3px; }
 .yield-form { display: flex; align-items: center; gap: 6px; }
-.yield-form input { width: 72px; min-height: 38px; border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; }
-.yield-form button { min-height: 38px; border: 0; border-radius: 10px; padding: 0 10px; background: var(--gold-soft); color: var(--olive-950); font-weight: 850; }
+.yield-form input { width: 76px; min-height: 44px; border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; }
+.yield-form button { min-height: 44px; min-width: 44px; border: 0; border-radius: 10px; padding: 0 10px; background: var(--gold-soft); color: var(--olive-950); font-weight: 850; }
 
 .bottom-nav {
   position: fixed;
@@ -216,4 +225,24 @@ a { color: inherit; }
 @media (prefers-reduced-motion: no-preference) {
   .card, .quick-button, .nav-button { transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
   .quick-button:hover, .card.interactive:hover { transform: translateY(-2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  :where(button, a, input, select, textarea, [tabindex]):focus-visible {
+    outline: 3px solid Highlight;
+  }
+
+  .nav-button.active,
+  .nav-plus.active {
+    outline: 2px solid CanvasText;
+  }
 }

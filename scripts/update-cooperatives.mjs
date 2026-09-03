@@ -1,8 +1,13 @@
 import { readFile, writeFile } from 'node:fs/promises';
 
 const OUTPUT = new URL('../public/data/cooperatives.json', import.meta.url);
-const USER_AGENT = 'MaginaOlivoCoopBot/1.0 (+https://github.com/izc05/magina-olivo)';
+const USER_AGENT = 'MaginaOlivoCoopBot/1.1 (+https://github.com/izc05/magina-olivo)';
 const CONCURRENCY = 4;
+
+const sourceOverrides = {
+  'remedios-jimena': 'https://www.aceitedeoro.es/',
+  'san-roque-carchelejo': 'https://tierrasdelmarquesado.com/categoria-producto/seleccion/',
+};
 
 function decodeEntities(value = '') {
   return value
@@ -22,6 +27,10 @@ function plainText(html = '') {
     .replace(/<[^>]+>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function normalize(value = '') {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es');
 }
 
 function parseAmount(label = '') {
@@ -50,6 +59,20 @@ function pageContainsPrice(html, value) {
     html.includes(`>${variant}<`) ||
     html.includes(`>${variant.replace('.', ',')}<`)
   ));
+}
+
+function priceNearProduct(html, productName) {
+  const text = plainText(html);
+  const haystack = normalize(text);
+  const needle = normalize(productName);
+  const index = haystack.indexOf(needle);
+  if (index < 0) return null;
+
+  const nearby = text.slice(index, index + 900);
+  const matches = [...nearby.matchAll(/(\d{1,4}(?:[.,]\d{1,2})?)\s*€/g)]
+    .map((match) => Number(match[1].replace(',', '.')))
+    .filter((value) => Number.isFinite(value) && value > 0 && value < 1000);
+  return matches[0] ?? null;
 }
 
 function structuredPrices(html) {
@@ -90,6 +113,10 @@ function isDirectProductUrl(url, productSourceUrl) {
   }
 }
 
+function sourceUrlFor(cooperative, product) {
+  return sourceOverrides[cooperative.id] ?? product.priceSourceUrl;
+}
+
 async function fetchHtml(url) {
   const response = await fetch(url, {
     headers: {
@@ -110,15 +137,16 @@ async function main() {
   for (const cooperative of cooperatives) {
     for (const product of cooperative.products ?? []) {
       if (!product.storePriceLabel || !product.priceSourceUrl) continue;
-      targets.push({ cooperative, product });
+      const sourceUrl = sourceUrlFor(cooperative, product);
+      targets.push({ cooperative, product, sourceUrl });
     }
   }
 
   const byUrl = new Map();
   for (const target of targets) {
-    const list = byUrl.get(target.product.priceSourceUrl) ?? [];
+    const list = byUrl.get(target.sourceUrl) ?? [];
     list.push(target);
-    byUrl.set(target.product.priceSourceUrl, list);
+    byUrl.set(target.sourceUrl, list);
   }
 
   const urls = [...byUrl.keys()];
@@ -143,13 +171,26 @@ async function main() {
       const current = parseAmount(product.storePriceLabel);
       if (current == null) continue;
 
-      if (pageContainsPrice(html, current)) {
+      const scoped = priceNearProduct(html, product.name);
+      if (scoped != null && scoped >= current * 0.4 && scoped <= current * 2.5) {
+        if (Math.abs(scoped - current) > 0.001) {
+          product.storePriceLabel = replaceAmount(product.storePriceLabel, scoped);
+          updatedProducts += 1;
+        }
         product.priceCapturedAt = today;
+        product.priceSourceUrl = url;
         verifiedProducts += 1;
         continue;
       }
 
-      const direct = isDirectProductUrl(product.priceSourceUrl, cooperative.productSourceUrl);
+      if (pageContainsPrice(html, current)) {
+        product.priceCapturedAt = today;
+        product.priceSourceUrl = url;
+        verifiedProducts += 1;
+        continue;
+      }
+
+      const direct = isDirectProductUrl(url, cooperative.productSourceUrl);
       const candidates = direct ? structuredPrices(html) : [];
       const plausible = candidates
         .filter((candidate) => candidate >= current * 0.5 && candidate <= current * 2)
@@ -159,6 +200,7 @@ async function main() {
         const next = plausible[0];
         product.storePriceLabel = replaceAmount(product.storePriceLabel, next);
         product.priceCapturedAt = today;
+        product.priceSourceUrl = url;
         verifiedProducts += 1;
         if (Math.abs(next - current) > 0.001) updatedProducts += 1;
       } else {

@@ -74,6 +74,38 @@
   box-shadow: 0 8px 20px rgba(47,59,39,.12);
 }
 
+.notebook-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.notebook-summary-grid article {
+  display: grid;
+  gap: 4px;
+  min-height: 90px;
+  padding: 12px;
+  border: 1px solid rgba(86,111,67,.14);
+  border-radius: 15px;
+  background: rgba(255,253,248,.78);
+}
+
+.notebook-summary-grid span,
+.notebook-summary-grid small {
+  color: #747565;
+  font-size: .68rem;
+}
+
+.notebook-summary-grid strong {
+  align-self: end;
+  color: var(--v2-olive-deep);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
 .notebook-history-heading {
   margin-top: 28px;
   padding-inline: 2px;
@@ -81,6 +113,58 @@
 
 .notebook-history-title {
   font-size: clamp(1.35rem, 5vw, 1.65rem);
+}
+
+.notebook-filters {
+  display: flex;
+  gap: 7px;
+  margin: 12px 0 10px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.notebook-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.notebook-filter {
+  display: inline-flex;
+  min-height: 40px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid var(--v2-line);
+  border-radius: 999px;
+  background: rgba(255,253,248,.7);
+  color: #686b5d;
+  font: inherit;
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.notebook-filter span {
+  display: grid;
+  min-width: 20px;
+  height: 20px;
+  place-items: center;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(86,111,67,.09);
+  color: var(--v2-olive-deep);
+  font-size: .64rem;
+}
+
+.notebook-filter.active {
+  border-color: var(--v2-olive-deep);
+  background: var(--v2-olive-deep);
+  color: #fffdf8;
+}
+
+.notebook-filter.active span {
+  background: rgba(255,255,255,.16);
+  color: #fffdf8;
 }
 
 .timeline-list {
@@ -178,6 +262,12 @@
   background: rgba(255,253,248,.72);
 }
 
+@media (max-width: 700px) {
+  .notebook-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 560px) {
   .notebook-card {
     padding: 16px;
@@ -191,6 +281,10 @@
 
   .notebook-form .primary-button {
     width: 100%;
+  }
+
+  .notebook-summary-grid article {
+    min-height: 82px;
   }
 
   .timeline-item {

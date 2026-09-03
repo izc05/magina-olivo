@@ -3,7 +3,9 @@ name: Technical Spike Smoke
 on:
   pull_request:
     branches:
+      - main
       - feat/foundation-v1
+      - feat/mvp-core-v1
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 

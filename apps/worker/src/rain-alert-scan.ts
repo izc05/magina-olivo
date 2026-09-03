@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type pg from 'pg';
+import type { Pool } from 'pg';
 import { normalizePlace, selectRainTriggers, type RainForecastDay } from './rain-alert-rules.ts';
 
 const AEMET_BASE_URL = 'https://opendata.aemet.es/opendata';
@@ -102,7 +102,7 @@ async function fetchAemetForecast(aemetCode: string, apiKey: string): Promise<Fo
   return { elaboratedAt: safeIso(municipality.elaborado), days };
 }
 
-async function resolveActiveRainAlerts(pool: pg.Pool, userId: string, holdingId: string): Promise<void> {
+async function resolveActiveRainAlerts(pool: Pool, userId: string, holdingId: string): Promise<void> {
   await pool.query(
     `
       update weather_alert_events
@@ -119,7 +119,7 @@ async function resolveActiveRainAlerts(pool: pg.Pool, userId: string, holdingId:
   );
 }
 
-export async function scanRainAlerts(pool: pg.Pool): Promise<{ users: number; alerts: number; sourceFailures: number }> {
+export async function scanRainAlerts(pool: Pool): Promise<{ users: number; alerts: number; sourceFailures: number }> {
   const apiKey = process.env.AEMET_API_KEY?.trim();
   if (!apiKey) throw new Error('AEMET_API_KEY is required for weather.rain.scan');
 
@@ -131,11 +131,11 @@ export async function scanRainAlerts(pool: pg.Pool): Promise<{ users: number; al
           updated_at = now()
       where e.kind = 'rain'
         and e.status = 'active'
-        and not exists (
+        and exists (
           select 1
           from user_preferences up
           where up.user_id = e.user_id
-            and up.notify_weather = true
+            and up.notify_weather = false
         )
     `,
   );
@@ -144,19 +144,18 @@ export async function scanRainAlerts(pool: pg.Pool): Promise<{ users: number; al
     `
       with ranked as (
         select
-          up.user_id,
-          up.weather_rain_probability_percent_threshold::text as threshold_percent,
+          hm.user_id,
+          coalesce(up.weather_rain_probability_percent_threshold, 60)::text as threshold_percent,
           h.id as holding_id,
           h.municipality,
-          row_number() over (partition by up.user_id order by h.created_at asc, h.id asc) as position
-        from user_preferences up
-        join holding_members hm
-          on hm.user_id = up.user_id
-         and hm.status = 'active'
+          row_number() over (partition by hm.user_id order by h.created_at asc, h.id asc) as position
+        from holding_members hm
         join holdings h
           on h.id = hm.holding_id
          and h.active = true
-        where up.notify_weather = true
+        left join user_preferences up on up.user_id = hm.user_id
+        where hm.status = 'active'
+          and coalesce(up.notify_weather, true) = true
           and h.municipality is not null
           and length(trim(h.municipality)) > 0
       )

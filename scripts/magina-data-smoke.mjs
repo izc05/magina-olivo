@@ -41,7 +41,7 @@ async function run() {
     await nav.getByRole('button', { name: 'Mágina', exact: true }).click();
     await page.locator('.hub-tabs--primary').waitFor({ state: 'visible' });
 
-    // Cooperativas: directorio real, sincronización de tiendas, ficha, aceites, precios y noticias propias.
+    // Cooperativas: directorio real, sincronización de tiendas, ficha, aceites, precios, noticias y socios.
     await page.locator('.hub-tabs--primary').getByRole('button', { name: 'Cooperativas', exact: true }).click();
     const coopList = page.locator('.coop-list--verified');
     await coopList.waitFor({ state: 'visible' });
@@ -82,6 +82,18 @@ async function run() {
     const relatedCount = await page.locator('.coop-related-news a').count();
     const emptyCount = await page.locator('.coop-empty-state').count();
     assert(relatedCount >= 1 || emptyCount === 1, 'Cooperativas: la pestaña Noticias no presenta resultados ni estado vacío válido.');
+
+    await detailTabs.getByRole('button', { name: 'Socios', exact: true }).click();
+    const membersPanel = page.locator('.coop-members-panel');
+    await membersPanel.waitFor({ state: 'visible' });
+    await page.locator('.coop-campaign-status').waitFor({ state: 'visible' });
+    await page.getByText(/Los horarios generales de oficina no se usan como horario de recepción de aceituna/i).waitFor({ state: 'visible' });
+    await page.locator('.coop-contact-card').waitFor({ state: 'visible' });
+    await page.getByText(/Camino del Canónigo/i).waitFor({ state: 'visible' });
+    await page.getByText('953 785 031', { exact: true }).waitFor({ state: 'visible' });
+    await page.getByText('info@laquintaesencia.com', { exact: true }).waitFor({ state: 'visible' });
+    await page.getByText('Horario general publicado', { exact: true }).waitFor({ state: 'visible' });
+    assert(await page.getByRole('link', { name: /Fuente oficial de contacto/i }).count() === 1, 'Cooperativas: falta la fuente oficial de contacto en Socios.');
     await assertNoOverflow(page, 'Ficha de cooperativa completa');
 
     // Mercado: precios oficiales y gráfico seleccionable.
@@ -109,7 +121,7 @@ async function run() {
     await assertNoOverflow(page, 'Alertas');
 
     await context.close();
-    console.log('✓ Smoke Mágina: sincronización de tiendas, cooperativa con precios separados, noticias oficiales, mercado y alertas funcionan en 390×844 y bajo /magina-olivo/.');
+    console.log('✓ Smoke Mágina: tiendas, cooperativa, precios, noticias, Socios/Campaña, mercado y alertas funcionan en 390×844 y bajo /magina-olivo/.');
   } finally {
     if (browser) await browser.close();
     await closePreview(previewServer);

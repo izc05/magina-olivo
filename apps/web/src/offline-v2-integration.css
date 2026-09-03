@@ -1,0 +1,183 @@
+/* Offline/connectivity — Visual V2 clarity layer. No sync logic lives here. */
+
+.connectivity-banner {
+  top: 12px;
+  width: min(calc(100% - 24px), 660px);
+  padding: 12px 14px;
+  border-radius: 18px;
+  border-color: rgba(47,59,39,.14);
+  box-shadow: 0 16px 40px rgba(47,59,39,.16);
+}
+
+.connectivity-banner::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 5px rgba(255,255,255,.13);
+}
+
+.connectivity-banner.offline {
+  background: rgba(47,59,39,.97);
+  color: #fffdf8;
+}
+
+.connectivity-banner.offline::before {
+  background: #d9c36f;
+}
+
+.connectivity-banner.pending {
+  background: rgba(255,248,224,.98);
+  color: var(--v2-olive-deep);
+  border-color: rgba(201,155,44,.25);
+}
+
+.connectivity-banner.pending::before {
+  background: var(--v2-gold);
+  box-shadow: 0 0 0 5px rgba(201,155,44,.14);
+}
+
+.connectivity-banner > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.connectivity-banner strong {
+  font-size: .82rem;
+  letter-spacing: .01em;
+}
+
+.connectivity-banner span {
+  margin-top: 3px;
+  font-size: .7rem;
+  line-height: 1.35;
+}
+
+.connectivity-banner button {
+  min-height: 42px;
+  padding-inline: 13px;
+  border-radius: 12px;
+  background: var(--v2-olive-deep);
+  color: #fff;
+}
+
+.offline-start-shell {
+  background:
+    radial-gradient(circle at 82% 7%, rgba(201,155,44,.16), transparent 27rem),
+    radial-gradient(circle at 10% 94%, rgba(86,111,67,.11), transparent 30rem),
+    var(--v2-ivory);
+}
+
+.offline-start-card {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--v2-line);
+  background: rgba(255,253,248,.97);
+  box-shadow: var(--v2-shadow);
+}
+
+.offline-start-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, var(--v2-olive), var(--v2-gold));
+}
+
+.offline-start-mark {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  margin-bottom: 22px;
+  background: var(--v2-olive-deep);
+  box-shadow: 0 8px 22px rgba(47,59,39,.15);
+}
+
+.offline-start-mark::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border: 1px solid rgba(86,111,67,.2);
+  border-radius: 50%;
+}
+
+.offline-start-card .page-eyebrow {
+  color: var(--v2-gold);
+  opacity: 1;
+}
+
+.offline-start-card .login-title {
+  color: var(--v2-olive-deep);
+  font-size: clamp(2.25rem, 10vw, 3.4rem);
+}
+
+.offline-start-copy {
+  max-width: 46ch;
+  color: #6d7668;
+}
+
+.offline-start-pending,
+.offline-start-note {
+  border: 1px solid transparent;
+}
+
+.offline-start-pending {
+  background: rgba(239,225,184,.48);
+  border-color: rgba(201,155,44,.19);
+  color: var(--v2-olive-deep);
+}
+
+.offline-start-note {
+  background: rgba(86,111,67,.07);
+  border-color: rgba(86,111,67,.12);
+  color: var(--v2-olive-deep);
+}
+
+.offline-start-pending strong,
+.offline-start-note strong {
+  font-size: .83rem;
+}
+
+.offline-start-button {
+  min-height: 52px;
+  background: var(--v2-olive-deep);
+  box-shadow: 0 8px 22px rgba(47,59,39,.13);
+}
+
+.offline-start-footnote {
+  color: #777a6b;
+}
+
+@media (max-width: 520px) {
+  .connectivity-banner {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .connectivity-banner::before {
+    margin-top: 5px;
+  }
+
+  .connectivity-banner button {
+    min-height: 40px;
+    padding-inline: 10px;
+  }
+
+  .offline-start-shell {
+    padding: 16px;
+  }
+
+  .offline-start-card {
+    padding: 25px 21px;
+    border-radius: 26px;
+  }
+}
+
+@media (forced-colors: active) {
+  .connectivity-banner::before,
+  .offline-start-card::before,
+  .offline-start-mark::after {
+    display: none;
+  }
+}

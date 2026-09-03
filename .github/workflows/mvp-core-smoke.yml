@@ -72,6 +72,8 @@ jobs:
           printf '%s\n' "$trace_status"
           grep -q '^release=ci-trace-release$' <<<"$trace_status"
           grep -q '^source_sha=0123456789abcdef0123456789abcdef01234567$' <<<"$trace_status"
+          grep -q 'application_source_sha=' scripts/staging-backup.sh
+          grep -q 'application_source_sha' scripts/staging-restore-gate.sh
           rm -rf "$trace_state"
 
       - name: Verify Cloudflare Access gate configuration guard

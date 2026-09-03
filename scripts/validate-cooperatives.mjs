@@ -53,9 +53,9 @@ for (const cooperative of cooperatives) {
   }
 }
 
-if (websites < 8) errors.push(`Cobertura web insuficiente: ${websites} fichas con web propia.`);
-if (catalogs < 9) errors.push(`Cobertura de catálogo insuficiente: ${catalogs} fichas.`);
-if (pricedProducts < 15) errors.push(`Cobertura de precios insuficiente: ${pricedProducts} productos con precio trazable.`);
+if (websites < 10) errors.push(`Cobertura web insuficiente: ${websites} fichas con web propia.`);
+if (catalogs < 12) errors.push(`Cobertura de catálogo insuficiente: ${catalogs} fichas.`);
+if (pricedProducts < 29) errors.push(`Cobertura de precios insuficiente: ${pricedProducts} productos con precio trazable.`);
 
 console.log(`Control de cooperativas: ${cooperatives.length} fichas · ${websites} webs · ${catalogs} catálogos · ${pricedProducts} productos con precio.`);
 

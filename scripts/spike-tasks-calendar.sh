@@ -54,6 +54,15 @@ status=$(curl --silent --output /tmp/tasks-calendar-holding-b.json --write-out "
 [[ "$status" = "201" ]] || fail "Holding B expected 201, got $status"
 HOLDING_B=$(json_value /tmp/tasks-calendar-holding-b.json 'value.id')
 
+log "Creating a real foreign farm owned by grower B"
+status=$(curl --silent --output /tmp/tasks-calendar-farm-b.json --write-out "%{http_code}" \
+  --cookie /tmp/tasks-calendar-b.cookies \
+  --header 'content-type: application/json' \
+  --data '{"name":"Foreign Farm B","areaHa":1.5}' \
+  "$API_BASE/api/v1/holdings/$HOLDING_B/farms")
+[[ "$status" = "201" ]] || fail "Farm B expected 201, got $status"
+FARM_B=$(json_value /tmp/tasks-calendar-farm-b.json 'value.id')
+
 unauth=$(curl --silent --output /tmp/tasks-calendar-unauth.json --write-out "%{http_code}" \
   "$API_BASE/api/v1/holdings/$HOLDING_A/tasks")
 [[ "$unauth" = "401" ]] || fail "Unauthenticated task list expected 401, got $unauth"
@@ -140,12 +149,14 @@ status=$(curl --silent --output /tmp/tasks-calendar-complete-again.json --write-
 REPEATED_VERSION=$(json_value /tmp/tasks-calendar-complete-again.json 'value.version')
 [[ "$REPEATED_VERSION" = "3" ]] || fail "Repeated completion must not increment version"
 
-log "Rejecting invalid cross-holding scope links"
+log "Rejecting a real cross-holding farm link"
 status=$(curl --silent --output /tmp/tasks-calendar-invalid-scope.json --write-out "%{http_code}" \
   --cookie /tmp/tasks-calendar-a.cookies \
   --header 'content-type: application/json' \
-  --data "{\"title\":\"Scope inválido\",\"dueDate\":\"$TOMORROW\",\"farmId\":\"$HOLDING_B\"}" \
+  --data "{\"title\":\"Scope inválido\",\"dueDate\":\"$TOMORROW\",\"farmId\":\"$FARM_B\"}" \
   "$API_BASE/api/v1/holdings/$HOLDING_A/tasks")
-[[ "$status" = "400" ]] || fail "Invalid foreign scope expected 400, got $status"
+[[ "$status" = "400" ]] || fail "Foreign farm scope expected 400, got $status"
+SCOPE_CODE=$(json_value /tmp/tasks-calendar-invalid-scope.json 'value.error.code')
+[[ "$SCOPE_CODE" = "TASK_SCOPE_MISMATCH" ]] || fail "Foreign farm scope expected TASK_SCOPE_MISMATCH, got $SCOPE_CODE"
 
 log "TASKS CALENDAR GATE PASS"

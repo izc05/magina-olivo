@@ -74,6 +74,13 @@ export function MaginaHubPage() {
           <strong>Ver estado fitosanitario →</strong>
         </a>
 
+        <a className="card magina-hub-card ready" href="/magina/noticias">
+          <span className="badge gold">Fuente oficial</span>
+          <h2>Noticias</h2>
+          <p>Actualidad verificada del olivar y el sector, con fecha visible y enlace al artículo original.</p>
+          <strong>Ver noticias →</strong>
+        </a>
+
         <a className="card magina-hub-card ready" href="/magina/mercado">
           <span className="badge gold">Fuente oficial</span>
           <h2>Aceite y mercado</h2>

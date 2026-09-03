@@ -1,0 +1,31 @@
+{
+  "generatedAt": "2026-09-03T20:05:00+02:00",
+  "sourceCount": 2,
+  "healthySourceCount": 2,
+  "alerts": [
+    {
+      "id": "raif-antracnosis-20260805",
+      "severity": "warning",
+      "category": "Sanidad vegetal",
+      "scope": "Andalucía",
+      "title": "Vigilancia de antracnosis o aceituna jabonosa desde el inicio del envero",
+      "summary": "RAIF recomienda intensificar el seguimiento cuando coinciden envero, humedad elevada o lluvias, especialmente en parcelas con antecedentes.",
+      "source": "RAIF · Junta de Andalucía",
+      "url": "https://www.juntadeandalucia.es/agriculturapescaaguaydesarrollorural/raif/recomendaciones-de-la-gestion-integrada-de-plagas-para-prevenir-la-antracnosis-o-aceituna-jabonosa-en-el-olivar/",
+      "publishedAt": "2026-08-05T09:00:00+02:00",
+      "official": true
+    },
+    {
+      "id": "raif-baeza-olivar-20260901",
+      "severity": "info",
+      "category": "Seguimiento de campo",
+      "scope": "Jaén",
+      "title": "Seguimiento actualizado del olivar demostrativo de Baeza",
+      "summary": "RAIF mantiene seguimiento de fenología, plagas, muestreos y recomendaciones en una explotación demostrativa de olivar de la provincia de Jaén.",
+      "source": "RAIF · Junta de Andalucía",
+      "url": "https://www.juntadeandalucia.es/agriculturapescaaguaydesarrollorural/raif/gip-andalucia/seguimiento-y-resultados/explotacion-demostrativa-baeza-olivar/",
+      "publishedAt": "2026-09-01T09:00:00+02:00",
+      "official": true
+    }
+  ]
+}

@@ -5,6 +5,10 @@ const OUTPUT = new URL('../public/data/news.json', import.meta.url);
 
 const sources = [
   { name: 'D.O.P. Sierra Mágina', url: 'https://sierramagina.org/feed/', weight: 24, scope: 'magina', official: true },
+  { name: 'La Quinta Esencia · Oficial', url: 'https://laquintaesencia.com/feed/', weight: 28, scope: 'magina', official: true, cooperativeId: 'cristo-misericordia-jodar' },
+  { name: 'Oro de Cánava · Oficial', url: 'https://www.orodecanava.com/feed/', weight: 28, scope: 'magina', official: true, cooperativeId: 'remedios-jimena' },
+  { name: 'Cooperativa San Francisco · Oficial', url: 'https://www.aovesierramagina.com/feed/', weight: 28, scope: 'magina', official: true, cooperativeId: 'san-francisco-albanchez' },
+  { name: 'Tierras del Marquesado · Oficial', url: 'https://tierrasdelmarquesado.com/feed/', weight: 28, scope: 'magina', official: true, cooperativeId: 'san-roque-carchelejo' },
   { name: 'CIT Jaén · Diputación', url: 'https://cit.dipujaen.es/feed/', weight: 18, scope: 'jaen', official: true },
   { name: 'Diario JAÉN', url: 'https://www.diariojaen.es/rss/provincia.xml', weight: 12, scope: 'jaen' },
   { name: 'Diario JAÉN', url: 'https://www.diariojaen.es/rss/jaen.xml', weight: 10, scope: 'jaen' },
@@ -128,6 +132,7 @@ function parseXml(xml, configuredSource) {
       weight: configuredSource.weight,
       scope: configuredSource.scope,
       official: Boolean(configuredSource.official),
+      cooperativeId: configuredSource.cooperativeId,
     };
   }).filter((item) => item.title && item.url);
 }
@@ -154,7 +159,8 @@ function relevance(item) {
   const oliveMatches = oliveTerms.reduce((score, term) => score + (text.includes(term) ? 5 : 0), 0);
   const agricultureMatches = agricultureTerms.reduce((score, term) => score + (text.includes(term) ? 2 : 0), 0);
   const officialBonus = item.official ? 4 : 0;
-  return maginaMatches + oliveMatches + agricultureMatches + officialBonus + item.weight;
+  const cooperativeBonus = item.cooperativeId ? 10 : 0;
+  return maginaMatches + oliveMatches + agricultureMatches + officialBonus + cooperativeBonus + item.weight;
 }
 
 function freshnessBonus(publishedAt) {
@@ -169,6 +175,7 @@ function freshnessBonus(publishedAt) {
 
 function categoryFor(item) {
   const text = textFor(item);
+  if (item.cooperativeId) return 'Cooperativas';
   if (includesAny(text, maginaTerms)) return 'Sierra Mágina';
   if (['precio', 'mercado', 'export', 'import', 'comercialización', 'comercializacion'].some((term) => text.includes(term))) return 'Mercado';
   if (['riego', 'digital', 'tecnolog', 'inteligencia artificial', 'sensor', 'dron'].some((term) => text.includes(term))) return 'Tecnología';
@@ -195,7 +202,7 @@ function idFor(item) {
 async function fetchSource(source) {
   const response = await fetch(source.url, {
     headers: {
-      'user-agent': 'MaginaOlivoNewsBot/1.1 (+https://github.com/izc05/magina-olivo)',
+      'user-agent': 'MaginaOlivoNewsBot/1.2 (+https://github.com/izc05/magina-olivo)',
       accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml, text/html;q=0.8',
     },
     signal: AbortSignal.timeout(15_000),
@@ -245,6 +252,7 @@ async function main() {
       url: item.url,
       publishedAt: item.publishedAt,
       official: item.official,
+      ...(item.cooperativeId ? { cooperativeId: item.cooperativeId } : {}),
     }));
 
   if (!stories.length) {

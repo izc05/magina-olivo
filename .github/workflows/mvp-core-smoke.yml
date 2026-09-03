@@ -41,6 +41,7 @@ jobs:
           bash -n scripts/staging-release.sh
           bash -n scripts/staging-release-source-gate.sh
           bash -n scripts/staging-acceptance.sh
+          bash -n scripts/staging-public-magina-gate.sh
           bash -n scripts/pilot-participant-setup.sh
 
       - name: Verify staging release source guard
@@ -54,6 +55,15 @@ jobs:
             exit 1
           fi
           grep -q 'both CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET must be set' /tmp/mvp-access-guard.log
+
+          if STAGING_BASE_URL=https://staging.example.com \
+            CF_ACCESS_CLIENT_ID=ci-only-id \
+            bash scripts/staging-public-magina-gate.sh > /tmp/public-magina-access-guard.log 2>&1; then
+            echo 'Public Mágina gate unexpectedly accepted a partial Cloudflare Access service token'
+            cat /tmp/public-magina-access-guard.log
+            exit 1
+          fi
+          grep -q 'both CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET must be set' /tmp/public-magina-access-guard.log
 
       - name: Verify pilot participant Access guard
         run: |

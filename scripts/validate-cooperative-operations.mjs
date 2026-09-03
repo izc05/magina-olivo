@@ -2,9 +2,9 @@ import { readFile } from 'node:fs/promises';
 
 const SOURCE = new URL('../src/features/news/cooperativeOperations.ts', import.meta.url);
 const DIRECTORY = new URL('../public/data/cooperatives.json', import.meta.url);
-const MIN_PROFILES = 11;
+const MIN_PROFILES = 13;
 const MIN_MEMBER_ACCESS = 2;
-const MIN_WITH_PUBLIC_HOURS = 4;
+const MIN_WITH_PUBLIC_HOURS = 5;
 
 function fail(message) {
   console.error(`Control operativo: ${message}`);

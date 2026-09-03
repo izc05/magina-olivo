@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import {
   Bell,
   CalendarDays,
@@ -22,51 +22,158 @@ import type { AppNavigate, FieldTarget } from '../../app/navigation';
 import { Brand } from '../../components/Brand';
 import { BottomNav } from '../../components/BottomNav';
 import { FarmManagementPanel } from './FarmManagementPanel';
+import {
+  loadFieldData,
+  nextRecordId,
+  saveFieldData,
+  type ExpenseRecord,
+  type JournalKind,
+  type ParcelRecord,
+} from './fieldStore';
 
 type FieldPageProps = {
   onNavigate: AppNavigate;
   initialTab?: FieldTarget;
 };
 
-type Parcel = {
-  id: number;
-  name: string;
-  area: string;
-  variety: string;
-  altitude: string;
-  frame: string;
-  slope: string;
-  status: 'Bueno' | 'Revisar';
-  note: string;
-};
-
 type FieldPrimaryTab = 'overview' | 'journal' | 'campaign' | 'management';
 type ManagementMode = 'costs' | 'machinery';
-
-const parcels: Parcel[] = [
-  { id: 1, name: 'Parcela 1', area: '5,20 ha', variety: 'Picual', altitude: '650 m', frame: '7 × 7 m', slope: '12 %', status: 'Bueno', note: 'Desarrollo vegetativo correcto.' },
-  { id: 2, name: 'Parcela 2', area: '4,40 ha', variety: 'Picual', altitude: '625 m', frame: '7 × 7 m', slope: '8 %', status: 'Bueno', note: 'Sin incidencias relevantes.' },
-  { id: 3, name: 'Parcela 3', area: '4,10 ha', variety: 'Picual', altitude: '672 m', frame: '7 × 7 m', slope: '16 %', status: 'Revisar', note: 'Riesgo medio de repilo por humedad.' },
-  { id: 4, name: 'Parcela 4', area: '5,90 ha', variety: 'Picual', altitude: '705 m', frame: '7 × 7 m', slope: '19 %', status: 'Bueno', note: 'Poda completada esta campaña.' },
-  { id: 5, name: 'Parcela 5', area: '3,85 ha', variety: 'Picual', altitude: '640 m', frame: '7 × 7 m', slope: '10 %', status: 'Bueno', note: 'Revisar humedad de suelo en 48 h.' },
-];
-
-const journalEntries = [
-  { date: '02 SEP', title: 'Tratamiento', detail: 'Cobre + aceite · Parcela 3', meta: 'Completado', icon: Leaf },
-  { date: '31 AGO', title: 'Riego', detail: 'Parcela 2 · 30 mm', meta: 'Completado', icon: Droplets },
-  { date: '29 AGO', title: 'Poda en verde', detail: 'Parcela 1', meta: 'Completado', icon: Scissors },
-  { date: '22 AGO', title: 'Abonado', detail: 'Parcela 3 · Los Llanos', meta: 'Registrado', icon: Sprout },
-];
+type JournalFilter = 'Todas' | 'Tratamientos' | 'Riego' | 'Labores';
 
 function getInitialPrimaryTab(initialTab: FieldTarget): FieldPrimaryTab {
   return initialTab === 'costs' || initialTab === 'machinery' ? 'management' : initialTab;
 }
 
+function compactDate(date: string) {
+  return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short' }).format(new Date(`${date}T12:00:00`)).replace('.', '').toUpperCase();
+}
+
+function journalIcon(kind: JournalKind) {
+  if (kind === 'Riego') return <Droplets size={20} />;
+  if (kind === 'Labor') return <Scissors size={20} />;
+  if (kind === 'Abonado') return <Sprout size={20} />;
+  if (kind === 'Cosecha') return <Weight size={20} />;
+  return <Leaf size={20} />;
+}
+
 export function FieldPage({ onNavigate, initialTab = 'overview' }: FieldPageProps) {
-  const [selectedId, setSelectedId] = useState(3);
+  const [fieldData, setFieldData] = useState(loadFieldData);
+  const [selectedId, setSelectedId] = useState(() => loadFieldData().parcels[0]?.id ?? 0);
   const [tab, setTab] = useState<FieldPrimaryTab>(() => getInitialPrimaryTab(initialTab));
   const [managementMode, setManagementMode] = useState<ManagementMode>(initialTab === 'machinery' ? 'machinery' : 'costs');
-  const selected = useMemo(() => parcels.find((parcel) => parcel.id === selectedId) ?? parcels[0], [selectedId]);
+  const [parcelOpen, setParcelOpen] = useState(false);
+  const [journalOpen, setJournalOpen] = useState(false);
+  const [deliveryOpen, setDeliveryOpen] = useState(false);
+  const [journalFilter, setJournalFilter] = useState<JournalFilter>('Todas');
+
+  const [parcelName, setParcelName] = useState('');
+  const [parcelArea, setParcelArea] = useState('');
+  const [parcelVariety, setParcelVariety] = useState('Picual');
+  const [parcelAltitude, setParcelAltitude] = useState('650');
+  const [parcelSlope, setParcelSlope] = useState('10');
+
+  const [journalKind, setJournalKind] = useState<JournalKind>('Labor');
+  const [journalTitle, setJournalTitle] = useState('');
+  const [journalDetail, setJournalDetail] = useState('');
+  const [journalParcel, setJournalParcel] = useState('');
+
+  const [deliveryKilos, setDeliveryKilos] = useState('');
+  const [deliveryYield, setDeliveryYield] = useState('');
+  const [deliveryCooperative, setDeliveryCooperative] = useState('');
+
+  useEffect(() => saveFieldData(fieldData), [fieldData]);
+
+  const selected = useMemo(() => fieldData.parcels.find((parcel) => parcel.id === selectedId) ?? fieldData.parcels[0], [fieldData.parcels, selectedId]);
+  const totalArea = useMemo(() => fieldData.parcels.reduce((sum, parcel) => sum + parcel.areaHa, 0), [fieldData.parcels]);
+  const totalKilos = useMemo(() => fieldData.deliveries.reduce((sum, delivery) => sum + delivery.kilos, 0), [fieldData.deliveries]);
+  const averageYield = useMemo(() => {
+    if (!totalKilos) return 0;
+    return fieldData.deliveries.reduce((sum, delivery) => sum + delivery.kilos * delivery.yieldPct, 0) / totalKilos;
+  }, [fieldData.deliveries, totalKilos]);
+
+  const filteredJournal = useMemo(() => fieldData.journal.filter((entry) => {
+    if (journalFilter === 'Todas') return true;
+    if (journalFilter === 'Tratamientos') return entry.kind === 'Tratamiento';
+    if (journalFilter === 'Riego') return entry.kind === 'Riego';
+    return entry.kind === 'Labor' || entry.kind === 'Abonado' || entry.kind === 'Cosecha' || entry.kind === 'Otro';
+  }).sort((a, b) => b.date.localeCompare(a.date)), [fieldData.journal, journalFilter]);
+
+  const addParcel = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const areaHa = Number(parcelArea.replace(',', '.'));
+    const altitudeM = Number(parcelAltitude.replace(',', '.'));
+    const slopePct = Number(parcelSlope.replace(',', '.'));
+    if (!parcelName.trim() || !Number.isFinite(areaHa) || areaHa <= 0) return;
+    const parcel: ParcelRecord = {
+      id: nextRecordId(fieldData.parcels),
+      name: parcelName.trim(),
+      areaHa,
+      variety: parcelVariety.trim() || 'Picual',
+      altitudeM: Number.isFinite(altitudeM) ? altitudeM : 0,
+      frame: '7 × 7 m',
+      slopePct: Number.isFinite(slopePct) ? slopePct : 0,
+      status: 'Bueno',
+      note: 'Parcela creada desde Mi Campo.',
+    };
+    setFieldData((current) => ({ ...current, parcels: [...current.parcels, parcel] }));
+    setSelectedId(parcel.id);
+    setParcelName('');
+    setParcelArea('');
+    setParcelOpen(false);
+  };
+
+  const addJournalEntry = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!journalTitle.trim() || !journalDetail.trim()) return;
+    const parcelId = Number(journalParcel);
+    setFieldData((current) => ({
+      ...current,
+      journal: [{
+        id: nextRecordId(current.journal),
+        date: new Date().toISOString().slice(0, 10),
+        kind: journalKind,
+        title: journalTitle.trim(),
+        detail: journalDetail.trim(),
+        parcelId: Number.isFinite(parcelId) && parcelId > 0 ? parcelId : undefined,
+      }, ...current.journal],
+    }));
+    setJournalTitle('');
+    setJournalDetail('');
+    setJournalParcel('');
+    setJournalOpen(false);
+  };
+
+  const addDelivery = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const kilos = Number(deliveryKilos.replace(',', '.'));
+    const yieldPct = Number(deliveryYield.replace(',', '.'));
+    if (!Number.isFinite(kilos) || kilos <= 0 || !Number.isFinite(yieldPct) || yieldPct <= 0) return;
+    setFieldData((current) => ({
+      ...current,
+      deliveries: [{
+        id: nextRecordId(current.deliveries),
+        date: new Date().toISOString().slice(0, 10),
+        kilos,
+        yieldPct,
+        cooperative: deliveryCooperative.trim() || 'Sin especificar',
+      }, ...current.deliveries],
+      journal: [{
+        id: nextRecordId(current.journal),
+        date: new Date().toISOString().slice(0, 10),
+        kind: 'Cosecha',
+        title: 'Entrega de aceituna',
+        detail: `${kilos.toLocaleString('es-ES')} kg · ${yieldPct.toLocaleString('es-ES')} % · ${deliveryCooperative.trim() || 'Sin especificar'}`,
+      }, ...current.journal],
+    }));
+    setDeliveryKilos('');
+    setDeliveryYield('');
+    setDeliveryCooperative('');
+    setDeliveryOpen(false);
+  };
+
+  const addExpense = (expense: Omit<ExpenseRecord, 'id'>) => {
+    setFieldData((current) => ({ ...current, expenses: [{ ...expense, id: nextRecordId(current.expenses) }, ...current.expenses] }));
+  };
 
   return (
     <div className="app-shell">
@@ -80,13 +187,13 @@ export function FieldPage({ onNavigate, initialTab = 'overview' }: FieldPageProp
           <div className="farm-hero__overlay" />
           <div className="farm-hero__copy">
             <span>Finca activa</span>
-            <h1>Los Llanos</h1>
-            <p>Bedmar · Sierra Mágina</p>
+            <h1>{fieldData.farmName}</h1>
+            <p>{fieldData.municipality} · {fieldData.region}</p>
           </div>
           <div className="farm-hero__metrics">
-            <div><small>Superficie</small><strong>23,45 ha</strong></div>
-            <div><small>Parcelas</small><strong>5</strong></div>
-            <div><small>Variedad</small><strong>Picual</strong></div>
+            <div><small>Superficie</small><strong>{totalArea.toLocaleString('es-ES', { maximumFractionDigits: 2 })} ha</strong></div>
+            <div><small>Parcelas</small><strong>{fieldData.parcels.length}</strong></div>
+            <div><small>Variedad</small><strong>{fieldData.parcels[0]?.variety ?? '—'}</strong></div>
           </div>
         </section>
 
@@ -102,11 +209,24 @@ export function FieldPage({ onNavigate, initialTab = 'overview' }: FieldPageProp
             <section className="section-block">
               <div className="section-heading">
                 <div><span className="eyebrow">Mi Campo</span><h2>Parcelas</h2></div>
-                <button className="text-action" type="button">Ver mapa</button>
+                <button className="text-action" type="button" onClick={() => setParcelOpen((open) => !open)}>+ Añadir</button>
               </div>
 
+              {parcelOpen && (
+                <form className="field-entry-form" onSubmit={addParcel}>
+                  <div className="field-entry-form__grid">
+                    <label>Nombre<input value={parcelName} onChange={(event) => setParcelName(event.target.value)} placeholder="Ej. Parcela del Cerro" required /></label>
+                    <label>Superficie (ha)<input inputMode="decimal" value={parcelArea} onChange={(event) => setParcelArea(event.target.value)} placeholder="2,80" required /></label>
+                    <label>Variedad<input value={parcelVariety} onChange={(event) => setParcelVariety(event.target.value)} /></label>
+                    <label>Altitud (m)<input inputMode="numeric" value={parcelAltitude} onChange={(event) => setParcelAltitude(event.target.value)} /></label>
+                    <label>Pendiente (%)<input inputMode="decimal" value={parcelSlope} onChange={(event) => setParcelSlope(event.target.value)} /></label>
+                  </div>
+                  <div className="field-entry-form__actions"><button type="button" className="secondary-button" onClick={() => setParcelOpen(false)}>Cancelar</button><button type="submit" className="primary-button">Guardar parcela</button></div>
+                </form>
+              )}
+
               <div className="parcel-list">
-                {parcels.map((parcel) => (
+                {fieldData.parcels.map((parcel) => (
                   <button
                     key={parcel.id}
                     type="button"
@@ -116,7 +236,7 @@ export function FieldPage({ onNavigate, initialTab = 'overview' }: FieldPageProp
                     <div className="parcel-row__thumb"><Sprout size={22} /></div>
                     <div className="parcel-row__copy">
                       <strong>{parcel.name}</strong>
-                      <span>{parcel.area} · {parcel.variety}</span>
+                      <span>{parcel.areaHa.toLocaleString('es-ES')} ha · {parcel.variety}</span>
                     </div>
                     <span className={`status-pill status-pill--${parcel.status === 'Bueno' ? 'good' : 'review'}`}>{parcel.status}</span>
                     <ChevronRight size={18} />
@@ -125,47 +245,43 @@ export function FieldPage({ onNavigate, initialTab = 'overview' }: FieldPageProp
               </div>
             </section>
 
-            <section className="section-block field-map-card">
-              <div className="section-heading">
-                <div><span className="eyebrow">Mapa de finca</span><h2>{selected.name}</h2></div>
-                <MapPinned size={21} />
-              </div>
-
-              <div className="parcel-map" aria-label={`Vista esquemática de ${selected.name}`}>
-                <svg viewBox="0 0 520 300" role="img" aria-hidden="true">
-                  <rect width="520" height="300" fill="#526044" />
-                  <g opacity=".22" stroke="#d9cca5" strokeWidth="2">
-                    <path d="M0 55L520 5M0 115L520 65M0 175L520 125M0 235L520 185M60 0L20 300M155 0L105 300M250 0L205 300M350 0L300 300M455 0L405 300" />
-                  </g>
-                  <path d="M105 50L335 38L415 155L315 255L105 220L65 125Z" fill="rgba(123,151,83,.82)" stroke="#f7f1df" strokeWidth="5" />
-                  <circle cx="260" cy="145" r="20" fill="#D4A017" />
-                  <path d="M260 132c-6 0-11 5-11 11 0 9 11 20 11 20s11-11 11-20c0-6-5-11-11-11Zm0 15a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z" fill="#fff" />
-                </svg>
-              </div>
-
-              <div className="parcel-detail-grid">
-                <article><Trees size={18} /><span>Variedad</span><strong>{selected.variety}</strong></article>
-                <article><Ruler size={18} /><span>Superficie</span><strong>{selected.area}</strong></article>
-                <article><Mountain size={18} /><span>Altitud</span><strong>{selected.altitude}</strong></article>
-                <article><Leaf size={18} /><span>Marco</span><strong>{selected.frame}</strong></article>
-              </div>
-
-              <article className={`parcel-health parcel-health--${selected.status === 'Bueno' ? 'good' : 'review'}`}>
-                <div>
-                  <span>Estado actual</span>
-                  <strong>{selected.status}</strong>
-                  <p>{selected.note}</p>
+            {selected && (
+              <section className="section-block field-map-card">
+                <div className="section-heading">
+                  <div><span className="eyebrow">Mapa de finca</span><h2>{selected.name}</h2></div>
+                  <MapPinned size={21} />
                 </div>
-                {selected.status === 'Revisar' ? <Droplets size={23} /> : <Sprout size={23} />}
-              </article>
-            </section>
+
+                <div className="parcel-map" aria-label={`Vista esquemática de ${selected.name}`}>
+                  <svg viewBox="0 0 520 300" role="img" aria-hidden="true">
+                    <rect width="520" height="300" fill="#526044" />
+                    <g opacity=".22" stroke="#d9cca5" strokeWidth="2"><path d="M0 55L520 5M0 115L520 65M0 175L520 125M0 235L520 185M60 0L20 300M155 0L105 300M250 0L205 300M350 0L300 300M455 0L405 300" /></g>
+                    <path d="M105 50L335 38L415 155L315 255L105 220L65 125Z" fill="rgba(123,151,83,.82)" stroke="#f7f1df" strokeWidth="5" />
+                    <circle cx="260" cy="145" r="20" fill="#D4A017" />
+                    <path d="M260 132c-6 0-11 5-11 11 0 9 11 20 11 20s11-11 11-20c0-6-5-11-11-11Zm0 15a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z" fill="#fff" />
+                  </svg>
+                </div>
+
+                <div className="parcel-detail-grid">
+                  <article><Trees size={18} /><span>Variedad</span><strong>{selected.variety}</strong></article>
+                  <article><Ruler size={18} /><span>Superficie</span><strong>{selected.areaHa.toLocaleString('es-ES')} ha</strong></article>
+                  <article><Mountain size={18} /><span>Altitud</span><strong>{selected.altitudeM} m</strong></article>
+                  <article><Leaf size={18} /><span>Marco</span><strong>{selected.frame}</strong></article>
+                </div>
+
+                <article className={`parcel-health parcel-health--${selected.status === 'Bueno' ? 'good' : 'review'}`}>
+                  <div><span>Estado actual</span><strong>{selected.status}</strong><p>{selected.note}</p></div>
+                  {selected.status === 'Revisar' ? <Droplets size={23} /> : <Sprout size={23} />}
+                </article>
+              </section>
+            )}
 
             <section className="section-block section-block--last">
-              <div className="section-heading"><div><span className="eyebrow">Resumen</span><h2>Esta semana</h2></div></div>
+              <div className="section-heading"><div><span className="eyebrow">Resumen</span><h2>Datos guardados</h2></div></div>
               <div className="field-week-grid">
-                <article><span>Tratamientos</span><strong>2</strong><small>1 pendiente</small></article>
-                <article><span>Riegos</span><strong>3</strong><small>30 mm acumulados</small></article>
-                <article><span>Labores</span><strong>4</strong><small>3 completadas</small></article>
+                <article><span>Anotaciones</span><strong>{fieldData.journal.length}</strong><small>Cuaderno</small></article>
+                <article><span>Entregas</span><strong>{fieldData.deliveries.length}</strong><small>{totalKilos.toLocaleString('es-ES')} kg</small></article>
+                <article><span>Gastos</span><strong>{fieldData.expenses.length}</strong><small>Registros</small></article>
               </div>
             </section>
           </>
@@ -175,28 +291,37 @@ export function FieldPage({ onNavigate, initialTab = 'overview' }: FieldPageProp
           <section className="section-block section-block--last">
             <div className="section-heading">
               <div><span className="eyebrow">Cuaderno de campo</span><h1>Actividad reciente</h1></div>
-              <button className="text-action" type="button">Filtrar</button>
+              <button className="text-action" type="button" onClick={() => setJournalOpen((open) => !open)}>+ Añadir</button>
             </div>
 
             <div className="journal-filters">
-              <button type="button" className="journal-filter journal-filter--active">Todas</button>
-              <button type="button" className="journal-filter">Tratamientos</button>
-              <button type="button" className="journal-filter">Riego</button>
-              <button type="button" className="journal-filter">Labores</button>
+              {(['Todas', 'Tratamientos', 'Riego', 'Labores'] as JournalFilter[]).map((filter) => <button key={filter} type="button" className={journalFilter === filter ? 'journal-filter journal-filter--active' : 'journal-filter'} onClick={() => setJournalFilter(filter)}>{filter}</button>)}
             </div>
 
+            {journalOpen && (
+              <form className="field-entry-form" onSubmit={addJournalEntry}>
+                <div className="field-entry-form__grid">
+                  <label>Tipo<select value={journalKind} onChange={(event) => setJournalKind(event.target.value as JournalKind)}><option>Tratamiento</option><option>Riego</option><option>Labor</option><option>Abonado</option><option>Cosecha</option><option>Otro</option></select></label>
+                  <label>Parcela<select value={journalParcel} onChange={(event) => setJournalParcel(event.target.value)}><option value="">General</option>{fieldData.parcels.map((parcel) => <option key={parcel.id} value={parcel.id}>{parcel.name}</option>)}</select></label>
+                  <label>Título<input value={journalTitle} onChange={(event) => setJournalTitle(event.target.value)} placeholder="Ej. Poda en verde" required /></label>
+                  <label>Detalle<input value={journalDetail} onChange={(event) => setJournalDetail(event.target.value)} placeholder="Trabajo realizado, dosis, observaciones…" required /></label>
+                </div>
+                <div className="field-entry-form__actions"><button type="button" className="secondary-button" onClick={() => setJournalOpen(false)}>Cancelar</button><button type="submit" className="primary-button">Guardar anotación</button></div>
+              </form>
+            )}
+
             <div className="journal-list">
-              {journalEntries.map(({ date, title, detail, meta, icon: Icon }) => (
-                <article key={`${date}-${title}`} className="journal-entry">
-                  <div className="journal-entry__date">{date}</div>
-                  <div className="journal-entry__icon"><Icon size={20} /></div>
-                  <div className="journal-entry__copy"><strong>{title}</strong><span>{detail}</span></div>
-                  <small>{meta}</small>
+              {filteredJournal.map((entry) => (
+                <article key={entry.id} className="journal-entry">
+                  <div className="journal-entry__date">{compactDate(entry.date)}</div>
+                  <div className="journal-entry__icon">{journalIcon(entry.kind)}</div>
+                  <div className="journal-entry__copy"><strong>{entry.title}</strong><span>{entry.detail}</span></div>
+                  <small>Guardado</small>
                 </article>
               ))}
             </div>
 
-            <button className="primary-button primary-button--wide" type="button">+ Nueva anotación</button>
+            <button className="primary-button primary-button--wide" type="button" onClick={() => setJournalOpen(true)}>+ Nueva anotación</button>
           </section>
         )}
 
@@ -204,26 +329,37 @@ export function FieldPage({ onNavigate, initialTab = 'overview' }: FieldPageProp
           <section className="section-block section-block--last">
             <div className="section-heading">
               <div><span className="eyebrow">Campaña 2026/27</span><h1>Producción y rendimiento</h1></div>
-              <CalendarDays size={21} />
+              <button type="button" className="text-action" onClick={() => setDeliveryOpen((open) => !open)}>+ Entrega</button>
             </div>
 
             <div className="campaign-metrics">
-              <article><Weight size={20} /><span>Producción estimada</span><strong>18.650 kg</strong></article>
-              <article><TrendingUp size={20} /><span>Rendimiento medio</span><strong>17,2 %</strong></article>
-              <article><ClipboardList size={20} /><span>Entregas</span><strong>7</strong></article>
+              <article><Weight size={20} /><span>Producción registrada</span><strong>{totalKilos.toLocaleString('es-ES')} kg</strong></article>
+              <article><TrendingUp size={20} /><span>Rendimiento medio</span><strong>{averageYield.toLocaleString('es-ES', { maximumFractionDigits: 1 })} %</strong></article>
+              <article><ClipboardList size={20} /><span>Entregas</span><strong>{fieldData.deliveries.length}</strong></article>
             </div>
 
+            {deliveryOpen && (
+              <form className="field-entry-form field-entry-form--spaced" onSubmit={addDelivery}>
+                <div className="field-entry-form__grid">
+                  <label>Kilos entregados<input inputMode="decimal" value={deliveryKilos} onChange={(event) => setDeliveryKilos(event.target.value)} placeholder="8450" required /></label>
+                  <label>Rendimiento (%)<input inputMode="decimal" value={deliveryYield} onChange={(event) => setDeliveryYield(event.target.value)} placeholder="21,4" required /></label>
+                  <label>Cooperativa<input value={deliveryCooperative} onChange={(event) => setDeliveryCooperative(event.target.value)} placeholder="Nombre de la cooperativa" /></label>
+                </div>
+                <div className="field-entry-form__actions"><button type="button" className="secondary-button" onClick={() => setDeliveryOpen(false)}>Cancelar</button><button type="submit" className="primary-button">Guardar entrega</button></div>
+              </form>
+            )}
+
             <article className="campaign-chart-card">
-              <div className="campaign-chart-card__head"><div><strong>Evolución de la campaña</strong><span>Producción acumulada</span></div><button type="button" className="text-action">Detalle</button></div>
-              <svg viewBox="0 0 560 220" role="img" aria-label="Evolución estimada de la campaña">
-                <g stroke="#ded9ca" strokeWidth="1"><line x1="36" y1="40" x2="540" y2="40"/><line x1="36" y1="95" x2="540" y2="95"/><line x1="36" y1="150" x2="540" y2="150"/><line x1="36" y1="195" x2="540" y2="195"/></g>
-                <path d="M40 184L110 160L180 151L250 121L320 98L390 73L460 50L535 34" fill="none" stroke="#5C7A46" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M40 184L110 160L180 151L250 121L320 98L390 73L460 50L535 34L535 198L40 198Z" fill="#A7B497" opacity=".2" />
-              </svg>
+              <div className="campaign-chart-card__head"><div><strong>Entregas registradas</strong><span>Histórico local de esta campaña</span></div><CalendarDays size={20} /></div>
+              <div className="campaign-delivery-list">
+                {fieldData.deliveries.slice().sort((a, b) => b.date.localeCompare(a.date)).map((delivery) => (
+                  <div key={delivery.id} className="campaign-delivery-row"><div><strong>{delivery.kilos.toLocaleString('es-ES')} kg</strong><span>{delivery.cooperative}</span></div><div><strong>{delivery.yieldPct.toLocaleString('es-ES')} %</strong><span>{compactDate(delivery.date)}</span></div></div>
+                ))}
+              </div>
             </article>
 
             <article className="campaign-status-card">
-              <div><span>Estado actual</span><strong>En recolección</strong><small>Última entrega: 5.230 kg</small></div>
+              <div><span>Estado actual</span><strong>{fieldData.deliveries.length ? 'En recolección' : 'Sin entregas registradas'}</strong><small>{fieldData.deliveries[0] ? `Última entrega: ${fieldData.deliveries[0].kilos.toLocaleString('es-ES')} kg` : 'Añade la primera entrega'}</small></div>
               <Sprout size={28} />
             </article>
           </section>
@@ -235,12 +371,12 @@ export function FieldPage({ onNavigate, initialTab = 'overview' }: FieldPageProp
               <button type="button" className={managementMode === 'costs' ? 'field-management-switch__item field-management-switch__item--active' : 'field-management-switch__item'} onClick={() => setManagementMode('costs')}><CircleDollarSign size={17} />Costes y rentabilidad</button>
               <button type="button" className={managementMode === 'machinery' ? 'field-management-switch__item field-management-switch__item--active' : 'field-management-switch__item'} onClick={() => setManagementMode('machinery')}><Tractor size={17} />Maquinaria</button>
             </div>
-            <FarmManagementPanel mode={managementMode} />
+            <FarmManagementPanel mode={managementMode} expenses={fieldData.expenses} onAddExpense={addExpense} />
           </section>
         )}
       </main>
 
-      <BottomNav active="field" onNavigate={onNavigate} onCreate={() => setTab('journal')} />
+      <BottomNav active="field" onNavigate={onNavigate} onCreate={() => { setTab('journal'); setJournalOpen(true); }} />
     </div>
   );
 }

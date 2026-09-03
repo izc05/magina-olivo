@@ -2,13 +2,15 @@
 
 Estado: **procedimiento operativo preparado; requiere recursos externos reales**.
 
-Rama objetivo: `feat/integration-v2-mvp-v1`.
+Fuente objetivo: **candidato de staging congelado + SHA Git aprobado de 40 caracteres**. No desplegar directamente desde una rama móvil de integración.
 
 Este documento resume cómo ejecutar el staging sin sustituir `docs/mvp/STAGING_ACCEPTANCE_V1.md` ni `docs/spike/EXTERNAL_STAGING_RUNBOOK.md`.
 
 ## Regla de seguridad
 
 Usar únicamente datos sintéticos y documentos anonimizados. No introducir datos reales de agricultores hasta que los **nueve bloques de aceptación** estén en PASS sobre la misma revisión trazable.
+
+El SHA aprobado para cada ejecución debe ser el publicado en el issue de candidato de staging correspondiente. `STAGING_EXPECTED_SOURCE_SHA` no es un secreto, pero debe fijarse explícitamente en la sesión del operador antes de preflight/deploy.
 
 ## Recursos externos mínimos
 
@@ -25,15 +27,37 @@ Antes del primer staging real deben existir:
 - remitente de correo de staging cuando se ejecute recuperación de contraseña;
 - destino de backup realmente fuera del host.
 
+## Checkout exacto del candidato
+
+No ejecutar staging desde `feat/integration-*`, `main` ni otra rama que pueda avanzar. Resolver primero el SHA aprobado del candidato y trabajar en `detached HEAD`:
+
+```bash
+git fetch --all --prune
+export STAGING_EXPECTED_SOURCE_SHA=<sha-aprobado-de-40-caracteres>
+git switch --detach "$STAGING_EXPECTED_SOURCE_SHA"
+
+test "$(git rev-parse HEAD)" = "$STAGING_EXPECTED_SOURCE_SHA"
+git status --short
+```
+
+La última orden debe no mostrar cambios. `staging-acceptance.sh preflight` volverá a comparar `HEAD` con `STAGING_EXPECTED_SOURCE_SHA` y fallará antes de validar el host si falta, es inválido o no coincide.
+
 ## Comando de estado
 
 ```bash
 bash scripts/staging-acceptance.sh status
 ```
 
-Muestra release, SHA real de origen, env file configurado, hostname externo y municipio usado para el gate meteorológico.
+Muestra release, SHA desplegado, SHA aprobado esperado, SHA del checkout actual, env file configurado, hostname externo y municipio usado para el gate meteorológico.
 
-El estado canónico del SHA desplegado se guarda en `.deploy/staging/current-source-sha`; `staging-acceptance.sh status` lo expone como `source_sha`. No usar el antiguo nombre con guiones bajos.
+Antes de desplegar deben coincidir:
+
+```text
+expected_source_sha=<sha aprobado>
+checkout_source_sha=<mismo sha aprobado>
+```
+
+El estado canónico del SHA ya desplegado se guarda en `.deploy/staging/current-source-sha`; `staging-acceptance.sh status` lo expone como `source_sha`. No usar el antiguo nombre con guiones bajos.
 
 Por defecto el gate público consulta `bedmar-y-garciez`. Se puede cambiar sin modificar código:
 
@@ -47,28 +71,31 @@ El valor debe corresponder a un municipio verificado de `public_municipalities`.
 
 ```bash
 export STAGING_ENV_FILE=/etc/magina-olivo/staging.env
+export STAGING_EXPECTED_SOURCE_SHA=<sha-aprobado-de-40-caracteres>
 bash scripts/staging-acceptance.sh preflight
 ```
 
-Debe validar host, Docker/Compose, permisos del env, HTTPS de Better Auth/R2, trusted origins, AEMET server-side, bind loopback, espacio y reloj.
+Antes de cualquier validación del host debe confirmar que `git rev-parse HEAD` coincide exactamente con el SHA aprobado. Después valida host, Docker/Compose, permisos del env, HTTPS de Better Auth/R2, trusted origins, AEMET server-side, bind loopback, espacio y reloj.
 
 ## Fase 2 — Deploy local + aislamiento + R2
 
 ```bash
 export STAGING_ENV_FILE=/etc/magina-olivo/staging.env
+export STAGING_EXPECTED_SOURCE_SHA=<sha-aprobado-de-40-caracteres>
 bash scripts/staging-acceptance.sh deploy-local
 ```
 
 La fase ejecuta en orden:
 
-1. preflight;
+1. verificación de SHA aprobado + preflight;
 2. build desde checkout limpio;
 3. deploy con release y SHA Git trazables;
-4. health local;
-5. aislamiento de puertos;
-6. roundtrip R2 `PUT -> GET -> SHA-256 -> DELETE`.
+4. comprobación de que el SHA desplegado coincide con `STAGING_EXPECTED_SOURCE_SHA`;
+5. health local;
+6. aislamiento de puertos;
+7. roundtrip R2 `PUT -> GET -> SHA-256 -> DELETE`.
 
-El deploy se considera inválido si no puede persistir y volver a leer el SHA Git completo de 40 caracteres de la revisión desplegada.
+El deploy se considera inválido si no puede persistir y volver a leer el SHA Git completo de 40 caracteres de la revisión desplegada o si no coincide con el candidato aprobado.
 
 No publica el hostname ni crea/configura Cloudflare Tunnel.
 

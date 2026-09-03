@@ -5,6 +5,7 @@ import { App } from './App';
 import { ConnectivityStatus } from './ConnectivityStatus';
 import { MaginaDirectoryPage } from './MaginaDirectoryPage';
 import { MaginaHubPage } from './MaginaHubPage';
+import { MaginaMarketPage } from './MaginaMarketPage';
 import { MaginaWeatherPage } from './MaginaWeatherPage';
 import { NoticeCenter } from './NoticeCenter';
 import { ResetPassword } from './ResetPassword';
@@ -19,6 +20,7 @@ import './offline-cold-start.css';
 import './magina-directory.css';
 import './magina-weather.css';
 import './magina-hub.css';
+import './magina-market.css';
 
 registerSW({
   immediate: true,
@@ -42,6 +44,8 @@ createRoot(root).render(
       <MaginaDirectoryPage />
     ) : path === '/magina/tiempo' ? (
       <MaginaWeatherPage />
+    ) : path === '/magina/mercado' ? (
+      <MaginaMarketPage />
     ) : (
       <>
         <ConnectivityStatus />

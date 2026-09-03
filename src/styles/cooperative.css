@@ -90,6 +90,44 @@
 .coop-empty-state > div { display: grid; gap: 4px; }
 .coop-empty-state span { color: var(--color-text-muted); font-size: 10px; line-height: 1.45; }
 
+.coop-members-panel { align-content: start; }
+.coop-campaign-status { display: grid; grid-template-columns: 38px minmax(0,1fr); gap: 10px; padding: 12px; border: 1px dashed rgba(92,122,70,.24); border-radius: 15px; background: rgba(167,180,151,.08); }
+.coop-campaign-status > svg { color: var(--color-olive-700); }
+.coop-campaign-status > div { display: grid; gap: 3px; }
+.coop-campaign-status span { color: var(--color-text-muted); font-size: 9px; font-weight: 700; }
+.coop-campaign-status strong { font-size: 13px; line-height: 1.3; }
+.coop-campaign-status small { color: var(--color-text-muted); font-size: 9px; line-height: 1.4; }
+.coop-campaign-status--active { border-style: solid; border-color: rgba(212,160,23,.28); background: rgba(212,160,23,.08); }
+.coop-campaign-status--active > svg { color: #8a6713; }
+.coop-campaign-news { display: grid; gap: 7px; }
+.coop-campaign-news a { display: grid; grid-template-columns: minmax(0,1fr) 18px; align-items: center; gap: 10px; padding: 10px 11px; border: 1px solid rgba(212,160,23,.18); border-radius: 13px; background: rgba(255,255,255,.7); color: inherit; }
+.coop-campaign-news a > div { display: grid; gap: 2px; }
+.coop-campaign-news span { color: #80651a; font-size: 8.5px; font-weight: 700; }
+.coop-campaign-news strong { font-size: 11px; line-height: 1.35; }
+.coop-campaign-news svg { color: var(--color-olive-700); }
+.coop-contact-card { display: grid; gap: 7px; padding: 12px; border: 1px solid rgba(92,122,70,.16); border-radius: 15px; background: rgba(255,255,255,.66); }
+.coop-contact-card__title { display: flex; align-items: center; gap: 8px; padding-bottom: 5px; border-bottom: 1px solid rgba(92,122,70,.1); }
+.coop-contact-card__title svg { color: var(--color-olive-700); }
+.coop-contact-card__title > div { display: grid; gap: 1px; }
+.coop-contact-card__title span { color: var(--color-text-muted); font-size: 8.5px; }
+.coop-contact-card__title strong { font-size: 12px; }
+.coop-contact-row { display: flex; align-items: flex-start; gap: 9px; padding: 7px 2px; color: inherit; font-size: 10px; line-height: 1.4; }
+.coop-contact-row > svg { flex: 0 0 auto; margin-top: 1px; color: var(--color-olive-700); }
+.coop-contact-row > span { display: grid; gap: 1px; }
+.coop-contact-row small { color: var(--color-text-muted); font-size: 8px; }
+.coop-contact-hours { display: grid; grid-template-columns: 20px minmax(0,1fr); gap: 9px; padding: 9px; border-radius: 12px; background: rgba(167,180,151,.08); }
+.coop-contact-hours > svg { color: var(--color-olive-700); }
+.coop-contact-hours > div { display: grid; gap: 2px; }
+.coop-contact-hours strong { font-size: 10px; }
+.coop-contact-hours span,
+.coop-contact-hours small { color: var(--color-text-muted); font-size: 9px; line-height: 1.35; }
+.coop-member-access { display: grid; grid-template-columns: 34px minmax(0,1fr) 18px; align-items: center; gap: 9px; padding: 9px 10px; border: 1px solid rgba(92,122,70,.18); border-radius: 12px; background: rgba(167,180,151,.09); color: inherit; }
+.coop-member-access > svg:first-child,
+.coop-member-access > svg:last-child { color: var(--color-olive-700); }
+.coop-member-access > div { display: grid; gap: 2px; }
+.coop-member-access strong { font-size: 11px; }
+.coop-member-access span { color: var(--color-text-muted); font-size: 9px; }
+
 @media (max-width: 430px) {
   .coop-detail-hero { grid-template-columns: 58px minmax(0,1fr); }
   .coop-detail-hero__mark { width: 58px; height: 58px; }

@@ -15,11 +15,33 @@
   line-height: 1.02;
 }
 
+/* Real farm selector */
+.page > .section:has(button.card.list-card.interactive) {
+  position: relative;
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid rgba(86,111,67,.13);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 100% 0, rgba(201,155,44,.09), transparent 34%),
+    linear-gradient(180deg, rgba(255,253,248,.96), rgba(249,246,236,.88));
+  box-shadow: 0 10px 30px rgba(47,59,39,.045);
+}
+
+.page > .section:has(button.card.list-card.interactive) > .section-heading {
+  margin-bottom: 12px;
+}
+
 button.card.list-card.interactive {
   position: relative;
-  min-height: 72px;
+  min-height: 76px;
+  margin-bottom: 8px;
   padding: 15px 16px 15px 66px;
   overflow: hidden;
+  border-color: rgba(86,111,67,.13);
+  background: rgba(255,253,248,.9);
+  box-shadow: 0 5px 18px rgba(47,59,39,.035);
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background .16s ease;
 }
 
 button.card.list-card.interactive::before {
@@ -50,10 +72,18 @@ button.card.list-card.interactive::after {
   box-shadow: 5px -5px 0 -1px var(--v2-olive-soft);
 }
 
+button.card.list-card.interactive:hover {
+  transform: translateY(-1px);
+  border-color: rgba(86,111,67,.24);
+  box-shadow: 0 8px 22px rgba(47,59,39,.06);
+}
+
 button.card.list-card.interactive[aria-pressed="true"] {
+  border-color: rgba(86,111,67,.28);
   background:
-    linear-gradient(120deg, rgba(86,111,67,.09), rgba(201,155,44,.06)),
+    linear-gradient(120deg, rgba(86,111,67,.1), rgba(201,155,44,.07)),
     var(--v2-paper);
+  box-shadow: 0 8px 24px rgba(47,59,39,.065);
 }
 
 button.card.list-card.interactive[aria-pressed="true"]::before {
@@ -64,6 +94,25 @@ button.card.list-card.interactive[aria-pressed="true"]::before {
 button.card.list-card.interactive[aria-pressed="true"]::after {
   background: #fffdf8;
   box-shadow: 5px -5px 0 -1px #d6dfc9;
+}
+
+/* Real plots: the section immediately before the notebook */
+.page > .section:has(+ .notebook-shell) {
+  margin-top: 20px;
+}
+
+.page > .section:has(+ .notebook-shell) > .section-heading {
+  margin-bottom: 12px;
+}
+
+.page > .section:has(+ .notebook-shell) > .card.list-card:not(.interactive) {
+  min-height: 78px;
+  margin-bottom: 8px;
+  padding: 14px 14px 14px 22px;
+  border-color: rgba(86,111,67,.14);
+  background:
+    linear-gradient(90deg, rgba(86,111,67,.035), transparent 34%),
+    rgba(255,253,248,.92);
 }
 
 .page .section .card.list-card:not(.interactive) {
@@ -84,12 +133,20 @@ button.card.list-card.interactive[aria-pressed="true"]::after {
 }
 
 .page .section .card.list-card .list-card-title {
+  color: var(--v2-olive-deep);
   font-size: .98rem;
 }
 
 .page .section .card.list-card .list-card-meta {
   margin-top: 5px;
+  color: #727365;
   line-height: 1.35;
+}
+
+.page > .section:has(+ .notebook-shell) .badge {
+  border-color: rgba(86,111,67,.13);
+  background: rgba(86,111,67,.07);
+  color: var(--v2-olive-deep);
 }
 
 .page .section .empty-state {
@@ -101,14 +158,70 @@ button.card.list-card.interactive[aria-pressed="true"]::after {
   margin-top: 18px;
 }
 
+/* Create holding / farm / plot forms retain the real API behaviour. */
 .form-card,
 .section.card.card-body {
   border-color: var(--v2-line);
 }
 
+.page > .section.card.card-body:has(.form-card-title) {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  background:
+    linear-gradient(135deg, rgba(255,253,248,.96), rgba(245,240,228,.76));
+  box-shadow: 0 7px 22px rgba(47,59,39,.035);
+}
+
+.page > .section.card.card-body:has(.form-card-title)::before {
+  content: "+";
+  position: absolute;
+  right: 16px;
+  top: 14px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(86,111,67,.09);
+  color: var(--v2-olive-deep);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.page > .section.card.card-body:has(.form-card-title) .form-card-title {
+  padding-right: 42px;
+  color: var(--v2-olive-deep);
+  font-size: 1.15rem;
+}
+
+.page > .section.card.card-body:has(.form-card-title) .primary-button {
+  min-height: 48px;
+}
+
 .field-notebook,
 .delivery-entry-card {
   scroll-margin-top: 88px;
+}
+
+@media (max-width: 560px) {
+  .page > .section:has(button.card.list-card.interactive) {
+    padding: 14px;
+    border-radius: 21px;
+  }
+
+  button.card.list-card.interactive {
+    min-height: 72px;
+    padding-right: 12px;
+  }
+
+  .page > .section:has(+ .notebook-shell) > .card.list-card:not(.interactive) {
+    align-items: flex-start;
+  }
+
+  .page > .section:has(+ .notebook-shell) .badge {
+    margin-top: 2px;
+  }
 }
 
 @media (min-width: 720px) {
@@ -119,12 +232,29 @@ button.card.list-card.interactive[aria-pressed="true"]::after {
   .page > section:first-child:has(.page-eyebrow) {
     margin-bottom: 24px;
   }
+
+  .page > .section:has(+ .notebook-shell) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .page > .section:has(+ .notebook-shell) > .section-heading,
+  .page > .section:has(+ .notebook-shell) > .empty-state,
+  .page > .section:has(+ .notebook-shell) > .section.card.card-body {
+    grid-column: 1 / -1;
+  }
+
+  .page > .section:has(+ .notebook-shell) > .card.list-card:not(.interactive) {
+    margin-bottom: 0;
+  }
 }
 
 @media (forced-colors: active) {
   button.card.list-card.interactive::before,
   button.card.list-card.interactive::after,
-  .page .section .card.list-card:not(.interactive)::before {
+  .page .section .card.list-card:not(.interactive)::before,
+  .page > .section.card.card-body:has(.form-card-title)::before {
     display: none;
   }
 }

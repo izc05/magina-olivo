@@ -6,9 +6,15 @@ const OUTPUT = new URL('../public/data/news.json', import.meta.url);
 const sources = [
   { name: 'D.O.P. Sierra Mágina', url: 'https://sierramagina.org/feed/', weight: 24, scope: 'magina', official: true },
   { name: 'La Quinta Esencia · Oficial', url: 'https://laquintaesencia.com/feed/', weight: 28, scope: 'magina', official: true, cooperativeId: 'cristo-misericordia-jodar' },
-  { name: 'Oro de Cánava · Oficial', url: 'https://www.orodecanava.com/feed/', weight: 28, scope: 'magina', official: true, cooperativeId: 'remedios-jimena' },
+  {
+    name: 'Oro de Cánava · Oficial',
+    url: 'https://news.google.com/rss/search?q=site%3Aorodecanava.com+%22Oro+de+C%C3%A1nava%22&hl=es&gl=ES&ceid=ES%3Aes',
+    weight: 24,
+    scope: 'magina',
+    official: true,
+    cooperativeId: 'remedios-jimena',
+  },
   { name: 'Cooperativa San Francisco · Oficial', url: 'https://www.aovesierramagina.com/feed/', weight: 28, scope: 'magina', official: true, cooperativeId: 'san-francisco-albanchez' },
-  { name: 'Tierras del Marquesado · Oficial', url: 'https://tierrasdelmarquesado.com/feed/', weight: 28, scope: 'magina', official: true, cooperativeId: 'san-roque-carchelejo' },
   { name: 'CIT Jaén · Diputación', url: 'https://cit.dipujaen.es/feed/', weight: 18, scope: 'jaen', official: true },
   { name: 'Diario JAÉN', url: 'https://www.diariojaen.es/rss/provincia.xml', weight: 12, scope: 'jaen' },
   { name: 'Diario JAÉN', url: 'https://www.diariojaen.es/rss/jaen.xml', weight: 10, scope: 'jaen' },
@@ -202,7 +208,7 @@ function idFor(item) {
 async function fetchSource(source) {
   const response = await fetch(source.url, {
     headers: {
-      'user-agent': 'MaginaOlivoNewsBot/1.2 (+https://github.com/izc05/magina-olivo)',
+      'user-agent': 'MaginaOlivoNewsBot/1.3 (+https://github.com/izc05/magina-olivo)',
       accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml, text/html;q=0.8',
     },
     signal: AbortSignal.timeout(15_000),

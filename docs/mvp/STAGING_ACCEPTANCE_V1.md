@@ -47,7 +47,8 @@ Antes de cualquier deploy real:
 - el working tree debe estar limpio;
 - `scripts/staging-release.sh` rechaza automáticamente un checkout con cambios sin commit;
 - las imágenes runtime/web registran el SHA real mediante `org.opencontainers.image.revision`;
-- el estado de release conserva `current_source_sha` y `previous_source_sha` además de las etiquetas de release;
+- el estado de release conserva `current-source-sha` y `previous-source-sha` además de las etiquetas de release;
+- `scripts/staging-acceptance.sh status` expone ese SHA como `source_sha`;
 - una etiqueta humana de release no sustituye al SHA real como evidencia.
 
 Comprobar siempre:
@@ -56,9 +57,10 @@ Comprobar siempre:
 git status --short
 git rev-parse HEAD
 bash scripts/staging-release.sh status
+bash scripts/staging-acceptance.sh status
 ```
 
-El `current_source_sha` debe coincidir con el commit que se pretende validar.
+El SHA desplegado debe coincidir con el commit que se pretende validar.
 
 ## Prerrequisitos
 
@@ -226,6 +228,8 @@ export BACKUP_DESTINATION_CONFIRMED_OFF_HOST=1
 bash scripts/staging-backup.sh
 ```
 
+El backup debe registrar en `backup-meta.txt` tanto la release como `application_source_sha` y generar checksums independientes.
+
 Después ejecutar restore en targets aislados:
 
 ```bash
@@ -242,15 +246,16 @@ Debe demostrarse que se recuperan conjuntamente:
 - metadatos de documentos;
 - objetos privados necesarios;
 - relaciones entrega/rendimiento/labor/timeline;
-- manifiestos/checksums exactos.
+- manifiestos/checksums exactos;
+- procedencia del backup mediante un SHA Git válido.
 
 Una copia que no se haya restaurado con éxito no cuenta como backup validado.
 
-### 8. Accesibilidad + PWA / offline manual
+### 8. Accesibilidad manual
 
-Ejecutar `docs/mvp/ACCESSIBILITY_GATE_V1.md` sobre este mismo staging.
+Ejecutar `docs/mvp/ACCESSIBILITY_GATE_V1.md` sobre este mismo staging y la misma revisión.
 
-Accesibilidad mínima:
+Mínimo:
 
 - teclado completo;
 - TalkBack + Chrome Android o NVDA + navegador desktop;
@@ -260,7 +265,9 @@ Accesibilidad mínima:
 - navegación activa anunciada;
 - adjunto de ticket operable sin ratón.
 
-Después, con un usuario sintético:
+### 9. PWA / offline manual
+
+Después, con un usuario sintético y sobre la misma revisión:
 
 1. instalar/abrir PWA;
 2. iniciar sesión online;
@@ -281,7 +288,7 @@ Después, con un usuario sintético:
 
 ## Ejecución agregada
 
-Una vez configuradas las variables, la fase externa combina los tres primeros gates externos:
+Una vez configuradas las variables, la fase externa combina tres gates externos:
 
 ```bash
 bash scripts/staging-acceptance.sh external
@@ -298,7 +305,7 @@ Orden:
 Para cada ejecución guardar únicamente evidencia no sensible:
 
 - fecha/hora;
-- **SHA completo real desplegado (`current_source_sha`)**;
+- **SHA completo real desplegado (`source_sha` en `staging-acceptance.sh status`)**;
 - etiqueta de release, si se usa;
 - resultados PASS/FAIL de cada gate;
 - municipio AEMET usado en el gate público;
@@ -316,7 +323,7 @@ No guardar:
 
 ## Criterio de salida de staging
 
-Staging V1 queda en **PASS** solo cuando estos ocho bloques estén verdes:
+Staging V1 queda en **PASS** solo cuando estos **nueve bloques** estén verdes sobre la misma revisión trazable:
 
 1. host/contenedores;
 2. HTTPS/seguridad;
@@ -325,9 +332,10 @@ Staging V1 queda en **PASS** solo cuando estos ocho bloques estén verdes:
 5. almacenamiento privado;
 6. correo/reset;
 7. backup/restore;
-8. accesibilidad + PWA/offline manual.
+8. accesibilidad manual;
+9. PWA/offline manual.
 
-El issue #7 solo debe cerrarse cuando exista evidencia PASS de los ocho bloques.
+El issue #7 solo debe cerrarse cuando exista evidencia PASS de los nueve bloques.
 
 Después de ese PASS se puede iniciar la validación con 2–5 olivareros usando todavía datos sintéticos o documentos anonimizados. Los datos reales siguen siendo un paso posterior y controlado.
 

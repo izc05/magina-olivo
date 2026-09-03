@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
+import { AccountPage } from './AccountPage';
 import { App } from './App';
 import { ConnectivityStatus } from './ConnectivityStatus';
 import { MaginaDirectoryPage } from './MaginaDirectoryPage';
@@ -56,6 +57,8 @@ createRoot(root).render(
       <RegisterPage />
     ) : path === '/onboarding' ? (
       <OnboardingPage />
+    ) : path === '/cuenta' ? (
+      <AccountPage />
     ) : path === '/magina' ? (
       <MaginaHubPage />
     ) : path === '/magina/directorio' ? (

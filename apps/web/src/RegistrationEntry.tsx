@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 
+type SessionState = 'checking' | 'signed_out' | 'signed_in' | 'unavailable';
+
 export function RegistrationEntry() {
-  const [visible, setVisible] = useState(false);
+  const [state, setState] = useState<SessionState>('checking');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -11,15 +13,28 @@ export function RegistrationEntry() {
       headers: { accept: 'application/json' },
       signal: controller.signal,
     }).then((response) => {
-      if (response.status === 401 || response.status === 403) setVisible(true);
+      if (response.ok) {
+        setState('signed_in');
+        return;
+      }
+      if (response.status === 401 || response.status === 403) {
+        setState('signed_out');
+        return;
+      }
+      setState('unavailable');
     }).catch(() => {
-      // Do not advertise registration while the API is unavailable.
+      // Avoid advertising account actions while the API is unavailable.
+      setState('unavailable');
     });
 
     return () => controller.abort();
   }, []);
 
-  if (!visible) return null;
+  if (state === 'signed_in') {
+    return <a className="account-entry" href="/cuenta" aria-label="Abrir Mi Cuenta">Mi cuenta</a>;
+  }
+
+  if (state !== 'signed_out') return null;
 
   return (
     <aside className="registration-entry" aria-label="Crear una cuenta nueva">

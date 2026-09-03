@@ -2,7 +2,7 @@
 
 Fecha: 2026-09-03
 Rama: `feat/integration-v2-mvp-v1`
-Estado: integración P0 en curso
+Estado: **P0 integrado; pendiente validación contra staging real**
 
 ## Objetivo
 
@@ -65,9 +65,8 @@ La rama parte directamente de `feat/mvp-core-v1`.
 
 - se conserva `App.tsx` y toda su lógica real;
 - se conserva autenticación, API, offline y cálculos;
-- se añade `apps/web/src/integration-v2.css` como capa de presentación;
+- se usa la capa Visual V2 sobre el flujo productivo;
 - se reutiliza el logo aprobado existente en `/brand/magina-olivo-mark.svg`;
-- no se introduce `lucide-react` ni otra dependencia visual nueva;
 - no se copian valores demo desde Visual V2.
 
 ### Mi Campo
@@ -76,7 +75,7 @@ La rama parte directamente de `feat/mvp-core-v1`.
 - la finca activa se mantiene como selección canónica del MVP Core;
 - las parcelas conservan sus campos reales: superficie, olivos, riego y SIGPAC;
 - formularios de explotación, finca y parcela siguen escribiendo contra la API real;
-- la presentación de finca activa, tarjetas de parcela y formularios se ha llevado a la jerarquía Visual V2;
+- la presentación de finca activa, tarjetas de parcela y formularios usa la jerarquía Visual V2;
 - no se ha introducido `localStorage` como fuente de verdad alternativa.
 
 ### Cuaderno
@@ -84,32 +83,52 @@ La rama parte directamente de `feat/mvp-core-v1`.
 - las labores se escriben contra la API real y mantienen outbox offline;
 - tratamientos, abonado, riego, costes, notas, parcela y campaña siguen usando el modelo canónico;
 - la historia de parcela unifica labores, entregas y rendimientos sin duplicar datos;
-- se añade resumen real por parcela y filtros `Todo / Labores / Entregas / Rendimientos`;
+- existe resumen real por parcela y filtros `Todo / Labores / Entregas / Rendimientos`;
 - el aviso CUE/SIEX se mantiene explícito: el cuaderno personal V1 no se presenta como registro oficial.
 
 ### Campaña y documentos
 
-- campaña, entregas, kilos y rendimiento siguen procediendo del MVP Core y de sus cálculos deterministas;
+- campaña, entregas, kilos y rendimiento proceden del MVP Core y de sus cálculos deterministas;
 - el formulario de entrega mantiene finca/parcela, destino, ticket, variedad, notas y outbox offline;
 - los destinos reconocidos se diferencian de los destinos manuales sin bloquear la entrada libre;
 - los tickets se validan en cliente y servidor para JPG/PNG/WEBP/PDF y máximo 10 MB;
-- los documentos siguen almacenándose de forma privada con SHA-256 y autorización por explotación;
-- se añade listado autenticado de documentos por campaña, sin exponer claves internas de almacenamiento;
+- los documentos se almacenan de forma privada con SHA-256 y autorización por explotación;
+- existe listado autenticado de documentos por campaña, sin exponer claves internas de almacenamiento;
 - la bandeja `Tickets y documentos` se refresca automáticamente después de una subida y permite descarga autenticada;
-- los metadatos de cada documento pueden mostrar la entrega vinculada (fecha, kilos y destino);
-- se añade prueba de cliente para verificar el listado de campaña con credenciales de sesión.
+- los metadatos de cada documento muestran la entrega vinculada cuando existe.
+
+### Offline / sync
+
+- IndexedDB mantiene la outbox separada por usuario;
+- entrega y labor usan claves de idempotencia al sincronizar;
+- la reconexión intenta sincronización automática;
+- el cierre de sesión se bloquea cuando quedan cambios privados pendientes;
+- la interfaz distingue `sin conexión`, `pendiente de sincronizar` y `sincronización fallida`;
+- un fallo de sincronización conserva los datos y ofrece reintento explícito.
+
+### Mágina pública
+
+La navegación privada ya enlaza con las pantallas públicas reales y mantiene la separación de datos:
+
+- `/magina/tiempo` — AEMET;
+- `/magina/campo` — RAIF;
+- `/magina/noticias` — noticias oficiales verificadas;
+- `/magina/mercado` — contexto de mercado;
+- `/magina/directorio` — cooperativas y almazaras.
+
+Noticias mantiene política `metadata-only`: título, fecha, tema y URL oficial; no copia artículos completos.
 
 ## Orden P0
 
 1. Login/sesión. ✅ presentación V2 sobre flujo real
-2. Inicio/dashboard real. ✅ primera integración V2
-3. Mi Campo: explotación -> finca -> parcela. ✅ integración visual real
-4. Cuaderno/labores. ✅ integración visual + resumen/filtros reales
-5. Campaña -> entrega -> rendimiento. ✅ flujo real reforzado
-6. Documentos privados. ✅ listado/descarga por campaña + almacenamiento privado existente
-7. Offline/sync. 🟡 base real ya integrada; pendiente cierre visual/operativo
-8. Meteorología y datos públicos. 🟡 fuentes y pantallas reales ya existen; pendiente integración en navegación principal
-9. Directorio/mercado/noticias. 🟡 directorio/mercado reales ya existen; pendiente integración y noticias
+2. Inicio/dashboard real. ✅ integración V2
+3. Mi Campo: explotación -> finca -> parcela. ✅
+4. Cuaderno/labores. ✅
+5. Campaña -> entrega -> rendimiento. ✅
+6. Documentos privados. ✅
+7. Offline/sync. ✅ cierre visual y operativo
+8. Meteorología y datos públicos. ✅ integrados en navegación
+9. Directorio/mercado/noticias. ✅ integrados; ingestión de noticias sigue siendo curada hasta validar automatización oficial
 
 ## Reglas de integración
 
@@ -124,16 +143,21 @@ La rama parte directamente de `feat/mvp-core-v1`.
 
 ## Gate de cierre de esta fase
 
-La fase podrá considerarse cerrada cuando:
+El P0 de integración de código está cerrado cuando CI permanezca verde. La fase completa aún requiere:
 
-- el flujo `Login -> Inicio -> Mi Campo -> Parcela -> Cuaderno -> Campaña -> Entrega -> Rendimiento` use presentación V2;
-- todos los datos del flujo procedan del backend real;
-- CI de MVP Core siga verde;
-- los tests de accesibilidad y offline sigan verdes;
-- el bundle no contenga secretos;
-- no exista dependencia productiva de `demoRepositories`;
-- se haya ejecutado el recorrido contra staging real.
+- ejecutar el flujo `Login -> Inicio -> Mi Campo -> Parcela -> Cuaderno -> Campaña -> Entrega -> Rendimiento` contra staging real;
+- comprobar almacenamiento privado con R2/S3 real;
+- comprobar HTTPS, cookies, Cloudflare Access y aislamiento;
+- ejecutar accesibilidad y PWA/offline manual en navegador real;
+- validar backup/restore aislado;
+- confirmar que el bundle no contiene secretos y que no existe dependencia productiva de `demoRepositories`.
 
 ## Siguiente paso
 
-Cerrar la integración de **Offline/sync** en la experiencia V2 y sustituir el placeholder de la pestaña **Mágina** por las pantallas públicas reales ya construidas: AEMET, RAIF, directorio de cooperativas/almazaras y mercado. Después se preparará el primer staging real navegable sin fusionar todavía a `main`.
+No añadir otra arquitectura. Preparar y ejecutar el **primer staging real navegable** siguiendo:
+
+- `docs/mvp/STAGING_EXECUTION_V1.md`;
+- `docs/mvp/STAGING_ACCEPTANCE_V1.md`;
+- `docs/mvp/ACCESSIBILITY_GATE_V1.md`.
+
+Hasta disponer del host delante, continuar únicamente con trabajo preparatorio de staging, pruebas y pulido que no requiera secretos ni infraestructura externa. No fusionar todavía a `main`.

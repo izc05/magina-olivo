@@ -1,0 +1,139 @@
+.profile-hero {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(92, 122, 70, .18);
+  background: linear-gradient(135deg, rgba(167, 180, 151, .24), rgba(244, 241, 230, .86) 58%, rgba(212, 160, 23, .08));
+  box-shadow: 0 10px 28px rgba(46, 58, 34, .055);
+}
+
+.profile-hero::after {
+  position: absolute;
+  top: -46px;
+  right: -42px;
+  width: 150px;
+  height: 150px;
+  border: 1px solid rgba(92, 122, 70, .08);
+  border-radius: 50%;
+  box-shadow: 0 0 0 22px rgba(92, 122, 70, .025), 0 0 0 44px rgba(212, 160, 23, .018);
+  content: '';
+  pointer-events: none;
+}
+
+.profile-avatar,
+.profile-hero__copy,
+.profile-edit-button,
+.profile-hero__stats {
+  position: relative;
+  z-index: 1;
+}
+
+.profile-avatar {
+  border: 3px solid rgba(255, 255, 255, .78);
+  box-shadow: 0 6px 18px rgba(46, 58, 34, .12);
+}
+
+.profile-hero__copy h1 {
+  line-height: 1;
+}
+
+.profile-hero__stats {
+  border-color: rgba(92, 122, 70, .1);
+  background: rgba(255, 255, 255, .62);
+}
+
+.profile-hero__stats > div + div {
+  border-left: 1px solid rgba(92, 122, 70, .1);
+}
+
+.profile-hero__stats strong {
+  color: var(--color-olive-950);
+}
+
+.profile-card-grid,
+.saved-list,
+.document-list,
+.settings-list {
+  gap: 9px;
+}
+
+.profile-info-card,
+.saved-row,
+.document-row,
+.settings-list button {
+  border-color: rgba(92, 122, 70, .14);
+  background: rgba(255, 255, 255, .74);
+  box-shadow: 0 4px 14px rgba(46, 58, 34, .025);
+}
+
+.settings-list button {
+  min-height: 62px;
+  grid-template-columns: 40px minmax(0, 1fr) 18px;
+  padding: 9px 11px;
+}
+
+.settings-list button > svg:first-child {
+  width: 38px;
+  height: 38px;
+  padding: 9px;
+  border-radius: 11px;
+  background: rgba(167, 180, 151, .18);
+  color: var(--color-olive-700);
+}
+
+.settings-list strong {
+  color: var(--color-olive-950);
+  font-size: 12.5px;
+  line-height: 1.2;
+}
+
+.settings-list span {
+  line-height: 1.3;
+}
+
+@media (max-width: 430px) {
+  .profile-hero {
+    grid-template-columns: 66px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .profile-avatar {
+    width: 66px;
+    height: 66px;
+    font-size: 22px;
+  }
+
+  .profile-edit-button {
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: 10px;
+  }
+
+  .profile-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+    overflow: visible;
+  }
+
+  .profile-tab {
+    min-width: 0;
+    min-height: 40px;
+    padding: 0 5px;
+    font-size: 10.5px;
+  }
+
+  .settings-list button {
+    min-height: 60px;
+  }
+}
+
+@media (min-width: 820px) {
+  .profile-hero {
+    padding: 18px;
+  }
+
+  .profile-panel .section-heading {
+    margin-bottom: 10px;
+  }
+}

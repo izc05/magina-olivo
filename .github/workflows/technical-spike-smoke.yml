@@ -136,6 +136,9 @@ jobs:
       - name: Verify auth rate limiting
         run: bash scripts/spike-auth-rate-limit.sh
 
+      - name: Verify backup and restore drill
+        run: bash scripts/spike-backup-restore.sh
+
       - name: Verify isolated staging container stack
         run: bash scripts/staging-container-gate.sh
 

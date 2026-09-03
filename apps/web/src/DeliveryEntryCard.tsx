@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { api, type Farm, type Plot } from './api.ts';
 import { uploadDeliveryTicket } from './document-api.ts';
@@ -129,7 +129,7 @@ export function DeliveryEntryCard({
         <span className="badge gold">Campaña</span>
       </div>
 
-      <form className="form-grid" onSubmit={submit}>
+      <form className="form-grid" onSubmit={submit} aria-busy={busy}>
         <div className="inline-fields">
           <div className="field">
             <label htmlFor="delivery-kilograms">Kilos</label>
@@ -151,7 +151,7 @@ export function DeliveryEntryCard({
           </div>
           <div className="field">
             <label htmlFor="delivery-plot-dependent">Parcela</label>
-            <select id="delivery-plot-dependent" value={plotId} onChange={(event) => setPlotId(event.target.value)} disabled={!farmId || loadingPlots}>
+            <select id="delivery-plot-dependent" value={plotId} onChange={(event) => setPlotId(event.target.value)} disabled={!farmId || loadingPlots} aria-busy={loadingPlots}>
               <option value="">{loadingPlots ? 'Cargando…' : farmId ? 'Sin especificar' : 'Elige primero una finca'}</option>
               {plots.map((plot) => <option key={plot.id} value={plot.id}>{plot.name}</option>)}
             </select>
@@ -180,9 +180,10 @@ export function DeliveryEntryCard({
               id="delivery-ticket-file"
               type="file"
               accept="image/jpeg,image/png,image/webp,application/pdf"
+              aria-describedby="delivery-ticket-help"
               onChange={(event) => setTicketFile(event.target.files?.[0] ?? null)}
             />
-            <small>{ticketFile ? `${ticketFile.name} · ${(ticketFile.size / 1024 / 1024).toFixed(2)} MB` : 'Opcional · máximo 10 MB · archivo privado'}</small>
+            <small id="delivery-ticket-help">{ticketFile ? `${ticketFile.name} · ${(ticketFile.size / 1024 / 1024).toFixed(2)} MB` : 'Opcional · máximo 10 MB · archivo privado'}</small>
           </div>
         </div>
 
@@ -192,8 +193,8 @@ export function DeliveryEntryCard({
         </div>
 
         {error ? <div className="alert" role="alert">{error}</div> : null}
-        {notice ? <div className="alert success" role="status">{notice}</div> : null}
-        {warning ? <div className="alert delivery-warning" role="status">{warning}</div> : null}
+        {notice ? <div className="alert success" role="status" aria-live="polite">{notice}</div> : null}
+        {warning ? <div className="alert delivery-warning" role="status" aria-live="polite">{warning}</div> : null}
 
         <div className="delivery-save-row">
           <button className="primary-button" type="submit" disabled={busy}>{busy ? 'Guardando…' : 'Guardar entrega'}</button>
@@ -214,6 +215,7 @@ export function DeliveryTicketButton({
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   async function choose(file: File | null) {
     if (!file) return;
@@ -231,13 +233,34 @@ export function DeliveryTicketButton({
   }
 
   return (
-    <div className="delivery-ticket-action">
-      <label className={`ticket-upload-button${busy ? ' disabled' : ''}`}>
+    <div className="delivery-ticket-action" aria-busy={busy}>
+      <button
+        className="ticket-upload-button"
+        type="button"
+        disabled={busy}
+        onClick={() => inputRef.current?.click()}
+        aria-describedby={`ticket-status-${deliveryId}`}
+      >
         {busy ? 'Subiendo…' : 'Adjuntar ticket'}
-        <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" disabled={busy} onChange={(event) => void choose(event.target.files?.[0] ?? null)} />
-      </label>
-      {notice ? <small className="ticket-success">{notice}</small> : null}
-      {error ? <small className="ticket-error">{error}</small> : null}
+      </button>
+      <input
+        ref={inputRef}
+        className="sr-only"
+        tabIndex={-1}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,application/pdf"
+        disabled={busy}
+        aria-label="Seleccionar foto o PDF del ticket"
+        onChange={(event) => {
+          const file = event.target.files?.[0] ?? null;
+          event.target.value = '';
+          void choose(file);
+        }}
+      />
+      <span id={`ticket-status-${deliveryId}`} className="ticket-status" aria-live="polite">
+        {notice ? <small className="ticket-success">{notice}</small> : null}
+        {error ? <small className="ticket-error" role="alert">{error}</small> : null}
+      </span>
     </div>
   );
 }

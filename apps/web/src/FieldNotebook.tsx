@@ -24,6 +24,8 @@ const activityLabels: Record<ActivityType, string> = {
   other: 'Otra',
 };
 
+type TimelineFilter = 'all' | 'activity' | 'delivery' | 'yield_result';
+
 function localDateTimeValue(): string {
   const now = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000);
   return now.toISOString().slice(0, 16);
@@ -43,6 +45,13 @@ function timelineDetail(item: PlotTimelineItem): string | null {
   return [item.notes, item.costEur ? `${item.costEur} €` : null].filter(Boolean).join(' · ') || null;
 }
 
+function filterLabel(filter: TimelineFilter): string {
+  if (filter === 'activity') return 'Labores';
+  if (filter === 'delivery') return 'Entregas';
+  if (filter === 'yield_result') return 'Rendimientos';
+  return 'Todo';
+}
+
 export function FieldNotebook({
   holdingId,
   farmId,
@@ -56,6 +65,7 @@ export function FieldNotebook({
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [campaignId, setCampaignId] = useState('');
   const [timeline, setTimeline] = useState<PlotTimelineItem[]>([]);
+  const [timelineFilter, setTimelineFilter] = useState<TimelineFilter>('all');
   const [activityType, setActivityType] = useState<ActivityType>('observation');
   const [busy, setBusy] = useState(false);
   const [loadingTimeline, setLoadingTimeline] = useState(false);
@@ -66,6 +76,21 @@ export function FieldNotebook({
     () => plots.find((plot) => plot.id === selectedPlotId) ?? null,
     [plots, selectedPlotId],
   );
+
+  const timelineCounts = useMemo(() => ({
+    all: timeline.length,
+    activity: timeline.filter((item) => item.type === 'activity').length,
+    delivery: timeline.filter((item) => item.type === 'delivery').length,
+    yield_result: timeline.filter((item) => item.type === 'yield_result').length,
+  }), [timeline]);
+
+  const filteredTimeline = useMemo(() => (
+    timelineFilter === 'all' ? timeline : timeline.filter((item) => item.type === timelineFilter)
+  ), [timeline, timelineFilter]);
+
+  const lastTimelineDate = timeline[0]?.occurredAt
+    ? new Date(timeline[0].occurredAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+    : '—';
 
   useEffect(() => {
     if (!plots.some((plot) => plot.id === selectedPlotId)) setSelectedPlotId(plots[0]?.id ?? '');
@@ -265,6 +290,13 @@ export function FieldNotebook({
         </form>
       </div>
 
+      <div className="notebook-summary-grid" aria-label={`Resumen de ${selectedPlot?.name ?? 'la parcela'}`}>
+        <article><span>Labores</span><strong>{timelineCounts.activity}</strong><small>registradas</small></article>
+        <article><span>Entregas</span><strong>{timelineCounts.delivery}</strong><small>asociadas</small></article>
+        <article><span>Rendimientos</span><strong>{timelineCounts.yield_result}</strong><small>resultados</small></article>
+        <article><span>Último movimiento</span><strong>{lastTimelineDate}</strong><small>{timelineCounts.all} hitos</small></article>
+      </div>
+
       <div className="section-heading notebook-history-heading">
         <div>
           <h3 className="section-title notebook-history-title">Historia de {selectedPlot?.name ?? 'la parcela'}</h3>
@@ -273,8 +305,22 @@ export function FieldNotebook({
         <button className="text-button" type="button" onClick={() => void loadTimeline(selectedPlotId)} disabled={loadingTimeline}>{loadingTimeline ? 'Actualizando…' : 'Actualizar'}</button>
       </div>
 
+      <div className="notebook-filters" role="group" aria-label="Filtrar historia de la parcela">
+        {(['all', 'activity', 'delivery', 'yield_result'] as TimelineFilter[]).map((filter) => (
+          <button
+            key={filter}
+            type="button"
+            className={`notebook-filter${timelineFilter === filter ? ' active' : ''}`}
+            aria-pressed={timelineFilter === filter}
+            onClick={() => setTimelineFilter(filter)}
+          >
+            {filterLabel(filter)} <span>{timelineCounts[filter]}</span>
+          </button>
+        ))}
+      </div>
+
       <div className="timeline-list">
-        {timeline.map((item) => (
+        {filteredTimeline.map((item) => (
           <article className="card timeline-item" key={`${item.type}-${item.id}`}>
             <div className={`timeline-dot ${item.type}`} aria-hidden="true" />
             <div className="timeline-copy">
@@ -286,8 +332,8 @@ export function FieldNotebook({
             </div>
           </article>
         ))}
-        {!loadingTimeline && timeline.length === 0 ? (
-          <div className="card empty-state"><strong>La historia empieza aquí</strong>Registra la primera labor o asocia una entrega a esta parcela.</div>
+        {!loadingTimeline && filteredTimeline.length === 0 ? (
+          <div className="card empty-state"><strong>{timelineFilter === 'all' ? 'La historia empieza aquí' : `Sin ${filterLabel(timelineFilter).toLowerCase()} todavía`}</strong>{timelineFilter === 'all' ? 'Registra la primera labor o asocia una entrega a esta parcela.' : 'Cambia el filtro o registra un nuevo dato en esta parcela.'}</div>
         ) : null}
       </div>
 

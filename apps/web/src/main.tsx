@@ -47,7 +47,29 @@ registerSW({
 const root = document.getElementById('root');
 if (!root) throw new Error('Root element not found');
 
-const path = window.location.pathname;
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+const browserPath = window.location.pathname;
+const pathWithoutBase = basePath && browserPath.startsWith(basePath)
+  ? browserPath.slice(basePath.length) || '/'
+  : browserPath;
+const path = pathWithoutBase.startsWith('/') ? pathWithoutBase : `/${pathWithoutBase}`;
+
+if (basePath) {
+  document.addEventListener('click', (event) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const clicked = event.target;
+    if (!(clicked instanceof Element)) return;
+    const anchor = clicked.closest('a[href]');
+    if (!(anchor instanceof HTMLAnchorElement)) return;
+    if (anchor.target && anchor.target !== '_self') return;
+
+    const href = anchor.getAttribute('href');
+    if (!href || !href.startsWith('/') || href.startsWith('//') || href.startsWith(`${basePath}/`)) return;
+
+    event.preventDefault();
+    window.location.assign(`${basePath}${href}`);
+  });
+}
 
 createRoot(root).render(
   <StrictMode>

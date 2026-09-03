@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   web:
+    name: MVP Core Gate
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:

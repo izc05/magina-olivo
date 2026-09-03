@@ -12,6 +12,7 @@ import { MaginaNewsPage } from './MaginaNewsPage';
 import { MaginaWeatherPage } from './MaginaWeatherPage';
 import { NoticeCenter } from './NoticeCenter';
 import { OnboardingPage } from './OnboardingPage';
+import { PilotAlerts } from './PilotAlerts';
 import { RegisterPage } from './RegisterPage';
 import { RegistrationEntry } from './RegistrationEntry';
 import { ResetPassword } from './ResetPassword';
@@ -36,6 +37,7 @@ import './campaign-documents.css';
 import './magina-private-hub.css';
 import './offline-v2-integration.css';
 import './auth-onboarding.css';
+import './pilot-alerts.css';
 
 registerSW({
   immediate: true,
@@ -97,6 +99,7 @@ createRoot(root).render(
       <>
         <ConnectivityStatus />
         <NoticeCenter />
+        <PilotAlerts />
         <RegistrationEntry />
         <App />
       </>

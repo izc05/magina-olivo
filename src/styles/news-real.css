@@ -1,0 +1,75 @@
+.real-news-toolbar {
+  margin: 0 18px 18px;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border: 1px solid rgba(85, 103, 67, .18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .86);
+}
+
+.real-news-toolbar input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.real-news-status,
+.real-news-source-note {
+  margin: 18px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.84);
+  border: 1px solid rgba(85,103,67,.14);
+}
+
+.real-news-status div,
+.real-news-source-note div {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+}
+
+.real-news-status span,
+.real-news-source-note span,
+.real-news-source-note small {
+  color: var(--text-soft, #6b6a61);
+  font-size: .82rem;
+  line-height: 1.4;
+}
+
+.real-news-status--error {
+  border-color: rgba(160, 70, 52, .24);
+}
+
+.real-news-live {
+  font-size: .75rem;
+  font-weight: 700;
+  color: #567347;
+}
+
+.real-news-hero,
+.real-news-row {
+  text-decoration: none;
+  color: inherit;
+}
+
+.real-news-row {
+  width: 100%;
+}
+
+.real-news-spin {
+  animation: real-news-spin 1.2s linear infinite;
+}
+
+@keyframes real-news-spin {
+  to { transform: rotate(360deg); }
+}

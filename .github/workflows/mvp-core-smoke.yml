@@ -34,6 +34,9 @@ jobs:
       - name: Run unit tests
         run: npm test
 
+      - name: Validate staging gate scripts
+        run: bash -n scripts/mvp-core-flow-gate.sh
+
       - name: Build web PWA
         run: npm run build --workspace @magina/web
 

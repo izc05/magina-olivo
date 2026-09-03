@@ -78,6 +78,7 @@ compose() {
     -u AUTH_MAIL_TRANSPORT \
     -u AUTH_MAIL_FROM \
     -u RESEND_API_KEY \
+    -u AEMET_API_KEY \
     -u LOG_LEVEL \
     -u DB_POOL_MAX \
     -u OBJECT_STORAGE_ENDPOINT \
@@ -174,9 +175,6 @@ write_state_after_successful_deploy() {
 
 case "$ACTION" in
   deploy)
-    # Reproducibility gate: the image must correspond exactly to a committed
-    # revision. The release label may be human-readable (CI uses A/B labels),
-    # but the image and deployment state always record the real Git SHA.
     assert_clean_checkout
     SOURCE_SHA="$(git_source_sha)"
     RELEASE="${REQUESTED_RELEASE:-${SOURCE_SHA:0:12}}"

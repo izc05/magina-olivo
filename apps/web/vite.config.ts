@@ -17,6 +17,14 @@ export default defineConfig({
         theme_color: '#2e3a22',
         categories: ['productivity', 'utilities'],
         lang: 'es-ES',
+        icons: [
+          {
+            src: '/brand/magina-olivo-mark.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any',
+          },
+        ],
       },
       workbox: {
         navigateFallbackDenylist: [/^\/api\//, /^\/health\//],

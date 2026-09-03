@@ -91,7 +91,7 @@ async function run() {
     await page.locator('.coop-contact-card').waitFor({ state: 'visible' });
     await page.getByText(/Camino del Canónigo/i).waitFor({ state: 'visible' });
     await page.getByText('953 785 031', { exact: true }).waitFor({ state: 'visible' });
-    await page.getByText('info@laquintaesencia.com', { exact: true }).waitFor({ state: 'visible' });
+    await page.locator('a[href="mailto:info@laquintaesencia.com"]').waitFor({ state: 'visible' });
     await page.getByText('Horario general publicado', { exact: true }).waitFor({ state: 'visible' });
     assert(await page.getByRole('link', { name: /Fuente oficial de contacto/i }).count() === 1, 'Cooperativas: falta la fuente oficial de contacto en Socios.');
     await assertNoOverflow(page, 'Ficha de cooperativa completa');

@@ -50,6 +50,7 @@ async function run() {
 
     const search = page.getByRole('textbox', { name: 'Buscar cooperativas' });
     await search.fill('Bedmar');
+    await page.locator('.coop-card--territorial').first().waitFor({ state: 'visible', timeout: 10_000 });
     assert(await page.locator('.coop-card--territorial').count() >= 1, 'Cooperativas: la búsqueda por municipio no devuelve resultados.');
     await page.locator('.coop-card--territorial').first().getByRole('button', { name: 'Ver ficha', exact: true }).click();
     await page.locator('.coop-detail-view').waitFor({ state: 'visible' });
@@ -57,13 +58,16 @@ async function run() {
     assert(await page.getByRole('link', { name: /D\.O\.P\. Sierra Mágina/i }).count() === 1, 'Cooperativas: falta el enlace a la fuente oficial.');
     await assertNoOverflow(page, 'Ficha de cooperativa');
 
-    // Volver a Noticias para entrar por el acceso real de Alertas.
+    // Volver al hub real y entrar en Alertas.
     await page.getByRole('button', { name: 'Cooperativas', exact: true }).first().click();
     await nav.getByRole('button', { name: 'Mágina', exact: true }).click();
     await page.getByRole('button', { name: 'Alertas', exact: true }).click();
     const alertsPanel = page.locator('.alerts-real');
     await alertsPanel.waitFor({ state: 'visible' });
+    const firstAlert = page.locator('.alerts-real__card').first();
+    await firstAlert.waitFor({ state: 'visible', timeout: 10_000 });
     assert(await page.locator('.alerts-real__card').count() >= 1, 'Alertas: el feed oficial no muestra avisos.');
+    await page.getByText('Oficial', { exact: true }).first().waitFor({ state: 'visible', timeout: 10_000 });
     assert(await page.getByText('Oficial', { exact: true }).count() >= 1, 'Alertas: no aparece la trazabilidad oficial.');
     await assertNoOverflow(page, 'Alertas');
 

@@ -92,8 +92,8 @@ function LoginScreen({ onSignedIn }: { onSignedIn: (user: User) => void }) {
           <span className="brand-title">Mágina Olivo</span>
           <span className="brand-kicker">Tu campo. Tu campaña. Tu Mágina.</span>
         </div>
-        <h1 id="login-title" className="login-title">Tu olivar, más claro</h1>
-        <p className="login-copy">Mágina Olivo reúne en una sola app la gestión de tu explotación y la información útil de Sierra Mágina: fincas y parcelas, campañas, entregas y rendimientos, tiempo, alertas del campo, noticias, mercado y cooperativas. Tus datos privados permanecen separados de las fuentes públicas.</p>
+        <h1 id="login-title" className="login-title">Bienvenido</h1>
+        <p className="login-copy">Gestiona tu olivar y consulta la información clave de Sierra Mágina.</p>
         <form className="form-grid" onSubmit={submit}>
           <Field name="email" label="Correo electrónico" type="email" required autoComplete="email" value={email} onChange={setEmail} />
           <Field name="password" label="Contraseña" type="password" required autoComplete="current-password" value={password} onChange={setPassword} />

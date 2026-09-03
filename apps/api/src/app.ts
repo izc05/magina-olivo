@@ -15,6 +15,7 @@ import { registerPlotTimelineRoutes } from './plot-timeline-routes.ts';
 import { registerPublicDestinationRoutes } from './public-destination-routes.ts';
 import { registerPublicFieldAlertRoutes } from './public-field-alert-routes.ts';
 import { registerPublicMunicipalityRoutes } from './public-municipality-routes.ts';
+import { registerPublicNewsRoutes } from './public-news-routes.ts';
 import { registerPublicSourceRoutes } from './public-source-routes.ts';
 import { registerPublicWeatherRoutes } from './public-weather-routes.ts';
 import { registerRequestSecurity } from './request-security.ts';
@@ -62,6 +63,7 @@ export function buildApp(): FastifyInstance {
   registerPublicSourceRoutes(app);
   registerPublicWeatherRoutes(app);
   registerPublicFieldAlertRoutes(app);
+  registerPublicNewsRoutes(app);
   registerHoldingRoutes(app);
   registerFarmRoutes(app);
   registerPlotRoutes(app);

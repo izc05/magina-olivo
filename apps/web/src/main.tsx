@@ -25,6 +25,7 @@ import './integration-v2.css';
 import './field-v2-integration.css';
 import './journal-v2-integration.css';
 import './campaign-v2-integration.css';
+import './offline-v2-integration.css';
 
 registerSW({
   immediate: true,

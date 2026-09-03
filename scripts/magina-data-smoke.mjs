@@ -41,7 +41,7 @@ async function run() {
     await nav.getByRole('button', { name: 'Mágina', exact: true }).click();
     await page.locator('.hub-tabs--primary').waitFor({ state: 'visible' });
 
-    // Cooperativas: directorio real, búsqueda y ficha verificada.
+    // Cooperativas: directorio real, búsqueda, ficha, aceites, precios y noticias.
     await page.locator('.hub-tabs--primary').getByRole('button', { name: 'Cooperativas', exact: true }).click();
     const coopList = page.locator('.coop-list--verified');
     await coopList.waitFor({ state: 'visible' });
@@ -56,10 +56,39 @@ async function run() {
     await page.locator('.coop-detail-view').waitFor({ state: 'visible' });
     await page.getByText('Verificada', { exact: true }).first().waitFor({ state: 'visible' });
     assert(await page.getByRole('link', { name: /D\.O\.P\. Sierra Mágina/i }).count() === 1, 'Cooperativas: falta el enlace a la fuente oficial.');
-    await assertNoOverflow(page, 'Ficha de cooperativa');
+
+    const detailTabs = page.locator('.coop-detail-tabs');
+    await detailTabs.getByRole('button', { name: 'Aceites', exact: true }).click();
+    await page.getByText('Oro Magnasur', { exact: true }).first().waitFor({ state: 'visible' });
+    assert(await page.locator('.coop-product-card').count() >= 3, 'Cooperativas: la ficha de Bedmar no muestra los productos verificados esperados.');
+
+    await detailTabs.getByRole('button', { name: 'Precios', exact: true }).click();
+    await page.locator('.coop-price-panel').waitFor({ state: 'visible' });
+    await page.locator('.coop-market-reference__grid article').first().waitFor({ state: 'visible', timeout: 10_000 });
+    assert(await page.locator('.coop-market-reference__grid article').count() === 3, 'Cooperativas: la referencia de mercado no contiene las tres calidades.');
+    await page.getByText(/No publicado o no verificado/i).waitFor({ state: 'visible' });
+    assert(await page.getByRole('link', { name: /Fuente oficial del mercado/i }).count() === 1, 'Cooperativas: falta la trazabilidad del precio general.');
+
+    await detailTabs.getByRole('button', { name: 'Noticias', exact: true }).click();
+    await page.getByText('Noticias relacionadas', { exact: true }).waitFor({ state: 'visible' });
+    const relatedCount = await page.locator('.coop-related-news a').count();
+    const emptyCount = await page.locator('.coop-empty-state').count();
+    assert(relatedCount >= 1 || emptyCount === 1, 'Cooperativas: la pestaña Noticias no presenta resultados ni estado vacío válido.');
+    await assertNoOverflow(page, 'Ficha de cooperativa completa');
+
+    // Mercado: precios oficiales y gráfico seleccionable.
+    await nav.getByRole('button', { name: 'Mágina', exact: true }).click();
+    await page.locator('.hub-tabs--primary').getByRole('button', { name: 'Mercado', exact: true }).click();
+    const marketPanel = page.locator('.market-real');
+    await marketPanel.waitFor({ state: 'visible' });
+    await page.locator('.market-real__price').first().waitFor({ state: 'visible', timeout: 10_000 });
+    assert(await page.locator('.market-real__price').count() === 3, 'Mercado: no aparecen AOVE, Virgen y Lampante.');
+    await page.getByText(/Observatorio de Precios/i).first().waitFor({ state: 'visible', timeout: 10_000 });
+    await page.getByRole('button', { name: /Virgen/ }).first().click();
+    await page.locator('.market-chart-card--real').waitFor({ state: 'visible' });
+    await assertNoOverflow(page, 'Mercado');
 
     // Volver al hub real y entrar en Alertas.
-    await page.getByRole('button', { name: 'Cooperativas', exact: true }).first().click();
     await nav.getByRole('button', { name: 'Mágina', exact: true }).click();
     await page.getByRole('button', { name: 'Alertas', exact: true }).click();
     const alertsPanel = page.locator('.alerts-real');
@@ -71,21 +100,8 @@ async function run() {
     assert(await page.getByText('Oficial', { exact: true }).count() >= 1, 'Alertas: no aparece la trazabilidad oficial.');
     await assertNoOverflow(page, 'Alertas');
 
-    // Mercado: precios oficiales, selector de calidad, gráfico y trazabilidad.
-    await page.locator('.alerts-real__top .text-action').click();
-    await page.locator('.hub-tabs--primary').waitFor({ state: 'visible' });
-    await page.locator('.hub-tabs--primary').getByRole('button', { name: 'Mercado', exact: true }).click();
-    const marketPanel = page.locator('.market-real');
-    await marketPanel.waitFor({ state: 'visible' });
-    await page.locator('.market-real__price').first().waitFor({ state: 'visible', timeout: 10_000 });
-    assert(await page.locator('.market-real__price').count() === 3, 'Mercado: deben mostrarse AOVE, Virgen y Lampante.');
-    assert(await page.getByRole('link', { name: /Observatorio de Precios y Mercados/i }).count() === 1, 'Mercado: falta la fuente pública de la Junta.');
-    await page.locator('.market-real__price').filter({ hasText: 'Virgen' }).last().click();
-    await page.locator('.market-real-chart').waitFor({ state: 'visible' });
-    await assertNoOverflow(page, 'Mercado');
-
     await context.close();
-    console.log('✓ Smoke Mágina: cooperativas, ficha verificada, alertas oficiales y mercado real funcionan en 390×844 bajo /magina-olivo/.');
+    console.log('✓ Smoke Mágina: cooperativa completa, aceites, precios, noticias, mercado y alertas funcionan en 390×844 y bajo /magina-olivo/.');
   } finally {
     if (browser) await browser.close();
     await closePreview(previewServer);

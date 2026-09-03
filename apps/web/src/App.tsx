@@ -90,10 +90,10 @@ function LoginScreen({ onSignedIn }: { onSignedIn: (user: User) => void }) {
       <section className="login-card" aria-labelledby="login-title">
         <div className="login-brand">
           <span className="brand-title">Mágina Olivo</span>
-          <span className="brand-kicker">Tu olivar, campaña tras campaña</span>
+          <span className="brand-kicker">Tu campo. Tu campaña. Tu Mágina.</span>
         </div>
-        <h1 id="login-title" className="login-title">Bienvenido</h1>
-        <p className="login-copy">Accede a tus fincas, entregas y rendimientos desde un único lugar.</p>
+        <h1 id="login-title" className="login-title">Tu olivar, más claro</h1>
+        <p className="login-copy">Mágina Olivo reúne en una sola app la gestión de tu explotación y la información útil de Sierra Mágina: fincas y parcelas, campañas, entregas y rendimientos, tiempo, alertas del campo, noticias, mercado y cooperativas. Tus datos privados permanecen separados de las fuentes públicas.</p>
         <form className="form-grid" onSubmit={submit}>
           <Field name="email" label="Correo electrónico" type="email" required autoComplete="email" value={email} onChange={setEmail} />
           <Field name="password" label="Contraseña" type="password" required autoComplete="current-password" value={password} onChange={setPassword} />
@@ -482,7 +482,7 @@ function MoreTab({ user, holding, busy, onSignOut }: { user: User; holding: Hold
     <>
       <PageIntro eyebrow="Mi Mágina" title="Cuenta y proyecto" />
       <section className="section card card-body"><p className="list-card-title">{user.name || 'Agricultor'}</p><p className="list-card-meta">{user.email}</p>{holding ? <p className="list-card-meta">Explotación activa · {holding.name}</p> : null}</section>
-      <section className="section card card-body"><h2 className="section-title more-card-title">Identidad visual</h2><p className="section-copy">Esta rama usa la Biblia Visual V2. El logo gráfico aprobado se importará como activo único; aquí no se genera uno alternativo.</p></section>
+      <section className="section card card-body"><h2 className="section-title more-card-title">Identidad Mágina Olivo</h2><p className="section-copy">Montaña, olivo y luz de Jaén forman una identidad única para toda la aplicación, pensada para reconocerse bien tanto en móvil como en escritorio.</p></section>
       <section className="section"><button className="ghost-button danger-button" type="button" onClick={onSignOut} disabled={busy}>Cerrar sesión</button></section>
     </>
   );

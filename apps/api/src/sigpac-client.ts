@@ -85,6 +85,16 @@ function normalizeGeometry(geometry: ExternalFeature['geometry']): SigpacGeometr
   } as SigpacGeometry;
 }
 
+function upstreamRequest(url: string): Promise<Response> {
+  return fetch(url, {
+    headers: {
+      accept: 'application/geo+json, application/json',
+      'user-agent': 'Magina-Olivo/1.0 SIGPAC-adapter',
+    },
+    signal: AbortSignal.timeout(SIGPAC_TIMEOUT_MS),
+  });
+}
+
 export function validateSigpacBbox(bbox: SigpacBbox): string | null {
   const values = [bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat];
   if (!values.every(Number.isFinite)) return 'SIGPAC bbox must contain finite coordinates';
@@ -98,6 +108,10 @@ export function validateSigpacBbox(bbox: SigpacBbox): string | null {
   return null;
 }
 
+export function validateSigpacFeatureId(featureId: string): boolean {
+  return /^\d{1,20}$/.test(featureId);
+}
+
 export function buildSigpacRecintosUrl(bbox: SigpacBbox): string {
   const validation = validateSigpacBbox(bbox);
   if (validation) throw new Error(validation);
@@ -106,6 +120,13 @@ export function buildSigpacRecintosUrl(bbox: SigpacBbox): string {
   url.searchParams.set('f', 'json');
   url.searchParams.set('bbox', `${bbox.minLon},${bbox.minLat},${bbox.maxLon},${bbox.maxLat}`);
   url.searchParams.set('limit', String(SIGPAC_LIMIT));
+  return url.toString();
+}
+
+export function buildSigpacRecintoByIdUrl(featureId: string): string {
+  if (!validateSigpacFeatureId(featureId)) throw new Error('Invalid SIGPAC feature id');
+  const url = new URL(`${SIGPAC_RECINTOS_URL}/${encodeURIComponent(featureId)}`);
+  url.searchParams.set('f', 'json');
   return url.toString();
 }
 
@@ -135,13 +156,7 @@ export function normalizeSigpacFeature(feature: ExternalFeature): SigpacRecinto 
 
 export async function fetchSigpacRecintos(bbox: SigpacBbox): Promise<SigpacRecinto[]> {
   const url = buildSigpacRecintosUrl(bbox);
-  const response = await fetch(url, {
-    headers: {
-      accept: 'application/geo+json, application/json',
-      'user-agent': 'Magina-Olivo/1.0 SIGPAC-adapter',
-    },
-    signal: AbortSignal.timeout(SIGPAC_TIMEOUT_MS),
-  });
+  const response = await upstreamRequest(url);
   if (!response.ok) throw new Error(`SIGPAC upstream HTTP ${response.status}`);
 
   const payload = await response.json() as ExternalFeatureCollection;
@@ -154,4 +169,17 @@ export async function fetchSigpacRecintos(bbox: SigpacBbox): Promise<SigpacRecin
       const normalized = normalizeSigpacFeature(feature as ExternalFeature);
       return normalized ? [normalized] : [];
     });
+}
+
+export async function fetchSigpacRecintoById(featureId: string): Promise<SigpacRecinto> {
+  const url = buildSigpacRecintoByIdUrl(featureId);
+  const response = await upstreamRequest(url);
+  if (!response.ok) throw new Error(`SIGPAC upstream HTTP ${response.status}`);
+
+  const payload = await response.json() as ExternalFeature;
+  const normalized = normalizeSigpacFeature(payload);
+  if (!normalized || normalized.id !== featureId) {
+    throw new Error('SIGPAC upstream returned an invalid or mismatched feature');
+  }
+  return normalized;
 }

@@ -1,0 +1,82 @@
+/* Mágina Olivo — parcela visual V2.2
+   Mejora la lectura del mapa sin presentar la fotografía como cartografía real. */
+
+.parcel-map {
+  position: relative;
+  min-height: 220px;
+  isolation: isolate;
+  background-color: #3d4934;
+  background-image:
+    linear-gradient(180deg, rgba(30, 39, 25, .08), rgba(30, 39, 25, .34)),
+    url('/photos/field-olivares-magina.webp');
+  background-position: center 58%;
+  background-size: cover;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);
+}
+
+.parcel-map::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(255, 255, 255, .04), transparent 42%),
+    linear-gradient(180deg, rgba(21, 30, 18, .03), rgba(21, 30, 18, .2));
+  pointer-events: none;
+}
+
+.parcel-map::after {
+  content: 'Vista conceptual';
+  position: absolute;
+  z-index: 3;
+  top: 10px;
+  left: 10px;
+  padding: 6px 9px;
+  border: 1px solid rgba(255, 255, 255, .4);
+  border-radius: 999px;
+  background: rgba(250, 248, 241, .9);
+  color: var(--color-olive-950);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+  box-shadow: 0 5px 14px rgba(29, 38, 24, .13);
+  backdrop-filter: blur(8px);
+}
+
+.parcel-map svg {
+  position: relative;
+  z-index: 1;
+  min-height: 220px;
+}
+
+/* La trama sintética desaparece; conservamos únicamente delimitación y pin. */
+.parcel-map svg > rect,
+.parcel-map svg > g {
+  display: none;
+}
+
+.parcel-map svg > path:first-of-type {
+  fill: rgba(92, 122, 70, .38);
+  stroke: rgba(255, 255, 255, .96);
+  stroke-width: 4;
+  filter: drop-shadow(0 3px 5px rgba(28, 37, 23, .28));
+}
+
+.parcel-map svg > circle {
+  filter: drop-shadow(0 3px 6px rgba(28, 37, 23, .34));
+}
+
+@media (max-width: 430px) {
+  .parcel-map,
+  .parcel-map svg {
+    min-height: 205px;
+  }
+}
+
+@media (min-width: 900px) {
+  .parcel-map,
+  .parcel-map svg {
+    min-height: 300px;
+  }
+}

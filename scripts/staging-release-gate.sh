@@ -19,6 +19,7 @@ DATABASE_URL=postgres://magina:magina_release_ci_password@postgres:5432/magina_o
 BETTER_AUTH_SECRET=ci-release-only-better-auth-secret-2026-not-production
 BETTER_AUTH_URL=https://magina-staging.example.test
 BETTER_AUTH_TRUSTED_ORIGINS=https://magina-staging.example.test
+AEMET_API_KEY=ci-synthetic-aemet-key-not-production
 OBJECT_STORAGE_ENDPOINT=https://example.invalid
 OBJECT_STORAGE_BUCKET=magina-release-ci-private
 OBJECT_STORAGE_REGION=auto

@@ -3,7 +3,7 @@ name: Visual V2 build
 on:
   push:
     branches:
-      - feat/visual-v2-foundation
+      - 'feat/**'
   pull_request:
     branches:
       - main

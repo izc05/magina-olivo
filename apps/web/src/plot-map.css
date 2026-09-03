@@ -1,0 +1,145 @@
+.plot-map-shell {
+  scroll-margin-top: 6rem;
+}
+
+.plot-map-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.plot-location-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.plot-map-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.plot-map-meta span {
+  border: 1px solid var(--line, #d9ddcf);
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.82rem;
+  color: var(--muted, #66705c);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.plot-coordinate-fields input {
+  font-variant-numeric: tabular-nums;
+}
+
+.plot-map-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.plot-map-actions > * {
+  flex: 1 1 10rem;
+}
+
+.plot-clear-location {
+  justify-self: start;
+}
+
+.plot-map-card {
+  overflow: hidden;
+  min-height: 22rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.plot-map-frame {
+  width: 100%;
+  min-height: 20rem;
+  flex: 1;
+  border: 0;
+  background: #eef1e8;
+}
+
+.plot-map-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+}
+
+.plot-map-footer > div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.plot-map-footer small {
+  color: var(--muted, #66705c);
+  font-variant-numeric: tabular-nums;
+}
+
+.plot-map-footer a {
+  white-space: nowrap;
+}
+
+.plot-map-placeholder {
+  min-height: 22rem;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.55rem;
+  padding: 2rem;
+  text-align: center;
+  color: var(--muted, #66705c);
+  background:
+    radial-gradient(circle at 50% 46%, rgba(112, 127, 72, 0.12), transparent 28%),
+    linear-gradient(135deg, rgba(244, 246, 238, 0.92), rgba(233, 238, 222, 0.82));
+}
+
+.plot-map-placeholder span {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.plot-map-placeholder strong {
+  color: var(--text, #26301f);
+}
+
+.plot-map-placeholder p {
+  max-width: 32rem;
+  margin: 0;
+}
+
+.plot-map-disclaimer {
+  margin: 0.8rem 0 0;
+  color: var(--muted, #66705c);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+@media (min-width: 860px) {
+  .plot-map-grid {
+    grid-template-columns: minmax(18rem, 0.82fr) minmax(25rem, 1.3fr);
+    align-items: stretch;
+  }
+
+  .plot-map-card,
+  .plot-map-placeholder {
+    min-height: 27rem;
+  }
+
+  .plot-map-frame {
+    min-height: 24rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .plot-map-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .plot-map-footer a {
+    align-self: flex-start;
+  }
+}

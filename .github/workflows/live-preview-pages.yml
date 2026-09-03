@@ -60,6 +60,9 @@ jobs:
       - name: Validate cooperative directory
         run: node scripts/validate-cooperatives.mjs
 
+      - name: Validate cooperative operations
+        run: node scripts/validate-cooperative-operations.mjs
+
       - name: Generate approved photography
         run: npm run photos:sync
 

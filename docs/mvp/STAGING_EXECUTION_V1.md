@@ -8,7 +8,7 @@ Este documento resume cómo ejecutar el staging sin sustituir `docs/mvp/STAGING_
 
 ## Regla de seguridad
 
-Usar únicamente datos sintéticos y documentos anonimizados. No introducir datos reales de agricultores hasta que los ocho bloques de aceptación estén en PASS.
+Usar únicamente datos sintéticos y documentos anonimizados. No introducir datos reales de agricultores hasta que los **nueve bloques de aceptación** estén en PASS sobre la misma revisión trazable.
 
 ## Recursos externos mínimos
 
@@ -48,7 +48,7 @@ export STAGING_ENV_FILE=/etc/magina-olivo/staging.env
 bash scripts/staging-acceptance.sh preflight
 ```
 
-Debe validar host, Docker/Compose, permisos del env, HTTPS de Better Auth/R2, trusted origins, bind loopback, espacio y reloj.
+Debe validar host, Docker/Compose, permisos del env, HTTPS de Better Auth/R2, trusted origins, AEMET server-side, bind loopback, espacio y reloj.
 
 ## Fase 2 — Deploy local + aislamiento + R2
 
@@ -61,10 +61,12 @@ La fase ejecuta en orden:
 
 1. preflight;
 2. build desde checkout limpio;
-3. deploy con release trazable;
+3. deploy con release y SHA Git trazables;
 4. health local;
 5. aislamiento de puertos;
 6. roundtrip R2 `PUT -> GET -> SHA-256 -> DELETE`.
+
+El deploy se considera inválido si no puede persistir y volver a leer el SHA Git completo de 40 caracteres de la revisión desplegada.
 
 No publica el hostname ni crea/configura Cloudflare Tunnel.
 
@@ -163,7 +165,7 @@ export BACKUP_DESTINATION_CONFIRMED_OFF_HOST=1
 bash scripts/staging-acceptance.sh backup
 ```
 
-Un backup no cuenta como validado hasta completar restore.
+El bundle conserva la etiqueta de release y el **SHA Git exacto** que lo produjo. Un backup no cuenta como validado hasta completar restore.
 
 ## Fase 7 — Restore aislado
 
@@ -176,18 +178,44 @@ export RESTORE_TARGETS_CONFIRMED_ISOLATED=1
 bash scripts/staging-acceptance.sh restore
 ```
 
-El target nunca debe ser la base ni el bucket activos de staging.
+El restore exige procedencia válida del backup (`application_source_sha`) y verifica checksums y estado relacional. El target nunca debe ser la base ni el bucket activos de staging.
 
-## Fase 8 — Gates manuales finales
+## Fase 8 — Accesibilidad manual
 
-Completar sobre el mismo staging:
+Completar `docs/mvp/ACCESSIBILITY_GATE_V1.md` sobre **la misma revisión desplegada**.
 
-- `docs/mvp/ACCESSIBILITY_GATE_V1.md`;
-- PWA/offline manual según `docs/mvp/STAGING_ACCEPTANCE_V1.md`.
+Debe incluir como mínimo:
+
+- teclado completo;
+- TalkBack + Chrome Android o NVDA + navegador desktop;
+- 200 % zoom/reflow;
+- reduced motion;
+- foco visible;
+- navegación activa anunciada;
+- adjunto de ticket operable sin ratón.
+
+## Fase 9 — PWA / offline manual
+
+Con un usuario sintético y sobre la misma revisión:
+
+1. instalar/abrir PWA;
+2. iniciar sesión online;
+3. cortar red;
+4. crear entrega;
+5. crear labor;
+6. verificar pendientes visibles por tipo;
+7. cerrar/reabrir sin red y comprobar `Modo protegido`;
+8. recuperar red y revalidar sesión;
+9. sincronizar/reintentar;
+10. comprobar una sola entrega y una sola labor en servidor;
+11. confirmar timeline actualizado;
+12. confirmar bloqueo de logout mientras hay pendientes y desbloqueo tras sync;
+13. confirmar que un fallo de sincronización no borra la outbox;
+14. confirmar que un ticket no se promete como guardado offline antes de una subida real.
 
 ## Criterio de salida
 
-No iniciar piloto hasta tener evidencia PASS para:
+No iniciar piloto hasta tener evidencia PASS para los **nueve bloques**:
 
 1. host/contenedores;
 2. HTTPS/seguridad;
@@ -196,6 +224,7 @@ No iniciar piloto hasta tener evidencia PASS para:
 5. almacenamiento privado;
 6. correo/reset;
 7. backup/restore;
-8. accesibilidad + PWA/offline.
+8. accesibilidad;
+9. PWA/offline.
 
 Después: validación cerrada con 2–5 olivareros usando todavía datos sintéticos o documentos anonimizados.

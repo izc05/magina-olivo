@@ -38,7 +38,7 @@ const fs = require('fs');
 const value = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 if (value.preferredCooperativeId !== null) throw new Error('default cooperative must be null');
 if (value.notifyWeather !== true || value.notifyTasks !== true || value.notifyPendingYield !== true) throw new Error('default notifications must be enabled');
-if (Number(value.weatherRainMmThreshold) !== 5) throw new Error('rain default mismatch');
+if (Number(value.weatherRainProbabilityPercentThreshold) !== 60) throw new Error('rain probability default mismatch');
 if (Number(value.weatherFrostCThreshold) !== 0) throw new Error('frost default mismatch');
 if (Number(value.weatherWindKmhThreshold) !== 50) throw new Error('wind default mismatch');
 NODE
@@ -47,7 +47,7 @@ log "Saving preferences"
 update_status=$(curl --silent --output /tmp/account-pref-updated.json --write-out "%{http_code}" \
   --cookie "$COOKIE_JAR" \
   --header 'content-type: application/json' \
-  --data "{\"preferredCooperativeId\":\"$COOPERATIVE_ID\",\"notifyWeather\":true,\"notifyTasks\":false,\"notifyPendingYield\":true,\"weatherRainMmThreshold\":7.5,\"weatherFrostCThreshold\":-1.5,\"weatherWindKmhThreshold\":65}" \
+  --data "{\"preferredCooperativeId\":\"$COOPERATIVE_ID\",\"notifyWeather\":true,\"notifyTasks\":false,\"notifyPendingYield\":true,\"weatherRainProbabilityPercentThreshold\":75,\"weatherFrostCThreshold\":-1.5,\"weatherWindKmhThreshold\":65}" \
   "$API_BASE/api/v1/account/preferences" \
   --request PUT)
 [[ "$update_status" = "200" ]] || fail "preferences PUT expected 200, got $update_status"
@@ -61,7 +61,7 @@ const value = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 const cooperativeId = process.argv[3];
 if (value.preferredCooperativeId !== cooperativeId) throw new Error('preferred cooperative did not persist');
 if (value.notifyWeather !== true || value.notifyTasks !== false || value.notifyPendingYield !== true) throw new Error('notification preferences did not persist');
-if (Number(value.weatherRainMmThreshold) !== 7.5) throw new Error('rain threshold did not persist');
+if (Number(value.weatherRainProbabilityPercentThreshold) !== 75) throw new Error('rain probability threshold did not persist');
 if (Number(value.weatherFrostCThreshold) !== -1.5) throw new Error('frost threshold did not persist');
 if (Number(value.weatherWindKmhThreshold) !== 65) throw new Error('wind threshold did not persist');
 NODE
@@ -70,7 +70,7 @@ log "Rejecting an unknown cooperative"
 invalid_status=$(curl --silent --output /tmp/account-pref-invalid.json --write-out "%{http_code}" \
   --cookie "$COOKIE_JAR" \
   --header 'content-type: application/json' \
-  --data '{"preferredCooperativeId":"99999999-9999-4999-8999-999999999999","notifyWeather":true,"notifyTasks":true,"notifyPendingYield":true,"weatherRainMmThreshold":5,"weatherFrostCThreshold":0,"weatherWindKmhThreshold":50}' \
+  --data '{"preferredCooperativeId":"99999999-9999-4999-8999-999999999999","notifyWeather":true,"notifyTasks":true,"notifyPendingYield":true,"weatherRainProbabilityPercentThreshold":60,"weatherFrostCThreshold":0,"weatherWindKmhThreshold":50}' \
   "$API_BASE/api/v1/account/preferences" \
   --request PUT)
 [[ "$invalid_status" = "400" ]] || fail "unknown cooperative expected 400, got $invalid_status"

@@ -8,7 +8,7 @@ type PreferenceBody = {
   notifyWeather: boolean;
   notifyTasks: boolean;
   notifyPendingYield: boolean;
-  weatherRainMmThreshold: number;
+  weatherRainProbabilityPercentThreshold: number;
   weatherFrostCThreshold: number;
   weatherWindKmhThreshold: number;
 };
@@ -18,7 +18,7 @@ type PreferenceRow = {
   notify_weather: boolean;
   notify_tasks: boolean;
   notify_pending_yield: boolean;
-  weather_rain_mm_threshold: string;
+  weather_rain_probability_percent_threshold: string;
   weather_frost_c_threshold: string;
   weather_wind_kmh_threshold: string;
   updated_at: Date;
@@ -30,7 +30,7 @@ function mapPreference(row: PreferenceRow) {
     notifyWeather: row.notify_weather,
     notifyTasks: row.notify_tasks,
     notifyPendingYield: row.notify_pending_yield,
-    weatherRainMmThreshold: Number(row.weather_rain_mm_threshold),
+    weatherRainProbabilityPercentThreshold: Number(row.weather_rain_probability_percent_threshold),
     weatherFrostCThreshold: Number(row.weather_frost_c_threshold),
     weatherWindKmhThreshold: Number(row.weather_wind_kmh_threshold),
     updatedAt: row.updated_at,
@@ -55,7 +55,7 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
           notify_weather,
           notify_tasks,
           notify_pending_yield,
-          weather_rain_mm_threshold,
+          weather_rain_probability_percent_threshold,
           weather_frost_c_threshold,
           weather_wind_kmh_threshold,
           updated_at
@@ -79,7 +79,7 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
             'notifyWeather',
             'notifyTasks',
             'notifyPendingYield',
-            'weatherRainMmThreshold',
+            'weatherRainProbabilityPercentThreshold',
             'weatherFrostCThreshold',
             'weatherWindKmhThreshold',
           ],
@@ -90,7 +90,7 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
             notifyWeather: { type: 'boolean' },
             notifyTasks: { type: 'boolean' },
             notifyPendingYield: { type: 'boolean' },
-            weatherRainMmThreshold: { type: 'number', minimum: 0, maximum: 500 },
+            weatherRainProbabilityPercentThreshold: { type: 'number', minimum: 0, maximum: 100 },
             weatherFrostCThreshold: { type: 'number', minimum: -50, maximum: 20 },
             weatherWindKmhThreshold: { type: 'number', minimum: 0, maximum: 300 },
           },
@@ -123,7 +123,7 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
             notify_weather,
             notify_tasks,
             notify_pending_yield,
-            weather_rain_mm_threshold,
+            weather_rain_probability_percent_threshold,
             weather_frost_c_threshold,
             weather_wind_kmh_threshold,
             updated_at
@@ -133,7 +133,7 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
             notify_weather = excluded.notify_weather,
             notify_tasks = excluded.notify_tasks,
             notify_pending_yield = excluded.notify_pending_yield,
-            weather_rain_mm_threshold = excluded.weather_rain_mm_threshold,
+            weather_rain_probability_percent_threshold = excluded.weather_rain_probability_percent_threshold,
             weather_frost_c_threshold = excluded.weather_frost_c_threshold,
             weather_wind_kmh_threshold = excluded.weather_wind_kmh_threshold,
             updated_at = now()
@@ -142,7 +142,7 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
             notify_weather,
             notify_tasks,
             notify_pending_yield,
-            weather_rain_mm_threshold,
+            weather_rain_probability_percent_threshold,
             weather_frost_c_threshold,
             weather_wind_kmh_threshold,
             updated_at
@@ -153,7 +153,7 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
           request.body.notifyWeather,
           request.body.notifyTasks,
           request.body.notifyPendingYield,
-          request.body.weatherRainMmThreshold,
+          request.body.weatherRainProbabilityPercentThreshold,
           request.body.weatherFrostCThreshold,
           request.body.weatherWindKmhThreshold,
         ],

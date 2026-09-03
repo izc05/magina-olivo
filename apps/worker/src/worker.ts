@@ -118,26 +118,20 @@ async function claimNextJob(): Promise<JobRow | null> {
 async function inspectRaifPublicSource(): Promise<void> {
   try {
     const inspection = await inspectRaifOlivarSource();
-    const parsedLastModified = inspection.lastModified ? new Date(inspection.lastModified) : null;
-    const sourceUpdatedAt = parsedLastModified && Number.isFinite(parsedLastModified.getTime())
-      ? parsedLastModified.toISOString()
-      : null;
 
     await pool.query(
       `
         update public_data_sources
         set source_url = $1,
-            source_updated_at = coalesce($2::timestamptz, source_updated_at),
-            last_checked_at = $3::timestamptz,
-            last_success_at = $3::timestamptz,
+            last_checked_at = $2::timestamptz,
+            last_success_at = $2::timestamptz,
             last_error = null,
-            metadata = metadata || $4::jsonb,
+            metadata = metadata || $3::jsonb,
             updated_at = now()
         where source_key = 'raif-olivar-observations'
       `,
       [
         inspection.url,
-        sourceUpdatedAt,
         inspection.checkedAt,
         JSON.stringify({
           remoteEtag: inspection.etag,
@@ -145,6 +139,7 @@ async function inspectRaifPublicSource(): Promise<void> {
           remoteContentLength: inspection.contentLength,
           remoteContentType: inspection.contentType,
           inspectionMode: 'HEAD',
+          sourceDatePolicy: 'catalog-or-validated-snapshot-only',
         }),
       ],
     );

@@ -1,15 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
   <title id="title">Mágina Olivo</title>
-  <desc id="desc">Rama de olivo, paisaje de Sierra Mágina y gota dorada de aceite.</desc>
-  <path d="M54 118C31 107 18 87 20 60c13 14 28 23 47 26-3 12-7 23-13 32Z" fill="#A7B497"/>
-  <path d="M23 94c20-16 41-24 66-24-14 11-24 23-30 38-12-1-24-6-36-14Z" fill="#F4F1E6" opacity=".92"/>
-  <path d="M22 48C43 42 57 27 68 6c4 27-4 48-24 65" fill="none" stroke="#2E3A22" stroke-width="6" stroke-linecap="round"/>
-  <ellipse cx="34" cy="35" rx="8" ry="16" transform="rotate(-38 34 35)" fill="#5C7A46"/>
-  <ellipse cx="53" cy="23" rx="7" ry="14" transform="rotate(18 53 23)" fill="#5C7A46"/>
-  <ellipse cx="70" cy="40" rx="8" ry="15" transform="rotate(55 70 40)" fill="#5C7A46"/>
-  <ellipse cx="46" cy="51" rx="10" ry="13" transform="rotate(-20 46 51)" fill="#2E3A22"/>
-  <ellipse cx="64" cy="54" rx="9" ry="12" transform="rotate(20 64 54)" fill="#2E3A22"/>
-  <path d="M91 52c16 25 17 39 2 54-16-14-14-28-2-54Z" fill="#D4A017"/>
-  <path d="M91 68c6 10 7 17 2 23" fill="none" stroke="#F4F1E6" stroke-width="4" stroke-linecap="round" opacity=".9"/>
-  <path d="M21 96c20 15 41 20 63 17" fill="none" stroke="#2E3A22" stroke-width="5" stroke-linecap="round"/>
+  <desc id="desc">Emblema de Sierra Mágina con montañas, rama de olivo y luz dorada.</desc>
+  <defs>
+    <linearGradient id="mountain" x1="32" y1="44" x2="124" y2="118" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5C7A46"/>
+      <stop offset="1" stop-color="#2E3A22"/>
+    </linearGradient>
+    <linearGradient id="olive" x1="56" y1="102" x2="104" y2="132" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#435637"/>
+      <stop offset="1" stop-color="#20261F"/>
+    </linearGradient>
+  </defs>
+
+  <circle cx="80" cy="80" r="71" fill="#FFFDF7" stroke="#2E3A22" stroke-width="6"/>
+  <circle cx="80" cy="80" r="61" fill="#F4F1E6" stroke="#A7B497" stroke-width="2"/>
+
+  <circle cx="109" cy="47" r="12" fill="#D4A017"/>
+  <path d="M28 91 52 65l16 16 22-35 42 45Z" fill="url(#mountain)"/>
+  <path d="M31 91h98" fill="none" stroke="#2E3A22" stroke-width="4" stroke-linecap="round" opacity=".9"/>
+  <path d="M49 74 67 58l7 11" fill="none" stroke="#F4F1E6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity=".92"/>
+
+  <path d="M43 118c23-2 45-10 65-27" fill="none" stroke="#2E3A22" stroke-width="6" stroke-linecap="round"/>
+  <ellipse cx="57" cy="109" rx="9" ry="19" transform="rotate(-57 57 109)" fill="#5C7A46"/>
+  <ellipse cx="77" cy="101" rx="8" ry="18" transform="rotate(-38 77 101)" fill="#7F946C"/>
+  <ellipse cx="96" cy="91" rx="8" ry="18" transform="rotate(-29 96 91)" fill="#5C7A46"/>
+  <ellipse cx="88" cy="119" rx="13" ry="16" transform="rotate(18 88 119)" fill="url(#olive)"/>
+  <path d="M87 110c3 4 4 8 3 13" fill="none" stroke="#A7B497" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+
+  <path d="M122 103c8 13 8 22 0 29-8-7-8-16 0-29Z" fill="#D4A017"/>
 </svg>

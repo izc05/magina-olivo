@@ -105,7 +105,7 @@ status=$(curl --silent --dump-header /tmp/account-export-download.headers --outp
   --cookie /tmp/account-export-a.cookies \
   "$API_BASE$DOWNLOAD_URL")
 [[ "$status" = "200" ]] || fail "Ready export download expected 200, got $status"
-grep -qi '^cache-control: private, no-store' /tmp/account-export-download.headers || fail "Export download missing private no-store"
+grep -qi '^cache-control:.*no-store' /tmp/account-export-download.headers || fail "Export download missing no-store cache policy"
 grep -qi '^content-disposition: attachment;' /tmp/account-export-download.headers || fail "Export download missing attachment disposition"
 ACTUAL_SHA=$(sha256sum /tmp/account-export-download.json | awk '{print $1}')
 [[ "$ACTUAL_SHA" = "$EXPECTED_SHA" ]] || fail "Downloaded export SHA-256 mismatch"

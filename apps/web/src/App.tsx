@@ -3,6 +3,7 @@ import type { FormEvent, ReactNode } from 'react';
 import {
   ApiError,
   api,
+  cachedOwnerUserId,
   type Campaign,
   type CampaignSummary,
   type Delivery,
@@ -13,9 +14,11 @@ import {
 } from './api';
 import { DeliveryEntryCard, DeliveryTicketButton } from './DeliveryEntryCard.tsx';
 import { FieldNotebook } from './FieldNotebook.tsx';
+import { OfflineColdStart } from './OfflineColdStart.tsx';
+import { listPendingOperations } from './offline/outbox.ts';
 
 type Tab = 'home' | 'field' | 'campaign' | 'magina' | 'more';
-type SessionState = 'checking' | 'signed_out' | 'signed_in';
+type SessionState = 'checking' | 'signed_out' | 'signed_in' | 'offline_locked';
 type ActionRunner = (action: () => Promise<void>) => Promise<void>;
 
 function formatKg(value: string | number | null | undefined): string {
@@ -133,6 +136,28 @@ export function App() {
     [campaigns, selectedCampaignId],
   );
 
+  const checkSession = useCallback(async () => {
+    setSessionState('checking');
+    setError(null);
+    try {
+      const result = await api.me();
+      setUser(result.user);
+      setSessionState('signed_in');
+    } catch (reason) {
+      const hasKnownLocalOwner = Boolean(cachedOwnerUserId());
+      const sessionDefinitelyRejected = reason instanceof ApiError && (reason.status === 401 || reason.status === 403);
+      const unavailable = typeof navigator !== 'undefined' && navigator.onLine === false;
+
+      if (hasKnownLocalOwner && !sessionDefinitelyRejected && (unavailable || !(reason instanceof ApiError) || reason.status >= 500)) {
+        setSessionState('offline_locked');
+        return;
+      }
+
+      setUser(null);
+      setSessionState('signed_out');
+    }
+  }, []);
+
   const loadHoldings = useCallback(async () => {
     const result = await api.holdings();
     setHoldings(result.items);
@@ -176,17 +201,8 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    void api.me().then((result) => {
-      if (!cancelled) {
-        setUser(result.user);
-        setSessionState('signed_in');
-      }
-    }).catch(() => {
-      if (!cancelled) setSessionState('signed_out');
-    });
-    return () => { cancelled = true; };
-  }, []);
+    void checkSession();
+  }, [checkSession]);
 
   useEffect(() => {
     if (sessionState === 'signed_in') void loadHoldings().catch((reason) => setError(messageFrom(reason)));
@@ -226,6 +242,14 @@ export function App() {
 
   async function signOut() {
     await runAction(async () => {
+      const ownerUserId = cachedOwnerUserId();
+      if (ownerUserId) {
+        const pending = await listPendingOperations(ownerUserId);
+        if (pending.length > 0) {
+          throw new Error(`Hay ${pending.length} cambio${pending.length === 1 ? '' : 's'} pendiente${pending.length === 1 ? '' : 's'}. Sincronízalos antes de cerrar sesión para no dejar trabajo privado pendiente en este dispositivo.`);
+        }
+      }
+
       await api.signOut();
       setUser(null);
       setSessionState('signed_out');
@@ -235,6 +259,7 @@ export function App() {
   }
 
   if (sessionState === 'checking') return <div className="loading-screen">Abriendo Mágina Olivo…</div>;
+  if (sessionState === 'offline_locked') return <OfflineColdStart onRetry={() => void checkSession()} />;
   if (sessionState === 'signed_out' || !user) {
     return <LoginScreen onSignedIn={(signedInUser) => { setUser(signedInUser); setSessionState('signed_in'); }} />;
   }

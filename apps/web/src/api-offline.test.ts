@@ -38,9 +38,47 @@ test('delivery creation is queued per user while offline', async () => {
   const pending = await listPendingOperations(ownerUserId);
   assert.equal(pending.length, 1);
   assert.equal(pending[0]?.ownerUserId, ownerUserId);
+  assert.equal(pending[0]?.kind, 'delivery.create');
   assert.equal(pending[0]?.idempotencyKey, 'offline-delivery-004281');
   assert.equal(pending[0]?.body.kilograms, '1842');
   assert.equal(pending[0]?.body.ticketNumber, '004281');
+
+  await clearOutbox();
+});
+
+test('field activity creation gets a stable client id and queues offline', async () => {
+  const ownerUserId = 'synthetic-user-activity';
+  storage.setItem('magina-olivo-current-user-id', ownerUserId);
+  await clearOutbox();
+
+  const result = await api.createActivity(
+    '33333333-3333-4333-8333-333333333333',
+    {
+      activityType: 'irrigation',
+      occurredAt: '2026-11-19T08:15:00.000Z',
+      farmId: '44444444-4444-4444-8444-444444444444',
+      plotId: '55555555-5555-4555-8555-555555555555',
+      quantity: 12.5,
+      quantityUnit: 'm3',
+      costEur: 18,
+      notes: 'Synthetic irrigation entry',
+    },
+  );
+
+  assert.equal('offlineQueued' in result, true);
+  if (!('offlineQueued' in result)) throw new Error('Expected offline queued activity');
+  assert.equal(result.offlineQueued, true);
+  assert.match(result.clientGeneratedId, /^[0-9a-f-]{36}$/i);
+
+  const pending = await listPendingOperations(ownerUserId);
+  assert.equal(pending.length, 1);
+  assert.equal(pending[0]?.kind, 'activity.create');
+  assert.equal(pending[0]?.ownerUserId, ownerUserId);
+  assert.equal(pending[0]?.idempotencyKey, result.clientGeneratedId);
+  assert.equal(pending[0]?.body.clientGeneratedId, result.clientGeneratedId);
+  assert.equal(pending[0]?.body.activityType, 'irrigation');
+  assert.equal(pending[0]?.body.quantity, 12.5);
+  assert.equal(pending[0]?.body.quantityUnit, 'm3');
 
   await clearOutbox();
 });

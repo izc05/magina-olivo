@@ -1,7 +1,7 @@
-import { spawn } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright';
+import { preview } from 'vite';
 
 const baseUrl = 'http://127.0.0.1:4173';
 const outputDir = path.resolve('artifacts/responsive');
@@ -24,25 +24,6 @@ const sections = [
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
-}
-
-async function waitForServer(proc) {
-  for (let attempt = 0; attempt < 60; attempt += 1) {
-    if (proc.exitCode !== null) {
-      throw new Error(`Vite preview terminó antes de iniciar (código ${proc.exitCode}).`);
-    }
-
-    try {
-      const response = await fetch(baseUrl);
-      if (response.ok) return;
-    } catch {
-      // El servidor todavía no escucha.
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 500));
-  }
-
-  throw new Error('Vite preview no respondió en 30 segundos.');
 }
 
 async function assertNoGlobalOverflow(page, viewportName, sectionLabel) {
@@ -71,22 +52,32 @@ async function assertTapTargets(page, viewportName) {
   }
 }
 
+async function closePreview(previewServer) {
+  const httpServer = previewServer?.httpServer;
+  if (!httpServer) return;
+
+  httpServer.closeAllConnections?.();
+  if (!httpServer.listening) return;
+
+  await new Promise((resolve, reject) => {
+    httpServer.close((error) => error ? reject(error) : resolve());
+  });
+}
+
 async function run() {
   await mkdir(outputDir, { recursive: true });
 
-  const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const server = spawn(npmCommand, ['run', 'preview', '--', '--host', '127.0.0.1', '--port', '4173'], {
-    stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env },
+  const previewServer = await preview({
+    preview: {
+      host: '127.0.0.1',
+      port: 4173,
+      strictPort: true,
+    },
   });
-
-  server.stdout.on('data', (chunk) => process.stdout.write(`[preview] ${chunk}`));
-  server.stderr.on('data', (chunk) => process.stderr.write(`[preview] ${chunk}`));
 
   let browser;
 
   try {
-    await waitForServer(server);
     browser = await chromium.launch({ headless: true });
 
     for (const viewport of viewports) {
@@ -138,7 +129,7 @@ async function run() {
     console.log(`✓ Smoke responsive completado: ${viewports.length * sections.length} capturas.`);
   } finally {
     if (browser) await browser.close();
-    if (server.exitCode === null) server.kill('SIGTERM');
+    await closePreview(previewServer);
   }
 }
 

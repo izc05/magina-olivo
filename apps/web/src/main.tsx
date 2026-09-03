@@ -9,6 +9,7 @@ import './styles.css';
 import './connectivity.css';
 import './navigation-v2.css';
 import './notices.css';
+import './field-notebook.css';
 
 registerSW({
   immediate: true,

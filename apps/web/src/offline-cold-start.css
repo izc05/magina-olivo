@@ -1,0 +1,80 @@
+.offline-start-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 80% 8%, rgba(212, 160, 23, .13), transparent 28%),
+    #f4f1e6;
+}
+
+.offline-start-card {
+  width: min(100%, 520px);
+  padding: 28px;
+  border: 1px solid rgba(46, 58, 34, .13);
+  border-radius: 30px;
+  background: #fffdf7;
+  box-shadow: 0 16px 44px rgba(46, 58, 34, .09);
+}
+
+.offline-start-mark {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 20px;
+  border-radius: 50%;
+  background: #2e3a22;
+  color: #fff;
+  font-size: 1.7rem;
+}
+
+.offline-start-copy {
+  margin: 10px 0 0;
+  color: #6d7668;
+  line-height: 1.55;
+}
+
+.offline-start-pending,
+.offline-start-note {
+  margin-top: 18px;
+  padding: 14px 15px;
+  border-radius: 15px;
+}
+
+.offline-start-pending {
+  background: #f4e4ad;
+  color: #2e3a22;
+}
+
+.offline-start-note {
+  background: rgba(167, 180, 151, .14);
+  color: #435637;
+}
+
+.offline-start-pending strong,
+.offline-start-pending span,
+.offline-start-note strong,
+.offline-start-note span {
+  display: block;
+}
+
+.offline-start-pending span,
+.offline-start-note span {
+  margin-top: 4px;
+  font-size: .8rem;
+  line-height: 1.45;
+}
+
+.offline-start-button {
+  width: 100%;
+  margin-top: 22px;
+}
+
+.offline-start-footnote {
+  margin: 12px 0 0;
+  color: #6d7668;
+  font-size: .7rem;
+  line-height: 1.45;
+  text-align: center;
+}

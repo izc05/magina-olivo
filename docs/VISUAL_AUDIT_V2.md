@@ -1,8 +1,33 @@
 # Mágina Olivo — Auditoría Visual V2
 
-## Objetivo
+## Estado final de la fase
 
-La V2 debe conservar la dirección marcada por las primeras referencias: **campo + fotografía + información útil + identidad de Sierra Mágina**, evitando el aspecto de ERP o dashboard genérico.
+**V2 VISUAL: cerrada para revisión / preparada para PR.**
+
+La rama de trabajo `feat/visual-v2-foundation` consolida la referencia visual oficial de Mágina Olivo sin modificar `main`.
+
+Comparación final contra `main` antes del cierre documental:
+
+- `ahead_by`: 109 commits.
+- `behind_by`: 0 commits.
+- base y merge-base: `e7cceaac8a994205f8956bb8a1a1f07d175a941a`.
+- no existe divergencia acumulada desde `main`.
+
+Última validación visual/técnica previa al cierre documental:
+
+- workflow: `Visual V2 build`.
+- run: **38**.
+- commit: `7d1e7828dff4e63e1bea7dac8d592c8262c53ae4`.
+- conclusión: **success**.
+- build TypeScript + Vite: OK.
+- responsive smoke: OK.
+- navigation layout smoke: OK.
+- generación de fotografía aprobada: OK.
+- artifact de capturas: OK.
+
+## Objetivo de V2
+
+Conservar una dirección inequívoca de **campo + fotografía + información útil + identidad de Sierra Mágina**, evitando un aspecto de ERP, aplicación administrativa o dashboard financiero genérico.
 
 ## Principios fijados
 
@@ -16,141 +41,218 @@ La V2 debe conservar la dirección marcada por las primeras referencias: **campo
 - Fotografía territorial real en los bloques protagonistas.
 - Mobile-first; tablet y escritorio son adaptaciones del mismo producto.
 - Mapas grandes cuando aportan valor.
+- Densidad moderada: información útil de un vistazo, sin convertir la interfaz en un panel técnico.
 
-## Estado global V2.1
+## Navegación oficial
 
-### Cerrado
+### Principal
 
-- Inicio con accesos directos a Cuaderno, Alertas, Mercado y Meteorología.
-- Meteorología detallada con recomendación agrícola y ventana de trabajo.
-- Mi Campo simplificado a `Campo / Cuaderno / Campaña / Gestión`.
-- Costes y Maquinaria agrupados dentro de Gestión sin perder destinos internos.
-- Mágina simplificada a `Noticias / Cooperativas / Mercado / Descubre / Más`.
-- `Más` agrupa Mágina Local, Comunidad, Agenda y Alertas.
-- Descubre promovido también a destino principal de la app.
-- Barra principal estabilizada en `Inicio / Mi Campo / Mágina / Descubre / Perfil`.
-- Acción contextual `+` separada de la navegación y visible solo donde aporta valor.
-- Noticias con detalle editorial.
-- Cooperativas con ficha completa.
-- Descubre con detalle de ruta.
-- Agenda con detalle de evento.
-- Comunidad con detalle, respuestas, reacciones y reporte.
-- Mi Mágina con preview de documentos y metadatos.
-- Estados técnicos: login, registro, recuperación, onboarding, permisos, loading, offline, vacío, error y confirmación.
-- Capa responsive V2.1 desde 320 px hasta escritorio sin introducir sidebar administrativo.
-- Objetivos táctiles principales de al menos 44 px y soporte `prefers-reduced-motion`.
-- Pipeline reproducible de fotografía P0 con `npm run photos:sync`.
-- CI de GitHub Actions: fotografía + TypeScript + Vite + Chromium responsive smoke validados en verde.
-- 25 capturas reales por ejecución en 360×800, 390×844, 430×932, 768×1024 y 1366×768.
-- Subnavegaciones clave visibles completas en móvil estrecho.
+1. Inicio.
+2. Mi Campo.
+3. Mágina.
+4. Descubre.
+5. Perfil / Mi Mágina.
 
-### Correcciones de revisión visual
+La acción contextual `+` queda separada de los destinos de navegación y solo aparece donde aporta valor operativo.
 
-La revisión manual de las capturas del run 17 detectó dos mejoras que los tests estructurales por sí solos no podían valorar:
+### Mi Campo
 
-1. **Inicio / Mercado:** el selector CSS del minigráfico afectaba también al icono `TrendingUp`, expandiéndolo en escritorio. Se separa el SVG de tendencia inline del SVG principal y se limita su escala.
-2. **Mágina / Actualidad:** el hero editorial deja de depender de un fondo abstracto y pasa a usar la fotografía territorial `field-olivares-magina.webp`, manteniendo el overlay oscuro para la legibilidad del titular.
-
-El smoke responsive incorpora una aserción específica de escala para el icono y el minigráfico de Inicio, de modo que esa regresión queda automatizada.
-
-### Pendiente real
-
-1. Sustituir el mapa esquemático por cartografía real cuando exista fuente geográfica.
-2. Mantener claramente separados los datos demo de futuras fuentes reales.
-3. Integrar backend/datos reales solo después de cerrar esta referencia visual.
-4. Seguir refinando recortes fotográficos cuando añadamos nuevos slots P1, sin romper los cuatro P0 ya aprobados.
-
-## Mi Campo
-
-**Estado:** estructura, densidad y responsive cerradas.
-
-Navegación principal:
-- Campo
-- Cuaderno
-- Campaña
-- Gestión
+- Campo.
+- Cuaderno.
+- Campaña.
+- Gestión.
 
 Dentro de Gestión:
-- Costes y rentabilidad
-- Maquinaria
 
-Pendiente: cartografía real.
+- Costes y rentabilidad.
+- Maquinaria.
 
-## Mágina
+### Mágina
 
-**Estado:** estructura y densidad cerradas.
-
-Navegación principal:
-- Noticias
-- Cooperativas
-- Mercado
-- Descubre
-- Más
+- Noticias.
+- Cooperativas.
+- Mercado.
+- Descubre.
+- Más.
 
 Dentro de Más:
-- Mágina Local
-- Comunidad
-- Agenda
-- Alertas
 
-Los destinos internos siguen siendo válidos para accesos directos desde Inicio o notificaciones. La portada de Actualidad usa ya fotografía territorial real del pipeline aprobado.
+- Mágina Local.
+- Comunidad.
+- Agenda.
+- Alertas.
 
-## Fotografía P0
+## Estado por bloque
 
-Slots:
+### Inicio
 
-- `public/photos/home-sierra-magina.webp`
-- `public/photos/field-olivares-magina.webp`
-- `public/photos/discover-sierra-magina.webp`
-- `public/photos/discover-jimena.webp`
+**Cerrado.**
 
-Los WebP se generan con `npm run photos:sync`. El script consulta la API oficial de Wikimedia Commons, obtiene una versión adecuada, aplica recorte/optimización con `sharp` y produce archivos locales; la interfaz no depende de hotlinking.
+- hero territorial y meteorología.
+- hoy en tu campo.
+- accesos rápidos.
+- alertas agronómicas.
+- mercado simplificado.
+- actualidad.
+- navegación contextual coherente.
 
-La selección P0 utiliza material territorial con licencia CC BY-SA 4.0 y atribución registrada en `public/photos/README.md`.
+### Mi Campo
+
+**Cerrado visualmente.**
+
+- resumen de finca.
+- parcelas.
+- vista de mapa/parcela.
+- Cuaderno V2.6.
+- Campaña.
+- Costes y rentabilidad.
+- Maquinaria.
+
+El mapa sigue identificado como **vista conceptual** hasta disponer de cartografía/SIG real.
+
+### Cuaderno V2.6
+
+**Aprobado.**
+
+- estado visible también en móvil.
+- jerarquía: fecha → labor → parcela/detalle → estado.
+- mejor escaneabilidad de anotaciones.
+- composición 2 × 2 en escritorio sin perder claridad.
+
+### Mágina / Noticias V2.7
+
+**Aprobado.**
+
+- hero con fotografía territorial aprobada.
+- miniaturas con fotografía del mismo sistema de assets.
+- jerarquía editorial reforzada.
+- cinco pestañas visibles y legibles también en 360 px.
+- última corrección conserva la etiqueta completa `Cooperativas` sin reducir el mínimo táctil.
+
+### Cooperativas
+
+**Cerrado visualmente.**
+
+- listado compacto.
+- ficha completa.
+- información pública/demo separada de una futura integración real.
+
+### Mercado
+
+**Cerrado visualmente.**
+
+- lectura simple.
+- gráficos contenidos.
+- sin estética financiera dominante.
+
+### Descubre
+
+**Cerrado visualmente.**
+
+- fotografía protagonista.
+- rutas y lugares.
+- detalle de ruta.
+- mantiene la misma identidad que la parte agronómica, con mayor presencia visual.
+
+### Perfil / Mi Mágina V2.8
+
+**Aprobado.**
+
+- hero personal más limpio.
+- resumen, guardados, documentos y ajustes.
+- iconografía de ajustes consistente.
+- filas más legibles.
+- estados técnicos accesibles desde ajustes sin convertir Perfil en un panel administrativo.
+
+### Estados técnicos
+
+**Cerrados como referencia visual.**
+
+Incluye:
+
+- login.
+- registro.
+- recuperación.
+- onboarding.
+- permisos.
+- loading.
+- offline.
+- vacío.
+- error.
+- confirmación.
+
+## Fotografía territorial P0
+
+Slots actuales:
+
+- `public/photos/home-sierra-magina.webp`.
+- `public/photos/field-olivares-magina.webp`.
+- `public/photos/discover-sierra-magina.webp`.
+- `public/photos/discover-jimena.webp`.
+
+Los WebP se generan mediante `npm run photos:sync` a partir de fuentes aprobadas de Wikimedia Commons. Los créditos y licencias se conservan en `public/photos/README.md`.
+
+La UI no depende de hotlinking.
 
 ## Responsive
 
-La capa `src/styles/responsive.css` y `docs/RESPONSIVE_AUDIT_V2.md` fijan el comportamiento desde móvil pequeño hasta escritorio.
+La referencia se valida en:
 
-Ya resuelto:
-- marca compacta en móvil estrecho;
-- accesos rápidos 2×2 en 320–390 px;
-- barra inferior compacta con 5 destinos y FAB contextual separado;
-- parcelas multilínea para evitar colisiones;
-- mercado en filas completas en móvil estrecho;
-- mapa de Mi Campo en dos columnas a partir de 900 px;
-- subnavegaciones de Campo, Mágina y Perfil visibles en 360–430 px;
-- escritorio conserva el lenguaje de app, sin sidebar de ERP.
+- 360 × 800.
+- 390 × 844.
+- 430 × 932.
+- 768 × 1024.
+- 1366 × 768.
 
-## Validación técnica
+Cada ejecución produce **49 capturas reales**: 25 estados principales y 24 estados internos profundos en 360 × 800 y 1366 × 768.
 
-Workflow: `.github/workflows/visual-v2-build.yml`.
+La auditoría manual conjunta de las últimas capturas no ha detectado problemas estructurales nuevos en:
 
-Cadena validada en GitHub Actions:
+- Inicio.
+- Mi Campo.
+- Cuaderno.
+- Campaña.
+- Costes.
+- Maquinaria.
+- Mágina / Noticias.
+- Cooperativas.
+- Mercado.
+- Descubre.
+- Perfil / Ajustes.
 
-1. Checkout.
-2. Node 22.
-3. `npm install`.
-4. Instalación de Chromium.
-5. `npm run photos:sync` — 4/4 fotografías generadas.
-6. `npm run build` → `tsc -b && vite build`.
-7. `node scripts/responsive-smoke.mjs`.
-8. Generación de 25 capturas reales.
-9. Subida del artifact `responsive-captures` durante 14 días.
+## Contratos protegidos por CI
 
-El run 17 sobre `f1f4072574b94b6cc6d9c091eeb6b35db95198e5` terminó en verde y confirmó navegación principal, subnavegación móvil, objetivos táctiles, FAB y ausencia de overflow global.
+El pipeline comprueba, entre otros puntos:
 
-## Orden de cierre V2.1
+- 5 destinos principales.
+- objetivos táctiles mínimos.
+- FAB solo donde corresponde.
+- ausencia de overflow horizontal global.
+- 4 pestañas de Mi Campo visibles.
+- 5 pestañas de Mágina visibles.
+- 4 pestañas de Perfil visibles.
+- escala controlada del minigráfico de mercado de Inicio.
+- navegación móvil fija.
+- navegación de escritorio en flujo normal y sin superposición.
+- generación del artifact `responsive-captures`.
 
-1. ✅ Ficha completa de cooperativa.
-2. ✅ Navegación directa Inicio → subsecciones.
-3. ✅ Detalle de ruta y evento.
-4. ✅ Comunidad y documentos.
-5. ✅ Simplificación de densidad.
-6. ✅ Pipeline fotográfico territorial.
-7. ✅ Responsive estructural móvil/tablet/escritorio.
-8. ✅ Build/CI.
-9. ✅ Capturas y validación visual por tamaños.
-10. ✅ Corrección de regresiones visuales detectadas por captura.
-11. ⏳ Última comprobación CI del refinamiento editorial actual.
-12. Solo después valorar merge a `main`.
+## Qué queda fuera del cierre visual
+
+Estos puntos no bloquean V2 VISUAL y pertenecen a las siguientes fases de producto/datos:
+
+1. Sustituir mapas conceptuales por cartografía real.
+2. Conectar meteorología, alertas, mercado, noticias y cooperativas a fuentes reales.
+3. Implementar persistencia real de fincas, parcelas, campaña, cuaderno, documentos y usuario.
+4. Diseñar autenticación/backend y modelo de datos definitivo.
+5. Separar de forma técnica y permanente datos demo de datos productivos.
+6. Añadir nuevos slots fotográficos P1 solo cuando exista una necesidad concreta.
+
+## Regla de autoridad
+
+Desde este cierre, **V2 VISUAL es la referencia oficial de interfaz de Mágina Olivo**.
+
+Cualquier futura pantalla debe reutilizar sus tokens, navegación, densidad, componentes, fotografía, jerarquía y reglas responsive. Una propuesta posterior no debe reabrir la identidad visual salvo decisión explícita del proyecto.
+
+## Decisión de merge
+
+La rama está preparada para revisión mediante Pull Request. **No se debe fusionar a `main` de forma automática.** El merge queda como decisión explícita posterior al cierre/revisión del PR.

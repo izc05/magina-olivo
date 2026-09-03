@@ -13,8 +13,11 @@ test('Observatorio market source is registered without claiming structured price
   assert.match(migration, /CC BY 4\.0/);
   assert.match(migration, /SEMANAL\.csv/);
   assert.match(migration, /SEMANAL_0\.js/);
+  assert.match(migration, /catalogLastUpdatedAt.*2020-06-25/);
+  assert.match(migration, /catalogDeclaredFrequency.*daily/);
   assert.match(migration, /requires-staging-verification/);
   assert.match(migration, /market-context-not-member-settlement/);
   assert.match(migration, /Informe semanal de aceite\. Semana 35/);
+  assert.match(migration, /latestEditorialOilPublicationDate.*2026-08-30/);
   assert.doesNotMatch(migration, /"price"\s*:/i);
 });

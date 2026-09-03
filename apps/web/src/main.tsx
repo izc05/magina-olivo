@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { App } from './App';
 import { ConnectivityStatus } from './ConnectivityStatus';
+import { MaginaDirectoryPage } from './MaginaDirectoryPage';
 import { NoticeCenter } from './NoticeCenter';
 import { ResetPassword } from './ResetPassword';
 import './styles.css';
@@ -13,6 +14,7 @@ import './notices.css';
 import './field-notebook.css';
 import './delivery-entry.css';
 import './offline-cold-start.css';
+import './magina-directory.css';
 
 registerSW({
   immediate: true,
@@ -24,10 +26,14 @@ registerSW({
 const root = document.getElementById('root');
 if (!root) throw new Error('Root element not found');
 
+const path = window.location.pathname;
+
 createRoot(root).render(
   <StrictMode>
-    {window.location.pathname === '/reset-password' ? (
+    {path === '/reset-password' ? (
       <ResetPassword />
+    ) : path === '/magina/directorio' ? (
+      <MaginaDirectoryPage />
     ) : (
       <>
         <ConnectivityStatus />

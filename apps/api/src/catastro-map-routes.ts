@@ -135,6 +135,7 @@ export function registerCatastroMapRoutes(app: FastifyInstance): void {
       const checkedAt = new Date();
       const updated = await getPool().query<{
         id: string;
+        cadastral_reference: string | null;
         boundary_area_ha: string | null;
         boundary_external_id: string | null;
         boundary_source_checked_at: Date | null;
@@ -146,11 +147,11 @@ export function registerCatastroMapRoutes(app: FastifyInstance): void {
              boundary_external_id = $3,
              boundary_updated_at = $4,
              boundary_source_checked_at = $4,
-             sigpac_reference = coalesce(sigpac_reference, $3),
+             cadastral_reference = $3,
              version = version + 1,
              updated_at = now()
          where id = $5 and holding_id = $6 and active = true
-         returning id, boundary_area_ha, boundary_external_id, boundary_source_checked_at`,
+         returning id, cadastral_reference, boundary_area_ha, boundary_external_id, boundary_source_checked_at`,
         [JSON.stringify(boundary), areaHa, official.nationalCadastralReference, checkedAt, request.params.plotId, access.holdingId],
       );
       const row = updated.rows[0];
@@ -160,6 +161,7 @@ export function registerCatastroMapRoutes(app: FastifyInstance): void {
 
       return {
         id: row.id,
+        cadastralReference: row.cadastral_reference,
         boundaryAreaHa: row.boundary_area_ha,
         boundarySource: 'catastro' as const,
         boundaryExternalId: row.boundary_external_id,

@@ -13,7 +13,7 @@ type Preferences = {
   notifyWeather: boolean;
   notifyTasks: boolean;
   notifyPendingYield: boolean;
-  weatherRainMmThreshold: number;
+  weatherRainProbabilityPercentThreshold: number;
   weatherFrostCThreshold: number;
   weatherWindKmhThreshold: number;
   updatedAt?: string;
@@ -39,7 +39,7 @@ const DEFAULT_PREFERENCES: Preferences = {
   notifyWeather: true,
   notifyTasks: true,
   notifyPendingYield: true,
-  weatherRainMmThreshold: 5,
+  weatherRainProbabilityPercentThreshold: 60,
   weatherFrostCThreshold: 0,
   weatherWindKmhThreshold: 50,
 };
@@ -155,7 +155,7 @@ export function AccountPage() {
           notifyWeather: preferences.notifyWeather,
           notifyTasks: preferences.notifyTasks,
           notifyPendingYield: preferences.notifyPendingYield,
-          weatherRainMmThreshold: Number(preferences.weatherRainMmThreshold),
+          weatherRainProbabilityPercentThreshold: Number(preferences.weatherRainProbabilityPercentThreshold),
           weatherFrostCThreshold: Number(preferences.weatherFrostCThreshold),
           weatherWindKmhThreshold: Number(preferences.weatherWindKmhThreshold),
         }),
@@ -237,15 +237,15 @@ export function AccountPage() {
 
         <section className="section card card-body">
           <h2 className="section-title account-section-title">Avisos</h2>
-          <p className="section-copy">Estas preferencias preparan el centro de notificaciones P0. Los avisos solo se enviarán cuando exista una regla activa y una fuente válida.</p>
+          <p className="section-copy">Los avisos meteorológicos usan la predicción municipal de AEMET y respetan tus umbrales. Son contexto para organizarte, no un diagnóstico de parcela.</p>
 
           <label className="account-toggle">
             <input type="checkbox" checked={preferences.notifyWeather} onChange={(event) => setPreferences((current) => ({ ...current, notifyWeather: event.target.checked }))} />
-            <span><strong>Tiempo</strong><small>Lluvia, helada y viento según tus umbrales.</small></span>
+            <span><strong>Tiempo</strong><small>Probabilidad de lluvia, helada y viento según tus umbrales.</small></span>
           </label>
           <label className="account-toggle">
             <input type="checkbox" checked={preferences.notifyTasks} onChange={(event) => setPreferences((current) => ({ ...current, notifyTasks: event.target.checked }))} />
-            <span><strong>Tareas</strong><small>Próximas y vencidas cuando el calendario esté activo.</small></span>
+            <span><strong>Tareas</strong><small>Preferencia guardada para cuando el calendario esté activo.</small></span>
           </label>
           <label className="account-toggle">
             <input type="checkbox" checked={preferences.notifyPendingYield} onChange={(event) => setPreferences((current) => ({ ...current, notifyPendingYield: event.target.checked }))} />
@@ -254,8 +254,8 @@ export function AccountPage() {
 
           <div className="account-threshold-grid">
             <div className="field">
-              <label htmlFor="rain-threshold">Lluvia desde (mm)</label>
-              <input id="rain-threshold" type="number" min="0" max="500" step="0.1" inputMode="decimal" value={preferences.weatherRainMmThreshold} onChange={(event) => setPreferences((current) => ({ ...current, weatherRainMmThreshold: Number(event.target.value) }))} disabled={!preferences.notifyWeather} />
+              <label htmlFor="rain-threshold">Probabilidad de lluvia desde (%)</label>
+              <input id="rain-threshold" type="number" min="0" max="100" step="1" inputMode="numeric" value={preferences.weatherRainProbabilityPercentThreshold} onChange={(event) => setPreferences((current) => ({ ...current, weatherRainProbabilityPercentThreshold: Number(event.target.value) }))} disabled={!preferences.notifyWeather} />
             </div>
             <div className="field">
               <label htmlFor="frost-threshold">Helada desde (°C)</label>

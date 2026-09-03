@@ -41,9 +41,10 @@ export function RegistrationEntry() {
   if (state === 'checking') return null;
 
   return (
-    <aside className="registration-entry" aria-label="Crear una cuenta nueva">
-      <span>¿Aún no tienes cuenta?</span>
+    <aside className="registration-entry" aria-label="Acceso y demostración">
+      <span>{state === 'unavailable' ? 'Vista publicada sin servidor' : '¿Aún no tienes cuenta?'}</span>
       <a className="text-button" href="/register">Crear cuenta</a>
+      <a className="demo-entry-button" href="/demo">Ver demo</a>
     </aside>
   );
 }

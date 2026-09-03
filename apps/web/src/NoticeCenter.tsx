@@ -21,10 +21,16 @@ export function NoticeCenter() {
       timer = window.setTimeout(() => setNotice(null), 5200);
     };
 
-    const queued = () => show({
+    const deliveryQueued = () => show({
       kind: 'offline',
       title: 'Entrega guardada en este móvil',
       detail: 'No se perderá. Mágina Olivo la sincronizará cuando vuelva la conexión.',
+    });
+
+    const activityQueued = () => show({
+      kind: 'offline',
+      title: 'Labor guardada en este móvil',
+      detail: 'No se perderá. Se añadirá a la historia de la parcela cuando vuelva la conexión.',
     });
 
     const synced = () => show({
@@ -33,11 +39,13 @@ export function NoticeCenter() {
       detail: 'Las operaciones pendientes ya están guardadas en tu cuenta.',
     });
 
-    window.addEventListener('magina:delivery-offline-queued', queued);
+    window.addEventListener('magina:delivery-offline-queued', deliveryQueued);
+    window.addEventListener('magina:activity-offline-queued', activityQueued);
     window.addEventListener('magina:sync-complete', synced);
     return () => {
       if (timer !== null) window.clearTimeout(timer);
-      window.removeEventListener('magina:delivery-offline-queued', queued);
+      window.removeEventListener('magina:delivery-offline-queued', deliveryQueued);
+      window.removeEventListener('magina:activity-offline-queued', activityQueued);
       window.removeEventListener('magina:sync-complete', synced);
     };
   }, []);

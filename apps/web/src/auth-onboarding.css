@@ -1,9 +1,7 @@
-.registration-entry {
+.registration-entry,
+.account-entry {
   position: fixed;
   z-index: 40;
-  left: 50%;
-  bottom: max(1.25rem, env(safe-area-inset-bottom));
-  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: .55rem;
@@ -12,7 +10,22 @@
   background: rgba(255, 255, 255, .94);
   box-shadow: 0 10px 30px rgba(31, 44, 30, .14);
   font-size: .9rem;
+}
+
+.registration-entry {
+  left: 50%;
+  bottom: max(1.25rem, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
   white-space: nowrap;
+}
+
+.account-entry {
+  top: max(.75rem, env(safe-area-inset-top));
+  right: 4.5rem;
+  min-height: 42px;
+  text-decoration: none;
+  color: var(--olive-950, #2e3a22);
+  font-weight: 800;
 }
 
 .auth-flow-card {
@@ -55,6 +68,97 @@
   justify-self: start;
 }
 
+.account-shell {
+  min-height: 100dvh;
+  background: var(--ivory, #f4f1e6);
+}
+
+.account-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 14px 18px;
+  background: rgba(244, 241, 230, .94);
+  border-bottom: 1px solid var(--line, rgba(46, 58, 34, .13));
+  backdrop-filter: blur(16px);
+}
+
+.account-page {
+  width: min(100% - 28px, 760px);
+  margin: 0 auto;
+  padding: 28px 0 52px;
+}
+
+.account-section-title {
+  font-size: 1.25rem;
+  margin-bottom: .65rem;
+}
+
+.account-field {
+  margin-top: 1rem;
+}
+
+.account-toggle {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .75rem;
+  align-items: start;
+  padding: .85rem 0;
+  border-bottom: 1px solid var(--line, rgba(46, 58, 34, .13));
+}
+
+.account-toggle:last-of-type {
+  border-bottom: 0;
+}
+
+.account-toggle input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: .1rem;
+}
+
+.account-toggle span,
+.account-toggle small {
+  display: block;
+}
+
+.account-toggle small {
+  margin-top: .2rem;
+  color: var(--muted, #6d7668);
+}
+
+.account-threshold-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .7rem;
+  margin-top: 1rem;
+}
+
+.account-privacy-card strong {
+  color: var(--olive-950, #2e3a22);
+}
+
+.account-save-row {
+  position: sticky;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .account-entry {
+    right: 4.1rem;
+    padding-inline: .75rem;
+  }
+
+  .account-threshold-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 520px) {
   .registration-entry {
     width: calc(100% - 2rem);
@@ -73,5 +177,18 @@
     border-radius: 0;
     box-shadow: none;
     padding: 1.2rem;
+  }
+
+  .account-entry {
+    font-size: 0;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .account-entry::before {
+    content: '⚙';
+    font-size: 1.05rem;
   }
 }

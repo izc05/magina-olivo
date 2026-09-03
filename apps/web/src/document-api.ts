@@ -8,6 +8,12 @@ export type UploadedDocument = {
   sha256: string | null;
   documentType: 'ticket' | 'delivery_note' | 'yield_report' | 'invoice' | 'settlement' | 'photo' | 'other' | string;
   deliveryId: string | null;
+  delivery: {
+    id: string;
+    deliveredAt: string | null;
+    kilograms: string | null;
+    destination: string | null;
+  } | null;
   createdAt: string;
 };
 

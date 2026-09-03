@@ -3,23 +3,19 @@ import {
   BellRing,
   Bookmark,
   Building2,
-  CalendarClock,
   ChevronRight,
-  Clock3,
+  ExternalLink,
   FileText,
   MapPin,
-  Scale,
+  ShieldCheck,
   Truck,
 } from 'lucide-react';
+import type { CooperativeRecord } from './cooperativesFeed';
 import '../../styles/cooperative.css';
 
-export type CooperativeSummary = {
-  name: string;
-  town: string;
-  distance: string;
-  status: string;
-  aove: string;
-  hours: string;
+export type CooperativeSummary = CooperativeRecord & {
+  sourceLabel: string;
+  sourceUrl: string;
 };
 
 type CooperativeDetailProps = {
@@ -38,37 +34,38 @@ export function CooperativeDetail({ cooperative, onBack }: CooperativeDetailProp
       <section className="coop-detail-hero">
         <div className="coop-detail-hero__mark"><Building2 size={34} /></div>
         <div className="coop-detail-hero__copy">
-          <span className="eyebrow">Cooperativa</span>
+          <span className="eyebrow">Cooperativa · Sierra Mágina</span>
           <h1>{cooperative.name}</h1>
-          <p><MapPin size={14} /> {cooperative.town} · {cooperative.distance}</p>
+          <p><MapPin size={14} /> {cooperative.town}</p>
         </div>
-        <span className="coop-detail-status">{cooperative.status}</span>
+        <span className="coop-detail-status">D.O.P.</span>
       </section>
 
-      <section className="coop-detail-metrics">
-        <article><span>Referencia AOVE</span><strong>{cooperative.aove}</strong><small>Dato de demostración</small></article>
-        <article><span>Recepción</span><strong>{cooperative.hours}</strong><small>Horario orientativo</small></article>
+      <section className="coop-detail-metrics coop-detail-metrics--verified">
+        <article><span>Marca vinculada</span><strong>{cooperative.brand}</strong><small>Directorio D.O.P. Sierra Mágina</small></article>
+        <article><span>Estado de la ficha</span><strong>Verificada</strong><small>Sin horarios ni precios inventados</small></article>
       </section>
 
       <section className="section-block">
-        <div className="section-heading"><div><span className="eyebrow">Campaña</span><h2>Información útil</h2></div></div>
+        <div className="section-heading"><div><span className="eyebrow">Información</span><h2>Ficha oficial</h2></div><ShieldCheck size={20} /></div>
         <div className="coop-service-list">
-          <article><Truck size={20} /><div><strong>Recepción de aceituna</strong><span>Acceso a horarios, cambios de última hora y estado de recepción.</span></div><ChevronRight size={18} /></article>
-          <article><Scale size={20} /><div><strong>Entregas y pesajes</strong><span>Preparado para incorporar tus entregas cuando exista integración con la cooperativa.</span></div><ChevronRight size={18} /></article>
-          <article><CalendarClock size={20} /><div><strong>Turnos y servicios</strong><span>Información de campaña, citas y servicios al socio.</span></div><ChevronRight size={18} /></article>
+          <article><ShieldCheck size={20} /><div><strong>Entidad verificada</strong><span>El nombre, municipio y marca proceden del directorio público de la D.O.P. Sierra Mágina.</span></div></article>
+          <article><Truck size={20} /><div><strong>Campaña y recepción</strong><span>Este bloque queda preparado para incorporar horarios y avisos cuando exista una fuente directa y actualizada de la cooperativa.</span></div><ChevronRight size={18} /></article>
+          <article><BellRing size={20} /><div><strong>Avisos al socio</strong><span>Podremos mostrar novedades de campaña, recepción, servicios y documentación manteniendo siempre fecha y fuente.</span></div><ChevronRight size={18} /></article>
         </div>
       </section>
 
       <section className="section-block">
-        <div className="section-heading"><div><span className="eyebrow">Avisos</span><h2>Últimas novedades</h2></div><BellRing size={20} /></div>
-        <article className="coop-notice-card"><strong>Información de campaña disponible</strong><p>Este espacio mostrará los avisos publicados por la cooperativa con fecha y fuente claramente identificadas.</p><small>Demostración visual</small></article>
+        <div className="section-heading"><div><span className="eyebrow">Fuente</span><h2>Trazabilidad</h2></div></div>
+        <a className="coop-document-row" href={cooperative.sourceUrl} target="_blank" rel="noreferrer">
+          <FileText size={20} />
+          <div><strong>{cooperative.sourceLabel}</strong><span>Consulta el directorio original</span></div>
+          <ExternalLink size={18} />
+        </a>
       </section>
 
       <section className="section-block section-block--last">
-        <div className="section-heading"><div><span className="eyebrow">Documentación</span><h2>Documentos</h2></div></div>
-        <button className="coop-document-row" type="button"><FileText size={20} /><div><strong>Normas de recepción</strong><span>Documento de ejemplo · PDF</span></div><ChevronRight size={18} /></button>
-        <button className="coop-document-row" type="button"><FileText size={20} /><div><strong>Información de campaña</strong><span>Documento de ejemplo · PDF</span></div><ChevronRight size={18} /></button>
-        <div className="coop-source-note"><Clock3 size={16} /><span>En la versión con datos reales, horarios, precios y avisos mostrarán siempre fuente y última actualización.</span></div>
+        <div className="coop-source-note"><ShieldCheck size={16} /><span>Mágina Olivo no mostrará precios, horarios o estados operativos como reales hasta poder verificarlos en una fuente oficial o autorizada.</span></div>
       </section>
     </section>
   );

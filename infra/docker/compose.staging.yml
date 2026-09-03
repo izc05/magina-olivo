@@ -91,6 +91,7 @@ services:
       WORKER_POLL_MS: ${WORKER_POLL_MS:-5000}
       WORKER_RETRY_SECONDS: ${WORKER_RETRY_SECONDS:-5}
       WORKER_LEASE_SECONDS: ${WORKER_LEASE_SECONDS:-120}
+      ACCOUNT_EXPORT_TTL_HOURS: ${ACCOUNT_EXPORT_TTL_HOURS:-24}
     depends_on:
       migrate:
         condition: service_completed_successfully

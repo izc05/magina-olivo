@@ -38,6 +38,16 @@ RUN_SUFFIX="$(date -u +%Y%m%dT%H%M%SZ)-$$"
 EMAIL="${PILOT_PARTICIPANT_EMAIL:-magina-pilot-${PARTICIPANT_ID}-${RUN_SUFFIX}@example.com}"
 PASSWORD="${PILOT_PARTICIPANT_PASSWORD:-$(node -e "process.stdout.write(require('crypto').randomBytes(18).toString('base64url') + 'Aa1!')")}" 
 
+# The first pilot round must use synthetic identities. Requiring an explicit
+# escape hatch prevents accidentally persisting a real participant email in
+# staging while still allowing a future, separately approved phase.
+if [[ "${PILOT_ALLOW_NON_SYNTHETIC_EMAIL:-0}" != "1" ]]; then
+  case "${EMAIL,,}" in
+    *@example.com|*@example.org|*@example.net) ;;
+    *) fail "synthetic pilot email required; use example.com/example.org/example.net or set PILOT_ALLOW_NON_SYNTHETIC_EMAIL=1 only for an explicitly approved later phase" ;;
+  esac
+fi
+
 TMP_DIR="$(mktemp -d)"
 COOKIE_FILE="$TMP_DIR/cookies.txt"
 CREDENTIALS_FILE="$CREDENTIALS_DIR/${PARTICIPANT_ID}-${RUN_SUFFIX}.credentials"
@@ -138,11 +148,13 @@ signout_status=$(curl --proto '=https' --tlsv1.2 --silent --show-error \
 
 after_logout_status=$(curl --proto '=https' --tlsv1.2 --silent --show-error \
   "${ACCESS_HEADERS[@]}" \
-  --output "$TMP_DIR/me-after-logout.json" --write-out '%{http_code}' \
+  --output "$TMP_DIR/me-after-logout.json" \
+  --write-out '%{http_code}' \
   --cookie "$COOKIE_FILE" \
   "$BASE_URL/api/v1/me")
 [[ "$after_logout_status" = "401" ]] || fail "facilitator session remained valid after sign-out: HTTP $after_logout_status"
 
 log "PASS participant=$PARTICIPANT_ID clean=true"
 log "Credentials saved locally with mode 0600: $CREDENTIALS_FILE"
+log "Use an alias in PILOT_PARTICIPANT_NAME; do not store the participant's real identity here."
 log "Do not commit or paste the credential file into issues, PRs or chat."

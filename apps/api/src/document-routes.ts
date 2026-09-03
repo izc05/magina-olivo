@@ -1,6 +1,10 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { getPool } from './db.ts';
+import {
+  normalizeDocumentFilename,
+  normalizeDocumentMimeType,
+} from './document-validation.ts';
 import { apiError } from './http-errors.ts';
 import { getPrivateStorage } from './private-storage.ts';
 import { getAuthenticatedSession } from './session.ts';
@@ -106,6 +110,18 @@ export function registerDocumentRoutes(app: FastifyInstance): void {
         return reply.code(400).send(apiError(request, 'EMPTY_DOCUMENT', 'Document content is required'));
       }
 
+      const filename = normalizeDocumentFilename(request.query.filename);
+      if (!filename) {
+        return reply.code(400).send(apiError(request, 'INVALID_DOCUMENT_FILENAME', 'Document filename is invalid'));
+      }
+
+      const mimeType = normalizeDocumentMimeType(request.query.mimeType);
+      if (!mimeType) {
+        return reply
+          .code(415)
+          .send(apiError(request, 'UNSUPPORTED_DOCUMENT_MIME_TYPE', 'Document format is not supported'));
+      }
+
       if (request.query.deliveryId) {
         const delivery = await getPool().query<{ id: string }>(
           `select id from deliveries where id = $1 and holding_id = $2 and verification_status <> 'archived'`,
@@ -120,11 +136,19 @@ export function registerDocumentRoutes(app: FastifyInstance): void {
       const objectKey = `${request.params.holdingId}/${documentId}`;
       const sha256 = createHash('sha256').update(content).digest('hex');
       const storage = getPrivateStorage();
-      await storage.put(objectKey, content);
 
+      // Acquire the database connection before storing the object. If PostgreSQL is unavailable,
+      // we fail without creating an orphaned private object in R2/S3.
       const client = await getPool().connect();
+      let objectStored = false;
+      let transactionStarted = false;
+      let committed = false;
       try {
+        await storage.put(objectKey, content);
+        objectStored = true;
+
         await client.query('begin');
+        transactionStarted = true;
         const inserted = await client.query<{
           id: string;
           original_filename: string;
@@ -146,8 +170,8 @@ export function registerDocumentRoutes(app: FastifyInstance): void {
             documentId,
             request.params.holdingId,
             objectKey,
-            request.query.filename.trim(),
-            request.query.mimeType.trim(),
+            filename,
+            mimeType,
             content.byteLength,
             sha256,
             request.query.documentType,
@@ -166,6 +190,7 @@ export function registerDocumentRoutes(app: FastifyInstance): void {
         }
 
         await client.query('commit');
+        committed = true;
         const row = inserted.rows[0];
         if (!row) throw new Error('Document insert returned no row');
 
@@ -180,8 +205,20 @@ export function registerDocumentRoutes(app: FastifyInstance): void {
           createdAt: row.created_at,
         });
       } catch (error) {
-        await client.query('rollback');
-        await storage.delete(objectKey);
+        if (transactionStarted && !committed) {
+          try {
+            await client.query('rollback');
+          } catch {
+            // Preserve the original error; the connection is released below.
+          }
+        }
+        if (objectStored && !committed) {
+          try {
+            await storage.delete(objectKey);
+          } catch {
+            // Preserve the original error. Orphan cleanup can reconcile rare storage failures.
+          }
+        }
         throw error;
       } finally {
         client.release();

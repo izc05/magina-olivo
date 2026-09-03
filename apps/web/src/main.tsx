@@ -10,6 +10,10 @@ import { MaginaMarketPage } from './MaginaMarketPage';
 import { MaginaNewsPage } from './MaginaNewsPage';
 import { MaginaWeatherPage } from './MaginaWeatherPage';
 import { NoticeCenter } from './NoticeCenter';
+import { OfflineColdStart } from './OfflineColdStart';
+import { OnboardingPage } from './OnboardingPage';
+import { RegisterPage } from './RegisterPage';
+import { RegistrationEntry } from './RegistrationEntry';
 import { ResetPassword } from './ResetPassword';
 import './styles.css';
 import './brand.css';
@@ -31,6 +35,7 @@ import './campaign-v2-integration.css';
 import './campaign-documents.css';
 import './magina-private-hub.css';
 import './offline-v2-integration.css';
+import './auth-onboarding.css';
 
 registerSW({
   immediate: true,
@@ -48,6 +53,10 @@ createRoot(root).render(
   <StrictMode>
     {path === '/reset-password' ? (
       <ResetPassword />
+    ) : path === '/register' ? (
+      <RegisterPage />
+    ) : path === '/onboarding' ? (
+      <OnboardingPage />
     ) : path === '/magina' ? (
       <MaginaHubPage />
     ) : path === '/magina/directorio' ? (
@@ -64,6 +73,7 @@ createRoot(root).render(
       <>
         <ConnectivityStatus />
         <NoticeCenter />
+        <RegistrationEntry />
         <App />
       </>
     )}

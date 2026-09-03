@@ -173,7 +173,7 @@ export function OnboardingPage() {
       <section className="onboarding-card" aria-labelledby="onboarding-title">
         <div className="login-brand">
           <span className="brand-title">Mágina Olivo</span>
-          <span className="brand-kicker">Sierra Mágina · Jaén</span>
+          <span className="brand-kicker">Tu campo. Tu campaña. Tu Mágina.</span>
         </div>
 
         <div className="onboarding-progress" aria-label={`Paso ${Math.min(step, 4)} de 4`}>
@@ -191,8 +191,8 @@ export function OnboardingPage() {
         {step === 1 ? (
           <section aria-labelledby="onboarding-title">
             <p className="eyebrow page-eyebrow">Tu explotación</p>
-            <h1 id="onboarding-title" className="login-title">¿Cómo llamas a tu olivar?</h1>
-            <p className="login-copy">Solo necesitamos un nombre y, si quieres, tu municipio. Provincia queda preseleccionada como Jaén.</p>
+            <h1 id="onboarding-title" className="login-title">Vamos a preparar tu Mágina</h1>
+            <p className="login-copy">En cuatro pasos dejamos lista la base de tu cuaderno digital: explotación, finca, parcela y campaña. Puedes empezar con lo imprescindible y completar el resto más adelante.</p>
             <form className="form-grid" onSubmit={createHolding} aria-busy={busy}>
               <div className="field"><label htmlFor="holding-name">Nombre de la explotación</label><input id="holding-name" name="name" required maxLength={160} placeholder="Mi olivar" /></div>
               <div className="field"><label htmlFor="holding-municipality">Municipio</label><input id="holding-municipality" name="municipality" maxLength={120} placeholder="Huelma, Bedmar, Cambil…" /></div>
@@ -251,7 +251,7 @@ export function OnboardingPage() {
           <section aria-labelledby="onboarding-complete-title">
             <p className="eyebrow page-eyebrow">Todo listo</p>
             <h1 id="onboarding-complete-title" className="login-title">Tu Mágina está preparada</h1>
-            <p className="login-copy">{holding?.name ?? 'Tu explotación'}{campaign ? ` · ${campaign.name}` : ''}. Ya puedes registrar labores, entregas y rendimientos. La cooperativa no es obligatoria: podrás elegirla al registrar una entrega.</p>
+            <p className="login-copy">{holding?.name ?? 'Tu explotación'}{campaign ? ` · ${campaign.name}` : ''}. Ya puedes registrar labores, entregas y rendimientos y consultar la información útil de Sierra Mágina desde el mismo lugar. La cooperativa no es obligatoria: podrás elegirla al registrar una entrega.</p>
             <button className="primary-button" type="button" onClick={() => window.location.assign('/')}>Entrar en Mágina Olivo</button>
           </section>
         ) : null}

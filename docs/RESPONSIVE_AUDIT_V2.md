@@ -1,8 +1,21 @@
-# Mágina Olivo — Auditoría responsive V2.3
+# Mágina Olivo — Auditoría responsive V2.8
 
-## Objetivo
+## Estado
 
-Validar que la interfaz conserva la misma identidad, jerarquía y sensación de producto desde móvil pequeño hasta escritorio, sin convertirse en un dashboard administrativo diferente.
+**Cerrada y validada para revisión.**
+
+La capa responsive conserva la misma identidad, jerarquía y sensación de producto desde móvil pequeño hasta escritorio, sin convertirse en un dashboard administrativo diferente.
+
+Última validación técnica de la fase:
+
+- workflow: `Visual V2 build`.
+- run: **38**.
+- commit: `7d1e7828dff4e63e1bea7dac8d592c8262c53ae4`.
+- resultado: **success**.
+- build TypeScript + Vite: OK.
+- responsive smoke: OK.
+- navigation layout smoke: OK.
+- artifact de capturas: OK.
 
 ## Matriz de referencia
 
@@ -25,53 +38,62 @@ Validar que la interfaz conserva la misma identidad, jerarquía y sensación de 
 - En escritorio se amplía el lienzo, pero se conserva el mismo lenguaje visual de aplicación.
 - La navegación móvil permanece fija; en escritorio pasa a flujo normal para no invadir gráficos, listas ni contenido principal.
 
-## Correcciones aplicadas
+## Comportamiento aprobado
 
 ### 320–390 px
 
-- Se oculta el claim pequeño del logotipo para evitar compresión del topbar.
-- Accesos rápidos pasan de cuatro columnas a una cuadrícula 2 × 2.
-- Se reduce ligeramente la altura de los heroes sin perder fotografía protagonista.
-- Barra inferior se compacta manteniendo el FAB contextual en 48 px.
-- Parcelas pasan a una estructura de dos líneas: nombre/datos + estado.
-- Detalle de parcela pasa a una columna.
-- `Campo / Cuaderno / Campaña / Gestión`, `Noticias / Cooperativas / Mercado / Descubre / Más` y `Resumen / Guardados / Documentos / Ajustes` quedan visibles completos.
-- Los tres KPI de Campaña y los tres KPI principales de Costes se mantienen en una fila compacta para evitar una pantalla excesivamente vertical.
+- claim pequeño de marca ocultable para proteger el topbar.
+- accesos rápidos en cuadrícula 2 × 2.
+- heroes más compactos sin perder fotografía protagonista.
+- barra inferior compacta con FAB contextual separado.
+- parcelas en estructura multilínea para evitar colisiones.
+- detalle de parcela a una columna.
+- `Campo / Cuaderno / Campaña / Gestión` visible completo.
+- `Noticias / Cooperativas / Mercado / Descubre / Más` visible completo.
+- `Resumen / Guardados / Documentos / Ajustes` visible completo.
+- KPI de Campaña y Costes contenidos para evitar verticalidad excesiva.
+- Cuaderno conserva el estado visible también en móvil.
+- la etiqueta `Cooperativas` se mantiene completa en 360 px sin rebajar el mínimo táctil.
 
-### 680–1099 px
+### 430–820 px
 
-- El lienzo crece sin perder proporción de aplicación.
-- Parcelas y noticias pueden usar dos columnas.
-- Heroes ganan altura para recuperar presencia fotográfica.
-- Se mantiene la misma arquitectura de navegación, sin introducir un sidebar administrativo.
+- mayor respiración sin alterar navegación.
+- fotografía gana presencia cuando el ancho lo permite.
+- tarjetas siguen siendo táctiles y legibles.
+- no se introduce una arquitectura específica de tablet distinta de la app.
 
-### 900 px en adelante
+### 900–1099 px
 
-- El mapa de Mi Campo aprovecha mejor la anchura disponible.
-- Se mantiene la misma tarjeta y los mismos componentes; solo cambia su composición.
+- mapa y bloques principales aprovechan mejor la anchura.
+- listas pueden pasar a dos columnas cuando mejora la lectura.
+- se conservan componentes y jerarquía de móvil.
 
-### 1100 px en adelante
+### 1100–1440 px
 
-- Mayor respiración lateral y vertical.
-- Noticias, parcelas y cooperativas aprovechan dos columnas cuando ayuda a la lectura.
-- La navegación principal deja de ser fija y se coloca después del contenido principal para no cruzar gráficos ni tarjetas.
-- La versión de escritorio sigue pareciendo Mágina Olivo y no un ERP.
+- mayor respiración lateral y vertical.
+- noticias, parcelas, cooperativas y Cuaderno aprovechan composiciones multicolumna cuando aportan claridad.
+- navegación principal deja de ser fija y entra en flujo normal.
+- no existe sidebar administrativo.
+- la experiencia sigue pareciendo Mágina Olivo, no un ERP.
 
-## Mapa de parcela V2.2
+## Mapa de parcela
 
-La vista de parcela conserva polígono, pin y datos, pero sustituye el fondo esquemático por una base fotográfica territorial del olivar. Se muestra explícitamente la etiqueta `Vista conceptual` para evitar confundir esta fase con cartografía o SIG real.
+La vista de parcela conserva polígono, pin y datos sobre una base fotográfica territorial.
 
-La futura conexión con cartografía real queda separada de esta capa visual.
+Se muestra explícitamente la etiqueta `Vista conceptual` para evitar confundir esta fase con cartografía o SIG real.
+
+La futura integración cartográfica queda separada de la capa responsive/visual.
 
 ## Accesibilidad y movimiento
 
-- Se mantiene `focus-visible` con acento dorado.
-- Se respeta `prefers-reduced-motion` para futuras transiciones y animaciones.
-- Los botones principales se mantienen aptos para uso táctil.
+- `focus-visible` mantiene acento dorado.
+- se respeta `prefers-reduced-motion`.
+- botones y destinos principales mantienen tamaño táctil suficiente.
+- estados importantes no dependen solo del color.
 
-## Validación visual automatizada
+## Validación automatizada
 
-El workflow `Visual V2 build` genera y valida capturas reales con Chromium en:
+El workflow `Visual V2 build` valida capturas reales con Chromium en:
 
 1. 360 × 800.
 2. 390 × 844.
@@ -89,7 +111,7 @@ Cada ejecución recorre las cinco secciones principales:
 
 Esto produce **25 capturas principales**.
 
-Además, en 360 × 800 y 1366 × 768 se capturan y validan 12 estados internos por viewport:
+Además, en 360 × 800 y 1366 × 768 se capturan 12 estados internos por viewport:
 
 - Mi Campo · Cuaderno.
 - Mi Campo · Campaña.
@@ -104,45 +126,49 @@ Además, en 360 × 800 y 1366 × 768 se capturan y validan 12 estados internos p
 - Perfil · Ajustes.
 - Descubre · Detalle de ruta.
 
-Resultado actual: **49 capturas reales por ejecución**.
+Resultado: **49 capturas reales por ejecución**.
 
 ## Contratos protegidos por CI
 
 El smoke comprueba:
 
-- exactamente 5 destinos en la navegación principal;
-- objetivos táctiles mínimos de 44 px;
-- FAB contextual solo donde corresponde;
-- ausencia de overflow horizontal global;
-- 4 pestañas visibles en Mi Campo;
-- 5 pestañas visibles en Mágina;
-- 4 pestañas visibles en Perfil;
-- escala correcta del icono y minigráfico de mercado de Inicio;
-- navegación móvil con `position: fixed` en 360 px;
-- navegación de escritorio con `position: static` y situada después del contenido principal en 1366 px;
+- exactamente 5 destinos en navegación principal.
+- objetivos táctiles mínimos de 44 px.
+- FAB contextual solo donde corresponde.
+- ausencia de overflow horizontal global.
+- 4 pestañas visibles en Mi Campo.
+- 5 pestañas visibles en Mágina.
+- 4 pestañas visibles en Perfil.
+- escala correcta del icono y minigráfico de mercado de Inicio.
+- navegación móvil con `position: fixed` en 360 px.
+- navegación de escritorio con `position: static` y situada después del contenido principal en 1366 px.
 - generación y subida del artifact `responsive-captures`.
 
-## Estado verificado
+## Auditoría manual final
 
-El run 24, asociado al commit `b71f855e31c96d1ba5229140191db3e9f0ceef5b`, terminó completamente en verde.
+La revisión conjunta de las capturas finales en móvil y escritorio confirma que no hay problemas estructurales nuevos en:
 
-Pasaron correctamente:
+- Inicio.
+- Mi Campo.
+- Cuaderno.
+- Campaña.
+- Costes.
+- Maquinaria.
+- Mágina / Noticias.
+- Cooperativas.
+- Mercado.
+- Descubre.
+- Perfil / Ajustes.
 
-- fotografía aprobada;
-- TypeScript y build Vite;
-- smoke responsive de 49 capturas;
-- smoke específico de layout de navegación;
-- subida del artifact de evidencias visuales.
+Las correcciones finales de Noticias preservan simultáneamente:
 
-## Regla para el cierre V2
+- nombre completo de las pestañas.
+- altura mínima útil.
+- ausencia de overflow horizontal.
+- legibilidad del hero editorial.
 
-La responsive se considera cerrada mientras se mantengan simultáneamente estas condiciones:
+## Regla para futuras fases
 
-- compila el proyecto;
-- no hay overflow horizontal accidental;
-- los CTA principales son alcanzables con pulgar;
-- las ramas principales de subnavegación permanecen visibles;
-- no se rompe la jerarquía de las primeras referencias visuales;
-- la versión de escritorio sigue pareciendo Mágina Olivo, no un ERP;
-- móvil conserva navegación fija y escritorio no superpone navegación sobre contenido;
-- las capturas reales y los smoke de Chromium terminan en verde.
+La responsive de V2 se considera contrato visual. Nuevas pantallas deben reutilizar los mismos breakpoints, objetivos táctiles, comportamiento de navegación y densidad antes de introducir excepciones.
+
+Cambios de backend, datos reales o cartografía no deben reabrir esta arquitectura salvo necesidad funcional demostrada.

@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { getPool } from './db.ts';
+import { normalizePublicHttpsUrl } from './public-directory-trust.ts';
 
 type PublicSourceRow = {
   source_key: string;
@@ -34,7 +35,7 @@ export function registerPublicSourceRoutes(app: FastifyInstance): void {
         key: row.source_key,
         label: row.label,
         provider: row.provider,
-        sourceUrl: row.source_url,
+        sourceUrl: normalizePublicHttpsUrl(row.source_url),
         licenseLabel: row.license_label,
         updateFrequency: row.update_frequency,
         sourceUpdatedAt: row.source_updated_at,

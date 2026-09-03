@@ -10,6 +10,16 @@ COOKIE_B="$TMP_DIR/cookies-b.txt"
 EMAIL_A="mvp-gate-a-${RUN_SUFFIX}@example.com"
 EMAIL_B="mvp-gate-b-${RUN_SUFFIX}@example.com"
 
+ACCESS_HEADERS=()
+if [[ -n "${CF_ACCESS_CLIENT_ID:-}" || -n "${CF_ACCESS_CLIENT_SECRET:-}" ]]; then
+  [[ -n "${CF_ACCESS_CLIENT_ID:-}" && -n "${CF_ACCESS_CLIENT_SECRET:-}" ]] \
+    || { printf '[mvp-core-gate] ERROR: both CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET must be set\n' >&2; exit 1; }
+  ACCESS_HEADERS+=(
+    --header "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID"
+    --header "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET"
+  )
+fi
+
 cleanup() {
   rm -rf "$TMP_DIR"
 }
@@ -22,6 +32,10 @@ log() {
 fail() {
   printf '[mvp-core-gate] ERROR: %s\n' "$*" >&2
   exit 1
+}
+
+curl_access() {
+  command curl "${ACCESS_HEADERS[@]}" "$@"
 }
 
 json_value() {
@@ -39,7 +53,7 @@ post_json() {
   local output_file="$2"
   local body="$3"
   local url="$4"
-  curl --silent --output "$output_file" --write-out '%{http_code}' \
+  curl_access --silent --output "$output_file" --write-out '%{http_code}' \
     --cookie "$cookie_file" \
     --header 'content-type: application/json' \
     --data "$body" \
@@ -47,12 +61,12 @@ post_json() {
 }
 
 log "Checking liveness"
-live_status=$(curl --silent --output "$TMP_DIR/live.json" --write-out '%{http_code}' "$API_BASE/health/live")
+live_status=$(curl_access --silent --output "$TMP_DIR/live.json" --write-out '%{http_code}' "$API_BASE/health/live")
 [[ "$live_status" = "200" ]] || fail "health/live expected 200, got $live_status"
 
 log "Creating two isolated synthetic users"
 signup_a_body=$(printf '{"name":"MVP Gate A","email":"%s","password":"%s"}' "$EMAIL_A" "$PASSWORD")
-signup_a_status=$(curl --silent --output "$TMP_DIR/signup-a.json" --write-out '%{http_code}' \
+signup_a_status=$(curl_access --silent --output "$TMP_DIR/signup-a.json" --write-out '%{http_code}' \
   --cookie-jar "$COOKIE_A" \
   --header 'content-type: application/json' \
   --data "$signup_a_body" \
@@ -60,14 +74,14 @@ signup_a_status=$(curl --silent --output "$TMP_DIR/signup-a.json" --write-out '%
 [[ "$signup_a_status" = "200" ]] || fail "user A signup expected 200, got $signup_a_status"
 
 signup_b_body=$(printf '{"name":"MVP Gate B","email":"%s","password":"%s"}' "$EMAIL_B" "$PASSWORD")
-signup_b_status=$(curl --silent --output "$TMP_DIR/signup-b.json" --write-out '%{http_code}' \
+signup_b_status=$(curl_access --silent --output "$TMP_DIR/signup-b.json" --write-out '%{http_code}' \
   --cookie-jar "$COOKIE_B" \
   --header 'content-type: application/json' \
   --data "$signup_b_body" \
   "$API_BASE/api/auth/sign-up/email")
 [[ "$signup_b_status" = "200" ]] || fail "user B signup expected 200, got $signup_b_status"
 
-me_status=$(curl --silent --output "$TMP_DIR/me-a.json" --write-out '%{http_code}' --cookie "$COOKIE_A" "$API_BASE/api/v1/me")
+me_status=$(curl_access --silent --output "$TMP_DIR/me-a.json" --write-out '%{http_code}' --cookie "$COOKIE_A" "$API_BASE/api/v1/me")
 [[ "$me_status" = "200" ]] || fail "authenticated /me expected 200"
 grep -q "$EMAIL_A" "$TMP_DIR/me-a.json" || fail "user A session mismatch"
 
@@ -78,7 +92,7 @@ holding_status=$(post_json "$COOKIE_A" "$TMP_DIR/holding.json" \
 [[ "$holding_status" = "201" ]] || fail "holding expected 201, got $holding_status"
 HOLDING_ID=$(json_value "$TMP_DIR/holding.json" 'value.id')
 
-foreign_holding_status=$(curl --silent --output "$TMP_DIR/foreign-holding.json" --write-out '%{http_code}' \
+foreign_holding_status=$(curl_access --silent --output "$TMP_DIR/foreign-holding.json" --write-out '%{http_code}' \
   --cookie "$COOKIE_B" "$API_BASE/api/v1/holdings/$HOLDING_ID/farms")
 [[ "$foreign_holding_status" = "404" ]] || fail "foreign holding access expected 404"
 
@@ -104,7 +118,7 @@ log "Creating one idempotent 1,842 kg delivery"
 DELIVERY_ID="$(uuid)"
 DELIVERY_BODY=$(printf '{"deliveredAt":"2026-11-18T18:42:00+01:00","kilograms":"1842.000","customDestination":"Almazara sintética","farmId":"%s","plotId":"%s","ticketNumber":"004281","variety":"Picual","clientGeneratedId":"%s"}' "$FARM_ID" "$PLOT_ID" "$DELIVERY_ID")
 
-delivery_status=$(curl --silent --output "$TMP_DIR/delivery.json" --write-out '%{http_code}' \
+delivery_status=$(curl_access --silent --output "$TMP_DIR/delivery.json" --write-out '%{http_code}' \
   --cookie "$COOKIE_A" \
   --header 'content-type: application/json' \
   --header "Idempotency-Key: $DELIVERY_ID" \
@@ -113,7 +127,7 @@ delivery_status=$(curl --silent --output "$TMP_DIR/delivery.json" --write-out '%
 [[ "$delivery_status" = "201" ]] || fail "delivery expected 201, got $delivery_status"
 [[ "$(json_value "$TMP_DIR/delivery.json" 'value.id')" = "$DELIVERY_ID" ]] || fail "delivery did not preserve clientGeneratedId"
 
-replay_status=$(curl --silent --output "$TMP_DIR/delivery-replay.json" --write-out '%{http_code}' \
+replay_status=$(curl_access --silent --output "$TMP_DIR/delivery-replay.json" --write-out '%{http_code}' \
   --cookie "$COOKIE_A" \
   --header 'content-type: application/json' \
   --header "Idempotency-Key: $DELIVERY_ID" \
@@ -122,7 +136,7 @@ replay_status=$(curl --silent --output "$TMP_DIR/delivery-replay.json" --write-o
 [[ "$replay_status" = "201" ]] || fail "delivery replay expected original 201, got $replay_status"
 [[ "$(json_value "$TMP_DIR/delivery-replay.json" 'value.id')" = "$DELIVERY_ID" ]] || fail "delivery replay returned a different id"
 
-curl --fail --silent --cookie "$COOKIE_A" "$API_BASE/api/v1/campaigns/$CAMPAIGN_ID/deliveries" > "$TMP_DIR/deliveries.json"
+curl_access --fail --silent --cookie "$COOKIE_A" "$API_BASE/api/v1/campaigns/$CAMPAIGN_ID/deliveries" > "$TMP_DIR/deliveries.json"
 [[ "$(json_value "$TMP_DIR/deliveries.json" 'value.items.length')" = "1" ]] || fail "delivery replay created a duplicate"
 
 log "Adding delayed yield"
@@ -142,7 +156,7 @@ activity_replay_status=$(post_json "$COOKIE_A" "$TMP_DIR/activity-replay.json" "
 [[ "$activity_replay_status" = "200" ]] || fail "activity replay expected 200, got $activity_replay_status"
 [[ "$(json_value "$TMP_DIR/activity-replay.json" 'value.id')" = "$ACTIVITY_ID" ]] || fail "activity replay returned a different id"
 
-curl --fail --silent --cookie "$COOKIE_A" \
+curl_access --fail --silent --cookie "$COOKIE_A" \
   "$API_BASE/api/v1/holdings/$HOLDING_ID/activities?plotId=$PLOT_ID&activityType=pruning" > "$TMP_DIR/activities.json"
 node - "$TMP_DIR/activities.json" "$ACTIVITY_ID" <<'NODE'
 const fs = require('fs');
@@ -153,7 +167,7 @@ if (items[0].id !== activityId) throw new Error('Pruning activity id mismatch');
 NODE
 
 log "Verifying plot timeline combines labor, delivery and yield"
-curl --fail --silent --cookie "$COOKIE_A" "$API_BASE/api/v1/plots/$PLOT_ID/timeline" > "$TMP_DIR/timeline.json"
+curl_access --fail --silent --cookie "$COOKIE_A" "$API_BASE/api/v1/plots/$PLOT_ID/timeline" > "$TMP_DIR/timeline.json"
 node - "$TMP_DIR/timeline.json" "$ACTIVITY_ID" "$DELIVERY_ID" <<'NODE'
 const fs = require('fs');
 const [file, activityId, deliveryId] = process.argv.slice(2);
@@ -167,12 +181,12 @@ if (!items.some((item) => item.type === 'delivery' && item.id === deliveryId)) t
 if (!items.some((item) => item.type === 'yield_result' && item.deliveryId === deliveryId && item.yieldPercent === '21.9000')) throw new Error('Timeline missing current yield result');
 NODE
 
-foreign_timeline_status=$(curl --silent --output "$TMP_DIR/foreign-timeline.json" --write-out '%{http_code}' \
+foreign_timeline_status=$(curl_access --silent --output "$TMP_DIR/foreign-timeline.json" --write-out '%{http_code}' \
   --cookie "$COOKIE_B" "$API_BASE/api/v1/plots/$PLOT_ID/timeline")
 [[ "$foreign_timeline_status" = "404" ]] || fail "foreign timeline access expected 404"
 
 log "Checking deterministic campaign summary"
-curl --fail --silent --cookie "$COOKIE_A" "$API_BASE/api/v1/campaigns/$CAMPAIGN_ID/summary" > "$TMP_DIR/summary.json"
+curl_access --fail --silent --cookie "$COOKIE_A" "$API_BASE/api/v1/campaigns/$CAMPAIGN_ID/summary" > "$TMP_DIR/summary.json"
 node - "$TMP_DIR/summary.json" <<'NODE'
 const fs = require('fs');
 const summary = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
@@ -185,7 +199,7 @@ NODE
 
 log "Uploading and isolating a private synthetic ticket"
 printf '%%PDF-1.4\n%% synthetic Mágina Olivo gate ticket 004281\n' > "$TMP_DIR/ticket-004281.pdf"
-upload_status=$(curl --silent --output "$TMP_DIR/document.json" --write-out '%{http_code}' \
+upload_status=$(curl_access --silent --output "$TMP_DIR/document.json" --write-out '%{http_code}' \
   --cookie "$COOKIE_A" \
   --header 'content-type: application/octet-stream' \
   --data-binary @"$TMP_DIR/ticket-004281.pdf" \
@@ -193,17 +207,17 @@ upload_status=$(curl --silent --output "$TMP_DIR/document.json" --write-out '%{h
 [[ "$upload_status" = "201" ]] || fail "ticket upload expected 201, got $upload_status"
 DOCUMENT_ID=$(json_value "$TMP_DIR/document.json" 'value.id')
 
-curl --fail --silent --cookie "$COOKIE_A" "$API_BASE/api/v1/documents/$DOCUMENT_ID" > "$TMP_DIR/document-metadata.json"
+curl_access --fail --silent --cookie "$COOKIE_A" "$API_BASE/api/v1/documents/$DOCUMENT_ID" > "$TMP_DIR/document-metadata.json"
 grep -q "$DELIVERY_ID" "$TMP_DIR/document-metadata.json" || fail "ticket metadata is not linked to delivery"
 
-curl --fail --silent --cookie "$COOKIE_A" "$API_BASE/api/v1/documents/$DOCUMENT_ID/content" > "$TMP_DIR/ticket-downloaded.pdf"
+curl_access --fail --silent --cookie "$COOKIE_A" "$API_BASE/api/v1/documents/$DOCUMENT_ID/content" > "$TMP_DIR/ticket-downloaded.pdf"
 cmp "$TMP_DIR/ticket-004281.pdf" "$TMP_DIR/ticket-downloaded.pdf" || fail "ticket bytes changed during private roundtrip"
 
-foreign_document_status=$(curl --silent --output "$TMP_DIR/foreign-document.json" --write-out '%{http_code}' \
+foreign_document_status=$(curl_access --silent --output "$TMP_DIR/foreign-document.json" --write-out '%{http_code}' \
   --cookie "$COOKIE_B" "$API_BASE/api/v1/documents/$DOCUMENT_ID")
 [[ "$foreign_document_status" = "404" ]] || fail "foreign document metadata expected 404"
 
-foreign_content_status=$(curl --silent --output "$TMP_DIR/foreign-document.bin" --write-out '%{http_code}' \
+foreign_content_status=$(curl_access --silent --output "$TMP_DIR/foreign-document.bin" --write-out '%{http_code}' \
   --cookie "$COOKIE_B" "$API_BASE/api/v1/documents/$DOCUMENT_ID/content")
 [[ "$foreign_content_status" = "404" ]] || fail "foreign document content expected 404"
 

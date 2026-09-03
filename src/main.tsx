@@ -11,6 +11,7 @@ import './styles/polish-v23.css';
 import './styles/market-v25.css';
 import './styles/journal-v26.css';
 import './styles/news-v27.css';
+import './styles/profile-v28.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

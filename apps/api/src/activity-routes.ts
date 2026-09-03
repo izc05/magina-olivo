@@ -30,6 +30,7 @@ type ActivityQuery = {
 type CreateActivityBody = {
   activityType: ActivityType;
   occurredAt: string;
+  clientGeneratedId?: string;
   campaignId?: string;
   farmId?: string;
   plotId?: string;
@@ -173,6 +174,7 @@ export function registerActivityRoutes(app: FastifyInstance): void {
           properties: {
             activityType: activityTypeSchema,
             occurredAt: { type: 'string', format: 'date-time' },
+            clientGeneratedId: { type: 'string', format: 'uuid' },
             campaignId: { type: 'string', format: 'uuid' },
             farmId: { type: 'string', format: 'uuid' },
             plotId: { type: 'string', format: 'uuid' },
@@ -198,9 +200,10 @@ export function registerActivityRoutes(app: FastifyInstance): void {
       let farmId = request.body.farmId ?? null;
       const plotId = request.body.plotId ?? null;
       const campaignId = request.body.campaignId ?? null;
+      const db = getPool();
 
       if (campaignId) {
-        const campaign = await getPool().query<{ id: string }>(
+        const campaign = await db.query<{ id: string }>(
           `select id from campaigns where id = $1 and holding_id = $2 and status <> 'archived' limit 1`,
           [campaignId, request.params.holdingId],
         );
@@ -208,7 +211,7 @@ export function registerActivityRoutes(app: FastifyInstance): void {
       }
 
       if (farmId) {
-        const farm = await getPool().query<{ id: string }>(
+        const farm = await db.query<{ id: string }>(
           `select id from farms where id = $1 and holding_id = $2 and active = true limit 1`,
           [farmId, request.params.holdingId],
         );
@@ -216,7 +219,7 @@ export function registerActivityRoutes(app: FastifyInstance): void {
       }
 
       if (plotId) {
-        const plot = await getPool().query<{ farm_id: string }>(
+        const plot = await db.query<{ farm_id: string }>(
           `select farm_id from plots where id = $1 and holding_id = $2 and active = true limit 1`,
           [plotId, request.params.holdingId],
         );
@@ -230,8 +233,8 @@ export function registerActivityRoutes(app: FastifyInstance): void {
         return reply.code(400).send(apiError(request, 'PRODUCT_REGISTRATION_NOT_APPLICABLE', 'Product registration number is only valid for treatments'));
       }
 
-      const id = randomUUID();
-      const result = await getPool().query<ActivityRow>(
+      const id = request.body.clientGeneratedId ?? randomUUID();
+      const inserted = await db.query<ActivityRow>(
         `
           insert into activities (
             id, holding_id, campaign_id, farm_id, plot_id, activity_type,
@@ -239,6 +242,7 @@ export function registerActivityRoutes(app: FastifyInstance): void {
             quantity, quantity_unit, cost_eur, notes, created_by
           )
           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+          on conflict (id) do nothing
           returning
             id, holding_id, campaign_id, farm_id, plot_id, activity_type,
             occurred_at, affected_area_ha, product_name, product_registration_number,
@@ -264,9 +268,27 @@ export function registerActivityRoutes(app: FastifyInstance): void {
         ],
       );
 
-      const row = result.rows[0];
-      if (!row) throw new Error('Activity insert returned no row');
-      return reply.code(201).send(serialize(row));
+      const created = inserted.rows[0];
+      if (created) return reply.code(201).send(serialize(created));
+
+      const existing = await db.query<ActivityRow>(
+        `
+          select
+            id, holding_id, campaign_id, farm_id, plot_id, activity_type,
+            occurred_at, affected_area_ha, product_name, product_registration_number,
+            quantity, quantity_unit, cost_eur, notes, verification_status,
+            version, created_at
+          from activities
+          where id = $1 and holding_id = $2 and verification_status <> 'archived'
+          limit 1
+        `,
+        [id, request.params.holdingId],
+      );
+      const row = existing.rows[0];
+      if (!row) {
+        return reply.code(409).send(apiError(request, 'ACTIVITY_ID_CONFLICT', 'Activity id is already in use'));
+      }
+      return reply.code(200).send(serialize(row));
     },
   );
 }

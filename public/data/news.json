@@ -1,0 +1,65 @@
+{
+  "generatedAt": "2026-09-03T19:45:00+02:00",
+  "stories": [
+    {
+      "id": "diariojaen-coag-upa-20260903",
+      "category": "Olivar",
+      "title": "COAG y UPA piden al Gobierno llevar a Bruselas la suspensión del perfeccionamiento activo al aceite de oliva",
+      "excerpt": "Las organizaciones agrarias respaldan la petición para frenar posibles distorsiones del mercado del aceite de oliva.",
+      "source": "Diario JAÉN",
+      "url": "https://www.diariojaen.es/amp/provincia/coag-y-upa-piden-al-gobierno-llevar-a-bruselas-la-suspension-del-perfeccionamiento-activo-al-aceite-de-oliva-GM11593445",
+      "publishedAt": "2026-09-03T12:00:00+02:00",
+      "region": "Jaén"
+    },
+    {
+      "id": "junta-aceite-tunez-20260902",
+      "category": "Mercado",
+      "title": "Andalucía pide al Ministerio medidas para evitar distorsiones en el mercado del aceite de oliva",
+      "excerpt": "La Junta solicita activar mecanismos europeos ante el aumento de importaciones acogidas al régimen de perfeccionamiento activo.",
+      "source": "Junta de Andalucía",
+      "url": "https://www.juntadeandalucia.es/organismos/agriculturapescaaguaydesarrollorural/servicios/actualidad/noticias/detalle/681838.html",
+      "publishedAt": "2026-09-02T12:00:00+02:00",
+      "region": "Andalucía"
+    },
+    {
+      "id": "diariojaen-expohuelma-20260902",
+      "category": "Sierra Mágina",
+      "title": "Huelma inaugura la 41 edición de ExpoHuelma con previsión de reunir a 20.000 visitantes",
+      "excerpt": "La feria de muestras de Sierra Mágina vuelve a situar el mundo rural, la agricultura y la ganadería en el centro de la comarca.",
+      "source": "Diario JAÉN",
+      "url": "https://www.diariojaen.es/amp/provincia/huelma-inaugura-la-41-edicion-de-expohuelma-con-la-prevision-de-reunir-a-20000-visitantes-FM11591316",
+      "publishedAt": "2026-09-02T10:00:00+02:00",
+      "region": "Huelma"
+    },
+    {
+      "id": "oleo-go-arko-20260901",
+      "category": "Tecnología",
+      "title": "La inteligencia artificial llega al riego del olivar con el proyecto GO Arko",
+      "excerpt": "El proyecto desarrollará una solución digital abierta para mejorar la gestión sostenible del riego en cultivos leñosos.",
+      "source": "Óleo Revista",
+      "url": "https://www.oleorevista.com/texto-diario/mostrar/5999909/inteligencia-artificial-llega-riego-olivar-proyecto-go-arko",
+      "publishedAt": "2026-09-01T16:56:00+02:00",
+      "region": "España"
+    },
+    {
+      "id": "diariojaen-ubeda-fema-20260902",
+      "category": "Agricultura",
+      "title": "Úbeda celebra su Feria de Maquinaria Agrícola con el foco en la PAC y la tecnología del olivar",
+      "excerpt": "La nueva edición de la feria agrícola de Úbeda aborda maquinaria, innovación y futuro del sector olivarero.",
+      "source": "Diario JAÉN",
+      "url": "https://www.diariojaen.es/provincia/ubeda-celebra-su-feria-de-maquinaria-agricola-con-el-foco-en-el-futuro-de-la-pac-y-la-tecnologia-del-olivar-CM11591838",
+      "publishedAt": "2026-09-02T18:24:00+02:00",
+      "region": "Úbeda"
+    },
+    {
+      "id": "almaceite-consumo-20260803",
+      "category": "Mercado",
+      "title": "El consumo de aceites vegetales pierde volumen durante el segundo semestre",
+      "excerpt": "Revista Almaceite analiza la evolución reciente del consumo de aceite de oliva y otros aceites vegetales.",
+      "source": "Revista Almaceite",
+      "url": "https://revistaalmaceite.com/2026/08/03/ni-aceite-de-oliva-ni-girasol-el-segundo-semestre-deja-casi-19-millones-de-litros-de-aceites-por-el-camino/",
+      "publishedAt": "2026-08-03T09:00:00+02:00",
+      "region": "España"
+    }
+  ]
+}

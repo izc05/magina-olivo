@@ -1,6 +1,7 @@
 import { hostname } from 'node:os';
 import { setTimeout as sleep } from 'node:timers/promises';
 import pg from 'pg';
+import { inspectRaifOlivarSource } from './raif-source.ts';
 
 const { Pool } = pg;
 
@@ -113,9 +114,64 @@ async function claimNextJob(): Promise<JobRow | null> {
   }
 }
 
+async function inspectRaifPublicSource(): Promise<void> {
+  try {
+    const inspection = await inspectRaifOlivarSource();
+    const parsedLastModified = inspection.lastModified ? new Date(inspection.lastModified) : null;
+    const sourceUpdatedAt = parsedLastModified && Number.isFinite(parsedLastModified.getTime())
+      ? parsedLastModified.toISOString()
+      : null;
+
+    await pool.query(
+      `
+        update public_data_sources
+        set source_url = $2,
+            source_updated_at = coalesce($3::timestamptz, source_updated_at),
+            last_checked_at = $4::timestamptz,
+            last_success_at = $4::timestamptz,
+            last_error = null,
+            metadata = metadata || $5::jsonb,
+            updated_at = now()
+        where source_key = 'raif-olivar-observations'
+      `,
+      [
+        'raif-olivar-observations',
+        inspection.url,
+        sourceUpdatedAt,
+        inspection.checkedAt,
+        JSON.stringify({
+          remoteEtag: inspection.etag,
+          remoteLastModified: inspection.lastModified,
+          remoteContentLength: inspection.contentLength,
+          remoteContentType: inspection.contentType,
+          inspectionMode: 'HEAD',
+        }),
+      ],
+    );
+  } catch (error) {
+    await pool.query(
+      `
+        update public_data_sources
+        set last_checked_at = now(),
+            last_error = $2,
+            updated_at = now()
+        where source_key = $1
+      `,
+      [
+        'raif-olivar-observations',
+        (error instanceof Error ? error.message : String(error)).slice(0, 4000),
+      ],
+    );
+    throw error;
+  }
+}
+
 async function executeJob(job: JobRow): Promise<void> {
   switch (job.kind) {
     case 'spike.noop':
+      return;
+    case 'public.raif.inspect':
+      await inspectRaifPublicSource();
       return;
     default:
       throw new Error(`Unsupported job kind: ${job.kind}`);

@@ -3,6 +3,7 @@ name: MVP Core Smoke
 on:
   pull_request:
     branches:
+      - main
       - feat/technical-spike-v1
       - feat/mvp-core-v1
     types: [opened, synchronize, reopened]

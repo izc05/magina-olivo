@@ -1,0 +1,112 @@
+.parcel-comparison-shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.parcel-comparison-loading {
+  color: var(--muted, #66705c);
+}
+
+.parcel-comparison-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.parcel-comparison-selector {
+  max-width: 30rem;
+}
+
+.parcel-comparison-metrics {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.parcel-comparison-metrics article {
+  display: grid;
+  gap: 0.2rem;
+  padding: 1rem;
+  border: 1px solid var(--line, #d9ddcf);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.parcel-comparison-metrics span,
+.parcel-provenance-grid span {
+  color: var(--muted, #66705c);
+  font-size: 0.8rem;
+}
+
+.parcel-comparison-metrics strong {
+  font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.parcel-comparison-metrics small,
+.parcel-provenance-grid small {
+  color: var(--muted, #66705c);
+  line-height: 1.4;
+}
+
+.parcel-difference-status {
+  border-radius: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line, #d9ddcf);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.parcel-difference-status p {
+  margin: 0.35rem 0 0;
+  color: var(--muted, #66705c);
+  line-height: 1.5;
+}
+
+.parcel-difference-status.low {
+  border-left: 4px solid #708048;
+}
+
+.parcel-difference-status.medium {
+  border-left: 4px solid #9b7d3f;
+}
+
+.parcel-difference-status.high {
+  border-left: 4px solid #8f5948;
+}
+
+.parcel-provenance-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.parcel-provenance-grid > div {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.9rem 1rem;
+  border-radius: 0.9rem;
+  background: rgba(239, 242, 232, 0.58);
+}
+
+.parcel-provenance-grid strong {
+  overflow-wrap: anywhere;
+}
+
+.parcel-comparison-disclaimer {
+  margin: 0;
+  padding-top: 0.2rem;
+  color: var(--muted, #66705c);
+  line-height: 1.5;
+}
+
+.parcel-source-badge.sigpac,
+.parcel-source-badge.catastro {
+  font-weight: 700;
+}
+
+@media (min-width: 760px) {
+  .parcel-comparison-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .parcel-provenance-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

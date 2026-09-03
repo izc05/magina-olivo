@@ -16,6 +16,7 @@ export OBJECT_STORAGE_REGION="auto"
 export OBJECT_STORAGE_ACCESS_KEY_ID="ci-access-key"
 export OBJECT_STORAGE_SECRET_ACCESS_KEY="ci-secret-key"
 export OBJECT_STORAGE_FORCE_PATH_STYLE="true"
+export AEMET_API_KEY="ci-synthetic-aemet-key-not-production"
 export STAGING_BIND="127.0.0.1:18088"
 export LOG_LEVEL="warn"
 

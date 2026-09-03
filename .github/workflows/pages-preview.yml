@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/integration-v2-mvp-v1
+      - fix/plot-official-boundary-edit-v4
   workflow_dispatch:
 
 permissions:

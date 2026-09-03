@@ -27,8 +27,15 @@ export async function augmentAccountExportWithTasks(
       [exportId, userId],
     );
     const row = exportResult.rows[0];
-    if (!row || row.status !== 'ready' || !row.artifact_text) {
-      throw new Error('Structured account export artifact is not ready for task augmentation');
+    if (!row || !row.artifact_text) {
+      throw new Error('Structured account export artifact is not available for task augmentation');
+    }
+
+    if (row.status === 'ready') {
+      const existing = JSON.parse(row.artifact_text) as Record<string, unknown>;
+      if (Array.isArray(existing.tasks)) return;
+    } else if (row.status !== 'generating') {
+      throw new Error('Structured account export artifact is not generating');
     }
 
     const tasks = await pool.query(
@@ -77,13 +84,16 @@ export async function augmentAccountExportWithTasks(
     const updated = await pool.query(
       `
         update account_exports
-        set artifact_text = $3,
+        set status = 'ready',
+            artifact_text = $3,
             size_bytes = $4,
             sha256 = $5,
+            error_message = null,
+            completed_at = now(),
             updated_at = now()
         where id = $1
           and user_id = $2
-          and status = 'ready'
+          and status in ('generating', 'ready')
         returning id
       `,
       [exportId, userId, artifact, sizeBytes, sha256],

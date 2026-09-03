@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   clearOutbox,
+  enqueueActivityCreate,
   enqueueDeliveryCreate,
   listPendingOperations,
   syncPendingOperations,
@@ -68,6 +69,60 @@ test('delivery stays pending across database reopen and is deleted only after co
     (capturedInit?.headers as Record<string, string>)['idempotency-key'],
     '44444444-4444-4444-8444-444444444444',
   );
+  assert.equal((await listPendingOperations(USER_A)).length, 0);
+});
+
+test('field activity is user-scoped, retry-safe and syncs to the holding route', async () => {
+  await clearOutbox();
+
+  const activityId = '12121212-1212-4212-8212-121212121212';
+  await enqueueActivityCreate({
+    ownerUserId: USER_A,
+    holdingId: '13131313-1313-4313-8313-131313131313',
+    idempotencyKey: activityId,
+    createdAt: '2026-11-19T08:30:00.000Z',
+    body: {
+      clientGeneratedId: activityId,
+      activityType: 'pruning',
+      occurredAt: '2026-11-19T09:30:00+01:00',
+      farmId: '14141414-1414-4414-8414-141414141414',
+      plotId: '15151515-1515-4515-8515-151515151515',
+      costEur: 90,
+      notes: 'Synthetic pruning activity',
+    },
+  });
+
+  const pending = await listPendingOperations(USER_A);
+  assert.equal(pending.length, 1);
+  assert.equal(pending[0]?.kind, 'activity.create');
+  assert.equal(pending[0]?.ownerUserId, USER_A);
+  assert.equal(pending[0]?.idempotencyKey, activityId);
+  assert.equal(
+    pending[0]?.path,
+    '/api/v1/holdings/13131313-1313-4313-8313-131313131313/activities',
+  );
+  assert.equal(pending[0]?.body.clientGeneratedId, activityId);
+  assert.equal(pending[0]?.body.activityType, 'pruning');
+  assert.equal(pending[0]?.body.plotId, '15151515-1515-4515-8515-151515151515');
+
+  let capturedUrl = '';
+  let capturedBody = '';
+  const result = await syncPendingOperations(USER_A, async (input, init) => {
+    capturedUrl = String(input);
+    capturedBody = String(init?.body ?? '');
+    return new Response(JSON.stringify({ id: activityId }), {
+      status: 201,
+      headers: { 'content-type': 'application/json' },
+    });
+  });
+
+  assert.deepEqual(result, { attempted: 1, synced: 1, pending: 0 });
+  assert.equal(
+    capturedUrl,
+    '/api/v1/holdings/13131313-1313-4313-8313-131313131313/activities',
+  );
+  assert.match(capturedBody, /12121212-1212-4212-8212-121212121212/);
+  assert.match(capturedBody, /pruning/);
   assert.equal((await listPendingOperations(USER_A)).length, 0);
 });
 

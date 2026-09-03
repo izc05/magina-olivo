@@ -1,207 +1,280 @@
 # Estrategia offline y sincronización V1 — Mágina Olivo
 
-Fecha: 2026-09-02
+Fecha inicial: 2026-09-02  
+Estado actualizado: 2026-09-03
 
 ## Objetivo
 
-Permitir que las operaciones de campo más frecuentes no se pierdan cuando el móvil tenga mala cobertura, sin prometer una sincronización offline total que todavía no esté implementada y validada.
+Permitir que las operaciones de campo más frecuentes no se pierdan cuando el móvil tenga mala cobertura, sin ampliar la superficie de exposición de datos privados ni prometer una réplica offline que todavía no esté implementada y validada.
 
 ## Principio
 
-La fuente de verdad es el servidor, pero el teléfono debe poder conservar trabajo pendiente de sincronizar.
+La fuente de verdad es el servidor, pero el teléfono puede conservar **trabajo pendiente de sincronizar**.
 
-No depender exclusivamente de Background Sync del navegador porque su soporte no es uniforme entre navegadores.
+No depender exclusivamente de Background Sync porque su soporte y comportamiento no son uniformes entre navegadores.
 
-## Niveles V1
+La seguridad de datos privados tiene prioridad sobre disponer de una copia completa local.
 
-### O0 — Shell offline
+## Estado V1 piloto
 
-La PWA abre aun sin red y muestra una pantalla útil en lugar de un error genérico.
+### O0 — Shell offline — IMPLEMENTADO
 
-Cachear:
-- HTML/app shell;
-- JS/CSS/versiones necesarias;
-- iconos y recursos UI mínimos.
+La PWA conserva su shell y puede abrir aunque no haya red.
 
-### O1 — Lectura reciente
+El service worker mantiene los recursos mínimos de aplicación necesarios para presentar una interfaz controlada.
 
-IndexedDB conserva una proyección limitada de:
-- explotación activa;
-- fincas/parcelas recientes;
-- campaña activa;
-- cooperativas favoritas/recientes;
-- últimas entregas;
-- últimas labores;
-- preferencias necesarias para formularios.
+No se cachean respuestas privadas de `/api/` mediante Workbox.
 
-No replicar toda la cuenta indiscriminadamente.
+### O1 — Lectura privada tras cold-start — FAIL CLOSED EN PILOTO
 
-### O2 — Borradores
+La idea inicial contemplaba persistir una proyección de explotación, fincas, parcelas, campaña y registros recientes en IndexedDB.
 
-Formularios críticos guardan borrador automáticamente:
-- nueva entrega;
-- nueva labor;
-- observación;
-- tarea;
-- metadatos de documento antes de upload.
+**Esa caché privada persistente no se activa en el piloto V1.**
 
-El usuario debe poder cerrar/reabrir la PWA sin perder el borrador.
+Decisión actual:
 
-### O3 — Cola de escrituras
+- durante una sesión ya abierta pueden reutilizarse lecturas recientes únicamente desde memoria;
+- la memoria se elimina al recargar/cerrar la aplicación y al hacer logout;
+- si la PWA arranca de cero sin poder validar la sesión con el servidor y existe un usuario local conocido, entra en `Modo protegido`;
+- el modo protegido no muestra nombres de fincas, parcelas, campañas, entregas ni labores persistidos localmente;
+- sí puede informar del número y tipo de operaciones pendientes de la outbox;
+- cuando vuelve la conexión se vuelve a validar la sesión antes de mostrar datos privados.
 
-Operaciones permitidas offline en piloto:
+Motivo:
+
+persistir en claro una réplica privada solo para conseguir un cold-start más cómodo no está justificado todavía. Antes de activar O1 se deberá definir y probar una de estas opciones:
+
+1. caché privada cifrada y desbloqueo local explícito;
+2. protección apoyada en credenciales/biometría del dispositivo cuando el navegador lo permita de forma fiable;
+3. otra estrategia con amenaza, retención, recuperación y logout documentados.
+
+Hasta entonces el piloto falla de forma cerrada y segura.
+
+### O2 — Borradores — PARCIAL / NO GENERALIZADO
+
+No existe aún un sistema genérico de drafts persistentes de formularios.
+
+Lo que sí existe es una outbox persistente para operaciones ya confirmadas por el usuario al pulsar Guardar.
+
+No presentar esto como autosave de borradores.
+
+### O3 — Cola de escrituras — IMPLEMENTADO PARA NÚCLEO
+
+Operaciones permitidas offline actualmente:
+
 - crear entrega;
-- crear labor/observación;
-- crear tarea.
+- crear labor/observación.
 
-Cada operación local genera:
-- `operation_id` UUID;
-- `entity_id` UUID si crea entidad;
+Cada operación local conserva:
+
+- identificador local estable;
+- usuario propietario;
 - tipo de operación;
-- payload validado localmente;
-- fecha local informativa;
-- estado `pending/syncing/synced/failed/conflict`;
+- ruta de sincronización;
+- payload validable;
+- fecha de creación local;
 - número de intentos;
 - último error sanitizado.
 
+La outbox está en IndexedDB y sobrevive al cierre/reapertura del navegador.
+
+## Aislamiento de usuario
+
+Cada operación tiene `ownerUserId` y la consulta/sincronización se hace exclusivamente para ese propietario.
+
+Un cambio de cuenta no expone ni sincroniza la outbox de otra persona.
+
+### Logout con cambios pendientes
+
+En piloto V1 no se permite cerrar sesión mientras existan operaciones pendientes.
+
+Razón:
+
+- borrar la outbox implicaría perder trabajo;
+- dejarla huérfana tras logout mantendría datos privados en el dispositivo sin una sesión activa que pueda resolverlos.
+
+La interfaz exige sincronizar primero. Una opción futura de `Descartar cambios y cerrar sesión` requerirá confirmación fuerte y borrado explícito.
+
 ## Sincronización
 
-La app intenta vaciar la cola cuando:
+La aplicación intenta vaciar la cola cuando:
 
-1. arranca con conexión;
-2. vuelve a primer plano;
-3. recibe evento `online`;
-4. el usuario pulsa `Sincronizar`;
-5. Background Sync está disponible y resulta seguro usarlo como mejora adicional.
+1. recupera el evento `online`;
+2. el usuario pulsa `Sincronizar`;
+3. la aplicación permanece abierta y detecta operaciones pendientes;
+4. futuras mejoras de Background Sync resulten suficientemente interoperables.
 
-Nunca depender solo del punto 5.
+Nunca depender solo del punto 4.
 
-## Idempotencia
+Después de una sincronización confirmada:
 
-Toda escritura reenviable envía un `Idempotency-Key` estable basado en `operation_id`.
+- se elimina la operación de IndexedDB;
+- se emite `magina:sync-complete`;
+- campaña y timeline de parcela refrescan sus datos del servidor.
 
-El backend conserva el resultado de operaciones procesadas el tiempo suficiente para evitar duplicar una entrega si:
-- el navegador repite;
-- se corta la respuesta;
-- el usuario reabre la app;
-- el service worker reintenta.
+## Idempotencia y retry safety
 
-## Conflictos
+### Entrega
 
-### Crear entidad
+La entrega usa:
 
-Normalmente no hay conflicto si el UUID nació en cliente y el servidor no lo conoce.
+- `clientGeneratedId` estable;
+- `Idempotency-Key` estable.
 
-### Editar entidad
+El servidor conserva el contrato de idempotencia probado en el spike técnico para impedir duplicados ante reenvío o respuesta perdida.
 
-Enviar versión conocida (`version` o `updated_at`).
+### Labor
 
-Si el servidor ha cambiado desde esa versión:
-- no sobrescribir automáticamente;
-- marcar `conflict`;
-- descargar versión actual;
-- presentar una resolución simple al usuario.
+La labor genera un `clientGeneratedId` UUID estable en cliente.
 
-### Borrar
+Ese UUID se usa como identificador de dominio de la actividad. El backend hace inserción retry-safe:
 
-No habilitar borrados definitivos offline en V1.
+- primer intento: crea la actividad;
+- repetición del mismo identificador en la misma explotación: no crea una segunda fila y devuelve la existente;
+- conflicto no resoluble: respuesta no satisfactoria y la outbox no borra la operación.
 
-Archivar offline solo si se demuestra necesario durante piloto.
+Esto cubre el caso de que el servidor haya guardado la labor pero la respuesta se pierda antes de llegar al móvil.
+
+## Errores
+
+Una operación de outbox solo desaparece con una respuesta HTTP satisfactoria.
+
+Ante:
+
+- error de red;
+- timeout/interrupción;
+- HTTP no-2xx;
+
+se conserva y aumenta su información de intento/error.
+
+No hay sobrescritura silenciosa.
 
 ## Entregas offline
 
-Campos mínimos offline:
-- id;
+Campos soportados por el flujo actual:
+
 - campaña;
 - kilos;
-- destino/cooperativa opcional pero recomendado;
-- fecha/hora de la entrega;
-- finca/parcela opcional;
-- ticket opcional;
+- destino/cooperativa;
+- fecha/hora;
+- finca opcional;
+- parcela opcional, siempre dependiente de la finca elegida;
+- ticket textual opcional;
+- variedad;
 - notas.
 
-El servidor calcula/valida los agregados de campaña después de sincronizar.
+Los agregados de campaña confirmados siguen calculándose en servidor después de sincronizar.
 
-El móvil puede mostrar un total provisional claramente marcado si incluye elementos pendientes.
+## Labores offline
 
-Ejemplo:
+El cuaderno personal puede encolar una labor con:
 
-`18.420 kg sincronizados + 1.842 kg pendientes`
+- tipo de labor;
+- fecha/hora;
+- campaña opcional;
+- finca/parcela;
+- superficie afectada;
+- producto y referencia de registro cuando aplique;
+- cantidad/unidad;
+- coste;
+- notas.
 
-No presentar la suma provisional como dato confirmado del servidor.
+`Recolección` sigue siendo una labor y no sustituye a `Entrega`.
+
+El cuaderno V1 no se presenta como CUE/SIEX oficial.
 
 ## Fotos y documentos offline
 
-Los binarios pueden ser pesados.
+La especificación inicial contemplaba blobs pendientes en IndexedDB. Esa parte se **pospone en el piloto**.
 
-V1:
-- permitir seleccionar/capturar foto;
-- guardar referencia/blob local mientras el registro está pendiente;
-- iniciar upload cuando haya conexión;
-- no marcar documento como sincronizado hasta confirmar upload + metadata;
-- limitar tamaño y comprimir imágenes de evidencia cuando no sea necesario conservar resolución original.
+Estado actual:
 
-Para PDFs/documentos legales, conservar original cuando la política del producto así lo requiera.
+- una entrega puede guardarse offline sin perderse;
+- una foto/PDF de ticket necesita conexión para subir al almacenamiento privado;
+- si el usuario había seleccionado un archivo y la entrega termina encolada, la interfaz avisa explícitamente de que el binario aún no se ha subido;
+- después de sincronizar, el ticket puede adjuntarse a la entrega existente;
+- formatos permitidos en la UI: JPG, PNG, WEBP y PDF;
+- máximo actual: 10 MB;
+- el backend guarda el archivo fuera del bundle público, calcula SHA-256 y lo vincula a la entrega.
 
-## IndexedDB
+No persistir blobs privados grandes en IndexedDB hasta definir:
 
-Usar IndexedDB, no `localStorage`, para datos estructurados y blobs.
+- cifrado/local-at-rest;
+- límites de almacenamiento;
+- política de limpieza;
+- fallo parcial metadata/upload;
+- comportamiento en logout y dispositivo compartido.
 
-Tablas locales candidatas:
-- `cache_holdings`
-- `cache_farms`
-- `cache_plots`
-- `cache_campaigns`
-- `cache_cooperatives`
-- `drafts`
-- `outbox`
-- `pending_files`
-- `sync_meta`
+## IndexedDB V1 real
 
-Dexie es candidato para simplificar esquema/versionado/transacciones.
+Actualmente la persistencia estructurada local crítica es:
 
-## Persistencia local
+- `outbox`.
 
-Solicitar almacenamiento persistente (`navigator.storage.persist`) cuando el navegador lo permita y cuando exista una razón UX clara.
+La caché de lecturas privadas se mantiene solo en memoria de la sesión.
 
-Aun así, nunca tratar IndexedDB como único backup: el objetivo es sincronizar con servidor.
-
-## Privacidad local
-
-No cachear de forma indefinida documentos sensibles completos si no son necesarios para el modo offline.
-
-Al cerrar sesión:
-- borrar tokens/sesión;
-- limpiar datos privados cacheados salvo una política explícita segura;
-- mantener únicamente recursos públicos del app shell.
-
-En dispositivo compartido no debe quedar visible la última campaña tras logout.
+No usar `localStorage` para payloads de entregas, labores o documentos. `localStorage` solo conserva un identificador opaco del último propietario para poder aislar la outbox y decidir el modo protegido.
 
 ## UI de estado
 
-Mostrar un indicador discreto pero inequívoco:
+Estados implementados:
 
-- `Todo sincronizado`
-- `3 cambios pendientes`
-- `Sin conexión`
-- `1 conflicto necesita revisión`
+- `Sin conexión`;
+- `Pendiente de sincronizar`;
+- desglose por `entregas` y `labores`;
+- botón `Sincronizar`;
+- aviso `Entrega guardada en este móvil`;
+- aviso `Labor guardada en este móvil`;
+- aviso `Datos sincronizados`;
+- pantalla `Modo protegido` para cold-start sin validación online.
 
-No usar solo color.
+No se usa solo color para comunicar estado.
 
-## Pruebas obligatorias
+## Actualizaciones PWA
 
-1. Crear entrega -> cortar red antes de respuesta -> reconectar -> una sola entrega en servidor.
-2. Crear 5 labores sin red -> matar app -> abrir -> siguen pendientes.
-3. Dos dispositivos editan el mismo registro -> no hay sobrescritura silenciosa.
-4. Foto pendiente -> conexión inestable -> reintento sin duplicar documento.
-5. Logout -> datos privados locales eliminados.
-6. Actualización de PWA con cola pendiente -> migración local no pierde outbox.
-7. Navegador sin Background Sync -> flujo sigue funcionando al reabrir app.
+Si existe outbox pendiente, la actualización de la PWA se aplaza hasta que los cambios se hayan sincronizado.
+
+Objetivo: evitar una migración/reload de aplicación en mitad de una cola crítica.
+
+## Pruebas cubiertas actualmente
+
+- entrega sobrevive a IndexedDB y reintento de red;
+- operación no-2xx permanece pendiente;
+- aislamiento entre usuarios;
+- PWA update se aplaza mientras haya outbox;
+- labor se encola con owner, ruta y `clientGeneratedId` estables;
+- labor se sincroniza hacia la ruta correcta;
+- cliente API crea entrega offline;
+- cliente API crea labor offline con UUID estable;
+- build PWA y TypeScript strict pasan en `MVP Core Smoke`.
+
+## Pruebas P0 todavía necesarias
+
+1. E2E real: crear entrega -> cortar respuesta después del commit -> reconectar -> una sola entrega.
+2. E2E real: crear varias labores offline -> matar app -> reabrir -> siguen en outbox.
+3. E2E browser del `Modo protegido` y recuperación de sesión al volver la red.
+4. Verificar logout bloqueado con outbox pendiente y permitido con outbox vacía.
+5. Dos dispositivos editan el mismo registro -> no sobrescritura silenciosa.
+6. Ticket privado con conexión inestable -> no duplicación de documento.
+7. Actualización PWA real con cola pendiente -> no pérdida de outbox.
+
+## Evolución posterior al piloto
+
+Solo si la validación de campo demuestra que el cold-start offline completo es imprescindible, diseñar O1 cifrado con:
+
+- opt-in explícito por dispositivo;
+- caducidad/TTL de la proyección privada;
+- cifrado local;
+- desbloqueo local;
+- borrado verificable al logout/revocación;
+- migraciones IndexedDB probadas;
+- pérdida/robo de dispositivo contemplados en threat model.
 
 ## Fuera de V1
 
+- réplica privada completa sin desbloqueo local;
 - colaboración offline multiusuario avanzada;
 - CRDT;
 - edición concurrente compleja;
-- réplica completa local de la base de datos;
-- sincronización P2P entre dispositivos.
+- sincronización P2P entre dispositivos;
+- documentos privados grandes persistidos offline sin política específica.

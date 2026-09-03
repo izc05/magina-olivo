@@ -1,6 +1,8 @@
 import { hostname } from 'node:os';
 import { setTimeout as sleep } from 'node:timers/promises';
 import pg from 'pg';
+import { inspectMarketSources } from './market-source.ts';
+import { inspectRaifOlivarSource } from './raif-source.ts';
 
 const { Pool } = pg;
 
@@ -113,9 +115,108 @@ async function claimNextJob(): Promise<JobRow | null> {
   }
 }
 
+async function inspectRaifPublicSource(): Promise<void> {
+  try {
+    const inspection = await inspectRaifOlivarSource();
+    const parsedLastModified = inspection.lastModified ? new Date(inspection.lastModified) : null;
+    const sourceUpdatedAt = parsedLastModified && Number.isFinite(parsedLastModified.getTime())
+      ? parsedLastModified.toISOString()
+      : null;
+
+    await pool.query(
+      `
+        update public_data_sources
+        set source_url = $1,
+            source_updated_at = coalesce($2::timestamptz, source_updated_at),
+            last_checked_at = $3::timestamptz,
+            last_success_at = $3::timestamptz,
+            last_error = null,
+            metadata = metadata || $4::jsonb,
+            updated_at = now()
+        where source_key = 'raif-olivar-observations'
+      `,
+      [
+        inspection.url,
+        sourceUpdatedAt,
+        inspection.checkedAt,
+        JSON.stringify({
+          remoteEtag: inspection.etag,
+          remoteLastModified: inspection.lastModified,
+          remoteContentLength: inspection.contentLength,
+          remoteContentType: inspection.contentType,
+          inspectionMode: 'HEAD',
+        }),
+      ],
+    );
+  } catch (error) {
+    await pool.query(
+      `
+        update public_data_sources
+        set last_checked_at = now(),
+            last_error = $2,
+            updated_at = now()
+        where source_key = $1
+      `,
+      [
+        'raif-olivar-observations',
+        (error instanceof Error ? error.message : String(error)).slice(0, 4000),
+      ],
+    );
+    throw error;
+  }
+}
+
+async function inspectMarketPublicSource(): Promise<void> {
+  try {
+    const inspections = await inspectMarketSources();
+    const checkedAt = inspections.reduce((latest, item) => item.checkedAt > latest ? item.checkedAt : latest, inspections[0]?.checkedAt ?? new Date().toISOString());
+    const metadata = Object.fromEntries(inspections.map((item) => [item.kind, {
+      url: item.url,
+      remoteEtag: item.etag,
+      remoteLastModified: item.lastModified,
+      remoteContentLength: item.contentLength,
+      remoteContentType: item.contentType,
+    }]));
+
+    await pool.query(
+      `
+        update public_data_sources
+        set last_checked_at = $1::timestamptz,
+            last_success_at = $1::timestamptz,
+            last_error = null,
+            metadata = metadata || $2::jsonb || '{"inspectionMode":"HEAD","currentness":"inspected-headers-only"}'::jsonb,
+            updated_at = now()
+        where source_key = 'observatorio-agricultural-prices'
+      `,
+      [checkedAt, JSON.stringify({ inspectedResources: metadata })],
+    );
+  } catch (error) {
+    await pool.query(
+      `
+        update public_data_sources
+        set last_checked_at = now(),
+            last_error = $2,
+            updated_at = now()
+        where source_key = $1
+      `,
+      [
+        'observatorio-agricultural-prices',
+        (error instanceof Error ? error.message : String(error)).slice(0, 4000),
+      ],
+    );
+    throw error;
+  }
+}
+
 async function executeJob(job: JobRow): Promise<void> {
   switch (job.kind) {
     case 'spike.noop':
+      return;
+    case 'public.raif.inspect':
+      await inspectRaifPublicSource();
+      return;
+    case 'public.market.inspect':
+      await inspectMarketPublicSource();
       return;
     default:
       throw new Error(`Unsupported job kind: ${job.kind}`);

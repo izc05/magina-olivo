@@ -1,0 +1,48 @@
+name: MVP Core Smoke
+
+on:
+  pull_request:
+    branches:
+      - feat/technical-spike-v1
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+concurrency:
+  group: mvp-core-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.20.0
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck workspaces
+        run: npm run typecheck
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Validate staging gate scripts
+        run: bash -n scripts/mvp-core-flow-gate.sh
+
+      - name: Build web PWA
+        run: npm run build --workspace @magina/web
+
+      - name: Inspect frontend bundle for server secrets
+        run: |
+          if grep -R -E 'BETTER_AUTH_SECRET|DATABASE_URL|RESEND_API_KEY|OBJECT_STORAGE_SECRET_ACCESS_KEY' apps/web/dist; then
+            echo 'Server-only secret material found in frontend bundle'
+            exit 1
+          fi

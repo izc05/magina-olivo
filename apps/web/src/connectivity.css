@@ -1,0 +1,54 @@
+.connectivity-banner {
+  position: fixed;
+  left: 50%;
+  top: 10px;
+  transform: translateX(-50%);
+  z-index: 80;
+  width: min(calc(100% - 20px), 620px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 13px;
+  border-radius: 16px;
+  box-shadow: 0 14px 36px rgba(46, 58, 34, .16);
+  border: 1px solid rgba(46, 58, 34, .14);
+  backdrop-filter: blur(14px);
+}
+
+.connectivity-banner.offline {
+  background: rgba(46, 58, 34, .96);
+  color: #fff;
+}
+
+.connectivity-banner.pending {
+  background: rgba(244, 228, 173, .97);
+  color: #2e3a22;
+}
+
+.connectivity-banner strong,
+.connectivity-banner span {
+  display: block;
+}
+
+.connectivity-banner strong {
+  font-size: .82rem;
+}
+
+.connectivity-banner span {
+  margin-top: 2px;
+  font-size: .72rem;
+  opacity: .82;
+}
+
+.connectivity-banner button {
+  min-height: 36px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 10px;
+  background: #2e3a22;
+  color: #fff;
+  font-size: .72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}

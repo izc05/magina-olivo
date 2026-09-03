@@ -1,7 +1,7 @@
 export type OutboxOperation = {
   id: string;
   ownerUserId: string;
-  kind: 'delivery.create';
+  kind: 'delivery.create' | 'activity.create';
   method: 'POST';
   path: string;
   idempotencyKey: string;
@@ -61,23 +61,22 @@ function scopedOperationId(ownerUserId: string, idempotencyKey: string): string 
   return `${ownerUserId}:${idempotencyKey}`;
 }
 
-export async function enqueueDeliveryCreate(input: {
+async function enqueueOperation(input: {
   ownerUserId: string;
-  campaignId: string;
+  kind: OutboxOperation['kind'];
+  path: string;
   idempotencyKey: string;
   body: Record<string, unknown>;
   createdAt?: string;
 }): Promise<OutboxOperation> {
-  if (!input.ownerUserId.trim()) {
-    throw new Error('ownerUserId is required for offline operations');
-  }
+  if (!input.ownerUserId.trim()) throw new Error('ownerUserId is required for offline operations');
 
   const operation: OutboxOperation = {
     id: scopedOperationId(input.ownerUserId, input.idempotencyKey),
     ownerUserId: input.ownerUserId,
-    kind: 'delivery.create',
+    kind: input.kind,
     method: 'POST',
-    path: `/api/v1/campaigns/${encodeURIComponent(input.campaignId)}/deliveries`,
+    path: input.path,
     idempotencyKey: input.idempotencyKey,
     body: input.body,
     createdAt: input.createdAt ?? new Date().toISOString(),
@@ -94,6 +93,40 @@ export async function enqueueDeliveryCreate(input: {
   } finally {
     db.close();
   }
+}
+
+export function enqueueDeliveryCreate(input: {
+  ownerUserId: string;
+  campaignId: string;
+  idempotencyKey: string;
+  body: Record<string, unknown>;
+  createdAt?: string;
+}): Promise<OutboxOperation> {
+  return enqueueOperation({
+    ownerUserId: input.ownerUserId,
+    kind: 'delivery.create',
+    path: `/api/v1/campaigns/${encodeURIComponent(input.campaignId)}/deliveries`,
+    idempotencyKey: input.idempotencyKey,
+    body: input.body,
+    ...(input.createdAt !== undefined ? { createdAt: input.createdAt } : {}),
+  });
+}
+
+export function enqueueActivityCreate(input: {
+  ownerUserId: string;
+  holdingId: string;
+  idempotencyKey: string;
+  body: Record<string, unknown>;
+  createdAt?: string;
+}): Promise<OutboxOperation> {
+  return enqueueOperation({
+    ownerUserId: input.ownerUserId,
+    kind: 'activity.create',
+    path: `/api/v1/holdings/${encodeURIComponent(input.holdingId)}/activities`,
+    idempotencyKey: input.idempotencyKey,
+    body: input.body,
+    ...(input.createdAt !== undefined ? { createdAt: input.createdAt } : {}),
+  });
 }
 
 export async function listPendingOperations(ownerUserId: string): Promise<OutboxOperation[]> {
@@ -123,9 +156,7 @@ async function deleteOperation(ownerUserId: string, id: string): Promise<void> {
       request.onerror = () => reject(request.error ?? new Error('Unable to read offline operation'));
     });
 
-    if (current?.ownerUserId === ownerUserId) {
-      store.delete(id);
-    }
+    if (current?.ownerUserId === ownerUserId) store.delete(id);
     await transactionDone(transaction);
   } finally {
     db.close();
@@ -144,11 +175,7 @@ async function markAttempt(ownerUserId: string, id: string, message: string): Pr
     });
 
     if (current?.ownerUserId === ownerUserId) {
-      store.put({
-        ...current,
-        attempts: current.attempts + 1,
-        lastError: message,
-      });
+      store.put({ ...current, attempts: current.attempts + 1, lastError: message });
     }
     await transactionDone(transaction);
   } finally {
@@ -190,11 +217,7 @@ export async function syncPendingOperations(
   }
 
   const pending = (await listPendingOperations(ownerUserId)).length;
-  return {
-    attempted: operations.length,
-    synced,
-    pending,
-  };
+  return { attempted: operations.length, synced, pending };
 }
 
 export async function clearOutbox(ownerUserId?: string): Promise<void> {

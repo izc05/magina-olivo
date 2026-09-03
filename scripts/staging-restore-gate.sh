@@ -23,12 +23,20 @@ meta_value() {
   awk -F= -v wanted="$key" '$1 == wanted { sub(/^[^=]*=/, ""); print; exit }' "$BUNDLE/backup-meta.txt"
 }
 
+read_env_value() {
+  local key="$1"
+  awk -F= -v wanted="$key" '$1 == wanted { sub(/^[^=]*=/, ""); print; exit }' "$ENV_FILE"
+}
+
 [[ -n "$ENV_FILE" && -f "$ENV_FILE" ]] || fail "STAGING_ENV_FILE must point to the staging env file"
 [[ -n "$BUNDLE" && -d "$BUNDLE" ]] || fail "RESTORE_BUNDLE_DIR must point to an existing backup bundle"
 [[ "$BUNDLE" = /* ]] || fail "RESTORE_BUNDLE_DIR must be an absolute path"
 [[ "$RESTORE_DB" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]] || fail "RESTORE_DATABASE must be a simple PostgreSQL identifier"
 [[ "$RESTORE_DB" != "magina_olivo" ]] || fail "restore drill must never target the live staging database"
 [[ -n "$RESTORE_BUCKET" ]] || fail "RESTORE_OBJECT_STORAGE_BUCKET is required and must be a separate empty recovery bucket"
+ACTIVE_BUCKET="$(read_env_value OBJECT_STORAGE_BUCKET)"
+[[ -n "$ACTIVE_BUCKET" ]] || fail "active OBJECT_STORAGE_BUCKET is missing from staging env file"
+[[ "$RESTORE_BUCKET" != "$ACTIVE_BUCKET" ]] || fail "restore bucket must differ from active staging bucket"
 [[ "${RESTORE_TARGETS_CONFIRMED_ISOLATED:-}" = "1" ]] \
   || fail "set RESTORE_TARGETS_CONFIRMED_ISOLATED=1 only after selecting isolated restore targets"
 
@@ -123,6 +131,8 @@ select 'holdings', count(*) from holdings;
 select 'farms', count(*) from farms;
 select 'plots', count(*) from plots;
 select 'campaigns', count(*) from campaigns;
+select 'activities', count(*) from activities;
+select 'tasks', count(*) from tasks;
 select 'deliveries', count(*) from deliveries;
 select 'delivery_results', count(*) from delivery_results;
 select 'documents', count(*) from documents;

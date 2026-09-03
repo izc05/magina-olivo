@@ -31,11 +31,12 @@ test('account preferences persist user choices and portability does not overprom
   assert.match(account, /notifyTasks/);
   assert.match(account, /notifyPendingYield/);
   assert.match(account, /weatherRainProbabilityPercentThreshold/);
-  assert.match(account, /Probabilidad de lluvia desde \(%\)/);
+  assert.match(account, /Alarma de lluvia desde \(%\)/);
   assert.doesNotMatch(account, /Lluvia desde \(mm\)/);
   assert.match(account, /weatherFrostCThreshold/);
   assert.match(account, /weatherWindKmhThreshold/);
   assert.match(account, /predicción municipal de AEMET/);
+  assert.match(account, /se revisa automáticamente en el servidor/);
   assert.match(account, /Seleccionarla no comparte tus entregas ni tus documentos/);
   assert.match(account, /Preparar copia de mis datos/);
   assert.match(account, /Descargar JSON/);

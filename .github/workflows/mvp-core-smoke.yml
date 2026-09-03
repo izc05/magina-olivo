@@ -51,6 +51,31 @@ jobs:
           bash -n scripts/pilot-evidence-init.sh
           node --check scripts/pilot-evidence-summary.mjs
 
+      - name: Verify staging acceptance documentation contract
+        run: |
+          acceptance=docs/mvp/STAGING_ACCEPTANCE_V1.md
+          execution=docs/mvp/STAGING_EXECUTION_V1.md
+          external=docs/spike/EXTERNAL_STAGING_RUNBOOK.md
+
+          grep -q 'nueve bloques' "$acceptance"
+          grep -q '### 8. Accesibilidad manual' "$acceptance"
+          grep -q '### 9. PWA / offline manual' "$acceptance"
+          grep -q 'nueve bloques' "$execution"
+          grep -q '## Fase 8 — Accesibilidad manual' "$execution"
+          grep -q '## Fase 9 — PWA / offline manual' "$execution"
+          grep -q 'nueve bloques' "$external"
+          grep -q '## 16. Accesibilidad manual — bloque 8' "$external"
+          grep -q '## 17. PWA/offline manual — bloque 9' "$external"
+          grep -q 'current-source-sha' "$acceptance"
+          grep -q 'current-source-sha' "$execution"
+          grep -q 'application_source_sha' "$acceptance"
+          grep -q 'application_source_sha' "$external"
+
+          if grep -Eq 'ocho bloques|eight blocks|current_source_sha|previous_source_sha' "$acceptance" "$execution" "$external"; then
+            echo 'Staging documentation drifted back to the obsolete eight-block/underscore contract'
+            exit 1
+          fi
+
       - name: Verify staging public-data configuration
         run: |
           grep -q '^AEMET_API_KEY=' infra/docker/staging.env.example

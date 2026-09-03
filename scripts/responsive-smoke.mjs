@@ -14,6 +14,8 @@ const viewports = [
   { name: '1366x768', width: 1366, height: 768 },
 ];
 
+const deepViewportNames = new Set(['360x800', '1366x768']);
+
 const sections = [
   { label: 'Inicio', slug: 'inicio', marker: '.hero-photo--home', expectsFab: true },
   { label: 'Mi Campo', slug: 'mi-campo', marker: '.farm-hero', expectsFab: true },
@@ -93,6 +95,92 @@ async function assertHomeMarketGraphicScale(page, viewportName) {
   );
 }
 
+async function captureDeepState(page, viewportName, slug, label, marker) {
+  const target = page.locator(marker).first();
+  await target.waitFor({ state: 'visible' });
+  await assertNoGlobalOverflow(page, viewportName, label);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({
+    path: path.join(outputDir, `${viewportName}-deep-${slug}.png`),
+    fullPage: true,
+  });
+}
+
+async function captureDeepStates(page, nav, viewportName) {
+  let count = 0;
+
+  // Mi Campo: Cuaderno, Campaña y los dos modos de Gestión.
+  await nav.getByRole('button', { name: 'Mi Campo', exact: true }).click();
+  await page.locator('.field-tabs').waitFor({ state: 'visible' });
+  const fieldTabs = page.locator('.field-tabs');
+
+  await fieldTabs.getByRole('button', { name: 'Cuaderno', exact: true }).click();
+  await captureDeepState(page, viewportName, 'mi-campo-cuaderno', 'Mi Campo · Cuaderno', '.journal-list');
+  count += 1;
+
+  await fieldTabs.getByRole('button', { name: 'Campaña', exact: true }).click();
+  await captureDeepState(page, viewportName, 'mi-campo-campana', 'Mi Campo · Campaña', '.campaign-chart-card');
+  count += 1;
+
+  await fieldTabs.getByRole('button', { name: 'Gestión', exact: true }).click();
+  const managementSwitch = page.locator('.field-management-switch');
+  await managementSwitch.waitFor({ state: 'visible' });
+  await managementSwitch.getByRole('button', { name: 'Costes y rentabilidad', exact: true }).click();
+  await captureDeepState(page, viewportName, 'mi-campo-costes', 'Mi Campo · Costes', '.profit-summary-grid');
+  count += 1;
+
+  await managementSwitch.getByRole('button', { name: 'Maquinaria', exact: true }).click();
+  await captureDeepState(page, viewportName, 'mi-campo-maquinaria', 'Mi Campo · Maquinaria', '.machine-overview-card');
+  count += 1;
+
+  // Mágina: cooperativas, mercado, descubre interno y hub Más.
+  await nav.getByRole('button', { name: 'Mágina', exact: true }).click();
+  await page.locator('.hub-tabs--primary').waitFor({ state: 'visible' });
+  const hubTabs = page.locator('.hub-tabs--primary');
+
+  await hubTabs.getByRole('button', { name: 'Cooperativas', exact: true }).click();
+  await captureDeepState(page, viewportName, 'magina-cooperativas', 'Mágina · Cooperativas', '.coop-list');
+  count += 1;
+
+  await hubTabs.getByRole('button', { name: 'Mercado', exact: true }).click();
+  await captureDeepState(page, viewportName, 'magina-mercado', 'Mágina · Mercado', '.market-chart-card');
+  count += 1;
+
+  await hubTabs.getByRole('button', { name: 'Descubre', exact: true }).click();
+  await captureDeepState(page, viewportName, 'magina-descubre', 'Mágina · Descubre', '.discover-main-hero');
+  count += 1;
+
+  await hubTabs.getByRole('button', { name: 'Más', exact: true }).click();
+  await captureDeepState(page, viewportName, 'magina-mas', 'Mágina · Más', '.magina-more-menu');
+  count += 1;
+
+  // Perfil: guardados, documentos y ajustes.
+  await nav.getByRole('button', { name: 'Perfil', exact: true }).click();
+  await page.locator('.profile-tabs').waitFor({ state: 'visible' });
+  const profileTabs = page.locator('.profile-tabs');
+
+  await profileTabs.getByRole('button', { name: 'Guardados', exact: true }).click();
+  await captureDeepState(page, viewportName, 'perfil-guardados', 'Perfil · Guardados', '.saved-list');
+  count += 1;
+
+  await profileTabs.getByRole('button', { name: 'Documentos', exact: true }).click();
+  await captureDeepState(page, viewportName, 'perfil-documentos', 'Perfil · Documentos', '.document-list');
+  count += 1;
+
+  await profileTabs.getByRole('button', { name: 'Ajustes', exact: true }).click();
+  await captureDeepState(page, viewportName, 'perfil-ajustes', 'Perfil · Ajustes', '.settings-list');
+  count += 1;
+
+  // Descubre principal: detalle de una ruta.
+  await nav.getByRole('button', { name: 'Descubre', exact: true }).click();
+  await page.locator('.discover-route-list').waitFor({ state: 'visible' });
+  await page.locator('.discover-route-card').first().click();
+  await captureDeepState(page, viewportName, 'descubre-ruta', 'Descubre · Detalle de ruta', '.discover-route-detail');
+  count += 1;
+
+  return count;
+}
+
 async function closePreview(previewServer) {
   const httpServer = previewServer?.httpServer;
   if (!httpServer) return;
@@ -117,6 +205,7 @@ async function run() {
   });
 
   let browser;
+  let deepCaptureCount = 0;
 
   try {
     browser = await chromium.launch({ headless: true });
@@ -179,11 +268,18 @@ async function run() {
         });
       }
 
+      if (deepViewportNames.has(viewport.name)) {
+        const captured = await captureDeepStates(page, nav, viewport.name);
+        deepCaptureCount += captured;
+        console.log(`✓ ${viewport.name}: ${captured} estados internos capturados y validados.`);
+      }
+
       await context.close();
       console.log(`✓ ${viewport.name}: navegación, subnavegación, mercado, tap targets, FAB y overflow validados.`);
     }
 
-    console.log(`✓ Smoke responsive completado: ${viewports.length * sections.length} capturas.`);
+    const primaryCaptureCount = viewports.length * sections.length;
+    console.log(`✓ Smoke responsive completado: ${primaryCaptureCount} capturas principales + ${deepCaptureCount} internas = ${primaryCaptureCount + deepCaptureCount}.`);
   } finally {
     if (browser) await browser.close();
     await closePreview(previewServer);

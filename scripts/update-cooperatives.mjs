@@ -15,7 +15,7 @@ const productRules = {
     mode: 'single',
   },
   'san-roque-carchelejo|Tierras del Marquesado Selección Premium': {
-    sourceUrl: 'https://tierrasdelmarquesado.com/product/estuche-seleccion/',
+    sourceUrl: 'https://tierrasdelmarquesado.com/tienda/',
     lookupName: 'Picual D.O. Selección Premium 500 ml',
     mode: 'single',
   },

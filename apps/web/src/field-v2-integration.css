@@ -1,0 +1,130 @@
+/* Mi Campo — Visual V2 integration over real MVP Core data. */
+
+.page > section:first-child:has(.page-eyebrow) {
+  margin: 2px 0 18px;
+  padding: 4px 2px 0;
+}
+
+.page-eyebrow {
+  color: var(--v2-gold);
+  opacity: 1;
+}
+
+.page-eyebrow + .section-title {
+  font-size: clamp(2rem, 8vw, 3rem);
+  line-height: 1.02;
+}
+
+button.card.list-card.interactive {
+  position: relative;
+  min-height: 72px;
+  padding: 15px 16px 15px 66px;
+  overflow: hidden;
+}
+
+button.card.list-card.interactive::before {
+  content: "";
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  width: 36px;
+  height: 36px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 58% 38%, rgba(255,255,255,.75) 0 8%, transparent 9%),
+    linear-gradient(145deg, rgba(92,122,70,.22), rgba(47,59,39,.08));
+  border: 1px solid rgba(86,111,67,.18);
+}
+
+button.card.list-card.interactive::after {
+  content: "";
+  position: absolute;
+  left: 32px;
+  top: 50%;
+  width: 8px;
+  height: 18px;
+  transform: translate(-50%, -50%) rotate(28deg);
+  border-radius: 80% 0 80% 0;
+  background: var(--v2-olive);
+  box-shadow: 5px -5px 0 -1px var(--v2-olive-soft);
+}
+
+button.card.list-card.interactive[aria-pressed="true"] {
+  background:
+    linear-gradient(120deg, rgba(86,111,67,.09), rgba(201,155,44,.06)),
+    var(--v2-paper);
+}
+
+button.card.list-card.interactive[aria-pressed="true"]::before {
+  background: linear-gradient(145deg, var(--v2-olive), var(--v2-olive-deep));
+  border-color: transparent;
+}
+
+button.card.list-card.interactive[aria-pressed="true"]::after {
+  background: #fffdf8;
+  box-shadow: 5px -5px 0 -1px #d6dfc9;
+}
+
+.page .section .card.list-card:not(.interactive) {
+  position: relative;
+  padding-left: 20px;
+}
+
+.page .section .card.list-card:not(.interactive)::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 16px;
+  bottom: 16px;
+  width: 4px;
+  border-radius: 0 99px 99px 0;
+  background: linear-gradient(var(--v2-olive), var(--v2-gold));
+  opacity: .72;
+}
+
+.page .section .card.list-card .list-card-title {
+  font-size: .98rem;
+}
+
+.page .section .card.list-card .list-card-meta {
+  margin-top: 5px;
+  line-height: 1.35;
+}
+
+.page .section .empty-state {
+  border-style: dashed;
+  background: rgba(255,253,248,.62);
+}
+
+.page .section:has(.selector) {
+  margin-top: 18px;
+}
+
+.form-card,
+.section.card.card-body {
+  border-color: var(--v2-line);
+}
+
+.field-notebook,
+.delivery-entry-card {
+  scroll-margin-top: 88px;
+}
+
+@media (min-width: 720px) {
+  button.card.list-card.interactive {
+    min-height: 80px;
+  }
+
+  .page > section:first-child:has(.page-eyebrow) {
+    margin-bottom: 24px;
+  }
+}
+
+@media (forced-colors: active) {
+  button.card.list-card.interactive::before,
+  button.card.list-card.interactive::after,
+  .page .section .card.list-card:not(.interactive)::before {
+    display: none;
+  }
+}

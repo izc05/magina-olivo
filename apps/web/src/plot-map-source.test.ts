@@ -6,7 +6,7 @@ async function read(relativePath: string): Promise<string> {
   return readFile(new URL(relativePath, import.meta.url), 'utf8');
 }
 
-test('plot map is wired into Mi Campo and supports explicit device geolocation', async () => {
+test('plot map is wired into Mi Campo and supports point plus boundary editing', async () => {
   const notebook = await read('./FieldNotebook.tsx');
   const map = await read('./PlotMapPanel.tsx');
 
@@ -16,18 +16,36 @@ test('plot map is wired into Mi Campo and supports explicit device geolocation',
   assert.match(map, /navigator\.geolocation\.getCurrentPosition/);
   assert.match(map, /enableHighAccuracy: true/);
   assert.match(map, /Guardar ubicación/);
-  assert.match(map, /openstreetmap\.org\/export\/embed\.html/);
+  assert.match(map, /Guardar perímetro/);
+  assert.match(map, /Añadir mi posición/);
+  assert.match(map, /tile\.openstreetmap\.org/);
+  assert.match(map, /OpenStreetMap contributors/);
+  assert.match(map, /polygonFromVertices/);
+  assert.match(map, /polygonAreaSquareMeters/);
   assert.match(map, /credentials: 'include'/);
 });
 
-test('plot location persistence remains private and validates complete coordinates', async () => {
+test('plot point and boundary persistence remain private and server-validated', async () => {
   const routes = await read('../../api/src/plot-routes.ts');
+  const migration = await read('../../../db/migrations/0015_plot_boundaries.sql');
 
-  assert.match(routes, /latitude, longitude/);
   assert.match(routes, /\/api\/v1\/plots\/:plotId\/location/);
-  assert.match(routes, /canWrite\(access\.role\)/);
   assert.match(routes, /INCOMPLETE_PLOT_LOCATION/);
-  assert.match(routes, /latitude between -90 and 90|minimum: -90/);
-  assert.match(routes, /longitude between -180 and 180|minimum: -180/);
+  assert.match(routes, /\/api\/v1\/plots\/:plotId\/boundary/);
+  assert.match(routes, /INCOMPLETE_PLOT_BOUNDARY/);
+  assert.match(routes, /INVALID_PLOT_BOUNDARY/);
+  assert.match(routes, /validateBoundary/);
+  assert.match(routes, /polygonAreaSquareMeters/);
+  assert.match(routes, /uniqueVertices\.size < 3/);
+  assert.match(routes, /ring\.length > 501/);
+  assert.match(routes, /boundary_area_ha = \$2/);
   assert.match(routes, /version = version \+ 1/);
+  assert.match(routes, /canWrite\(resolved\.access\.role\)/);
+
+  assert.match(migration, /boundary_geojson jsonb/);
+  assert.match(migration, /boundary_area_ha numeric\(12,4\)/);
+  assert.match(migration, /manual_map/);
+  assert.match(migration, /manual_gps/);
+  assert.match(migration, /sigpac/);
+  assert.match(migration, /catastro/);
 });

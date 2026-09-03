@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { open, unlink } from 'node:fs/promises';
+import { open, unlink, type FileHandle } from 'node:fs/promises';
 
 export const DEFAULT_RAIF_OLIVAR_ZIP_URL =
   'https://www.juntadeandalucia.es/datosabiertos/portal/dataset/cdc8b852-6e4a-4336-9785-606fbbdc2243/resource/74062bbf-8391-460b-97c3-3aec55be5d77/download/raif_olivar_andalucia_2006_2026.zip';
@@ -39,6 +39,15 @@ function parseContentLength(value: string | null): number | null {
   if (!value) return null;
   const parsed = Number(value);
   return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null;
+}
+
+async function writeAll(file: FileHandle, bytes: Uint8Array): Promise<void> {
+  let offset = 0;
+  while (offset < bytes.byteLength) {
+    const { bytesWritten } = await file.write(bytes, offset, bytes.byteLength - offset);
+    if (bytesWritten <= 0) throw new Error('RAIF_ARCHIVE_WRITE_FAILED');
+    offset += bytesWritten;
+  }
 }
 
 export function hasZipSignature(bytes: Uint8Array): boolean {
@@ -146,7 +155,7 @@ export async function downloadRaifOlivarArchive(
       }
 
       hash.update(value);
-      await file.write(value);
+      await writeAll(file, value);
     }
 
     if (!hasZipSignature(prefix.subarray(0, prefixLength))) {

@@ -44,6 +44,7 @@ jobs:
           bash -n scripts/staging-acceptance.sh
           bash -n scripts/staging-public-magina-gate.sh
           bash -n scripts/pilot-participant-setup.sh
+          bash -n scripts/pilot-evidence-init.sh
 
       - name: Verify staging public-data configuration
         run: |
@@ -72,7 +73,7 @@ jobs:
           fi
           grep -q 'both CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET must be set' /tmp/public-magina-access-guard.log
 
-      - name: Verify pilot participant Access guard
+      - name: Verify pilot safety guards
         run: |
           if STAGING_BASE_URL=https://staging.example.com \
             PILOT_PARTICIPANT_ID=p01 \
@@ -83,6 +84,26 @@ jobs:
             exit 1
           fi
           grep -q 'both CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET must be set' /tmp/pilot-access-guard.log
+
+          if STAGING_BASE_URL=https://staging.example.com \
+            PILOT_PARTICIPANT_ID=p01 \
+            PILOT_PARTICIPANT_EMAIL=real-user@invalid.test \
+            bash scripts/pilot-participant-setup.sh > /tmp/pilot-email-guard.log 2>&1; then
+            echo 'Pilot participant setup unexpectedly accepted a non-synthetic email'
+            cat /tmp/pilot-email-guard.log
+            exit 1
+          fi
+          grep -q 'synthetic pilot email required' /tmp/pilot-email-guard.log
+
+          PILOT_RUN_ID=ci-round \
+            PILOT_PARTICIPANT_IDS=p01,p02 \
+            STAGING_BASE_URL=https://staging.example.com \
+            bash scripts/pilot-evidence-init.sh
+          test -f .deploy/pilot-evidence/ci-round/results.csv
+          test -f .deploy/pilot-evidence/ci-round/findings.csv
+          grep -q '^participant_id,task,completed,help,time_seconds' .deploy/pilot-evidence/ci-round/results.csv
+          grep -q 'Privacy rule: aliases only' .deploy/pilot-evidence/ci-round/manifest.txt
+          rm -rf .deploy/pilot-evidence/ci-round
 
       - name: Build web PWA
         run: npm run build --workspace @magina/web

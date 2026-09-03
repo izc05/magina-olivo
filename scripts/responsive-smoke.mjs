@@ -52,6 +52,30 @@ async function assertTapTargets(page, viewportName) {
   }
 }
 
+async function assertSecondaryNavigationVisible(page, selector, expectedCount, viewportName, sectionLabel) {
+  const result = await page.locator(selector).evaluateAll((elements) => ({
+    viewportWidth: document.documentElement.clientWidth,
+    boxes: elements.map((element) => {
+      const rect = element.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, width: rect.width, height: rect.height };
+    }),
+  }));
+
+  assert(
+    result.boxes.length === expectedCount,
+    `${viewportName} · ${sectionLabel}: se esperaban ${expectedCount} pestañas secundarias y hay ${result.boxes.length}.`,
+  );
+
+  for (const [index, box] of result.boxes.entries()) {
+    assert(box.width > 0 && box.height >= 40, `${viewportName} · ${sectionLabel}: pestaña secundaria ${index + 1} sin tamaño útil.`);
+    assert(box.left >= -1, `${viewportName} · ${sectionLabel}: pestaña secundaria ${index + 1} queda fuera por la izquierda.`);
+    assert(
+      box.right <= result.viewportWidth + 1,
+      `${viewportName} · ${sectionLabel}: pestaña secundaria ${index + 1} queda fuera por la derecha (${box.right}px > ${result.viewportWidth}px).`,
+    );
+  }
+}
+
 async function closePreview(previewServer) {
   const httpServer = previewServer?.httpServer;
   if (!httpServer) return;
@@ -114,6 +138,18 @@ async function run() {
           assert(Boolean(fabBox) && fabBox.height >= 44 && fabBox.width >= 44, `${viewport.name} · ${section.label}: FAB menor de 44px.`);
         }
 
+        if (section.slug === 'mi-campo') {
+          await assertSecondaryNavigationVisible(page, '.field-tabs .field-tab', 4, viewport.name, section.label);
+        }
+
+        if (section.slug === 'magina') {
+          await assertSecondaryNavigationVisible(page, '.hub-tabs--primary .hub-tab', 5, viewport.name, section.label);
+        }
+
+        if (section.slug === 'perfil') {
+          await assertSecondaryNavigationVisible(page, '.profile-tabs .profile-tab', 4, viewport.name, section.label);
+        }
+
         await assertNoGlobalOverflow(page, viewport.name, section.label);
 
         await page.screenshot({
@@ -123,7 +159,7 @@ async function run() {
       }
 
       await context.close();
-      console.log(`✓ ${viewport.name}: navegación, tap targets, FAB y overflow validados.`);
+      console.log(`✓ ${viewport.name}: navegación, subnavegación, tap targets, FAB y overflow validados.`);
     }
 
     console.log(`✓ Smoke responsive completado: ${viewports.length * sections.length} capturas.`);

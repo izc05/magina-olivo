@@ -1,0 +1,232 @@
+/* Campaign — Visual V2 presentation over canonical MVP Core delivery/yield logic. */
+
+.page section.section:has(> .selector) {
+  margin-top: 16px;
+}
+
+.page section.section:has(> .selector) .selector {
+  min-height: 52px;
+  border-color: rgba(86,111,67,.18);
+  background: rgba(255,253,248,.94);
+  box-shadow: 0 6px 18px rgba(47,59,39,.035);
+}
+
+.page section.section.card.card-body:has(.metrics) {
+  position: relative;
+  overflow: hidden;
+  padding: 18px;
+  border-color: rgba(86,111,67,.15);
+  background:
+    radial-gradient(circle at 90% 8%, rgba(201,155,44,.14), transparent 32%),
+    linear-gradient(135deg, rgba(86,111,67,.08), rgba(255,253,248,.96));
+}
+
+.page section.section.card.card-body:has(.metrics)::before {
+  content: "Campaña activa";
+  display: block;
+  margin-bottom: 12px;
+  color: var(--v2-olive-deep);
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.page section.section.card.card-body:has(.metrics) .metric {
+  border-color: rgba(86,111,67,.12);
+  background: rgba(255,253,248,.78);
+}
+
+.page section.section.card.card-body:has(.metrics) .metric-value {
+  color: var(--v2-olive-deep);
+}
+
+.page section.section.card.card-body:has(.metrics) .metric-label {
+  color: #6d7668;
+  opacity: 1;
+}
+
+.delivery-entry-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 25px;
+  border-color: rgba(86,111,67,.16);
+  background:
+    linear-gradient(180deg, rgba(255,253,248,.98), rgba(251,248,239,.96));
+  box-shadow: 0 14px 38px rgba(47,59,39,.06);
+}
+
+.delivery-entry-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, var(--v2-olive), var(--v2-gold));
+}
+
+.delivery-form-heading {
+  align-items: center;
+  padding-bottom: 14px;
+  margin-bottom: 17px;
+  border-bottom: 1px solid var(--v2-line);
+}
+
+.delivery-form-heading .page-eyebrow {
+  color: var(--v2-gold);
+  opacity: 1;
+}
+
+.delivery-entry-card .form-card-title {
+  font-size: clamp(1.6rem, 6vw, 2rem);
+}
+
+.delivery-entry-card .field label {
+  font-size: .72rem;
+  letter-spacing: .02em;
+}
+
+.delivery-entry-card .field small {
+  display: block;
+  margin-top: 2px;
+  color: #777a6b;
+  font-size: .67rem;
+  line-height: 1.35;
+}
+
+.delivery-entry-card input,
+.delivery-entry-card select,
+.delivery-entry-card textarea {
+  background: #fffefa;
+}
+
+.delivery-file-field {
+  padding: 10px;
+  border: 1px dashed rgba(86,111,67,.18);
+  border-radius: 14px;
+  background: rgba(245,240,228,.42);
+}
+
+.delivery-file-field input[type='file'] {
+  background: transparent;
+}
+
+.delivery-save-row {
+  padding-top: 4px;
+}
+
+.delivery-save-row .primary-button {
+  min-height: 52px;
+  min-width: 162px;
+  box-shadow: 0 8px 20px rgba(47,59,39,.12);
+}
+
+.delivery-save-row > span {
+  color: #777a6b;
+}
+
+.delivery-row {
+  position: relative;
+  min-height: 82px;
+  padding: 15px 16px 15px 20px;
+  border-color: rgba(86,111,67,.13);
+  background: rgba(255,253,248,.94);
+}
+
+.delivery-row::before {
+  content: "";
+  position: absolute;
+  inset: 14px auto 14px 0;
+  width: 4px;
+  border-radius: 0 99px 99px 0;
+  background: var(--v2-gold);
+}
+
+.delivery-kilos {
+  color: var(--v2-olive-deep);
+  font-size: 1.18rem;
+  letter-spacing: -.025em;
+}
+
+.delivery-date {
+  max-width: 52ch;
+  line-height: 1.4;
+}
+
+.delivery-actions {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+}
+
+.yield-form {
+  padding: 5px;
+  border-radius: 12px;
+  background: rgba(245,240,228,.72);
+}
+
+.yield-form input {
+  border-color: rgba(86,111,67,.16);
+  background: #fffefa;
+}
+
+.yield-form button {
+  background: var(--v2-gold-soft);
+  color: var(--v2-olive-deep);
+}
+
+.ticket-upload-button {
+  border-color: rgba(86,111,67,.15);
+  background: rgba(255,253,248,.96);
+  color: var(--v2-olive-deep);
+}
+
+.delivery-warning {
+  background: rgba(239,225,184,.35);
+  border-color: rgba(201,155,44,.24);
+  color: #665018;
+}
+
+@media (max-width: 620px) {
+  .delivery-entry-card {
+    padding: 17px 15px;
+    border-radius: 22px;
+  }
+
+  .delivery-entry-card .inline-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .delivery-form-heading {
+    align-items: flex-start;
+  }
+
+  .delivery-save-row .primary-button {
+    width: 100%;
+  }
+
+  .delivery-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .delivery-actions,
+  .delivery-ticket-action {
+    justify-items: stretch;
+  }
+
+  .yield-form {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+  }
+
+  .yield-form input {
+    width: 100%;
+  }
+}
+
+@media (forced-colors: active) {
+  .delivery-entry-card::before,
+  .delivery-row::before {
+    display: none;
+  }
+}

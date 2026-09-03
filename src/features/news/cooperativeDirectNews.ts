@@ -10,7 +10,7 @@ const sources: Record<string, CooperativeDirectNewsSource> = {
   },
   'remedios-jimena': {
     label: 'Noticias oficiales de Oro de Cánava',
-    url: 'https://www.orodecanava.com/',
+    url: 'https://www.orodecanava.com/es/lista-noticias-aceite-oliva',
   },
   'san-francisco-albanchez': {
     label: 'Noticias oficiales de Cooperativa San Francisco',

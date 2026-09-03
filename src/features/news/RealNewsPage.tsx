@@ -6,6 +6,7 @@ import { BottomNav } from '../../components/BottomNav';
 import { Brand } from '../../components/Brand';
 import { AlertsPanel } from './AlertsPanel';
 import { CooperativesPanel } from './CooperativesPanel';
+import { MarketPanel } from './MarketPanel';
 import { NewsPage } from './NewsPage';
 import { formatNewsAge, loadRealNews, type RealNewsStory } from './newsFeed';
 import '../../styles/news-real.css';
@@ -123,6 +124,32 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
 
           {primaryTabs}
           <CooperativesPanel />
+        </main>
+        <BottomNav active="news" onNavigate={handleBottomNavigate} />
+      </div>
+    );
+  }
+
+  if (mode === 'mercado') {
+    return (
+      <div className="app-shell">
+        <main className="mobile-page">
+          <header className="topbar">
+            <Brand />
+            <div className="topbar-actions">
+              <button className="icon-button" type="button" aria-label="Volver a noticias" onClick={() => setMode('actualidad')}><Newspaper size={19} /></button>
+              <button className="icon-button" type="button" aria-label="Alertas" onClick={() => setMode('alertas')}><Bell size={20} /></button>
+            </div>
+          </header>
+
+          <section className="magina-heading">
+            <span className="eyebrow">Aceite de oliva</span>
+            <h1>Mercado</h1>
+            <p>Precio semanal en origen con fuente pública, evolución y contexto para leer el mercado sin confundirlo con una liquidación concreta.</p>
+          </section>
+
+          {primaryTabs}
+          <MarketPanel onBack={() => setMode('actualidad')} />
         </main>
         <BottomNav active="news" onNavigate={handleBottomNavigate} />
       </div>

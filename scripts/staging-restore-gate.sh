@@ -54,6 +54,7 @@ compose() {
     -u AUTH_MAIL_TRANSPORT \
     -u AUTH_MAIL_FROM \
     -u RESEND_API_KEY \
+    -u AEMET_API_KEY \
     -u LOG_LEVEL \
     -u DB_POOL_MAX \
     -u OBJECT_STORAGE_ENDPOINT \

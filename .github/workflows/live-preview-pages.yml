@@ -6,6 +6,7 @@ on:
       - feat/visual-v2-foundation
       - feat/real-news-v1
       - feat/cooperatives-alerts-v1
+      - feat/market-real-v1
       - main
   schedule:
     - cron: '17 * * * *'
@@ -46,6 +47,12 @@ jobs:
 
       - name: Validate official alerts
         run: node scripts/validate-alerts.mjs
+
+      - name: Refresh official market prices
+        run: npm run market:sync
+
+      - name: Validate official market prices
+        run: node scripts/validate-market.mjs
 
       - name: Generate approved photography
         run: npm run photos:sync

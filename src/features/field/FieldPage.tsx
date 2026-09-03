@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
+  AlertTriangle,
   Bell,
   CalendarDays,
   ChevronRight,
@@ -21,35 +22,20 @@ import {
 import type { AppNavigate, FieldTarget } from '../../app/navigation';
 import { Brand } from '../../components/Brand';
 import { BottomNav } from '../../components/BottomNav';
+import type { AppDataRepositories } from '../../data/contracts';
+import { demoRepositories } from '../../data/demo/repositories';
+import { loadFieldOverview, type FieldOverviewData } from '../../data/fieldOverview';
+import type { Parcel } from '../../domain/models';
 import { FarmManagementPanel } from './FarmManagementPanel';
 
 type FieldPageProps = {
   onNavigate: AppNavigate;
   initialTab?: FieldTarget;
-};
-
-type Parcel = {
-  id: number;
-  name: string;
-  area: string;
-  variety: string;
-  altitude: string;
-  frame: string;
-  slope: string;
-  status: 'Bueno' | 'Revisar';
-  note: string;
+  repositories?: AppDataRepositories;
 };
 
 type FieldPrimaryTab = 'overview' | 'journal' | 'campaign' | 'management';
 type ManagementMode = 'costs' | 'machinery';
-
-const parcels: Parcel[] = [
-  { id: 1, name: 'Parcela 1', area: '5,20 ha', variety: 'Picual', altitude: '650 m', frame: '7 × 7 m', slope: '12 %', status: 'Bueno', note: 'Desarrollo vegetativo correcto.' },
-  { id: 2, name: 'Parcela 2', area: '4,40 ha', variety: 'Picual', altitude: '625 m', frame: '7 × 7 m', slope: '8 %', status: 'Bueno', note: 'Sin incidencias relevantes.' },
-  { id: 3, name: 'Parcela 3', area: '4,10 ha', variety: 'Picual', altitude: '672 m', frame: '7 × 7 m', slope: '16 %', status: 'Revisar', note: 'Riesgo medio de repilo por humedad.' },
-  { id: 4, name: 'Parcela 4', area: '5,90 ha', variety: 'Picual', altitude: '705 m', frame: '7 × 7 m', slope: '19 %', status: 'Bueno', note: 'Poda completada esta campaña.' },
-  { id: 5, name: 'Parcela 5', area: '3,85 ha', variety: 'Picual', altitude: '640 m', frame: '7 × 7 m', slope: '10 %', status: 'Bueno', note: 'Revisar humedad de suelo en 48 h.' },
-];
 
 const journalEntries = [
   { date: '02 SEP', title: 'Tratamiento', detail: 'Cobre + aceite · Parcela 3', meta: 'Completado', icon: Leaf },
@@ -62,11 +48,102 @@ function getInitialPrimaryTab(initialTab: FieldTarget): FieldPrimaryTab {
   return initialTab === 'costs' || initialTab === 'machinery' ? 'management' : initialTab;
 }
 
-export function FieldPage({ onNavigate, initialTab = 'overview' }: FieldPageProps) {
-  const [selectedId, setSelectedId] = useState(3);
+function formatAreaHa(areaHa: number) {
+  return `${areaHa.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ha`;
+}
+
+function getParcelStatus(parcel: Parcel) {
+  return parcel.healthStatus === 'review' ? 'Revisar' : 'Bueno';
+}
+
+function getParcelNote(parcel: Parcel) {
+  return parcel.agronomicNote ?? 'Sin observaciones relevantes.';
+}
+
+export function FieldPage({
+  onNavigate,
+  initialTab = 'overview',
+  repositories = demoRepositories,
+}: FieldPageProps) {
+  const [selectedId, setSelectedId] = useState('parcel-3');
   const [tab, setTab] = useState<FieldPrimaryTab>(() => getInitialPrimaryTab(initialTab));
   const [managementMode, setManagementMode] = useState<ManagementMode>(initialTab === 'machinery' ? 'machinery' : 'costs');
-  const selected = useMemo(() => parcels.find((parcel) => parcel.id === selectedId) ?? parcels[0], [selectedId]);
+  const [fieldOverview, setFieldOverview] = useState<FieldOverviewData | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    setFieldOverview(null);
+    setLoadFailed(false);
+
+    loadFieldOverview(repositories)
+      .then((data) => {
+        if (active) setFieldOverview(data);
+      })
+      .catch(() => {
+        if (active) setLoadFailed(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [repositories]);
+
+  const parcels = fieldOverview?.parcels ?? [];
+  const selected = useMemo(
+    () => parcels.find((parcel) => parcel.id === selectedId) ?? parcels[0],
+    [parcels, selectedId],
+  );
+
+  if (!fieldOverview) {
+    return (
+      <div className="app-shell">
+        <main className="mobile-page" aria-busy={!loadFailed}>
+          <header className="topbar">
+            <Brand />
+            <button className="icon-button" type="button" aria-label="Notificaciones" onClick={() => onNavigate('news', 'alertas')}><Bell size={20} /></button>
+          </header>
+          <section className="section-block">
+            <div className={loadFailed ? 'notice-card notice-card--warning' : 'notice-card'}>
+              {loadFailed ? <AlertTriangle size={20} /> : <Sprout size={20} />}
+              <div>
+                <strong>{loadFailed ? 'No se pudo cargar Mi Campo' : 'Preparando tu campo'}</strong>
+                <span>{loadFailed ? 'Revisa la conexión o la fuente de datos.' : 'Cargando finca y parcelas.'}</span>
+              </div>
+            </div>
+          </section>
+        </main>
+        <BottomNav active="field" onNavigate={onNavigate} onCreate={() => setTab('journal')} />
+      </div>
+    );
+  }
+
+  const farm = fieldOverview.farm;
+
+  if (!farm) {
+    return (
+      <div className="app-shell">
+        <main className="mobile-page">
+          <header className="topbar">
+            <Brand />
+            <button className="icon-button" type="button" aria-label="Notificaciones" onClick={() => onNavigate('news', 'alertas')}><Bell size={20} /></button>
+          </header>
+          <section className="section-block">
+            <div className="notice-card">
+              <Sprout size={20} />
+              <div>
+                <strong>Aún no hay una finca activa</strong>
+                <span>Añade tu primera explotación para empezar a organizar parcelas y labores.</span>
+              </div>
+            </div>
+          </section>
+        </main>
+        <BottomNav active="field" onNavigate={onNavigate} onCreate={() => setTab('journal')} />
+      </div>
+    );
+  }
+
+  const primaryVariety = fieldOverview.primaryVariety ?? '—';
 
   return (
     <div className="app-shell">
@@ -80,13 +157,13 @@ export function FieldPage({ onNavigate, initialTab = 'overview' }: FieldPageProp
           <div className="farm-hero__overlay" />
           <div className="farm-hero__copy">
             <span>Finca activa</span>
-            <h1>Los Llanos</h1>
-            <p>Bedmar · Sierra Mágina</p>
+            <h1>{farm.name}</h1>
+            <p>{farm.municipality}{farm.regionLabel ? ` · ${farm.regionLabel}` : ''}</p>
           </div>
           <div className="farm-hero__metrics">
-            <div><small>Superficie</small><strong>23,45 ha</strong></div>
-            <div><small>Parcelas</small><strong>5</strong></div>
-            <div><small>Variedad</small><strong>Picual</strong></div>
+            <div><small>Superficie</small><strong>{formatAreaHa(farm.areaHa)}</strong></div>
+            <div><small>Parcelas</small><strong>{parcels.length}</strong></div>
+            <div><small>Variedad</small><strong>{primaryVariety}</strong></div>
           </div>
         </section>
 
@@ -106,59 +183,64 @@ export function FieldPage({ onNavigate, initialTab = 'overview' }: FieldPageProp
               </div>
 
               <div className="parcel-list">
-                {parcels.map((parcel) => (
-                  <button
-                    key={parcel.id}
-                    type="button"
-                    className={`parcel-row${selectedId === parcel.id ? ' parcel-row--active' : ''}`}
-                    onClick={() => setSelectedId(parcel.id)}
-                  >
-                    <div className="parcel-row__thumb"><Sprout size={22} /></div>
-                    <div className="parcel-row__copy">
-                      <strong>{parcel.name}</strong>
-                      <span>{parcel.area} · {parcel.variety}</span>
-                    </div>
-                    <span className={`status-pill status-pill--${parcel.status === 'Bueno' ? 'good' : 'review'}`}>{parcel.status}</span>
-                    <ChevronRight size={18} />
-                  </button>
-                ))}
+                {parcels.map((parcel) => {
+                  const status = getParcelStatus(parcel);
+                  return (
+                    <button
+                      key={parcel.id}
+                      type="button"
+                      className={`parcel-row${selectedId === parcel.id ? ' parcel-row--active' : ''}`}
+                      onClick={() => setSelectedId(parcel.id)}
+                    >
+                      <div className="parcel-row__thumb"><Sprout size={22} /></div>
+                      <div className="parcel-row__copy">
+                        <strong>{parcel.name}</strong>
+                        <span>{formatAreaHa(parcel.areaHa)} · {parcel.oliveVariety ?? 'Sin variedad'}</span>
+                      </div>
+                      <span className={`status-pill status-pill--${status === 'Bueno' ? 'good' : 'review'}`}>{status}</span>
+                      <ChevronRight size={18} />
+                    </button>
+                  );
+                })}
               </div>
             </section>
 
-            <section className="section-block field-map-card">
-              <div className="section-heading">
-                <div><span className="eyebrow">Mapa de finca</span><h2>{selected.name}</h2></div>
-                <MapPinned size={21} />
-              </div>
-
-              <div className="parcel-map" aria-label={`Vista esquemática de ${selected.name}`}>
-                <svg viewBox="0 0 520 300" role="img" aria-hidden="true">
-                  <rect width="520" height="300" fill="#526044" />
-                  <g opacity=".22" stroke="#d9cca5" strokeWidth="2">
-                    <path d="M0 55L520 5M0 115L520 65M0 175L520 125M0 235L520 185M60 0L20 300M155 0L105 300M250 0L205 300M350 0L300 300M455 0L405 300" />
-                  </g>
-                  <path d="M105 50L335 38L415 155L315 255L105 220L65 125Z" fill="rgba(123,151,83,.82)" stroke="#f7f1df" strokeWidth="5" />
-                  <circle cx="260" cy="145" r="20" fill="#D4A017" />
-                  <path d="M260 132c-6 0-11 5-11 11 0 9 11 20 11 20s11-11 11-20c0-6-5-11-11-11Zm0 15a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z" fill="#fff" />
-                </svg>
-              </div>
-
-              <div className="parcel-detail-grid">
-                <article><Trees size={18} /><span>Variedad</span><strong>{selected.variety}</strong></article>
-                <article><Ruler size={18} /><span>Superficie</span><strong>{selected.area}</strong></article>
-                <article><Mountain size={18} /><span>Altitud</span><strong>{selected.altitude}</strong></article>
-                <article><Leaf size={18} /><span>Marco</span><strong>{selected.frame}</strong></article>
-              </div>
-
-              <article className={`parcel-health parcel-health--${selected.status === 'Bueno' ? 'good' : 'review'}`}>
-                <div>
-                  <span>Estado actual</span>
-                  <strong>{selected.status}</strong>
-                  <p>{selected.note}</p>
+            {selected && (
+              <section className="section-block field-map-card">
+                <div className="section-heading">
+                  <div><span className="eyebrow">Mapa de finca</span><h2>{selected.name}</h2></div>
+                  <MapPinned size={21} />
                 </div>
-                {selected.status === 'Revisar' ? <Droplets size={23} /> : <Sprout size={23} />}
-              </article>
-            </section>
+
+                <div className="parcel-map" aria-label={`Vista esquemática de ${selected.name}`}>
+                  <svg viewBox="0 0 520 300" role="img" aria-hidden="true">
+                    <rect width="520" height="300" fill="#526044" />
+                    <g opacity=".22" stroke="#d9cca5" strokeWidth="2">
+                      <path d="M0 55L520 5M0 115L520 65M0 175L520 125M0 235L520 185M60 0L20 300M155 0L105 300M250 0L205 300M350 0L300 300M455 0L405 300" />
+                    </g>
+                    <path d="M105 50L335 38L415 155L315 255L105 220L65 125Z" fill="rgba(123,151,83,.82)" stroke="#f7f1df" strokeWidth="5" />
+                    <circle cx="260" cy="145" r="20" fill="#D4A017" />
+                    <path d="M260 132c-6 0-11 5-11 11 0 9 11 20 11 20s11-11 11-20c0-6-5-11-11-11Zm0 15a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z" fill="#fff" />
+                  </svg>
+                </div>
+
+                <div className="parcel-detail-grid">
+                  <article><Trees size={18} /><span>Variedad</span><strong>{selected.oliveVariety ?? '—'}</strong></article>
+                  <article><Ruler size={18} /><span>Superficie</span><strong>{formatAreaHa(selected.areaHa)}</strong></article>
+                  <article><Mountain size={18} /><span>Altitud</span><strong>{selected.altitudeM === undefined ? '—' : `${selected.altitudeM} m`}</strong></article>
+                  <article><Leaf size={18} /><span>Marco</span><strong>{selected.plantingFrame ?? '—'}</strong></article>
+                </div>
+
+                <article className={`parcel-health parcel-health--${getParcelStatus(selected) === 'Bueno' ? 'good' : 'review'}`}>
+                  <div>
+                    <span>Estado actual</span>
+                    <strong>{getParcelStatus(selected)}</strong>
+                    <p>{getParcelNote(selected)}</p>
+                  </div>
+                  {getParcelStatus(selected) === 'Revisar' ? <Droplets size={23} /> : <Sprout size={23} />}
+                </article>
+              </section>
+            )}
 
             <section className="section-block section-block--last">
               <div className="section-heading"><div><span className="eyebrow">Resumen</span><h2>Esta semana</h2></div></div>

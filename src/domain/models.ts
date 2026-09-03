@@ -32,6 +32,7 @@ export type Farm = {
   name: string;
   municipality: string;
   province: string;
+  regionLabel?: string;
   areaHa: number;
   photoUrl?: string;
   centroid?: GeoPoint;
@@ -39,6 +40,7 @@ export type Farm = {
 };
 
 export type IrrigationMode = 'rainfed' | 'irrigated' | 'mixed' | 'unknown';
+export type ParcelHealthStatus = 'good' | 'review';
 
 export type Parcel = {
   id: EntityId;
@@ -48,6 +50,11 @@ export type Parcel = {
   crop: 'olive';
   oliveVariety?: string;
   irrigation: IrrigationMode;
+  altitudeM?: number;
+  plantingFrame?: string;
+  slopePct?: number;
+  healthStatus?: ParcelHealthStatus;
+  agronomicNote?: string;
   boundary?: GeoPoint[];
   source: DataSource;
 };

@@ -1,4 +1,4 @@
-import { enqueueDeliveryCreate } from './offline/outbox.ts';
+import { enqueueActivityCreate, enqueueDeliveryCreate } from './offline/outbox.ts';
 
 export type User = { id: string; name?: string | null; email: string };
 export type Holding = { id: string; name: string; municipality: string | null; province: string | null; role: 'owner' | 'admin' | 'collaborator' | 'viewer' };
@@ -47,6 +47,7 @@ export type Activity = {
 export type ActivityCreateBody = {
   activityType: ActivityType;
   occurredAt: string;
+  clientGeneratedId?: string;
   campaignId?: string;
   farmId?: string;
   plotId?: string;
@@ -58,6 +59,8 @@ export type ActivityCreateBody = {
   costEur?: number;
   notes?: string;
 };
+
+export type ActivityCreateResult = Activity | { offlineQueued: true; clientGeneratedId: string };
 
 export type PlotTimelineItem = {
   type: 'activity' | 'delivery' | 'yield_result';
@@ -152,6 +155,19 @@ async function queueDeliveryOffline(campaignId: string, body: DeliveryCreateBody
   return { offlineQueued: true, clientGeneratedId: body.clientGeneratedId };
 }
 
+async function queueActivityOffline(holdingId: string, body: ActivityCreateBody & { clientGeneratedId: string }): Promise<ActivityCreateResult> {
+  const ownerUserId = cachedOwnerUserId();
+  if (!ownerUserId) throw new Error('No se puede guardar offline antes de iniciar una sesión online en este dispositivo.');
+  await enqueueActivityCreate({
+    ownerUserId,
+    holdingId,
+    idempotencyKey: body.clientGeneratedId,
+    body: { ...body } as Record<string, unknown>,
+  });
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('magina:activity-offline-queued'));
+  return { offlineQueued: true, clientGeneratedId: body.clientGeneratedId };
+}
+
 export const api = {
   me: async () => {
     const result = await request<{ user: User }>('/api/v1/me');
@@ -203,11 +219,23 @@ export const api = {
     return cachedGet<{ items: Activity[] }>(`/api/v1/holdings/${holdingId}/activities${suffix}`);
   },
 
-  createActivity: async (holdingId: string, body: ActivityCreateBody) => {
-    const result = await request<Activity>(`/api/v1/holdings/${holdingId}/activities`, { method: 'POST', body: JSON.stringify(body) });
-    invalidateCachePrefix(`/api/v1/holdings/${holdingId}/activities`);
-    if (body.plotId) memoryCache.delete(`/api/v1/plots/${body.plotId}/timeline`);
-    return result;
+  createActivity: async (holdingId: string, body: ActivityCreateBody): Promise<ActivityCreateResult> => {
+    const clientGeneratedId = body.clientGeneratedId ?? crypto.randomUUID();
+    const payload: ActivityCreateBody & { clientGeneratedId: string } = { ...body, clientGeneratedId };
+
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      return queueActivityOffline(holdingId, payload);
+    }
+
+    try {
+      const result = await request<Activity>(`/api/v1/holdings/${holdingId}/activities`, { method: 'POST', body: JSON.stringify(payload) });
+      invalidateCachePrefix(`/api/v1/holdings/${holdingId}/activities`);
+      if (payload.plotId) memoryCache.delete(`/api/v1/plots/${payload.plotId}/timeline`);
+      return result;
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      return queueActivityOffline(holdingId, payload);
+    }
   },
 
   plotTimeline: (plotId: string) => cachedGet<{ items: PlotTimelineItem[] }>(`/api/v1/plots/${plotId}/timeline`),

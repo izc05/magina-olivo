@@ -4,6 +4,7 @@ import App from './app/App';
 import './styles/tokens.css';
 import './styles/global.css';
 import './styles/field.css';
+import './styles/field-functional-v1.css';
 import './styles/field-map-v2.css';
 import './styles/responsive.css';
 import './styles/navigation-v2.css';

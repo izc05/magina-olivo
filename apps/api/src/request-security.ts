@@ -9,6 +9,10 @@ function isProtectedApiPath(url: string): boolean {
   return url === '/api/v1' || url.startsWith('/api/v1/');
 }
 
+function isPublicReadApiPath(url: string): boolean {
+  return url === '/api/v1/public' || url.startsWith('/api/v1/public/');
+}
+
 export function registerRequestSecurity(app: FastifyInstance): void {
   app.addHook('onRequest', async (request, reply) => {
     if (!isProtectedApiPath(request.url) || SAFE_METHODS.has(request.method)) {
@@ -44,7 +48,11 @@ export function registerRequestSecurity(app: FastifyInstance): void {
 
   app.addHook('onSend', async (request, reply, payload) => {
     if (request.url.startsWith('/api/') || request.url.startsWith('/health/')) {
-      reply.header('cache-control', 'no-store');
+      if (request.method === 'GET' && isPublicReadApiPath(request.url)) {
+        reply.header('cache-control', 'public, max-age=300, stale-while-revalidate=86400');
+      } else {
+        reply.header('cache-control', 'no-store');
+      }
       reply.header('x-content-type-options', 'nosniff');
       reply.header('x-frame-options', 'DENY');
       reply.header('referrer-policy', 'no-referrer');

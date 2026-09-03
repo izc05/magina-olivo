@@ -74,6 +74,7 @@ export function CooperativeDetail({ cooperative, onBack }: CooperativeDetailProp
       .trim();
 
     return stories.filter((story) => {
+      if (story.cooperativeId === cooperative.id) return true;
       const haystack = normalize(`${story.title} ${story.excerpt} ${story.source}`);
       return haystack.includes(brand) || (name.length > 6 && haystack.includes(name)) || haystack.includes(town);
     }).slice(0, 8);
@@ -227,7 +228,7 @@ export function CooperativeDetail({ cooperative, onBack }: CooperativeDetailProp
       {tab === 'noticias' && (
         <section className="section-block coop-profile-panel">
           <div className="section-heading"><div><span className="eyebrow">Actualidad</span><h2>Noticias relacionadas</h2></div><Newspaper size={21} /></div>
-          <p className="coop-profile-intro">Selección automática del feed real por nombre de cooperativa, marca <strong>{cooperative.brand}</strong> y municipio <strong>{cooperative.town}</strong>.</p>
+          <p className="coop-profile-intro">Selección automática del feed real por fuente propia, nombre de cooperativa, marca <strong>{cooperative.brand}</strong> y municipio <strong>{cooperative.town}</strong>.</p>
           {directNews && (
             <a className="coop-document-row coop-direct-news" href={directNews.url} target="_blank" rel="noreferrer">
               <Newspaper size={20} /><div><strong>{directNews.label}</strong><span>Abrir la actualidad publicada directamente por la entidad</span></div><ExternalLink size={18} />

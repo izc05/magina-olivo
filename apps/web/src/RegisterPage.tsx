@@ -76,8 +76,8 @@ export function RegisterPage() {
           <span className="brand-kicker">Tu campo. Tu campaña. Tu Mágina.</span>
         </div>
         <p className="eyebrow page-eyebrow">Primer acceso</p>
-        <h1 id="register-title" className="login-title">Empieza por tu olivar</h1>
-        <p className="login-copy">Crea tu cuenta y configura lo esencial en pocos pasos. Después podrás añadir tus fincas y parcelas, llevar campañas, entregas y rendimientos, y consultar desde la misma app el tiempo, las alertas del campo, noticias, mercado y cooperativas de Sierra Mágina.</p>
+        <h1 id="register-title" className="login-title">Crear cuenta</h1>
+        <p className="login-copy">Gestiona tu olivar y consulta la información clave de Sierra Mágina. Empieza con tus datos básicos y completa fincas y parcelas después.</p>
 
         <form className="form-grid" onSubmit={submit} aria-busy={busy}>
           <div className="field">

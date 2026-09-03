@@ -1,3 +1,4 @@
+import { useMemo, useState, type FormEvent } from 'react';
 import {
   ChevronRight,
   CircleDollarSign,
@@ -8,18 +9,15 @@ import {
   Tractor,
   Wrench,
 } from 'lucide-react';
+import type { ExpenseCategory, ExpenseRecord } from './fieldStore';
 
 type FarmManagementPanelProps = {
   mode: 'costs' | 'machinery';
+  expenses: ExpenseRecord[];
+  onAddExpense: (expense: Omit<ExpenseRecord, 'id'>) => void;
 };
 
-const costRows = [
-  { label: 'Fitosanitarios', value: '1.240 €', percent: 27 },
-  { label: 'Abonado', value: '1.080 €', percent: 24 },
-  { label: 'Riego y energía', value: '860 €', percent: 19 },
-  { label: 'Maquinaria', value: '730 €', percent: 16 },
-  { label: 'Otros', value: '620 €', percent: 14 },
-];
+const expenseCategories: ExpenseCategory[] = ['Fitosanitarios', 'Abonado', 'Riego y energía', 'Maquinaria', 'Otros'];
 
 const machines = [
   { title: 'Tractor principal', detail: 'John Deere · 78 CV', meta: '412 h', status: 'Operativo', icon: Tractor },
@@ -27,7 +25,39 @@ const machines = [
   { title: 'Vibrador', detail: 'Recolección · Acople tractor', meta: 'Listo campaña', status: 'Operativo', icon: Wrench },
 ];
 
-export function FarmManagementPanel({ mode }: FarmManagementPanelProps) {
+function eur(value: number) {
+  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
+}
+
+export function FarmManagementPanel({ mode, expenses, onAddExpense }: FarmManagementPanelProps) {
+  const [expenseOpen, setExpenseOpen] = useState(false);
+  const [category, setCategory] = useState<ExpenseCategory>('Fitosanitarios');
+  const [concept, setConcept] = useState('');
+  const [amount, setAmount] = useState('');
+
+  const totalCost = useMemo(() => expenses.reduce((sum, expense) => sum + expense.amount, 0), [expenses]);
+  const estimatedIncome = 8960;
+  const margin = estimatedIncome - totalCost;
+  const costRows = useMemo(() => expenseCategories.map((label) => {
+    const value = expenses.filter((expense) => expense.category === label).reduce((sum, expense) => sum + expense.amount, 0);
+    return { label, value, percent: totalCost > 0 ? Math.round((value / totalCost) * 100) : 0 };
+  }), [expenses, totalCost]);
+
+  const submitExpense = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const numericAmount = Number(amount.replace(',', '.'));
+    if (!concept.trim() || !Number.isFinite(numericAmount) || numericAmount <= 0) return;
+    onAddExpense({
+      date: new Date().toISOString().slice(0, 10),
+      category,
+      concept: concept.trim(),
+      amount: numericAmount,
+    });
+    setConcept('');
+    setAmount('');
+    setExpenseOpen(false);
+  };
+
   if (mode === 'costs') {
     return (
       <section className="section-block section-block--last farm-management-panel">
@@ -37,9 +67,9 @@ export function FarmManagementPanel({ mode }: FarmManagementPanelProps) {
         </div>
 
         <div className="profit-summary-grid">
-          <article><span>Coste acumulado</span><strong>4.530 €</strong><small>193 €/ha</small></article>
-          <article className="profit-summary-card--accent"><span>Ingreso estimado</span><strong>8.960 €</strong><small>Campaña actual</small></article>
-          <article><span>Margen estimado</span><strong>4.430 €</strong><small>Antes de impuestos</small></article>
+          <article><span>Coste acumulado</span><strong>{eur(totalCost)}</strong><small>Datos guardados</small></article>
+          <article className="profit-summary-card--accent"><span>Ingreso estimado</span><strong>{eur(estimatedIncome)}</strong><small>Campaña actual</small></article>
+          <article><span>Margen estimado</span><strong>{eur(margin)}</strong><small>Antes de impuestos</small></article>
         </div>
 
         <article className="profit-card">
@@ -50,22 +80,31 @@ export function FarmManagementPanel({ mode }: FarmManagementPanelProps) {
           <div className="cost-breakdown">
             {costRows.map((row) => (
               <div className="cost-row" key={row.label}>
-                <div className="cost-row__head"><span>{row.label}</span><strong>{row.value}</strong></div>
+                <div className="cost-row__head"><span>{row.label}</span><strong>{eur(row.value)}</strong></div>
                 <div className="cost-row__track"><span style={{ width: `${row.percent}%` }} /></div>
               </div>
             ))}
           </div>
         </article>
 
-        <button type="button" className="expense-entry-card">
+        <button type="button" className="expense-entry-card" onClick={() => setExpenseOpen((open) => !open)}>
           <div className="expense-entry-card__icon"><ReceiptText size={22} /></div>
           <div><strong>Registrar gasto</strong><span>Factura, combustible, tratamiento o labor</span></div>
           <ChevronRight size={18} />
         </button>
 
+        {expenseOpen && (
+          <form className="field-entry-form" onSubmit={submitExpense}>
+            <label>Categoría<select value={category} onChange={(event) => setCategory(event.target.value as ExpenseCategory)}>{expenseCategories.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label>Concepto<input value={concept} onChange={(event) => setConcept(event.target.value)} placeholder="Ej. gasóleo tractor" required /></label>
+            <label>Importe (€)<input inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="86,50" required /></label>
+            <div className="field-entry-form__actions"><button type="button" className="secondary-button" onClick={() => setExpenseOpen(false)}>Cancelar</button><button type="submit" className="primary-button">Guardar gasto</button></div>
+          </form>
+        )}
+
         <article className="profit-insight-card">
           <Sprout size={22} />
-          <div><span className="eyebrow">Lectura rápida</span><strong>El riego representa el 19% del coste registrado</strong><p>Más adelante esta sección podrá comparar parcelas, campañas y coste por kilo producido.</p></div>
+          <div><span className="eyebrow">Lectura rápida</span><strong>{costRows.sort((a, b) => b.value - a.value)[0]?.label ?? 'Sin gastos'} es ahora la partida principal</strong><p>Los gastos que registres aquí quedan guardados en este dispositivo y actualizan automáticamente el resumen.</p></div>
         </article>
       </section>
     );

@@ -45,6 +45,7 @@ jobs:
           bash -n scripts/staging-public-magina-gate.sh
           bash -n scripts/pilot-participant-setup.sh
           bash -n scripts/pilot-evidence-init.sh
+          node --check scripts/pilot-evidence-summary.mjs
 
       - name: Verify staging public-data configuration
         run: |
@@ -73,7 +74,7 @@ jobs:
           fi
           grep -q 'both CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET must be set' /tmp/public-magina-access-guard.log
 
-      - name: Verify pilot safety guards
+      - name: Verify pilot safety and decision guards
         run: |
           if STAGING_BASE_URL=https://staging.example.com \
             PILOT_PARTICIPANT_ID=p01 \
@@ -101,8 +102,33 @@ jobs:
             bash scripts/pilot-evidence-init.sh
           test -f .deploy/pilot-evidence/ci-round/results.csv
           test -f .deploy/pilot-evidence/ci-round/findings.csv
+          test -f .deploy/pilot-evidence/ci-round/round-checks.csv
           grep -q '^participant_id,task,completed,help,time_seconds' .deploy/pilot-evidence/ci-round/results.csv
           grep -q 'Privacy rule: aliases only' .deploy/pilot-evidence/ci-round/manifest.txt
+
+          for participant in p01 p02; do
+            for task_number in $(seq 1 10); do
+              seconds=10
+              [ "$task_number" = 3 ] && seconds=30
+              [ "$task_number" = 4 ] && seconds=20
+              [ "$task_number" = 5 ] && seconds=10
+              echo "$participant,T$task_number,yes,none,$seconds,no,no,no,5,none,ci" >> .deploy/pilot-evidence/ci-round/results.csv
+            done
+          done
+
+          cat > .deploy/pilot-evidence/ci-round/round-checks.csv <<'EOF'
+          check,value,required,notes
+          data_loss_count,0,0,ci
+          duplicate_count,0,0,ci
+          cross_user_access_count,0,0,ci
+          market_understanding_percent,100,100,ci
+          source_understanding_percent,100,100,ci
+          critical_mobile_accessibility_blockers,0,0,ci
+          EOF
+
+          PILOT_RUN_ID=ci-round node scripts/pilot-evidence-summary.mjs > /tmp/pilot-summary.log
+          grep -q '^Decision: GO$' /tmp/pilot-summary.log
+          grep -q '"decision": "GO"' .deploy/pilot-evidence/ci-round/summary.json
           rm -rf .deploy/pilot-evidence/ci-round
 
       - name: Build web PWA

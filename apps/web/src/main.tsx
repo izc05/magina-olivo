@@ -21,6 +21,7 @@ import './magina-directory.css';
 import './magina-weather.css';
 import './magina-hub.css';
 import './magina-market.css';
+import './integration-v2.css';
 
 registerSW({
   immediate: true,

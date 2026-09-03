@@ -18,10 +18,20 @@ export type CooperativeRecord = {
   products?: CooperativeProduct[];
 };
 
+export type CooperativeShopSync = {
+  generatedAt: string;
+  sourceCount: number;
+  healthySourceCount: number;
+  verifiedProducts: number;
+  updatedProducts: number;
+  collectorErrors?: string[];
+};
+
 export type CooperativesPayload = {
   generatedAt: string;
   sourceLabel: string;
   sourceUrl: string;
+  shopSync?: CooperativeShopSync;
   cooperatives: CooperativeRecord[];
 };
 

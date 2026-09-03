@@ -77,8 +77,11 @@ run_external() {
   log "Running complete synthetic agricultural journey through the public hostname"
   API_BASE="${STAGING_BASE_URL%/}" bash scripts/mvp-core-flow-gate.sh
 
+  log "Running public Mágina pages and data-source gate"
+  bash scripts/staging-public-magina-gate.sh
+
   log "EXTERNAL PASS base_url=${STAGING_BASE_URL%/}"
-  log "Password-recovery email, accessibility and PWA/offline remain separate acceptance blocks."
+  log "Private agricultural flow and public Mágina services passed. Password-recovery email, accessibility and PWA/offline remain separate acceptance blocks."
 }
 
 run_backup() {
@@ -110,6 +113,7 @@ show_status() {
   printf 'source_sha=%s\n' "$(current_source_sha)"
   printf 'staging_env=%s\n' "${STAGING_ENV_FILE:-unset}"
   printf 'staging_base_url=%s\n' "${STAGING_BASE_URL:-unset}"
+  printf 'public_weather_municipality=%s\n' "${STAGING_PUBLIC_WEATHER_MUNICIPALITY:-bedmar-y-garciez}"
   printf 'next_manual_gates=mail-recovery,accessibility,pwa-offline\n'
 }
 

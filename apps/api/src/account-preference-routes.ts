@@ -33,7 +33,7 @@ function mapPreference(row: PreferenceRow) {
     notifyTasks: row.notify_tasks,
     notifyPendingYield: row.notify_pending_yield,
     weatherRainProbabilityPercentThreshold: rainProbabilityThreshold,
-    // Transitional alias for the pre-alert account UI. Remove after the UI migrates to the percentage name.
+    // Transitional alias for older clients. It mirrors the new percentage value in API responses only.
     weatherRainMmThreshold: rainProbabilityThreshold,
     weatherFrostCThreshold: Number(row.weather_frost_c_threshold),
     weatherWindKmhThreshold: Number(row.weather_wind_kmh_threshold),
@@ -122,6 +122,7 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
       const rainProbabilityThreshold = request.body.weatherRainProbabilityPercentThreshold
         ?? request.body.weatherRainMmThreshold
         ?? 60;
+      const legacyRainMmThreshold = request.body.weatherRainMmThreshold ?? 5;
 
       const result = await db.query<PreferenceRow>(
         `
@@ -132,16 +133,18 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
             notify_tasks,
             notify_pending_yield,
             weather_rain_probability_percent_threshold,
+            weather_rain_mm_threshold,
             weather_frost_c_threshold,
             weather_wind_kmh_threshold,
             updated_at
-          ) values ($1, $2, $3, $4, $5, $6, $7, $8, now())
+          ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, now())
           on conflict (user_id) do update set
             preferred_cooperative_id = excluded.preferred_cooperative_id,
             notify_weather = excluded.notify_weather,
             notify_tasks = excluded.notify_tasks,
             notify_pending_yield = excluded.notify_pending_yield,
             weather_rain_probability_percent_threshold = excluded.weather_rain_probability_percent_threshold,
+            weather_rain_mm_threshold = excluded.weather_rain_mm_threshold,
             weather_frost_c_threshold = excluded.weather_frost_c_threshold,
             weather_wind_kmh_threshold = excluded.weather_wind_kmh_threshold,
             updated_at = now()
@@ -162,6 +165,7 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
           request.body.notifyTasks,
           request.body.notifyPendingYield,
           rainProbabilityThreshold,
+          legacyRainMmThreshold,
           request.body.weatherFrostCThreshold,
           request.body.weatherWindKmhThreshold,
         ],

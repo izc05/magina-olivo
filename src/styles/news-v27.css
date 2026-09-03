@@ -56,6 +56,19 @@
   .news-hero-card__copy h2 {
     font-size: 23px;
   }
+
+  .hub-tabs--primary {
+    gap: 3px;
+    padding: 4px;
+  }
+
+  .hub-tabs--primary .hub-tab {
+    min-width: 0;
+    min-height: 38px;
+    padding: 0 5px;
+    font-size: 9.5px;
+    letter-spacing: -.015em;
+  }
 }
 
 @media (min-width: 820px) {

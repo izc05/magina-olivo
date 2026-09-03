@@ -3,5 +3,6 @@
 .home-market-card__copy > span { color: var(--color-text-muted); font-size: 10px; }
 .home-market-card__copy > strong { font-family: var(--font-editorial); font-size: 25px; font-weight: 600; color: var(--color-olive-950); }
 .home-market-card__copy > small { display: inline-flex; align-items: center; gap: 4px; color: var(--color-olive-700); font-size: 10px; font-weight: 700; }
-.home-market-card svg { display: block; width: 100%; height: auto; }
+.home-market-card__copy > small svg { width: 13px; height: 13px; flex: 0 0 auto; }
+.home-market-card > svg { display: block; width: 100%; height: auto; max-height: 72px; }
 @media (max-width: 420px) { .home-market-card { grid-template-columns: minmax(0,1fr) 110px; } .home-market-card__copy > strong { font-size: 22px; } }

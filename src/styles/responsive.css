@@ -11,6 +11,10 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .primary-button,
 .secondary-button { min-height: 44px; }
 
+/* Refinamiento editorial V2.1: el hero de actualidad usa fotografía territorial real ya aprobada. */
+.news-hero-card__image { background: url('/photos/field-olivares-magina.webp') center 52% / cover no-repeat; }
+.news-hero-card__image svg { opacity: 0; }
+
 @media (max-width: 390px) {
   .mobile-page { padding: 12px 12px 26px; }
   .topbar { gap: 8px; margin-bottom: 10px; }

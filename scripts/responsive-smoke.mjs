@@ -76,6 +76,23 @@ async function assertSecondaryNavigationVisible(page, selector, expectedCount, v
   }
 }
 
+async function assertHomeMarketGraphicScale(page, viewportName) {
+  const trendIconBox = await page.locator('.home-market-card__copy > small svg').boundingBox();
+  const chartBox = await page.locator('.home-market-card > svg').boundingBox();
+
+  assert(Boolean(trendIconBox), `${viewportName} · Inicio: no se encontró el icono de tendencia del mercado.`);
+  assert(Boolean(chartBox), `${viewportName} · Inicio: no se encontró el minigráfico del mercado.`);
+
+  assert(
+    trendIconBox.width <= 20 && trendIconBox.height <= 20,
+    `${viewportName} · Inicio: el icono de tendencia se expandió (${trendIconBox.width}×${trendIconBox.height}px).`,
+  );
+  assert(
+    chartBox.width >= 80 && chartBox.height <= 90,
+    `${viewportName} · Inicio: escala inesperada del minigráfico (${chartBox.width}×${chartBox.height}px).`,
+  );
+}
+
 async function closePreview(previewServer) {
   const httpServer = previewServer?.httpServer;
   if (!httpServer) return;
@@ -138,6 +155,10 @@ async function run() {
           assert(Boolean(fabBox) && fabBox.height >= 44 && fabBox.width >= 44, `${viewport.name} · ${section.label}: FAB menor de 44px.`);
         }
 
+        if (section.slug === 'inicio') {
+          await assertHomeMarketGraphicScale(page, viewport.name);
+        }
+
         if (section.slug === 'mi-campo') {
           await assertSecondaryNavigationVisible(page, '.field-tabs .field-tab', 4, viewport.name, section.label);
         }
@@ -159,7 +180,7 @@ async function run() {
       }
 
       await context.close();
-      console.log(`✓ ${viewport.name}: navegación, subnavegación, tap targets, FAB y overflow validados.`);
+      console.log(`✓ ${viewport.name}: navegación, subnavegación, mercado, tap targets, FAB y overflow validados.`);
     }
 
     console.log(`✓ Smoke responsive completado: ${viewports.length * sections.length} capturas.`);

@@ -17,10 +17,10 @@ Validar que la interfaz conserva la misma identidad y jerarquía desde móvil pe
 
 - Controles principales con objetivo táctil mínimo de 44 px.
 - Barra inferior persistente y legible en móvil.
-- El botón central `+` conserva un mínimo de 48 px en móvil pequeño.
+- El botón contextual `+` conserva un mínimo de 48 px en móvil pequeño.
 - El nombre de marca tiene prioridad sobre el claim cuando el ancho es limitado.
-- Ningún bloque esencial debe depender de hover.
-- Pestañas largas pueden desplazarse horizontalmente, pero las ramas principales deben ser pocas.
+- Ningún bloque esencial depende de hover.
+- Las ramas principales de navegación secundaria deben ser visibles sin quedar ocultas fuera del viewport en 360–430 px.
 - La información secundaria puede compactarse; estado, acción y contexto principal no deben desaparecer.
 - En escritorio se amplía el lienzo y se aprovecha mejor la anchura, pero se conserva el lenguaje de app.
 
@@ -31,12 +31,13 @@ Validar que la interfaz conserva la misma identidad y jerarquía desde móvil pe
 - Se oculta el claim pequeño del logotipo para evitar compresión del topbar.
 - Accesos rápidos pasan de cuatro columnas a una cuadrícula 2 × 2.
 - Se reduce ligeramente la altura de los heroes sin perder fotografía protagonista.
-- Barra inferior se compacta manteniendo el FAB central en 48 px.
-- Parcelas pasan a una estructura de dos líneas: nombre/datos + estado, evitando que la etiqueta de estado compita con el título.
+- Barra inferior se compacta manteniendo el FAB contextual en 48 px.
+- Parcelas pasan a una estructura de dos líneas: nombre/datos + estado.
 - Detalle de parcela pasa a una columna.
 - Resumen semanal pasa a una columna para mantener lectura real en exterior.
 - Mercado pasa a filas completas en vez de tres tarjetas muy estrechas.
 - Titulares editoriales reducen tamaño solo en móvil estrecho.
+- `Campo / Cuaderno / Campaña / Gestión`, `Noticias / Cooperativas / Mercado / Descubre / Más` y `Resumen / Guardados / Documentos / Ajustes` quedan visibles completos en 360–430 px.
 
 ### 680–1099 px
 
@@ -63,9 +64,9 @@ Validar que la interfaz conserva la misma identidad y jerarquía desde móvil pe
 - Se añade tratamiento `prefers-reduced-motion` para futuras transiciones/animaciones.
 - Los botones principales se mantienen aptos para uso táctil.
 
-## Pendiente de comprobación visual real
+## Validación visual real ejecutada
 
-La auditoría estructural está aplicada en CSS, pero antes de merge deben hacerse capturas o pruebas reales en al menos:
+El workflow `Visual V2 build` genera y valida capturas reales con Chromium en:
 
 1. 360 × 800.
 2. 390 × 844.
@@ -73,14 +74,28 @@ La auditoría estructural está aplicada en CSS, pero antes de merge deben hacer
 4. 768 × 1024.
 5. 1366 × 768.
 
-Especial atención a:
+Cada ejecución recorre las cinco secciones principales:
 
-- Inicio: relación hero / accesos rápidos / primer scroll.
-- Mi Campo: tabs, parcelas, mapa y Gestión.
-- Mágina: tabs principales + bloque Más Mágina.
-- Comunidad: detalle y caja de respuesta.
-- Mi Mágina: preview de documento.
-- Estados técnicos: teclado móvil, formularios y mensajes largos.
+- Inicio.
+- Mi Campo.
+- Mágina.
+- Descubre.
+- Perfil.
+
+Resultado: **25 capturas por ejecución**.
+
+El run 17 (`f1f4072574b94b6cc6d9c091eeb6b35db95198e5`) terminó correctamente y validó:
+
+- exactamente 5 destinos en la navegación principal;
+- objetivos táctiles mínimos de 44 px;
+- FAB contextual solo donde corresponde;
+- ausencia de overflow horizontal global;
+- 4 pestañas visibles en Mi Campo;
+- 5 pestañas visibles en Mágina;
+- 4 pestañas visibles en Perfil;
+- generación y subida del artifact `responsive-captures`.
+
+Además, la pasada visual detectó un fallo que no era geométrico: el icono pequeño de tendencia del mercado de Inicio heredaba el tamaño del SVG principal y se expandía en escritorio. Se corrige la selección CSS y se añade una aserción específica al smoke para impedir su regreso.
 
 ## Regla para el cierre V2
 
@@ -89,5 +104,7 @@ La responsive se considera cerrada cuando:
 - compila el proyecto;
 - no hay overflow horizontal accidental;
 - todos los CTA principales son alcanzables con pulgar;
+- las ramas principales de subnavegación permanecen visibles;
 - no se rompe la jerarquía de las primeras referencias visuales;
-- la versión de escritorio sigue pareciendo Mágina Olivo, no un ERP.
+- la versión de escritorio sigue pareciendo Mágina Olivo, no un ERP;
+- las capturas reales y el smoke de Chromium terminan en verde.

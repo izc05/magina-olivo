@@ -53,6 +53,12 @@ jobs:
       - name: Build for GitHub Pages
         run: npm run build -- --base=/magina-olivo/
 
+      - name: Install Chromium for navigation smoke
+        run: npx playwright install --with-deps chromium
+
+      - name: Validate Mágina data flows
+        run: node scripts/magina-data-smoke.mjs
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

@@ -1,0 +1,161 @@
+.sigpac-shell {
+  scroll-margin-top: 6rem;
+}
+
+.sigpac-search-card {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.sigpac-plot-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.sigpac-plot-status span {
+  border: 1px solid var(--line, #d9ddcf);
+  border-radius: 999px;
+  padding: 0.32rem 0.6rem;
+  color: var(--muted, #66705c);
+  font-size: 0.8rem;
+}
+
+.sigpac-results-grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.sigpac-result-list {
+  display: grid;
+  gap: 0.55rem;
+  align-content: start;
+  max-height: 31rem;
+  overflow: auto;
+  padding-right: 0.15rem;
+}
+
+.sigpac-result {
+  width: 100%;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.85rem 0.95rem;
+  text-align: left;
+  border: 1px solid var(--line, #d9ddcf);
+  color: var(--text, #26301f);
+  cursor: pointer;
+}
+
+.sigpac-result.active {
+  border-color: #8a772f;
+  box-shadow: 0 0 0 2px rgba(138, 119, 47, 0.13);
+}
+
+.sigpac-result span,
+.sigpac-result small {
+  color: var(--muted, #66705c);
+}
+
+.sigpac-detail {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.sigpac-geometry-preview {
+  width: 100%;
+  min-height: 15rem;
+  max-height: 22rem;
+  border-radius: 0.9rem;
+  background:
+    linear-gradient(rgba(73, 91, 47, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(73, 91, 47, 0.06) 1px, transparent 1px),
+    #f4f6ee;
+  background-size: 20px 20px;
+}
+
+.sigpac-geometry-preview polygon {
+  fill: rgba(104, 126, 55, 0.24);
+  stroke: #53652d;
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+}
+
+.sigpac-preview-empty {
+  display: grid;
+  min-height: 12rem;
+  place-items: center;
+  color: var(--muted, #66705c);
+  background: #f4f6ee;
+  border-radius: 0.9rem;
+}
+
+.sigpac-detail-copy {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.sigpac-detail-copy h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.sigpac-detail-copy dl {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  border: 1px solid var(--line, #d9ddcf);
+  border-radius: 0.8rem;
+  overflow: hidden;
+}
+
+.sigpac-detail-copy dl div {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.75fr) 1fr;
+  gap: 0.7rem;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--line, #d9ddcf);
+}
+
+.sigpac-detail-copy dl div:last-child {
+  border-bottom: 0;
+}
+
+.sigpac-detail-copy dt {
+  color: var(--muted, #66705c);
+}
+
+.sigpac-detail-copy dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.sigpac-attribution {
+  margin: 0.7rem 0 0;
+  color: var(--muted, #66705c);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+@media (min-width: 860px) {
+  .sigpac-results-grid {
+    grid-template-columns: minmax(15rem, 0.65fr) minmax(25rem, 1.35fr);
+  }
+
+  .sigpac-detail {
+    grid-template-columns: minmax(13rem, 0.8fr) minmax(16rem, 1.2fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .sigpac-detail-copy dl div {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+
+  .sigpac-detail-copy dd {
+    text-align: left;
+  }
+}

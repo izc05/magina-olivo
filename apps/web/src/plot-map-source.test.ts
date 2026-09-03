@@ -8,21 +8,24 @@ async function read(relativePath: string): Promise<string> {
 
 test('plot map is wired into Mi Campo and supports point plus boundary editing', async () => {
   const notebook = await read('./FieldNotebook.tsx');
-  const map = await read('./PlotMapPanel.tsx');
+  const panel = await read('./PlotMapPanel.tsx');
+  const editor = await read('./PlotMapEditor.tsx');
 
   assert.match(notebook, /import \{ PlotMapPanel \}/);
   assert.match(notebook, /<PlotMapPanel farmId=\{farmId\}/);
-  assert.match(map, /Mapa de Parcelas/);
-  assert.match(map, /navigator\.geolocation\.getCurrentPosition/);
-  assert.match(map, /enableHighAccuracy: true/);
-  assert.match(map, /Guardar ubicación/);
-  assert.match(map, /Guardar perímetro/);
-  assert.match(map, /Añadir mi posición/);
-  assert.match(map, /tile\.openstreetmap\.org/);
-  assert.match(map, /OpenStreetMap contributors/);
-  assert.match(map, /polygonFromVertices/);
-  assert.match(map, /polygonAreaSquareMeters/);
-  assert.match(map, /credentials: 'include'/);
+  assert.match(panel, /PlotMapEditor/);
+  assert.match(panel, /SigpacRecintoPanel/);
+  assert.match(editor, /Mapa de Parcelas/);
+  assert.match(editor, /navigator\.geolocation\.getCurrentPosition/);
+  assert.match(editor, /enableHighAccuracy: true/);
+  assert.match(editor, /Guardar ubicación/);
+  assert.match(editor, /Guardar perímetro/);
+  assert.match(editor, /Añadir mi posición/);
+  assert.match(editor, /tile\.openstreetmap\.org/);
+  assert.match(editor, /OpenStreetMap contributors/);
+  assert.match(editor, /polygonFromVertices/);
+  assert.match(editor, /polygonAreaSquareMeters/);
+  assert.match(editor, /credentials: 'include'/);
 });
 
 test('plot point and boundary persistence remain private and server-validated', async () => {

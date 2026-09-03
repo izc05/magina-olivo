@@ -28,6 +28,23 @@ export default defineConfig({
       },
       workbox: {
         navigateFallbackDenylist: [/^\/api\//, /^\/health\//],
+        runtimeCaching: [
+          {
+            urlPattern: /\/api\/v1\/public\//,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'magina-public-api-v1',
+              networkTimeoutSeconds: 3,
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 24 * 60 * 60,
+              },
+            },
+          },
+        ],
       },
       devOptions: {
         enabled: true,

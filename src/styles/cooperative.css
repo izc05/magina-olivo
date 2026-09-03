@@ -40,14 +40,33 @@
 .coop-product-card { display: grid; grid-template-columns: 44px minmax(0,1fr); align-items: center; gap: 10px; padding: 11px; border: 1px solid var(--color-border); border-radius: 14px; background: rgba(255,255,255,.68); }
 .coop-product-card--primary { border-color: rgba(92,122,70,.18); background: rgba(167,180,151,.11); }
 .coop-product-card__icon { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 12px; background: rgba(92,122,70,.11); color: var(--color-olive-700); }
-.coop-product-card > div:last-child { display: grid; gap: 3px; min-width: 0; }
+.coop-product-card__copy { display: grid; gap: 3px; min-width: 0; }
 .coop-product-card span,
 .coop-product-card small { color: var(--color-text-muted); font-size: 9px; }
 .coop-product-card strong { font-size: 13px; }
+.coop-product-card__price { display: grid; gap: 1px; margin-top: 5px; padding-top: 6px; border-top: 1px solid rgba(92,122,70,.12); }
+.coop-product-card__price strong { color: var(--color-olive-950); font-family: var(--font-editorial); font-size: 17px; }
+.coop-product-card__price span { color: var(--color-olive-700); font-size: 8.5px; font-weight: 700; }
+.coop-product-card__copy > a { display: inline-flex; width: fit-content; align-items: center; gap: 4px; margin-top: 3px; color: var(--color-olive-700); font-size: 9px; font-weight: 700; }
 .coop-price-own { display: grid; gap: 5px; padding: 13px; border: 1px dashed rgba(212,160,23,.42); border-radius: 14px; background: rgba(212,160,23,.07); }
+.coop-price-own--shop { border-color: rgba(92,122,70,.28); background: rgba(167,180,151,.09); }
 .coop-price-own span { color: #7e661d; font-size: 10px; font-weight: 700; }
+.coop-price-own--shop span { color: var(--color-olive-700); }
 .coop-price-own strong { font-size: 14px; }
 .coop-price-own small { color: var(--color-text-muted); font-size: 10px; line-height: 1.45; }
+.coop-store-prices { display: grid; gap: 7px; padding: 12px; border: 1px solid rgba(92,122,70,.18); border-radius: 15px; background: rgba(167,180,151,.08); }
+.coop-store-prices__head { display: flex; align-items: center; gap: 8px; }
+.coop-store-prices__head svg { color: var(--color-olive-700); }
+.coop-store-prices__head > div { display: grid; gap: 1px; }
+.coop-store-prices__head span { color: var(--color-text-muted); font-size: 9px; }
+.coop-store-prices__head strong { font-size: 13px; }
+.coop-store-prices > a { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 11px; background: rgba(255,255,255,.74); color: inherit; }
+.coop-store-prices > a > div { display: grid; gap: 2px; min-width: 0; }
+.coop-store-prices > a span,
+.coop-store-prices > a small,
+.coop-store-prices__note { color: var(--color-text-muted); font-size: 8.5px; }
+.coop-store-prices > a b { white-space: nowrap; color: var(--color-olive-950); font-family: var(--font-editorial); font-size: 15px; }
+.coop-store-prices__note { line-height: 1.4; }
 .coop-market-reference { display: grid; gap: 9px; padding: 13px; border: 1px solid rgba(92,122,70,.18); border-radius: 15px; background: linear-gradient(145deg,rgba(255,255,255,.76),rgba(167,180,151,.12)); }
 .coop-market-reference__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .coop-market-reference__head > div { display: grid; gap: 2px; }
@@ -77,4 +96,6 @@
   .coop-detail-status { grid-column: 1 / -1; justify-self: start; }
   .coop-market-reference__grid { grid-template-columns: 1fr; }
   .coop-market-reference__grid article { grid-template-columns: 1fr auto; align-items: center; }
+  .coop-store-prices > a { grid-template-columns: minmax(0,1fr); }
+  .coop-store-prices > a b { justify-self: start; }
 }

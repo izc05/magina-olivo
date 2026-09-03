@@ -32,10 +32,11 @@ const oliveTerms = [
   'aceituna jabonosa', 'prays', 'verticilosis', 'barrenillo', 'algodoncillo', 'abichado', 'euzophera',
 ];
 
-const advisoryTerms = [
+const strictAlertTerms = [
   'recomend', 'prevención', 'prevencion', 'seguimiento', 'riesgo', 'plaga', 'aviso', 'alerta',
-  'tratamiento', 'control', 'vigilancia', 'campaña', 'campana', 'recepción', 'recepcion', 'cooperativa',
-  'ayuda', 'pac', 'fitosanitario', 'envero', 'recolección', 'recoleccion',
+  'tratamiento', 'control', 'vigilancia', 'fitosanitario', 'envero', 'recolección', 'recoleccion',
+  'mosca del olivo', 'repilo', 'antracnosis', 'aceituna jabonosa', 'verticilosis', 'prays', 'barrenillo',
+  'xylella', 'recepción', 'recepcion', 'cierre', 'horario', 'turno',
 ];
 
 function decodeEntities(value = '') {
@@ -116,8 +117,7 @@ function severityFor(item) {
 function categoryFor(item) {
   const text = textFor(item);
   if (['plaga', 'mosca del olivo', 'repilo', 'antracnosis', 'verticilosis', 'fitosanitario', 'tratamiento'].some((term) => text.includes(term))) return 'Sanidad vegetal';
-  if (['cooperativa', 'recepción', 'recepcion', 'campaña', 'campana'].some((term) => text.includes(term))) return 'Cooperativas';
-  if (['pac', 'ayuda', 'subvención', 'subvencion'].some((term) => text.includes(term))) return 'Ayudas';
+  if (['recepción', 'recepcion', 'cierre', 'horario', 'turno'].some((term) => text.includes(term))) return 'Cooperativas';
   return 'Seguimiento de campo';
 }
 
@@ -146,7 +146,7 @@ function normalizeTitle(title) {
 async function fetchSource(source) {
   const response = await fetch(source.url, {
     headers: {
-      'user-agent': 'MaginaOlivoAlertsBot/1.0 (+https://github.com/izc05/magina-olivo)',
+      'user-agent': 'MaginaOlivoAlertsBot/1.1 (+https://github.com/izc05/magina-olivo)',
       accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml',
     },
     signal: AbortSignal.timeout(15_000),
@@ -168,7 +168,7 @@ async function main() {
     if (new Date(item.publishedAt).getTime() < cutoff) continue;
     const text = textFor(item);
     if (!includesAny(text, oliveTerms)) continue;
-    if (!includesAny(text, advisoryTerms)) continue;
+    if (!includesAny(text, strictAlertTerms)) continue;
 
     const score = item.weight + freshnessScore(item.publishedAt) + (item.scope === 'Sierra Mágina' ? 12 : 0);
     const ranked = { ...item, score };

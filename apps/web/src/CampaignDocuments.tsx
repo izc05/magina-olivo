@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { Delivery } from './api.ts';
+import { useEffect, useState } from 'react';
 import {
   listCampaignDocuments,
   privateDocumentContentUrl,
@@ -23,23 +22,27 @@ function documentLabel(type: string): string {
   return 'Documento';
 }
 
+function deliveryLine(document: UploadedDocument): string {
+  const delivery = document.delivery;
+  if (!delivery) return 'Documento privado de la campaña';
+  const date = delivery.deliveredAt
+    ? new Date(delivery.deliveredAt).toLocaleDateString('es-ES')
+    : 'Entrega';
+  const kilograms = delivery.kilograms ? `${delivery.kilograms} kg` : null;
+  const destination = delivery.destination || 'Cooperativa';
+  return [date, kilograms, destination].filter(Boolean).join(' · ');
+}
+
 export function CampaignDocuments({
   holdingId,
   campaignId,
-  deliveries,
 }: {
   holdingId: string;
   campaignId: string;
-  deliveries: Delivery[];
 }) {
   const [documents, setDocuments] = useState<UploadedDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const deliveriesById = useMemo(
-    () => new Map(deliveries.map((delivery) => [delivery.id, delivery])),
-    [deliveries],
-  );
 
   async function load() {
     setLoading(true);
@@ -77,27 +80,20 @@ export function CampaignDocuments({
       {error ? <div className="alert" role="alert">{error}</div> : null}
 
       <div className="campaign-document-list" aria-busy={loading}>
-        {documents.map((document) => {
-          const delivery = document.deliveryId ? deliveriesById.get(document.deliveryId) : undefined;
-          return (
-            <article className="card campaign-document-row" key={document.id}>
-              <div className="campaign-document-icon" aria-hidden="true">▤</div>
-              <div className="campaign-document-copy">
-                <div className="campaign-document-topline">
-                  <strong>{document.filename}</strong>
-                  <span>{documentLabel(document.documentType)}</span>
-                </div>
-                <p>
-                  {delivery
-                    ? `${new Date(delivery.deliveredAt).toLocaleDateString('es-ES')} · ${delivery.kilograms} kg · ${delivery.customDestination || 'Cooperativa'}`
-                    : 'Documento privado de la campaña'}
-                </p>
-                <small>{formatBytes(document.sizeBytes)} · {new Date(document.createdAt).toLocaleDateString('es-ES')}</small>
+        {documents.map((document) => (
+          <article className="card campaign-document-row" key={document.id}>
+            <div className="campaign-document-icon" aria-hidden="true">▤</div>
+            <div className="campaign-document-copy">
+              <div className="campaign-document-topline">
+                <strong>{document.filename}</strong>
+                <span>{documentLabel(document.documentType)}</span>
               </div>
-              <a className="campaign-document-download" href={privateDocumentContentUrl(document.id)}>Descargar</a>
-            </article>
-          );
-        })}
+              <p>{deliveryLine(document)}</p>
+              <small>{formatBytes(document.sizeBytes)} · {new Date(document.createdAt).toLocaleDateString('es-ES')}</small>
+            </div>
+            <a className="campaign-document-download" href={privateDocumentContentUrl(document.id)}>Descargar</a>
+          </article>
+        ))}
 
         {!loading && documents.length === 0 ? (
           <div className="card empty-state">

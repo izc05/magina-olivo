@@ -13,14 +13,22 @@ export function OfflineColdStart({ onRetry }: { onRetry: () => void }) {
 
   useEffect(() => {
     const ownerUserId = cachedOwnerUserId();
-    if (!ownerUserId) return;
-    void listPendingOperations(ownerUserId).then((operations) => {
-      setCounts({
-        deliveries: operations.filter((operation) => operation.kind === 'delivery.create').length,
-        activities: operations.filter((operation) => operation.kind === 'activity.create').length,
+    if (ownerUserId) {
+      void listPendingOperations(ownerUserId).then((operations) => {
+        setCounts({
+          deliveries: operations.filter((operation) => operation.kind === 'delivery.create').length,
+          activities: operations.filter((operation) => operation.kind === 'activity.create').length,
+        });
       });
-    });
-  }, []);
+    }
+
+    const handleOnline = () => {
+      setChecking(true);
+      onRetry();
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [onRetry]);
 
   function retry() {
     setChecking(true);

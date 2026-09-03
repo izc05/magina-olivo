@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { fetchAemetDailyForecast, type PublicWeatherForecast } from './aemet-weather-provider.ts';
 import { getPool } from './db.ts';
 import { apiError } from './http-errors.ts';
-import { classifyWeatherFreshness } from './weather-freshness.ts';
+import { canServeWeatherFallback, classifyWeatherFreshness } from './weather-freshness.ts';
 
 type WeatherQuery = { municipality: string };
 type CacheEntry = { expiresAt: number; value: PublicWeatherForecast };
@@ -12,6 +12,7 @@ type MunicipalityRow = {
   province: string;
   aemet_code: string;
 };
+type DeliveryMode = 'live' | 'cache' | 'degraded-cache';
 
 const cache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 30 * 60 * 1000;
@@ -20,6 +21,7 @@ function weatherPayload(
   municipality: MunicipalityRow,
   forecast: PublicWeatherForecast,
   cacheInfo: { hit: boolean; ttlSeconds: number },
+  mode: DeliveryMode,
 ) {
   return {
     municipality: {
@@ -33,6 +35,7 @@ function weatherPayload(
       days: forecast.days,
     },
     freshness: classifyWeatherFreshness(forecast.elaboratedAt),
+    availability: { mode },
     cache: cacheInfo,
     source: {
       label: 'AEMET OpenData',
@@ -78,10 +81,15 @@ export function registerPublicWeatherRoutes(app: FastifyInstance): void {
 
       const cached = cache.get(municipality.slug);
       if (cached && cached.expiresAt > Date.now()) {
-        return weatherPayload(municipality, cached.value, {
-          hit: true,
-          ttlSeconds: Math.max(0, Math.round((cached.expiresAt - Date.now()) / 1000)),
-        });
+        return weatherPayload(
+          municipality,
+          cached.value,
+          {
+            hit: true,
+            ttlSeconds: Math.max(0, Math.round((cached.expiresAt - Date.now()) / 1000)),
+          },
+          'cache',
+        );
       }
 
       try {
@@ -91,12 +99,31 @@ export function registerPublicWeatherRoutes(app: FastifyInstance): void {
           value: forecast,
         });
 
-        return weatherPayload(municipality, forecast, {
-          hit: false,
-          ttlSeconds: CACHE_TTL_MS / 1000,
-        });
+        return weatherPayload(
+          municipality,
+          forecast,
+          { hit: false, ttlSeconds: CACHE_TTL_MS / 1000 },
+          'live',
+        );
       } catch (error) {
         request.log.warn({ err: error, municipality: municipality.slug }, 'AEMET forecast unavailable');
+
+        if (cached) {
+          const freshness = classifyWeatherFreshness(cached.value.elaboratedAt);
+          if (canServeWeatherFallback(freshness)) {
+            request.log.warn(
+              { municipality: municipality.slug, freshness: freshness.status, ageHours: freshness.ageHours },
+              'Serving bounded cached AEMET fallback',
+            );
+            return weatherPayload(
+              municipality,
+              cached.value,
+              { hit: true, ttlSeconds: 0 },
+              'degraded-cache',
+            );
+          }
+        }
+
         return reply.code(502).send(apiError(request, 'WEATHER_PROVIDER_UNAVAILABLE', 'Weather data is temporarily unavailable'));
       }
     },

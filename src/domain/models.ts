@@ -153,6 +153,9 @@ export type WeatherSnapshot = {
   locationLabel: string;
   observedAt: ISODateTime;
   temperatureC: number;
+  maxTemperatureC?: number;
+  minTemperatureC?: number;
+  conditionLabel?: string;
   humidityPct?: number;
   windKmh?: number;
   rainProbabilityPct?: number;
@@ -164,9 +167,11 @@ export type MarketQuote = {
   id: EntityId;
   product: 'aove' | 'virgin' | 'lampante';
   label: string;
+  marketLabel?: string;
   priceEurKg: number;
   observedAt: ISODateTime;
   trend?: 'up' | 'flat' | 'down';
+  weeklyChangePct?: number;
   source: DataSource;
 };
 

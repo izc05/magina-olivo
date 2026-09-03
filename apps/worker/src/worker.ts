@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { hostname } from 'node:os';
 import { setTimeout as sleep } from 'node:timers/promises';
 import pg from 'pg';
@@ -5,6 +6,7 @@ import { augmentAccountExportWithTasks } from './account-export-tasks.ts';
 import { expireAccountExports, generateAccountExport } from './account-export.ts';
 import { inspectMarketSources } from './market-source.ts';
 import { inspectRaifOlivarSource } from './raif-source.ts';
+import { scanRainAlerts } from './rain-alert-scan.ts';
 
 const { Pool } = pg;
 
@@ -19,6 +21,7 @@ const pollMilliseconds = Number(process.env.WORKER_POLL_MS ?? '5000');
 const retrySeconds = Number(process.env.WORKER_RETRY_SECONDS ?? '5');
 const leaseSeconds = Number(process.env.WORKER_LEASE_SECONDS ?? '120');
 const accountExportTtlHours = Number(process.env.ACCOUNT_EXPORT_TTL_HOURS ?? '24');
+const rainAlertScanMinutes = Number(process.env.RAIN_ALERT_SCAN_MINUTES ?? '30');
 
 if (!Number.isFinite(pollMilliseconds) || pollMilliseconds < 100) {
   throw new Error('WORKER_POLL_MS must be at least 100');
@@ -31,6 +34,9 @@ if (!Number.isFinite(leaseSeconds) || leaseSeconds < 10) {
 }
 if (!Number.isFinite(accountExportTtlHours) || accountExportTtlHours < 1 || accountExportTtlHours > 168) {
   throw new Error('ACCOUNT_EXPORT_TTL_HOURS must be between 1 and 168');
+}
+if (!Number.isFinite(rainAlertScanMinutes) || rainAlertScanMinutes < 5 || rainAlertScanMinutes > 1440) {
+  throw new Error('RAIN_ALERT_SCAN_MINUTES must be between 5 and 1440');
 }
 
 const pool = new Pool({ connectionString: databaseUrl });
@@ -228,6 +234,17 @@ async function inspectMarketPublicSource(): Promise<void> {
   }
 }
 
+async function scheduleNextRainAlertScan(currentJobId: string): Promise<void> {
+  await pool.query(
+    `
+      insert into job_queue (id, kind, payload, dedupe_key, run_after)
+      values ($1, 'weather.rain.scan', '{}'::jsonb, $2, now() + ($3 * interval '1 minute'))
+      on conflict do nothing
+    `,
+    [randomUUID(), `weather.rain.scan:after:${currentJobId}`, rainAlertScanMinutes],
+  );
+}
+
 async function executeJob(job: JobRow): Promise<void> {
   switch (job.kind) {
     case 'spike.noop':
@@ -244,6 +261,15 @@ async function executeJob(job: JobRow): Promise<void> {
     case 'public.market.inspect':
       await inspectMarketPublicSource();
       return;
+    case 'weather.rain.scan': {
+      try {
+        const result = await scanRainAlerts(pool);
+        console.log(JSON.stringify({ event: 'rain_alert_scan_completed', ...result }));
+      } finally {
+        await scheduleNextRainAlertScan(job.id);
+      }
+      return;
+    }
     default:
       throw new Error(`Unsupported job kind: ${job.kind}`);
   }

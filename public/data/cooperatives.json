@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-03T22:57:00+02:00",
+  "generatedAt": "2026-09-03T23:02:00+02:00",
   "sourceLabel": "D.O.P. Sierra Mágina · Marcas",
   "sourceUrl": "https://aove.sierramagina.org/marcas/",
   "cooperatives": [
@@ -24,10 +24,11 @@
       "brand": "Oro de Cánava",
       "dop": true,
       "officialWebsite": "https://www.orodecanava.com/",
-      "productSourceUrl": "https://www.orodecanava.com/",
+      "productSourceUrl": "https://www.aceitedeoro.es/",
       "products": [
-        { "name": "Oro de Cánava", "type": "Aceite de Oliva Virgen Extra" },
-        { "name": "AOVE Lata", "type": "Aceite de Oliva Virgen Extra", "format": "3 L" }
+        { "name": "Oro de Cánava", "type": "Aceite de Oliva Virgen Extra", "format": "Caja 8 PET · 1 L · campaña 2025/26", "storePriceLabel": "56,80 € / caja", "priceCapturedAt": "2026-09-03", "priceSourceUrl": "https://www.aceitedeoro.es/aceite-de-oliva-virgen-extra-pet/" },
+        { "name": "Oro de Cánava", "type": "Aceite de Oliva Virgen Extra", "format": "Caja 4 latas · 3 L · campaña 2025/26", "storePriceLabel": "86,50 € / caja", "priceCapturedAt": "2026-09-03", "priceSourceUrl": "https://www.aceitedeoro.es/aceite-de-oliva-virgen-extra-lata-3l/" },
+        { "name": "Oro de Cánava Cosecha Temprana", "type": "AOVE Cosecha Temprana", "format": "Consultar formatos en tienda", "priceSourceUrl": "https://www.aceitedeoro.es/" }
       ]
     },
     {
@@ -160,11 +161,11 @@
       "brand": "Tierras del Marquesado",
       "dop": true,
       "officialWebsite": "https://scasanroque.com/",
-      "productSourceUrl": "https://tierrasdelmarquesado.com/nuestro-aceite/",
+      "productSourceUrl": "https://tierrasdelmarquesado.com/tienda/",
       "products": [
-        { "name": "Tierras del Marquesado", "type": "Aceite de Oliva Virgen Extra D.O.P. Sierra Mágina", "format": "Selección" },
-        { "name": "Tierras del Marquesado", "type": "Aceite de Oliva Virgen Extra", "format": "Gama cristal" },
-        { "name": "Tierras del Marquesado", "type": "Aceite de Oliva Virgen Extra", "format": "Gama familiar" }
+        { "name": "Tierras del Marquesado Selección Premium", "type": "Aceite de Oliva Virgen Extra Picual D.O.P. Sierra Mágina", "format": "Caja 12 botellas · 500 ml", "storePriceLabel": "145,20 € / caja", "priceCapturedAt": "2026-09-03", "priceSourceUrl": "https://tierrasdelmarquesado.com/tienda/" },
+        { "name": "Tierras del Marquesado", "type": "Aceite de Oliva Virgen Extra", "format": "Gama cristal", "priceSourceUrl": "https://tierrasdelmarquesado.com/tienda/" },
+        { "name": "Tierras del Marquesado", "type": "Aceite de Oliva Virgen Extra", "format": "Gama familiar", "priceSourceUrl": "https://tierrasdelmarquesado.com/tienda/" }
       ]
     },
     {

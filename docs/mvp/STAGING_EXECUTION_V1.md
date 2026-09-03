@@ -33,6 +33,8 @@ bash scripts/staging-acceptance.sh status
 
 Muestra release, SHA real de origen, env file configurado, hostname externo y municipio usado para el gate meteorológico.
 
+El estado canónico del SHA desplegado se guarda en `.deploy/staging/current-source-sha`; `staging-acceptance.sh status` lo expone como `source_sha`. No usar el antiguo nombre con guiones bajos.
+
 Por defecto el gate público consulta `bedmar-y-garciez`. Se puede cambiar sin modificar código:
 
 ```bash

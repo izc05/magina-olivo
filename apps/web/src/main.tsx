@@ -28,6 +28,7 @@ import './field-v2-integration.css';
 import './journal-v2-integration.css';
 import './campaign-v2-integration.css';
 import './campaign-documents.css';
+import './magina-private-hub.css';
 import './offline-v2-integration.css';
 
 registerSW({

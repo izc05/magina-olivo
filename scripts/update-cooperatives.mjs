@@ -2,6 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 
 const OUTPUT = new URL('../public/data/cooperatives.json', import.meta.url);
 const USER_AGENT = 'MaginaOlivoCoopBot/1.0 (+https://github.com/izc05/magina-olivo)';
+const CONCURRENCY = 4;
 
 function decodeEntities(value = '') {
   return value
@@ -95,7 +96,7 @@ async function fetchHtml(url) {
       'user-agent': USER_AGENT,
       accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.5',
     },
-    signal: AbortSignal.timeout(15_000),
+    signal: AbortSignal.timeout(12_000),
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return response.text();
@@ -127,7 +128,7 @@ async function main() {
   let updatedProducts = 0;
   const today = new Date().toISOString().slice(0, 10);
 
-  for (const url of urls) {
+  async function processUrl(url) {
     const urlTargets = byUrl.get(url) ?? [];
     let html;
     try {
@@ -135,7 +136,7 @@ async function main() {
       healthySources += 1;
     } catch (error) {
       errors.push(`${url}: ${error?.message ?? String(error)}`);
-      continue;
+      return;
     }
 
     for (const { cooperative, product } of urlTargets) {
@@ -166,11 +167,17 @@ async function main() {
     }
   }
 
+  for (let index = 0; index < urls.length; index += CONCURRENCY) {
+    const batch = urls.slice(index, index + CONCURRENCY);
+    await Promise.all(batch.map(processUrl));
+  }
+
+  const generatedAt = new Date().toISOString();
   const nextPayload = {
     ...payload,
-    generatedAt: new Date().toISOString(),
+    generatedAt,
     shopSync: {
-      generatedAt: new Date().toISOString(),
+      generatedAt,
       sourceCount: urls.length,
       healthySourceCount: healthySources,
       verifiedProducts,

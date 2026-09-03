@@ -101,7 +101,8 @@ export async function generateAccountExport(
         `
           select
             preferred_cooperative_id, notify_weather, notify_tasks, notify_pending_yield,
-            weather_rain_mm_threshold, weather_frost_c_threshold, weather_wind_kmh_threshold,
+            weather_rain_mm_threshold, weather_rain_probability_percent_threshold,
+            weather_frost_c_threshold, weather_wind_kmh_threshold,
             created_at, updated_at
           from user_preferences
           where user_id = $1
@@ -214,6 +215,9 @@ export async function generateAccountExport(
             notifyWeather: preferenceRow.notify_weather,
             notifyTasks: preferenceRow.notify_tasks,
             notifyPendingYield: preferenceRow.notify_pending_yield,
+            weatherRainProbabilityPercentThreshold: numberOrNull(
+              preferenceRow.weather_rain_probability_percent_threshold as string | number | null,
+            ),
             weatherRainMmThreshold: numberOrNull(preferenceRow.weather_rain_mm_threshold as string | number | null),
             weatherFrostCThreshold: numberOrNull(preferenceRow.weather_frost_c_threshold as string | number | null),
             weatherWindKmhThreshold: numberOrNull(preferenceRow.weather_wind_kmh_threshold as string | number | null),

@@ -1,6 +1,7 @@
 import { hostname } from 'node:os';
 import { setTimeout as sleep } from 'node:timers/promises';
 import pg from 'pg';
+import { expireAccountExports, generateAccountExport } from './account-export.ts';
 import { inspectMarketSources } from './market-source.ts';
 import { inspectRaifOlivarSource } from './raif-source.ts';
 
@@ -16,6 +17,7 @@ const runOnce = process.env.RUN_ONCE === '1';
 const pollMilliseconds = Number(process.env.WORKER_POLL_MS ?? '5000');
 const retrySeconds = Number(process.env.WORKER_RETRY_SECONDS ?? '5');
 const leaseSeconds = Number(process.env.WORKER_LEASE_SECONDS ?? '120');
+const accountExportTtlHours = Number(process.env.ACCOUNT_EXPORT_TTL_HOURS ?? '24');
 
 if (!Number.isFinite(pollMilliseconds) || pollMilliseconds < 100) {
   throw new Error('WORKER_POLL_MS must be at least 100');
@@ -25,6 +27,9 @@ if (!Number.isFinite(retrySeconds) || retrySeconds < 1) {
 }
 if (!Number.isFinite(leaseSeconds) || leaseSeconds < 10) {
   throw new Error('WORKER_LEASE_SECONDS must be at least 10');
+}
+if (!Number.isFinite(accountExportTtlHours) || accountExportTtlHours < 1 || accountExportTtlHours > 168) {
+  throw new Error('ACCOUNT_EXPORT_TTL_HOURS must be between 1 and 168');
 }
 
 const pool = new Pool({ connectionString: databaseUrl });
@@ -36,6 +41,25 @@ type JobRow = {
   attempts: number;
   max_attempts: number;
 };
+
+type AccountExportJobPayload = {
+  exportId: string;
+  userId: string;
+};
+
+function parseAccountExportPayload(payload: unknown): AccountExportJobPayload {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Invalid account export job payload');
+  }
+  const value = payload as Record<string, unknown>;
+  if (typeof value.exportId !== 'string' || !/^[0-9a-f-]{36}$/i.test(value.exportId)) {
+    throw new Error('Invalid account export id');
+  }
+  if (typeof value.userId !== 'string' || value.userId.length < 1 || value.userId.length > 255) {
+    throw new Error('Invalid account export user id');
+  }
+  return { exportId: value.exportId, userId: value.userId };
+}
 
 async function markExpiredExhaustedJobs(client: pg.PoolClient): Promise<void> {
   await client.query(
@@ -207,6 +231,11 @@ async function executeJob(job: JobRow): Promise<void> {
   switch (job.kind) {
     case 'spike.noop':
       return;
+    case 'account.export.generate': {
+      const payload = parseAccountExportPayload(job.payload);
+      await generateAccountExport(pool, payload.exportId, payload.userId, accountExportTtlHours);
+      return;
+    }
     case 'public.raif.inspect':
       await inspectRaifPublicSource();
       return;
@@ -254,6 +283,7 @@ async function markFailed(job: JobRow, error: unknown): Promise<void> {
 }
 
 export async function runWorkerIteration(): Promise<boolean> {
+  await expireAccountExports(pool);
   const job = await claimNextJob();
   if (!job) return false;
 

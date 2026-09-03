@@ -2,8 +2,10 @@ import { Bell, Newspaper, UserRound } from 'lucide-react';
 import { Brand } from '../../components/Brand';
 import { BottomNav, MainSection } from '../../components/BottomNav';
 
+type PlaceholderSection = 'news' | 'profile';
+
 type PlaceholderPageProps = {
-  section: Exclude<MainSection, 'home' | 'field'>;
+  section: PlaceholderSection;
   onNavigate: (section: MainSection) => void;
 };
 
@@ -20,7 +22,7 @@ const copy = {
     text: 'Aquí reuniremos favoritos, documentos, alertas, preferencias, seguridad y plan manteniendo la misma identidad visual.',
     icon: UserRound,
   },
-};
+} satisfies Record<PlaceholderSection, { eyebrow: string; title: string; text: string; icon: typeof Newspaper }>;
 
 export function PlaceholderPage({ section, onNavigate }: PlaceholderPageProps) {
   const data = copy[section];

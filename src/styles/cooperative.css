@@ -11,10 +11,15 @@
 .coop-detail-metrics span, .coop-detail-metrics small { color: var(--color-text-muted); font-size: 9px; }
 .coop-detail-metrics strong { font-family: var(--font-editorial); font-size: 20px; font-weight: 600; }
 .coop-service-list { display: grid; gap: 8px; }
-.coop-service-list article { display: grid; grid-template-columns: 42px minmax(0,1fr) 18px; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--color-border); border-radius: 14px; background: rgba(255,255,255,.68); }
-.coop-service-list article > svg:first-child { color: var(--color-olive-700); }
-.coop-service-list article > div { display: grid; gap: 3px; }
-.coop-service-list article span { color: var(--color-text-muted); font-size: 10px; line-height: 1.4; }
+.coop-service-list article,
+.coop-service-list button { display: grid; width: 100%; grid-template-columns: 42px minmax(0,1fr) 18px; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--color-border); border-radius: 14px; background: rgba(255,255,255,.68); text-align: left; color: inherit; }
+.coop-service-list button { cursor: pointer; }
+.coop-service-list article > svg:first-child,
+.coop-service-list button > svg:first-child { color: var(--color-olive-700); }
+.coop-service-list article > div,
+.coop-service-list button > div { display: grid; gap: 3px; }
+.coop-service-list article span,
+.coop-service-list button span { color: var(--color-text-muted); font-size: 10px; line-height: 1.4; }
 .coop-notice-card { padding: 13px; border: 1px solid rgba(212,160,23,.2); border-radius: 14px; background: rgba(212,160,23,.08); }
 .coop-notice-card p { margin: 4px 0; color: var(--color-text-muted); font-size: 11px; line-height: 1.45; }
 .coop-notice-card small { color: #8a6713; font-size: 9px; }
@@ -24,4 +29,52 @@
 .coop-document-row span { color: var(--color-text-muted); font-size: 10px; }
 .coop-source-note { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; padding: 10px; border-radius: 12px; background: rgba(167,180,151,.1); color: var(--color-text-muted); font-size: 10px; line-height: 1.4; }
 .coop-source-note svg { flex: 0 0 auto; color: var(--color-olive-700); }
-@media (max-width: 430px) { .coop-detail-hero { grid-template-columns: 58px minmax(0,1fr); } .coop-detail-hero__mark { width: 58px; height: 58px; } .coop-detail-status { grid-column: 1 / -1; justify-self: start; } }
+
+.coop-detail-tabs { display: flex; gap: 6px; margin: 12px 0 2px; padding-bottom: 3px; overflow-x: auto; scrollbar-width: none; }
+.coop-detail-tabs::-webkit-scrollbar { display: none; }
+.coop-detail-tab { flex: 0 0 auto; padding: 8px 11px; border: 1px solid var(--color-border); border-radius: 999px; background: rgba(255,255,255,.64); color: var(--color-text-muted); font-size: 10px; font-weight: 700; }
+.coop-detail-tab--active { border-color: var(--color-olive-700); background: var(--color-olive-950); color: #fff; }
+.coop-profile-panel { display: grid; gap: 10px; }
+.coop-profile-intro { margin: 0; color: var(--color-text-muted); font-size: 11px; line-height: 1.5; }
+.coop-product-grid { display: grid; gap: 8px; }
+.coop-product-card { display: grid; grid-template-columns: 44px minmax(0,1fr); align-items: center; gap: 10px; padding: 11px; border: 1px solid var(--color-border); border-radius: 14px; background: rgba(255,255,255,.68); }
+.coop-product-card--primary { border-color: rgba(92,122,70,.18); background: rgba(167,180,151,.11); }
+.coop-product-card__icon { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 12px; background: rgba(92,122,70,.11); color: var(--color-olive-700); }
+.coop-product-card > div:last-child { display: grid; gap: 3px; min-width: 0; }
+.coop-product-card span,
+.coop-product-card small { color: var(--color-text-muted); font-size: 9px; }
+.coop-product-card strong { font-size: 13px; }
+.coop-price-own { display: grid; gap: 5px; padding: 13px; border: 1px dashed rgba(212,160,23,.42); border-radius: 14px; background: rgba(212,160,23,.07); }
+.coop-price-own span { color: #7e661d; font-size: 10px; font-weight: 700; }
+.coop-price-own strong { font-size: 14px; }
+.coop-price-own small { color: var(--color-text-muted); font-size: 10px; line-height: 1.45; }
+.coop-market-reference { display: grid; gap: 9px; padding: 13px; border: 1px solid rgba(92,122,70,.18); border-radius: 15px; background: linear-gradient(145deg,rgba(255,255,255,.76),rgba(167,180,151,.12)); }
+.coop-market-reference__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.coop-market-reference__head > div { display: grid; gap: 2px; }
+.coop-market-reference__head span,
+.coop-market-reference > small { color: var(--color-text-muted); font-size: 9px; }
+.coop-market-reference__head svg { color: var(--color-olive-700); }
+.coop-market-reference__grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; }
+.coop-market-reference__grid article { display: grid; gap: 3px; padding: 9px 7px; border-radius: 11px; background: rgba(255,255,255,.72); }
+.coop-market-reference__grid span { color: var(--color-text-muted); font-size: 9px; }
+.coop-market-reference__grid strong { font-size: 13px; }
+.coop-market-reference p { margin: 0; color: var(--color-text-muted); font-size: 10px; }
+.coop-related-news { display: grid; gap: 8px; }
+.coop-related-news a { display: grid; grid-template-columns: minmax(0,1fr) 18px; align-items: center; gap: 10px; padding: 11px; border: 1px solid var(--color-border); border-radius: 14px; background: rgba(255,255,255,.68); color: inherit; }
+.coop-related-news a > div { display: grid; gap: 3px; }
+.coop-related-news span,
+.coop-related-news small { color: var(--color-text-muted); font-size: 9px; }
+.coop-related-news strong { font-size: 12px; line-height: 1.35; }
+.coop-related-news svg { color: var(--color-olive-700); }
+.coop-empty-state { display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 10px; padding: 13px; border-radius: 14px; background: rgba(167,180,151,.1); }
+.coop-empty-state svg { color: var(--color-olive-700); }
+.coop-empty-state > div { display: grid; gap: 4px; }
+.coop-empty-state span { color: var(--color-text-muted); font-size: 10px; line-height: 1.45; }
+
+@media (max-width: 430px) {
+  .coop-detail-hero { grid-template-columns: 58px minmax(0,1fr); }
+  .coop-detail-hero__mark { width: 58px; height: 58px; }
+  .coop-detail-status { grid-column: 1 / -1; justify-self: start; }
+  .coop-market-reference__grid { grid-template-columns: 1fr; }
+  .coop-market-reference__grid article { grid-template-columns: 1fr auto; align-items: center; }
+}

@@ -25,8 +25,11 @@ fail() {
 [[ -w "$DESTINATION" ]] || fail "backup destination is not writable: $DESTINATION"
 
 CURRENT_RELEASE=""
+CURRENT_SOURCE_SHA=""
 [[ ! -f "$STATE_DIR/current" ]] || CURRENT_RELEASE="$(cat "$STATE_DIR/current")"
+[[ ! -f "$STATE_DIR/current-source-sha" ]] || CURRENT_SOURCE_SHA="$(cat "$STATE_DIR/current-source-sha")"
 [[ -n "$CURRENT_RELEASE" ]] || fail "no current staging release recorded"
+[[ "$CURRENT_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || fail "current staging source SHA is missing or invalid"
 export MAGINA_IMAGE_TAG="$CURRENT_RELEASE"
 
 compose() {
@@ -126,6 +129,7 @@ cat > "$BUNDLE/backup-meta.txt" <<META
 format_version=1
 created_at_utc=$TIMESTAMP
 application_release=$CURRENT_RELEASE
+application_source_sha=$CURRENT_SOURCE_SHA
 compose_project=$COMPOSE_PROJECT_NAME
 postgres_format=custom
 private_object_count=$OBJECT_COUNT
@@ -148,4 +152,4 @@ log "Validating bundle checksums"
   sha256sum --check --quiet SHA256SUMS
 )
 
-log "PASS bundle=$BUNDLE postgres=yes private_objects=$OBJECT_COUNT"
+log "PASS bundle=$BUNDLE release=$CURRENT_RELEASE source_sha=$CURRENT_SOURCE_SHA postgres=yes private_objects=$OBJECT_COUNT"

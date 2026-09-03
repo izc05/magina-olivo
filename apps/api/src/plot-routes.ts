@@ -8,6 +8,7 @@ import { getAuthenticatedSession } from './session.ts';
 
 type FarmParams = { farmId: string };
 type PlotParams = { plotId: string };
+type EditableBoundarySource = Exclude<BoundarySource, 'sigpac' | 'catastro'>;
 type CreatePlotBody = {
   name: string;
   areaHa?: number;
@@ -24,7 +25,7 @@ type UpdatePlotLocationBody = {
 };
 type UpdatePlotBoundaryBody = {
   boundary: GeoJsonPolygon | null;
-  source: BoundarySource | null;
+  source: EditableBoundarySource | null;
 };
 
 type PlotRow = {
@@ -38,6 +39,8 @@ type PlotRow = {
   boundary_area_ha: string | null;
   boundary_source: BoundarySource | null;
   boundary_updated_at: Date | null;
+  boundary_external_id: string | null;
+  boundary_source_checked_at: Date | null;
   irrigation_type: string | null;
   olive_tree_count: number | null;
   notes: string | null;
@@ -48,6 +51,7 @@ type PlotRow = {
 const PLOT_COLUMNS = `
   id, name, area_ha, sigpac_reference, latitude, longitude,
   boundary_geojson, boundary_area_ha, boundary_source, boundary_updated_at,
+  boundary_external_id, boundary_source_checked_at,
   irrigation_type, olive_tree_count, notes, created_at, updated_at
 `;
 
@@ -63,6 +67,8 @@ function serializePlot(row: PlotRow) {
     boundaryAreaHa: row.boundary_area_ha,
     boundarySource: row.boundary_source,
     boundaryUpdatedAt: row.boundary_updated_at,
+    boundaryExternalId: row.boundary_external_id,
+    boundarySourceCheckedAt: row.boundary_source_checked_at,
     irrigationType: row.irrigation_type,
     oliveTreeCount: row.olive_tree_count,
     notes: row.notes,
@@ -276,7 +282,7 @@ export function registerPlotRoutes(app: FastifyInstance): void {
             },
             source: {
               anyOf: [
-                { type: 'string', enum: ['manual_map', 'manual_gps', 'imported', 'sigpac', 'catastro'] },
+                { type: 'string', enum: ['manual_map', 'manual_gps', 'imported'] },
                 { type: 'null' },
               ],
             },
@@ -318,6 +324,8 @@ export function registerPlotRoutes(app: FastifyInstance): void {
                boundary_area_ha = $2,
                boundary_source = $3,
                boundary_updated_at = case when $1::jsonb is null then null else now() end,
+               boundary_external_id = null,
+               boundary_source_checked_at = null,
                version = version + 1,
                updated_at = now()
            where id = $4 and holding_id = $5 and active = true

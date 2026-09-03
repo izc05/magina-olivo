@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-03T22:52:00+02:00",
+  "generatedAt": "2026-09-03T22:57:00+02:00",
   "sourceLabel": "D.O.P. Sierra Mágina · Marcas",
   "sourceUrl": "https://aove.sierramagina.org/marcas/",
   "cooperatives": [
@@ -59,7 +59,20 @@
         { "name": "La Perla de Mágina", "type": "Aceite de Oliva Virgen Extra", "format": "Caja 12 botellas · 500 ml", "storePriceLabel": "52,80 € / caja", "priceCapturedAt": "2026-09-03", "priceSourceUrl": "https://laperlademagina.es/aceite-oliva/la-perla-de-magina/" }
       ]
     },
-    { "id": "san-francisco-albanchez", "name": "Cooperativa San Francisco", "town": "Albanchez de Mágina", "brand": "Reino de Jaén", "dop": true },
+    {
+      "id": "san-francisco-albanchez",
+      "name": "Cooperativa San Francisco",
+      "town": "Albanchez de Mágina",
+      "brand": "Reino de Jaén",
+      "dop": true,
+      "officialWebsite": "https://www.aovesierramagina.com/",
+      "productSourceUrl": "https://www.aovesierramagina.com/tienda/",
+      "products": [
+        { "name": "Reino de Jaén Cosecha Temprana", "type": "AOVE D.O.P. Sierra Mágina · Picual", "format": "Cristal 500 ml · campaña 2025/26", "storePriceLabel": "9,95 € / ud", "priceCapturedAt": "2026-09-03", "priceSourceUrl": "https://www.aovesierramagina.com/product/envase-500-ml-cosecha-temprana/" },
+        { "name": "Reino de Jaén Cosecha Temprana", "type": "AOVE D.O.P. Sierra Mágina · Picual", "format": "Caja 6 envases · 500 ml · campaña 2025/26", "storePriceLabel": "59,70 € / caja", "priceCapturedAt": "2026-09-03", "priceSourceUrl": "https://www.aovesierramagina.com/product/caja-de-6-envases-500-ml-cosecha-temprana/" },
+        { "name": "Molino La Unión", "type": "Aceite de Oliva Virgen Extra", "format": "Caja 3 PET · 5 L · campaña 2025/26", "storePriceLabel": "75,00 € / caja", "priceCapturedAt": "2026-09-03", "priceSourceUrl": "https://www.aovesierramagina.com/product/caja-de-3-pet-5l-2/" }
+      ]
+    },
     {
       "id": "santa-isabel-torres",
       "name": "Cooperativa Santa Isabel",
@@ -88,7 +101,15 @@
         { "name": "Salud Sierra Premium D.O.", "type": "Aceite de Oliva Virgen Extra", "format": "5 L · campaña 2025/26", "storePriceLabel": "30,00 €", "priceCapturedAt": "2026-09-03", "priceSourceUrl": "https://saludsierra.es/?post_type=product" }
       ]
     },
-    { "id": "union-oleicola-cambil", "name": "Cooperativa Unión Oleícola Cambil", "town": "Cambil", "brand": "Esmeralda de Mágina", "dop": true, "officialWebsite": "https://esmeraldamagina.es/", "productSourceUrl": "https://esmeraldamagina.es/almazara/" },
+    {
+      "id": "union-oleicola-cambil",
+      "name": "Cooperativa Unión Oleícola Cambil",
+      "town": "Cambil",
+      "brand": "Esmeralda de Mágina",
+      "dop": true,
+      "officialWebsite": "https://esmeraldamagina.es/",
+      "productSourceUrl": "https://esmeraldamagina.es/almazara/"
+    },
     {
       "id": "cabeza-campillo",
       "name": "Cooperativa Ntra. Sra. de la Cabeza",
@@ -103,10 +124,49 @@
         { "name": "Vergilia Premium D.O.", "type": "AOVE Premium", "format": "Caja 6 botellas · 500 ml · campaña 2025/26", "storePriceLabel": "67,00 € / caja", "priceCapturedAt": "2026-09-03", "priceSourceUrl": "https://cooperativacampillodearenas.com/tienda/" }
       ]
     },
-    { "id": "san-isidro-huelma", "name": "Cooperativa San Isidro Labrador", "town": "Huelma", "brand": "Santuario de Mágina", "dop": true },
-    { "id": "rosario-arbuniel", "name": "Cooperativa Ntra. Sra. del Rosario", "town": "Arbuniel", "brand": "Sierra de Arbuniel", "dop": true },
+    {
+      "id": "san-isidro-huelma",
+      "name": "Cooperativa San Isidro Labrador",
+      "town": "Huelma",
+      "brand": "Santuario de Mágina",
+      "dop": true,
+      "officialWebsite": "https://www.scasanisidro.es/",
+      "productSourceUrl": "https://www.scasanisidro.es/2-inicio",
+      "products": [
+        { "name": "El Santuario de Mágina", "type": "Aceite de Oliva Virgen Extra D.O.", "format": "Caja 4 uds. · 5 L", "storePriceLabel": "130,00 € / caja", "priceCapturedAt": "2026-09-03", "priceSourceUrl": "https://www.scasanisidro.es/2-inicio" },
+        { "name": "El Santuario de Mágina", "type": "Aceite de Oliva Virgen Extra D.O.", "format": "Caja 5 uds. · 3 L", "storePriceLabel": "101,00 € / caja", "priceCapturedAt": "2026-09-03", "priceSourceUrl": "https://www.scasanisidro.es/2-inicio" },
+        { "name": "El Santuario de Mágina Selección Temprana", "type": "AOVE Cosecha Temprana D.O.", "format": "Caja 4 uds. · 2 L", "storePriceLabel": "106,00 € / caja", "priceCapturedAt": "2026-09-03", "priceSourceUrl": "https://www.scasanisidro.es/2-inicio" }
+      ]
+    },
+    {
+      "id": "rosario-arbuniel",
+      "name": "Cooperativa Ntra. Sra. del Rosario",
+      "town": "Arbuniel",
+      "brand": "Sierra de Arbuniel",
+      "dop": true,
+      "officialWebsite": "https://albilia.es/",
+      "productSourceUrl": "https://tienda.aceitesierradearbuniel.com/",
+      "products": [
+        { "name": "Sierra de Arbuniel", "type": "Aceite de Oliva Virgen Extra", "format": "Caja 3 PET · 5 L · campaña 2025/26", "storePriceLabel": "107,00 € / caja", "priceCapturedAt": "2026-09-03", "priceSourceUrl": "https://tienda.aceitesierradearbuniel.com/" },
+        { "name": "Sierra de Arbuniel", "type": "Aceite de Oliva Virgen Extra", "format": "Caja 6 PET · 2 L", "storePriceLabel": "90,20 € / caja", "priceCapturedAt": "2026-09-03", "priceSourceUrl": "https://tienda.aceitesierradearbuniel.com/" },
+        { "name": "Sierra de Arbuniel", "type": "Aceite de Oliva Virgen Extra", "format": "Caja 15 vidrio · 500 ml", "storePriceLabel": "83,75 € / caja", "priceCapturedAt": "2026-09-03", "priceSourceUrl": "https://tienda.aceitesierradearbuniel.com/" }
+      ]
+    },
     { "id": "san-antonio-carchel", "name": "Cooperativa San Antonio Abad", "town": "Cárchel", "brand": "Solana de Cárchel", "dop": true },
-    { "id": "san-roque-carchelejo", "name": "Cooperativa San Roque", "town": "Carchelejo", "brand": "Tierras del Marquesado", "dop": true },
+    {
+      "id": "san-roque-carchelejo",
+      "name": "Cooperativa San Roque",
+      "town": "Carchelejo",
+      "brand": "Tierras del Marquesado",
+      "dop": true,
+      "officialWebsite": "https://scasanroque.com/",
+      "productSourceUrl": "https://tierrasdelmarquesado.com/nuestro-aceite/",
+      "products": [
+        { "name": "Tierras del Marquesado", "type": "Aceite de Oliva Virgen Extra D.O.P. Sierra Mágina", "format": "Selección" },
+        { "name": "Tierras del Marquesado", "type": "Aceite de Oliva Virgen Extra", "format": "Gama cristal" },
+        { "name": "Tierras del Marquesado", "type": "Aceite de Oliva Virgen Extra", "format": "Gama familiar" }
+      ]
+    },
     {
       "id": "san-sebastian-guardia",
       "name": "Cooperativa San Sebastián",

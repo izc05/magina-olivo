@@ -16,6 +16,11 @@ type WeatherDay = {
   windMaxKmh: number | null;
 };
 
+type WeatherFreshness = {
+  status: 'fresh' | 'aging' | 'stale' | 'unknown';
+  ageHours: number | null;
+};
+
 type WeatherResponse = {
   municipality: { slug: string; name: string; province: string };
   forecast: {
@@ -23,6 +28,7 @@ type WeatherResponse = {
     elaboratedAt: string | null;
     days: WeatherDay[];
   };
+  freshness: WeatherFreshness;
   source: {
     label: string;
     attribution: string;
@@ -39,6 +45,35 @@ function dayLabel(date: string): string {
   return Number.isNaN(parsed.getTime())
     ? date
     : new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).format(parsed);
+}
+
+function freshnessCopy(freshness: WeatherFreshness): { label: string; detail: string } {
+  const age = freshness.ageHours == null
+    ? null
+    : new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 }).format(freshness.ageHours);
+
+  switch (freshness.status) {
+    case 'fresh':
+      return {
+        label: 'Actualizada',
+        detail: age == null ? 'Predicción reciente de AEMET.' : `Predicción elaborada hace aproximadamente ${age} h.`,
+      };
+    case 'aging':
+      return {
+        label: 'Revisar fecha',
+        detail: age == null ? 'Comprueba la hora de elaboración antes de planificar.' : `La predicción tiene aproximadamente ${age} h. Comprueba la hora de elaboración.`,
+      };
+    case 'stale':
+      return {
+        label: 'Predicción desactualizada',
+        detail: age == null ? 'No la uses como referencia actual sin contrastarla.' : `La predicción tiene aproximadamente ${age} h. Contrástala antes de organizar labores.`,
+      };
+    default:
+      return {
+        label: 'Fecha no disponible',
+        detail: 'AEMET no ha proporcionado una hora de elaboración utilizable; no asumimos que el dato sea reciente.',
+      };
+  }
 }
 
 export function MaginaWeatherPage() {
@@ -116,6 +151,7 @@ export function MaginaWeatherPage() {
     () => municipalities.find((item) => item.slug === selectedSlug) ?? null,
     [municipalities, selectedSlug],
   );
+  const freshness = weather ? freshnessCopy(weather.freshness) : null;
 
   return (
     <main className="weather-shell" id="main-content">
@@ -183,6 +219,8 @@ export function MaginaWeatherPage() {
               ))}
             </div>
             <div className="weather-source card">
+              <p><strong>Estado:</strong> {freshness?.label ?? 'Fecha no disponible'}</p>
+              {freshness ? <p>{freshness.detail}</p> : null}
               <p><strong>Fuente:</strong> {weather.source.attribution} · {weather.source.label}</p>
               <p>{weather.source.scopeNote}</p>
               {weather.forecast.elaboratedAt ? <p>Predicción elaborada: {new Date(weather.forecast.elaboratedAt).toLocaleString('es-ES')}</p> : null}

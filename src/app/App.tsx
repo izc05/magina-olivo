@@ -3,7 +3,7 @@ import type { MainSection } from '../components/BottomNav';
 import { DiscoverPage } from '../features/discover/DiscoverPage';
 import { FieldPage } from '../features/field/FieldPage';
 import { HomePage } from '../features/home/HomePage';
-import { NewsPage } from '../features/news/NewsPage';
+import { RealNewsPage } from '../features/news/RealNewsPage';
 import { ProfilePage } from '../features/profile/ProfilePage';
 import type { AppNavigate, FieldTarget, MaginaTarget } from './navigation';
 
@@ -32,7 +32,7 @@ export default function App() {
   }
 
   if (section === 'news') {
-    return <NewsPage onNavigate={navigate} initialTab={maginaTarget} />;
+    return <RealNewsPage onNavigate={navigate} initialTab={maginaTarget} />;
   }
 
   if (section === 'discover') {

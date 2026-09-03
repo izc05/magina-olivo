@@ -23,6 +23,7 @@ import './magina-hub.css';
 import './magina-market.css';
 import './integration-v2.css';
 import './field-v2-integration.css';
+import './journal-v2-integration.css';
 
 registerSW({
   immediate: true,

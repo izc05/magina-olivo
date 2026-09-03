@@ -11,6 +11,7 @@ import './navigation-v2.css';
 import './notices.css';
 import './field-notebook.css';
 import './delivery-entry.css';
+import './offline-cold-start.css';
 
 registerSW({
   immediate: true,

@@ -10,6 +10,7 @@
     "news:sync": "node scripts/update-news.mjs",
     "alerts:sync": "node scripts/update-alerts.mjs",
     "market:sync": "node scripts/update-market.mjs",
+    "cooperatives:sync": "node scripts/update-cooperatives.mjs",
     "photos:sync": "node scripts/fetch-approved-photos.mjs",
     "test:responsive": "node scripts/responsive-smoke.mjs"
   },

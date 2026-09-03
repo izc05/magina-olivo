@@ -1,16 +1,21 @@
 export type RealNewsStory = {
   id: string;
   category: string;
+  scope?: 'Sierra Mágina' | 'Jaén' | 'Andalucía' | 'Sector';
   title: string;
   excerpt: string;
   source: string;
   url: string;
   publishedAt: string;
   region?: string;
+  official?: boolean;
 };
 
 export type RealNewsPayload = {
   generatedAt: string;
+  sourceCount?: number;
+  healthySourceCount?: number;
+  collectorErrors?: string[];
   stories: RealNewsStory[];
 };
 

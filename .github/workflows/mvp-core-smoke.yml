@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - feat/technical-spike-v1
+      - feat/mvp-core-v1
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 

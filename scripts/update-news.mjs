@@ -201,7 +201,7 @@ async function fetchSource(source) {
     signal: AbortSignal.timeout(15_000),
   });
 
-  if (!response.ok) throw new Error(`${source.name}: HTTP ${response.status}`);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return parseXml(await response.text(), source);
 }
 
@@ -264,6 +264,7 @@ async function main() {
 
   await writeFile(OUTPUT, `${JSON.stringify(payload, null, 2)}\n`);
   console.log(`Feed actualizado: ${stories.length} noticias; ${payload.healthySourceCount}/${sources.length} fuentes operativas.`);
+  if (errors.length) console.warn(`Fuentes con error: ${errors.join(' | ')}`);
 }
 
 await main();

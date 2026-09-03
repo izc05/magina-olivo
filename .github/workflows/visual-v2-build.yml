@@ -41,6 +41,9 @@ jobs:
       - name: Responsive smoke test
         run: npm run test:responsive
 
+      - name: Navigation layout smoke
+        run: node scripts/navigation-layout-smoke.mjs
+
       - name: Upload responsive captures
         if: always()
         uses: actions/upload-artifact@v4

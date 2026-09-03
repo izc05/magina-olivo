@@ -29,8 +29,6 @@ CURRENT_RELEASE=""
 [[ -n "$CURRENT_RELEASE" ]] || fail "no current staging release recorded"
 export MAGINA_IMAGE_TAG="$CURRENT_RELEASE"
 
-# As in staging-release.sh, do not let an inherited shell/CI environment
-# override the secrets-managed env file while rendering Compose.
 compose() {
   env \
     -u POSTGRES_PASSWORD \
@@ -41,6 +39,7 @@ compose() {
     -u AUTH_MAIL_TRANSPORT \
     -u AUTH_MAIL_FROM \
     -u RESEND_API_KEY \
+    -u AEMET_API_KEY \
     -u LOG_LEVEL \
     -u DB_POOL_MAX \
     -u OBJECT_STORAGE_ENDPOINT \
@@ -112,8 +111,6 @@ docker exec \
   "$API_CONTAINER" \
   node scripts/export-private-objects.mjs
 
-# Read the manifest using Node already present inside the deployed runtime.
-# The staging host therefore does not need its own Node/npm installation.
 OBJECT_COUNT="$(docker exec "$API_CONTAINER" node -e '
 const fs=require("fs");
 const value=JSON.parse(fs.readFileSync("/tmp/magina-object-backup/objects-manifest.json","utf8"));

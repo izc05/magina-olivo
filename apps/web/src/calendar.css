@@ -1,0 +1,353 @@
+.calendar-shell {
+  min-height: 100vh;
+  background: var(--app-bg, #f5f0e4);
+  color: var(--ink, #1f2b1f);
+}
+
+.calendar-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.calendar-page {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 34px 0 80px;
+}
+
+.calendar-heading,
+.calendar-section-heading,
+.calendar-month-toolbar,
+.calendar-task-title-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.calendar-heading {
+  align-items: end;
+  margin-bottom: 24px;
+}
+
+.calendar-holding-select {
+  width: min(330px, 100%);
+}
+
+.calendar-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 20px 0;
+}
+
+.calendar-stat {
+  min-height: 108px;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+}
+
+.calendar-stat strong {
+  font-family: var(--font-editorial, Georgia, serif);
+  font-size: clamp(2rem, 5vw, 3.15rem);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.calendar-stat span {
+  color: var(--muted, #667064);
+  font-size: .9rem;
+}
+
+.calendar-create-card {
+  border-top: 3px solid rgba(81, 101, 56, .68);
+}
+
+.calendar-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) repeat(3, minmax(130px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.calendar-title-field {
+  grid-column: span 1;
+}
+
+.calendar-notes-field {
+  grid-column: 1 / -1;
+}
+
+.calendar-notes-field textarea {
+  resize: vertical;
+  min-height: 74px;
+}
+
+.calendar-inline-link {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 12px;
+}
+
+.calendar-overdue-card {
+  border-left: 4px solid #aa6a34;
+}
+
+.calendar-grid-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(320px, .92fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.calendar-month-toolbar h2 {
+  margin: 0;
+  font-family: var(--font-editorial, Georgia, serif);
+  font-size: 1.35rem;
+  text-transform: capitalize;
+}
+
+.calendar-weekdays,
+.calendar-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calendar-weekdays {
+  gap: 6px;
+  margin: 20px 0 8px;
+  color: var(--muted, #667064);
+  font-size: .76rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.calendar-month-grid {
+  gap: 6px;
+}
+
+.calendar-day {
+  min-height: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  border: 1px solid rgba(53, 72, 49, .14);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, .58);
+  padding: 9px;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.calendar-day:hover,
+.calendar-day:focus-visible {
+  border-color: rgba(64, 91, 47, .55);
+  background: rgba(244, 247, 237, .96);
+}
+
+.calendar-day.is-selected {
+  outline: 2px solid rgba(63, 88, 46, .78);
+  outline-offset: 1px;
+}
+
+.calendar-day.is-today > span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #465f39;
+  color: #fff;
+}
+
+.calendar-day small {
+  font-size: .68rem;
+  line-height: 1.1;
+  color: #7e5332;
+}
+
+.calendar-day-empty {
+  border: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.calendar-filter-row {
+  display: flex;
+  gap: 8px;
+  margin: 14px 0 16px;
+  overflow-x: auto;
+}
+
+.calendar-filter {
+  border: 1px solid rgba(53, 72, 49, .18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .62);
+  padding: 8px 12px;
+  color: inherit;
+  font: inherit;
+  font-size: .82rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.calendar-filter.is-active {
+  background: #465f39;
+  border-color: #465f39;
+  color: #fff;
+}
+
+.calendar-task-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.calendar-task-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 0;
+  border-top: 1px solid rgba(53, 72, 49, .11);
+}
+
+.calendar-task-row:first-child {
+  border-top: 0;
+}
+
+.calendar-task-row.is-overdue {
+  padding-left: 10px;
+  border-left: 3px solid #aa6a34;
+}
+
+.calendar-task-row.is-completed {
+  opacity: .62;
+}
+
+.calendar-task-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.calendar-task-copy strong,
+.calendar-task-row strong {
+  font-weight: 700;
+}
+
+.calendar-task-copy small,
+.calendar-task-row small {
+  display: block;
+  color: var(--muted, #667064);
+  margin-top: 3px;
+}
+
+.calendar-task-copy p {
+  margin: 4px 0 0;
+  color: var(--muted, #667064);
+  font-size: .88rem;
+  white-space: pre-wrap;
+}
+
+.calendar-task-title-line {
+  justify-content: flex-start;
+}
+
+.calendar-priority-high {
+  background: rgba(155, 89, 43, .12);
+  color: #864f2c;
+}
+
+.calendar-priority-normal {
+  background: rgba(74, 99, 56, .11);
+  color: #405d35;
+}
+
+.calendar-priority-low {
+  background: rgba(92, 103, 91, .09);
+  color: #59645a;
+}
+
+@media (max-width: 860px) {
+  .calendar-page {
+    width: min(100% - 22px, 720px);
+    padding-top: 24px;
+  }
+
+  .calendar-heading {
+    display: grid;
+    align-items: start;
+  }
+
+  .calendar-holding-select {
+    width: 100%;
+  }
+
+  .calendar-form-grid,
+  .calendar-grid-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-title-field,
+  .calendar-notes-field {
+    grid-column: auto;
+  }
+
+  .calendar-day {
+    min-height: 62px;
+    border-radius: 10px;
+    padding: 7px;
+  }
+
+  .calendar-day small {
+    font-size: .6rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .calendar-summary-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .calendar-stat {
+    min-height: 86px;
+    padding: 13px 10px;
+  }
+
+  .calendar-stat strong {
+    font-size: 1.8rem;
+  }
+
+  .calendar-stat span {
+    font-size: .72rem;
+  }
+
+  .calendar-weekdays,
+  .calendar-month-grid {
+    gap: 3px;
+  }
+
+  .calendar-day {
+    min-height: 52px;
+    padding: 5px;
+  }
+
+  .calendar-day small {
+    display: none;
+  }
+
+  .calendar-task-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .calendar-task-row .secondary-button {
+    width: 100%;
+  }
+}

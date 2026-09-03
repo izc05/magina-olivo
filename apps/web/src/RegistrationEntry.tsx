@@ -31,7 +31,12 @@ export function RegistrationEntry() {
   }, []);
 
   if (state === 'signed_in') {
-    return <a className="account-entry" href="/cuenta" aria-label="Abrir Mi Cuenta">Mi cuenta</a>;
+    return (
+      <aside className="registration-entry" aria-label="Accesos personales">
+        <a className="text-button" href="/calendario">Calendario</a>
+        <a className="account-entry" href="/cuenta" aria-label="Abrir Mi Cuenta">Mi cuenta</a>
+      </aside>
+    );
   }
 
   if (state !== 'signed_out') return null;

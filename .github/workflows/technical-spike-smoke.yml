@@ -136,6 +136,9 @@ jobs:
       - name: Verify structured account portability
         run: bash scripts/spike-account-export.sh
 
+      - name: Verify agricultural tasks and calendar
+        run: bash scripts/spike-tasks-calendar.sh
+
       - name: Verify password reset and session revocation
         run: bash scripts/spike-password-reset-gate.sh
 

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { AccountPage } from './AccountPage';
 import { App } from './App';
+import { CalendarPage } from './CalendarPage';
 import { ConnectivityStatus } from './ConnectivityStatus';
 import { MaginaDirectoryPage } from './MaginaDirectoryPage';
 import { MaginaFieldAlertsPage } from './MaginaFieldAlertsPage';
@@ -38,6 +39,7 @@ import './magina-private-hub.css';
 import './offline-v2-integration.css';
 import './auth-onboarding.css';
 import './pilot-alerts.css';
+import './calendar.css';
 
 registerSW({
   immediate: true,
@@ -83,6 +85,8 @@ createRoot(root).render(
       <OnboardingPage />
     ) : path === '/cuenta' ? (
       <AccountPage />
+    ) : path === '/calendario' ? (
+      <CalendarPage />
     ) : path === '/magina' ? (
       <MaginaHubPage />
     ) : path === '/magina/directorio' ? (

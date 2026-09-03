@@ -29,6 +29,9 @@ type WeatherResponse = {
     days: WeatherDay[];
   };
   freshness: WeatherFreshness;
+  availability: {
+    mode: 'live' | 'cache' | 'degraded-cache';
+  };
   source: {
     label: string;
     attribution: string;
@@ -152,6 +155,7 @@ export function MaginaWeatherPage() {
     [municipalities, selectedSlug],
   );
   const freshness = weather ? freshnessCopy(weather.freshness) : null;
+  const degraded = weather?.availability.mode === 'degraded-cache';
 
   return (
     <main className="weather-shell" id="main-content">
@@ -200,6 +204,11 @@ export function MaginaWeatherPage() {
         </div>
 
         {error ? <div className="alert" role="status">{error}</div> : null}
+        {degraded ? (
+          <div className="alert" role="status">
+            <strong>AEMET no responde ahora.</strong> Mostramos temporalmente la última predicción disponible porque todavía está dentro del límite de frescura permitido. Revisa su fecha antes de organizar labores sensibles al tiempo.
+          </div>
+        ) : null}
 
         {weather ? (
           <>

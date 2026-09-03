@@ -49,7 +49,7 @@ async function run() {
     await assertNoOverflow(page, 'Cooperativas');
 
     const search = page.getByRole('textbox', { name: 'Buscar cooperativas' });
-    await search.fill('Bedmar');
+    await search.fill('Bélmez');
     await page.locator('.coop-card--territorial').first().waitFor({ state: 'visible', timeout: 10_000 });
     assert(await page.locator('.coop-card--territorial').count() >= 1, 'Cooperativas: la búsqueda por municipio no devuelve resultados.');
     await page.locator('.coop-card--territorial').first().getByRole('button', { name: 'Ver ficha', exact: true }).click();
@@ -59,14 +59,19 @@ async function run() {
 
     const detailTabs = page.locator('.coop-detail-tabs');
     await detailTabs.getByRole('button', { name: 'Aceites', exact: true }).click();
-    await page.getByText('Oro Magnasur', { exact: true }).first().waitFor({ state: 'visible' });
-    assert(await page.locator('.coop-product-card').count() >= 3, 'Cooperativas: la ficha de Bedmar no muestra los productos verificados esperados.');
+    await page.getByText('La Perla de Mágina', { exact: true }).first().waitFor({ state: 'visible' });
+    assert(await page.locator('.coop-product-card').count() >= 3, 'Cooperativas: La Perla no muestra los productos verificados esperados.');
+    await page.getByText('88,50 € / caja', { exact: true }).first().waitFor({ state: 'visible' });
+    assert(await page.getByText(/Precio de tienda · verificado/i).count() >= 3, 'Cooperativas: faltan fechas de precio de tienda verificadas.');
 
     await detailTabs.getByRole('button', { name: 'Precios', exact: true }).click();
     await page.locator('.coop-price-panel').waitFor({ state: 'visible' });
+    await page.locator('.coop-store-prices > a').first().waitFor({ state: 'visible', timeout: 10_000 });
+    assert(await page.locator('.coop-store-prices > a').count() >= 3, 'Cooperativas: no aparecen los precios de tienda publicados.');
+    await page.getByText(/Liquidación \/ precio al socio/i).waitFor({ state: 'visible' });
+    await page.getByText(/No publicado o no verificado/i).waitFor({ state: 'visible' });
     await page.locator('.coop-market-reference__grid article').first().waitFor({ state: 'visible', timeout: 10_000 });
     assert(await page.locator('.coop-market-reference__grid article').count() === 3, 'Cooperativas: la referencia de mercado no contiene las tres calidades.');
-    await page.getByText(/No publicado o no verificado/i).waitFor({ state: 'visible' });
     assert(await page.getByRole('link', { name: /Fuente oficial del mercado/i }).count() === 1, 'Cooperativas: falta la trazabilidad del precio general.');
 
     await detailTabs.getByRole('button', { name: 'Noticias', exact: true }).click();
@@ -101,7 +106,7 @@ async function run() {
     await assertNoOverflow(page, 'Alertas');
 
     await context.close();
-    console.log('✓ Smoke Mágina: cooperativa completa, aceites, precios, noticias, mercado y alertas funcionan en 390×844 y bajo /magina-olivo/.');
+    console.log('✓ Smoke Mágina: cooperativa con tienda, aceites, precios separados, noticias, mercado y alertas funcionan en 390×844 y bajo /magina-olivo/.');
   } finally {
     if (browser) await browser.close();
     await closePreview(previewServer);

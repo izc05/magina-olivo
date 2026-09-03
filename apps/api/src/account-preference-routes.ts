@@ -8,7 +8,8 @@ type PreferenceBody = {
   notifyWeather: boolean;
   notifyTasks: boolean;
   notifyPendingYield: boolean;
-  weatherRainProbabilityPercentThreshold: number;
+  weatherRainProbabilityPercentThreshold?: number;
+  weatherRainMmThreshold?: number;
   weatherFrostCThreshold: number;
   weatherWindKmhThreshold: number;
 };
@@ -25,12 +26,15 @@ type PreferenceRow = {
 };
 
 function mapPreference(row: PreferenceRow) {
+  const rainProbabilityThreshold = Number(row.weather_rain_probability_percent_threshold);
   return {
     preferredCooperativeId: row.preferred_cooperative_id,
     notifyWeather: row.notify_weather,
     notifyTasks: row.notify_tasks,
     notifyPendingYield: row.notify_pending_yield,
-    weatherRainProbabilityPercentThreshold: Number(row.weather_rain_probability_percent_threshold),
+    weatherRainProbabilityPercentThreshold: rainProbabilityThreshold,
+    // Transitional alias for the pre-alert account UI. Remove after the UI migrates to the percentage name.
+    weatherRainMmThreshold: rainProbabilityThreshold,
     weatherFrostCThreshold: Number(row.weather_frost_c_threshold),
     weatherWindKmhThreshold: Number(row.weather_wind_kmh_threshold),
     updatedAt: row.updated_at,
@@ -79,7 +83,6 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
             'notifyWeather',
             'notifyTasks',
             'notifyPendingYield',
-            'weatherRainProbabilityPercentThreshold',
             'weatherFrostCThreshold',
             'weatherWindKmhThreshold',
           ],
@@ -91,6 +94,7 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
             notifyTasks: { type: 'boolean' },
             notifyPendingYield: { type: 'boolean' },
             weatherRainProbabilityPercentThreshold: { type: 'number', minimum: 0, maximum: 100 },
+            weatherRainMmThreshold: { type: 'number', minimum: 0, maximum: 100 },
             weatherFrostCThreshold: { type: 'number', minimum: -50, maximum: 20 },
             weatherWindKmhThreshold: { type: 'number', minimum: 0, maximum: 300 },
           },
@@ -114,6 +118,10 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
           return reply.code(400).send(apiError(request, 'INVALID_PREFERRED_COOPERATIVE', 'Preferred cooperative does not exist'));
         }
       }
+
+      const rainProbabilityThreshold = request.body.weatherRainProbabilityPercentThreshold
+        ?? request.body.weatherRainMmThreshold
+        ?? 60;
 
       const result = await db.query<PreferenceRow>(
         `
@@ -153,7 +161,7 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
           request.body.notifyWeather,
           request.body.notifyTasks,
           request.body.notifyPendingYield,
-          request.body.weatherRainProbabilityPercentThreshold,
+          rainProbabilityThreshold,
           request.body.weatherFrostCThreshold,
           request.body.weatherWindKmhThreshold,
         ],

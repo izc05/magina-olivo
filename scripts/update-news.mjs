@@ -15,6 +15,11 @@ const sources = [
     cooperativeId: 'remedios-jimena',
   },
   { name: 'Cooperativa San Francisco · Oficial', url: 'https://www.aovesierramagina.com/feed/', weight: 28, scope: 'magina', official: true, cooperativeId: 'san-francisco-albanchez' },
+  { name: 'La Perla de Mágina · Oficial', url: 'https://laperlademagina.es/feed/', weight: 26, scope: 'magina', official: true, cooperativeId: 'paz-belmez' },
+  { name: 'Santa Isabel de Torres · Oficial', url: 'https://santaisabeldetorres.com/feed/', weight: 26, scope: 'magina', official: true, cooperativeId: 'santa-isabel-torres' },
+  { name: 'Salud Sierra · Oficial', url: 'https://saludsierra.es/feed/', weight: 26, scope: 'magina', official: true, cooperativeId: 'union-santo-cristo-cabra' },
+  { name: 'Esmeralda de Mágina · Oficial', url: 'https://esmeraldamagina.es/feed/', weight: 27, scope: 'magina', official: true, cooperativeId: 'union-oleicola-cambil' },
+  { name: 'Cooperativa Campillo de Arenas · Oficial', url: 'https://cooperativacampillodearenas.com/feed/', weight: 26, scope: 'magina', official: true, cooperativeId: 'cabeza-campillo' },
   { name: 'CIT Jaén · Diputación', url: 'https://cit.dipujaen.es/feed/', weight: 18, scope: 'jaen', official: true },
   { name: 'Diario JAÉN', url: 'https://www.diariojaen.es/rss/provincia.xml', weight: 12, scope: 'jaen' },
   { name: 'Diario JAÉN', url: 'https://www.diariojaen.es/rss/jaen.xml', weight: 10, scope: 'jaen' },
@@ -151,133 +156,144 @@ function includesAny(text, terms) {
   return terms.some((term) => text.includes(term));
 }
 
-function scopeFor(item) {
-  const text = textFor(item);
-  if (includesAny(text, maginaTerms) || item.scope === 'magina') return 'Sierra Mágina';
-  if (text.includes('jaén') || item.scope === 'jaen') return 'Jaén';
+function countTerms(text, terms) {
+  return terms.reduce((sum, term) => sum + (text.includes(term) ? 1 : 0), 0);
+}
+
+function freshnessBonus(publishedAt) {
+  const ageMs = Math.max(0, Date.now() - new Date(publishedAt).getTime());
+  const hours = ageMs / 3_600_000;
+  if (hours <= 12) return 24;
+  if (hours <= 24) return 20;
+  if (hours <= 72) return 14;
+  if (hours <= 168) return 8;
+  if (hours <= 336) return 4;
+  return 0;
+}
+
+function scopeFor(item, text) {
+  if (item.scope === 'magina' || includesAny(text, maginaTerms)) return 'Sierra Mágina';
+  if (item.scope === 'jaen') return 'Jaén';
   if (item.scope === 'andalucia') return 'Andalucía';
   return 'Sector';
 }
 
-function relevance(item) {
-  const text = textFor(item);
-  const maginaMatches = maginaTerms.reduce((score, term) => score + (text.includes(term) ? 9 : 0), 0);
-  const oliveMatches = oliveTerms.reduce((score, term) => score + (text.includes(term) ? 5 : 0), 0);
-  const agricultureMatches = agricultureTerms.reduce((score, term) => score + (text.includes(term) ? 2 : 0), 0);
-  const officialBonus = item.official ? 4 : 0;
-  const cooperativeBonus = item.cooperativeId ? 10 : 0;
-  return maginaMatches + oliveMatches + agricultureMatches + officialBonus + cooperativeBonus + item.weight;
-}
-
-function freshnessBonus(publishedAt) {
-  const ageHours = Math.max(0, (Date.now() - new Date(publishedAt).getTime()) / 3_600_000);
-  if (ageHours <= 12) return 24;
-  if (ageHours <= 24) return 20;
-  if (ageHours <= 72) return 14;
-  if (ageHours <= 168) return 8;
-  if (ageHours <= 336) return 4;
-  return 0;
-}
-
-function categoryFor(item) {
-  const text = textFor(item);
-  if (item.cooperativeId) return 'Cooperativas';
-  if (includesAny(text, maginaTerms)) return 'Sierra Mágina';
-  if (['precio', 'mercado', 'export', 'import', 'comercialización', 'comercializacion'].some((term) => text.includes(term))) return 'Mercado';
-  if (['riego', 'digital', 'tecnolog', 'inteligencia artificial', 'sensor', 'dron'].some((term) => text.includes(term))) return 'Tecnología';
-  if (['ayuda', 'pac', 'subvención', 'subvencion'].some((term) => text.includes(term))) return 'Ayudas';
-  if (['cooperativa', 'almazara'].some((term) => text.includes(term))) return 'Cooperativas';
+function categoryFor(text, scope) {
+  if (scope === 'Sierra Mágina' && includesAny(text, maginaTerms)) return 'Sierra Mágina';
+  if (includesAny(text, ['precio', 'mercado', 'exportación', 'exportacion', 'importación', 'importacion'])) return 'Mercado';
+  if (includesAny(text, ['tecnología', 'tecnologia', 'dron', 'sensor', 'digitalización', 'digitalizacion', 'inteligencia artificial'])) return 'Tecnología';
+  if (includesAny(text, ['pac', 'ayuda', 'subvención', 'subvencion'])) return 'Ayudas';
+  if (includesAny(text, ['cooperativa', 'almazara'])) return 'Cooperativas';
   if (includesAny(text, oliveTerms)) return 'Olivar';
   return 'Agricultura';
 }
 
+function relevanceFor(item) {
+  const text = textFor(item);
+  const maginaCount = countTerms(text, maginaTerms);
+  const oliveCount = countTerms(text, oliveTerms);
+  const agricultureCount = countTerms(text, agricultureTerms);
+  const relevance = item.weight + maginaCount * 9 + oliveCount * 5 + agricultureCount * 2 + (item.official ? 4 : 0);
+  return { text, relevance, maginaCount, sectorCount: oliveCount + agricultureCount };
+}
+
+function storyId(item) {
+  return createHash('sha1').update(`${item.url}|${item.title}`).digest('hex').slice(0, 14);
+}
+
 function normalizeTitle(title) {
   return title
-    .toLocaleLowerCase('es')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+-\s+[^-]{2,40}$/g, '')
+    .toLocaleLowerCase('es')
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
 }
 
-function idFor(item) {
-  return createHash('sha1').update(`${normalizeTitle(item.title)}|${item.url}`).digest('hex').slice(0, 14);
-}
-
-async function fetchSource(source) {
-  const response = await fetch(source.url, {
-    headers: {
-      'user-agent': 'MaginaOlivoNewsBot/1.3 (+https://github.com/izc05/magina-olivo)',
-      accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml, text/html;q=0.8',
-    },
-    signal: AbortSignal.timeout(15_000),
+async function fetchText(url) {
+  const response = await fetch(url, {
+    headers: { 'user-agent': 'MaginaOlivoNewsBot/1.0 (+https://github.com/izc05/magina-olivo)' },
+    signal: AbortSignal.timeout(12_000),
   });
-
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return parseXml(await response.text(), source);
+  return response.text();
 }
 
 async function main() {
-  const results = await Promise.allSettled(sources.map(fetchSource));
-  const items = results.flatMap((result) => result.status === 'fulfilled' ? result.value : []);
-  const errors = results
-    .map((result, index) => result.status === 'rejected' ? `${sources[index].name}: ${result.reason?.message ?? String(result.reason)}` : null)
-    .filter(Boolean);
-
   const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-  const deduped = new Map();
+  const all = [];
+  const errors = [];
+  let healthySourceCount = 0;
 
-  for (const item of items) {
-    if (new Date(item.publishedAt).getTime() < cutoff) continue;
-
-    const text = textFor(item);
-    const hasMagina = includesAny(text, maginaTerms) || item.scope === 'magina';
-    const hasSector = includesAny(text, oliveTerms) || includesAny(text, agricultureTerms);
-    if (!hasMagina && !hasSector) continue;
-
-    const score = relevance(item);
-    if (score < 15) continue;
-
-    const ranked = { ...item, score, rankScore: score + freshnessBonus(item.publishedAt) };
-    const key = normalizeTitle(item.title).slice(0, 96);
-    const previous = deduped.get(key);
-    if (!previous || ranked.rankScore > previous.rankScore) deduped.set(key, ranked);
+  for (const source of sources) {
+    try {
+      const xml = await fetchText(source.url);
+      const items = parseXml(xml, source);
+      all.push(...items);
+      healthySourceCount += 1;
+    } catch (error) {
+      errors.push(`${source.name}: ${error?.message ?? String(error)}`);
+    }
   }
 
-  const stories = [...deduped.values()]
-    .sort((a, b) => b.rankScore - a.rankScore || new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-    .slice(0, 36)
-    .map((item) => ({
-      id: idFor(item),
-      category: categoryFor(item),
-      scope: scopeFor(item),
+  const ranked = all
+    .filter((item) => new Date(item.publishedAt).getTime() >= cutoff)
+    .map((item) => {
+      const { text, relevance, maginaCount, sectorCount } = relevanceFor(item);
+      return {
+        item,
+        text,
+        relevance,
+        rankScore: relevance + freshnessBonus(item.publishedAt),
+        maginaCount,
+        sectorCount,
+      };
+    })
+    .filter(({ relevance, maginaCount, sectorCount }) => relevance >= 15 && (maginaCount > 0 || sectorCount > 0))
+    .sort((a, b) => b.rankScore - a.rankScore || new Date(b.item.publishedAt) - new Date(a.item.publishedAt));
+
+  const seenTitles = new Set();
+  const seenUrls = new Set();
+  const stories = [];
+
+  for (const { item, text } of ranked) {
+    const titleKey = normalizeTitle(item.title);
+    if (!titleKey || seenTitles.has(titleKey) || seenUrls.has(item.url)) continue;
+    seenTitles.add(titleKey);
+    seenUrls.add(item.url);
+    const scope = scopeFor(item, text);
+    stories.push({
+      id: storyId(item),
+      category: categoryFor(text, scope),
+      scope,
       title: item.title,
-      excerpt: item.excerpt || 'Abre la fuente original para consultar la información completa.',
+      excerpt: item.excerpt,
       source: item.source,
       url: item.url,
       publishedAt: item.publishedAt,
       official: item.official,
       ...(item.cooperativeId ? { cooperativeId: item.cooperativeId } : {}),
-    }));
+    });
+    if (stories.length >= 36) break;
+  }
 
   if (!stories.length) {
     const current = JSON.parse(await readFile(OUTPUT, 'utf8'));
-    console.warn('No se obtuvieron noticias nuevas. Se conserva el feed anterior.', errors);
-    await writeFile(OUTPUT, `${JSON.stringify({ ...current, collectorErrors: errors }, null, 2)}\n`);
+    console.warn('No se han recuperado noticias válidas. Se conserva el feed anterior.');
+    console.log(`Feed conservado: ${current.stories?.length ?? 0} noticias.`);
     return;
   }
 
   const payload = {
     generatedAt: new Date().toISOString(),
     sourceCount: sources.length,
-    healthySourceCount: sources.length - errors.length,
+    healthySourceCount,
     collectorErrors: errors,
     stories,
   };
 
   await writeFile(OUTPUT, `${JSON.stringify(payload, null, 2)}\n`);
-  console.log(`Feed actualizado: ${stories.length} noticias; ${payload.healthySourceCount}/${sources.length} fuentes operativas.`);
+  console.log(`Feed actualizado: ${stories.length} noticias; ${healthySourceCount}/${sources.length} fuentes operativas.`);
   if (errors.length) console.warn(`Fuentes con error: ${errors.join(' | ')}`);
 }
 

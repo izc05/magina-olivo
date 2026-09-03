@@ -1,15 +1,35 @@
 import { readFile, writeFile } from 'node:fs/promises';
 
 const OUTPUT = new URL('../public/data/cooperatives.json', import.meta.url);
-const USER_AGENT = 'MaginaOlivoCoopBot/1.1 (+https://github.com/izc05/magina-olivo)';
+const USER_AGENT = 'MaginaOlivoCoopBot/1.2 (+https://github.com/izc05/magina-olivo)';
 const CONCURRENCY = 4;
 
-const sourceOverrides = {
+const cooperativeSourceOverrides = {
   'remedios-jimena': 'https://www.aceitedeoro.es/',
-  'san-roque-carchelejo': 'https://tierrasdelmarquesado.com/categoria-producto/seleccion/',
 };
 
-const productScopedCatalogs = new Set(['san-roque-carchelejo']);
+const productRules = {
+  'san-roque-carchelejo|Tierras del Marquesado Selección Premium': {
+    sourceUrl: 'https://tierrasdelmarquesado.com/product/estuche-seleccion/',
+    lookupName: 'Picual D.O. Selección Premium 500 ml',
+    mode: 'single',
+  },
+  'san-sebastian-guardia|Señorío de Mesía': {
+    sourceUrl: 'https://senoriodemesia.es/tienda-online-aceite-de-oliva-jaen/',
+    lookupName: 'Señorío de Mesía Aceite de Oliva Virgen Extra',
+    mode: 'range',
+  },
+  'san-sebastian-guardia|Señorío de Mesía Cosecha Temprana': {
+    sourceUrl: 'https://senoriodemesia.es/producto/senorio-de-mesiacosecha-temprana/',
+    lookupName: 'Señorío de Mesía Cosecha Temprana',
+    mode: 'range',
+  },
+  'san-sebastian-guardia|Señorío de Mesía Ecológico': {
+    sourceUrl: 'https://senoriodemesia.es/producto/senorio-de-mesia-ecologico/',
+    lookupName: 'Señorío de Mesía Ecológico',
+    mode: 'range',
+  },
+};
 
 function decodeEntities(value = '') {
   return value
@@ -45,12 +65,7 @@ function parseAmount(label = '') {
 function priceVariants(value) {
   const fixed = value.toFixed(2);
   const compact = Number.isInteger(value) ? String(value) : String(value);
-  return new Set([
-    fixed,
-    fixed.replace('.', ','),
-    compact,
-    compact.replace('.', ','),
-  ]);
+  return new Set([fixed, fixed.replace('.', ','), compact, compact.replace('.', ',')]);
 }
 
 function pageContainsPrice(html, value) {
@@ -63,18 +78,31 @@ function pageContainsPrice(html, value) {
   ));
 }
 
-function priceNearProduct(html, productName) {
+function textAfterProduct(html, productName, length = 700) {
   const text = plainText(html);
   const haystack = normalize(text);
   const needle = normalize(productName);
   const index = haystack.indexOf(needle);
-  if (index < 0) return null;
+  if (index < 0) return '';
+  return text.slice(index, index + length);
+}
 
-  const nearby = text.slice(index, index + 900);
+function priceNearProduct(html, productName) {
+  const nearby = textAfterProduct(html, productName);
   const matches = [...nearby.matchAll(/(\d{1,4}(?:[.,]\d{1,2})?)\s*€/g)]
     .map((match) => Number(match[1].replace(',', '.')))
     .filter((value) => Number.isFinite(value) && value > 0 && value < 1000);
   return matches[0] ?? null;
+}
+
+function rangeNearProduct(html, productName) {
+  const nearby = textAfterProduct(html, productName, 450);
+  const match = nearby.match(/(\d{1,4}(?:[.,]\d{1,2})?)\s*€?\s*[-–]\s*(\d{1,4}(?:[.,]\d{1,2})?)\s*€/);
+  if (!match) return null;
+  const low = Number(match[1].replace(',', '.'));
+  const high = Number(match[2].replace(',', '.'));
+  if (!Number.isFinite(low) || !Number.isFinite(high) || low <= 0 || high < low || high >= 1000) return null;
+  return [low, high];
 }
 
 function structuredPrices(html) {
@@ -93,6 +121,14 @@ function structuredPrices(html) {
     }
   }
   return [...new Set(values)];
+}
+
+function formatNumber(value) {
+  return value.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatRange(low, high) {
+  return `${formatNumber(low)}–${formatNumber(high)} €`;
 }
 
 function replaceAmount(label, value) {
@@ -115,8 +151,13 @@ function isDirectProductUrl(url, productSourceUrl) {
   }
 }
 
-function sourceUrlFor(cooperative, product) {
-  return sourceOverrides[cooperative.id] ?? product.priceSourceUrl;
+function targetFor(cooperative, product) {
+  const key = `${cooperative.id}|${product.name}`;
+  const rule = productRules[key];
+  return {
+    sourceUrl: rule?.sourceUrl ?? cooperativeSourceOverrides[cooperative.id] ?? product.priceSourceUrl,
+    rule: rule ?? null,
+  };
 }
 
 async function fetchHtml(url) {
@@ -141,8 +182,8 @@ async function main() {
   for (const cooperative of cooperatives) {
     for (const product of cooperative.products ?? []) {
       if (!product.storePriceLabel || !product.priceSourceUrl) continue;
-      const sourceUrl = sourceUrlFor(cooperative, product);
-      targets.push({ cooperative, product, sourceUrl });
+      const target = targetFor(cooperative, product);
+      targets.push({ cooperative, product, ...target });
     }
   }
 
@@ -171,14 +212,36 @@ async function main() {
       return;
     }
 
-    for (const { cooperative, product } of urlTargets) {
+    for (const { cooperative, product, rule } of urlTargets) {
       const current = parseAmount(product.storePriceLabel);
       if (current == null) continue;
 
-      const scoped = productScopedCatalogs.has(cooperative.id) ? priceNearProduct(html, product.name) : null;
-      if (scoped != null && scoped >= current * 0.4 && scoped <= current * 2.5) {
-        if (Math.abs(scoped - current) > 0.001) {
-          product.storePriceLabel = replaceAmount(product.storePriceLabel, scoped);
+      if (rule?.mode === 'range') {
+        const range = rangeNearProduct(html, rule.lookupName);
+        if (!range) {
+          errors.push(`${cooperative.brand}/${product.name}: no se pudo leer el rango oficial en ${url}`);
+          continue;
+        }
+        const nextLabel = formatRange(range[0], range[1]);
+        if (product.storePriceLabel !== nextLabel) {
+          product.storePriceLabel = nextLabel;
+          updatedProducts += 1;
+        }
+        product.priceCapturedAt = today;
+        product.priceSourceUrl = url;
+        verifiedProducts += 1;
+        continue;
+      }
+
+      if (rule?.mode === 'single') {
+        const scoped = priceNearProduct(html, rule.lookupName);
+        if (scoped == null || scoped < current * 0.4 || scoped > current * 2.5) {
+          errors.push(`${cooperative.brand}/${product.name}: no se pudo leer el precio oficial en ${url}`);
+          continue;
+        }
+        const nextLabel = replaceAmount(product.storePriceLabel, scoped);
+        if (product.storePriceLabel !== nextLabel) {
+          product.storePriceLabel = nextLabel;
           updatedProducts += 1;
         }
         product.priceCapturedAt = today;

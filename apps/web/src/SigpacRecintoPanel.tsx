@@ -38,7 +38,6 @@ type SigpacResponse = {
   };
 };
 type ApiErrorBody = { error?: { message?: string } };
-
 type Bbox = { minLon: number; minLat: number; maxLon: number; maxLat: number };
 
 async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
@@ -236,7 +235,7 @@ export function SigpacRecintoPanel({ farmId, onImported }: { farmId: string; onI
     if (!selectedPlot || !selected || !importableBoundary) return;
     if (confirmImportId !== selected.id) {
       setConfirmImportId(selected.id);
-      setNotice('Revisa el recinto seleccionado. Pulsa “Confirmar perímetro SIGPAC” para guardarlo como perímetro privado de trabajo.');
+      setNotice('Revisa el recinto seleccionado. Pulsa “Confirmar perímetro SIGPAC” para que Mágina Olivo vuelva a verificarlo directamente en FEGA antes de guardarlo.');
       return;
     }
 
@@ -244,17 +243,17 @@ export function SigpacRecintoPanel({ farmId, onImported }: { farmId: string; onI
     setError(null);
     setNotice(null);
     try {
-      await request(`/api/v1/plots/${selectedPlot.id}/boundary`, {
-        method: 'PATCH',
-        body: JSON.stringify({ boundary: importableBoundary, source: 'sigpac' }),
+      await request(`/api/v1/plots/${selectedPlot.id}/import-sigpac`, {
+        method: 'POST',
+        body: JSON.stringify({ recintoId: selected.id }),
       });
       setConfirmImportId(null);
-      setNotice(`Recinto SIGPAC ${sigpacReference(selected)} guardado como perímetro privado. La superficie ha sido recalculada por Mágina Olivo.`);
+      setNotice(`Recinto SIGPAC ${sigpacReference(selected)} verificado en FEGA y guardado como perímetro privado. La superficie ha sido recalculada por Mágina Olivo.`);
       await onImported();
       const refreshed = await request<{ items: PlotSummary[] }>(`/api/v1/farms/${farmId}/plots`);
       setPlots(refreshed.items);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'No se ha podido importar el recinto.');
+      setError(reason instanceof Error ? reason.message : 'No se ha podido verificar e importar el recinto.');
     } finally {
       setImporting(false);
     }
@@ -316,7 +315,7 @@ export function SigpacRecintoPanel({ farmId, onImported }: { farmId: string; onI
                 </dl>
                 {importableBoundary ? (
                   <button className={confirmImportId === selected.id ? 'primary-button' : 'ghost-button'} type="button" onClick={() => void importSelected()} disabled={importing}>
-                    {importing ? 'Guardando…' : confirmImportId === selected.id ? 'Confirmar perímetro SIGPAC' : 'Usar como perímetro'}
+                    {importing ? 'Verificando FEGA…' : confirmImportId === selected.id ? 'Confirmar perímetro SIGPAC' : 'Usar como perímetro'}
                   </button>
                 ) : (
                   <div className="alert">Este recinto tiene una geometría compleja (MultiPolygon o huecos) y V1 lo deja solo en consulta para no simplificar lindes oficiales.</div>

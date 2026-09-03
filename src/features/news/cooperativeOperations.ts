@@ -18,6 +18,22 @@ const profiles: Record<string, CooperativeOperationalProfile> = {
     publicHours: ['Lunes a viernes · 09:00–14:00', 'Lunes a viernes · 16:00–19:00'],
     contactSourceUrl: 'https://laquintaesencia.com/contact/',
   },
+  'remedios-jimena': {
+    address: 'Ctra. Mancha Real-Cazorla, km 16,8 · 23530 Jimena (Jaén)',
+    phones: ['953 357 437'],
+    emails: [
+      { label: 'Contacto', value: 'info@orodecanava.com' },
+      { label: 'Atención al cliente y pedidos', value: 'ventas@orodecanava.com' },
+    ],
+    publicHours: ['Atención al cliente · lunes a viernes · 09:00–14:00 y 16:00–19:00'],
+    contactSourceUrl: 'https://www.orodecanava.com/es/contacto',
+  },
+  'bedmarense-bedmar': {
+    address: 'Pol. Ind. Los Llanos s/n · 23537 Bedmar (Jaén)',
+    phones: ['953 760 524', '953 760 057'],
+    emails: [{ label: 'Contacto', value: 'magnasur@magnasur.com' }],
+    contactSourceUrl: 'https://sierramagina.org/project/s-c-a-bedmarense/',
+  },
   'paz-belmez': {
     address: 'Pol. 3 Parcela 242 · Paraje La Vega · 23568 Bélmez de la Moraleda (Jaén)',
     phones: ['953 394 052', '619 254 391'],

@@ -9,6 +9,11 @@ const cooperativeSourceOverrides = {
 };
 
 const productRules = {
+  'remedios-jimena|Oro de Cánava|Caja 8 PET · 1 L · campaña 2025/26': {
+    sourceUrl: 'https://www.aceitedeoro.es/inicio/22-159-pet.html',
+    lookupName: 'CAMPAÑA 2025-2026 AOVE PET',
+    mode: 'single',
+  },
   'san-roque-carchelejo|Tierras del Marquesado Selección Premium': {
     sourceUrl: 'https://tierrasdelmarquesado.com/product/estuche-seleccion/',
     lookupName: 'Picual D.O. Selección Premium 500 ml',
@@ -152,8 +157,9 @@ function isDirectProductUrl(url, productSourceUrl) {
 }
 
 function targetFor(cooperative, product) {
+  const keyWithFormat = `${cooperative.id}|${product.name}|${product.format ?? ''}`;
   const key = `${cooperative.id}|${product.name}`;
-  const rule = productRules[key];
+  const rule = productRules[keyWithFormat] ?? productRules[key];
   return {
     sourceUrl: rule?.sourceUrl ?? cooperativeSourceOverrides[cooperative.id] ?? product.priceSourceUrl,
     rule: rule ?? null,

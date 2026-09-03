@@ -27,9 +27,14 @@ type AemetEnvelope = {
   datos?: string;
 };
 
+type AemetProbability = {
+  value?: number | string | null;
+  periodo?: string;
+};
+
 type AemetDay = {
   fecha?: string;
-  probPrecipitacion?: Array<{ value?: number | string | null }>;
+  probPrecipitacion?: AemetProbability[];
 };
 
 type AemetMunicipality = {
@@ -48,11 +53,16 @@ function finiteNumber(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function maxProbability(day: AemetDay): number | null {
-  const values = (day.probPrecipitacion ?? [])
+function dailyPrecipitationProbability(values: AemetProbability[] | undefined): number | null {
+  if (!values?.length) return null;
+  const fullDay = values.find((item) => item.periodo === '00-24');
+  const fullDayValue = finiteNumber(fullDay?.value);
+  if (fullDayValue != null) return fullDayValue;
+
+  const valid = values
     .map((item) => finiteNumber(item.value))
     .filter((value): value is number => value != null);
-  return values.length ? Math.max(...values) : null;
+  return valid.length ? Math.max(...valid) : null;
 }
 
 function safeIso(value: string | undefined): string | null {
@@ -94,7 +104,7 @@ async function fetchAemetForecast(aemetCode: string, apiKey: string): Promise<Fo
   const days = (municipality.prediccion?.dia ?? [])
     .map((day) => ({
       date: typeof day.fecha === 'string' ? day.fecha.slice(0, 10) : '',
-      precipitationProbabilityPercent: maxProbability(day),
+      precipitationProbabilityPercent: dailyPrecipitationProbability(day.probPrecipitacion),
     }))
     .filter((day) => /^\d{4}-\d{2}-\d{2}$/.test(day.date));
 

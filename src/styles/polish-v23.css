@@ -1,0 +1,52 @@
+/* V2.3 — compact mobile KPIs and non-overlapping desktop navigation */
+
+@media (max-width: 430px) {
+  .campaign-metrics,
+  .profit-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .campaign-metrics article,
+  .profit-summary-grid article {
+    min-width: 0;
+    padding: 10px 7px;
+  }
+
+  .campaign-metrics article svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .campaign-metrics span,
+  .profit-summary-grid span,
+  .profit-summary-grid small {
+    font-size: 9px;
+    line-height: 1.15;
+  }
+
+  .campaign-metrics strong {
+    font-size: 17px;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  .profit-summary-grid strong {
+    font-size: 16px;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 820px) {
+  .app-shell {
+    padding-bottom: 30px;
+  }
+
+  .bottom-nav {
+    position: static;
+    left: auto;
+    bottom: auto;
+    transform: none;
+    margin: 16px auto 0;
+  }
+}

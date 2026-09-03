@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { preview } from 'vite';
 
-const baseUrl = 'http://127.0.0.1:4174';
+const baseUrl = 'http://127.0.0.1:4174/magina-olivo/';
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -25,6 +25,7 @@ async function closePreview(previewServer) {
 
 async function run() {
   const previewServer = await preview({
+    base: '/magina-olivo/',
     preview: { host: '127.0.0.1', port: 4174, strictPort: true },
   });
 
@@ -67,7 +68,7 @@ async function run() {
     await assertNoOverflow(page, 'Alertas');
 
     await context.close();
-    console.log('✓ Smoke Mágina: directorio, búsqueda, ficha verificada y alertas oficiales funcionan en 390×844.');
+    console.log('✓ Smoke Mágina: directorio, búsqueda, ficha verificada y alertas oficiales funcionan en 390×844 y bajo /magina-olivo/.');
   } finally {
     if (browser) await browser.close();
     await closePreview(previewServer);

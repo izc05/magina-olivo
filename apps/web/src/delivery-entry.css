@@ -38,11 +38,16 @@
   color: #66500f;
 }
 
+.delivery-actions {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+}
+
 .delivery-ticket-action {
   display: grid;
   justify-items: end;
   gap: 4px;
-  margin-top: 8px;
 }
 
 .ticket-upload-button {
@@ -89,6 +94,7 @@
     width: 100%;
   }
 
+  .delivery-actions,
   .delivery-ticket-action {
     justify-items: stretch;
   }

@@ -103,6 +103,14 @@ export function FieldNotebook({
     void loadTimeline(selectedPlotId);
   }, [selectedPlotId]);
 
+  useEffect(() => {
+    const refreshAfterSync = () => {
+      if (selectedPlotId) void loadTimeline(selectedPlotId);
+    };
+    window.addEventListener('magina:sync-complete', refreshAfterSync);
+    return () => window.removeEventListener('magina:sync-complete', refreshAfterSync);
+  }, [selectedPlotId]);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedPlotId) return;
@@ -140,11 +148,15 @@ export function FieldNotebook({
     setError(null);
     setNotice(null);
     try {
-      await api.createActivity(holdingId, body);
+      const result = await api.createActivity(holdingId, body);
       form.reset();
       setActivityType('observation');
-      setNotice('Labor guardada en la historia de la parcela.');
-      await loadTimeline(selectedPlotId);
+      if ('offlineQueued' in result) {
+        setNotice('Labor guardada en este móvil. Se añadirá a la historia al recuperar conexión.');
+      } else {
+        setNotice('Labor guardada en la historia de la parcela.');
+        await loadTimeline(selectedPlotId);
+      }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'No se ha podido guardar la labor.');
     } finally {

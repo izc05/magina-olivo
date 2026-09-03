@@ -5,7 +5,7 @@ import test from 'node:test';
 const source = readFileSync(new URL('./MaginaPrivateHub.tsx', import.meta.url), 'utf8');
 
 test('private Mágina hub exposes the real public service routes', () => {
-  for (const path of ['/magina/tiempo', '/magina/campo', '/magina/mercado', '/magina/directorio']) {
+  for (const path of ['/magina/tiempo', '/magina/campo', '/magina/noticias', '/magina/mercado', '/magina/directorio']) {
     assert.match(source, new RegExp(path.replaceAll('/', '\\/')));
   }
 });

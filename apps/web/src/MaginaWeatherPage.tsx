@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import './weather-radar.css';
 
 type Municipality = {
   slug: string;

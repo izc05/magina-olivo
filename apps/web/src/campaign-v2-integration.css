@@ -99,6 +99,34 @@
   background: #fffefa;
 }
 
+.destination-status {
+  margin-top: 5px !important;
+  padding-left: 18px;
+  position: relative;
+  color: #7a7668 !important;
+}
+
+.destination-status::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: .28rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #b7ad95;
+}
+
+.destination-status--known {
+  color: var(--v2-olive-deep) !important;
+  font-weight: 700;
+}
+
+.destination-status--known::before {
+  background: var(--v2-olive);
+  box-shadow: 0 0 0 3px rgba(86,111,67,.1);
+}
+
 .delivery-file-field {
   padding: 10px;
   border: 1px dashed rgba(86,111,67,.18);
@@ -129,7 +157,10 @@
   min-height: 82px;
   padding: 15px 16px 15px 20px;
   border-color: rgba(86,111,67,.13);
-  background: rgba(255,253,248,.94);
+  background:
+    linear-gradient(90deg, rgba(201,155,44,.035), transparent 34%),
+    rgba(255,253,248,.94);
+  box-shadow: 0 5px 18px rgba(47,59,39,.035);
 }
 
 .delivery-row::before {
@@ -226,7 +257,8 @@
 
 @media (forced-colors: active) {
   .delivery-entry-card::before,
-  .delivery-row::before {
+  .delivery-row::before,
+  .destination-status::before {
     display: none;
   }
 }

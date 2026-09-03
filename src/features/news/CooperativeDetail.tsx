@@ -16,6 +16,7 @@ import {
   ShoppingBag,
   Truck,
 } from 'lucide-react';
+import { getCooperativeDirectNewsSource } from './cooperativeDirectNews';
 import type { CooperativeRecord } from './cooperativesFeed';
 import { latestValue, loadMarket, type MarketPayload } from './marketFeed';
 import { loadRealNews, type RealNewsStory } from './newsFeed';
@@ -82,6 +83,7 @@ export function CooperativeDetail({ cooperative, onBack }: CooperativeDetailProp
     () => cooperative.products?.filter((product) => product.storePriceLabel) ?? [],
     [cooperative.products],
   );
+  const directNews = useMemo(() => getCooperativeDirectNewsSource(cooperative.id), [cooperative.id]);
 
   return (
     <section className="section-block hub-panel hub-panel--flush section-block--last coop-detail-view">
@@ -226,6 +228,11 @@ export function CooperativeDetail({ cooperative, onBack }: CooperativeDetailProp
         <section className="section-block coop-profile-panel">
           <div className="section-heading"><div><span className="eyebrow">Actualidad</span><h2>Noticias relacionadas</h2></div><Newspaper size={21} /></div>
           <p className="coop-profile-intro">Selección automática del feed real por nombre de cooperativa, marca <strong>{cooperative.brand}</strong> y municipio <strong>{cooperative.town}</strong>.</p>
+          {directNews && (
+            <a className="coop-document-row coop-direct-news" href={directNews.url} target="_blank" rel="noreferrer">
+              <Newspaper size={20} /><div><strong>{directNews.label}</strong><span>Abrir la actualidad publicada directamente por la entidad</span></div><ExternalLink size={18} />
+            </a>
+          )}
           {relatedStories.length ? (
             <div className="coop-related-news">
               {relatedStories.map((story) => (

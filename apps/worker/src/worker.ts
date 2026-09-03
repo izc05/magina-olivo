@@ -389,24 +389,42 @@ export async function runWorkerIteration(): Promise<boolean> {
   return true;
 }
 
+function logLoopFailure(event: string, error: unknown): void {
+  console.warn(JSON.stringify({
+    event,
+    error: error instanceof Error ? error.message : String(error),
+  }));
+}
+
 async function main(): Promise<void> {
-  try {
-    if (runOnce) {
+  if (runOnce) {
+    try {
       await runWorkerIteration();
-      return;
+    } finally {
+      await pool.end();
     }
+    return;
+  }
 
-    await ensureRainAlertScanScheduled();
+  while (true) {
+    try {
+      await ensureRainAlertScanScheduled();
+      break;
+    } catch (error) {
+      logLoopFailure('rain_alert_scheduler_bootstrap_failed', error);
+      await sleep(Math.max(pollMilliseconds, 1000));
+    }
+  }
 
-    while (true) {
+  while (true) {
+    try {
       const processed = await runWorkerIteration();
       if (!processed) {
         await sleep(pollMilliseconds);
       }
-    }
-  } finally {
-    if (runOnce) {
-      await pool.end();
+    } catch (error) {
+      logLoopFailure('worker_iteration_failed', error);
+      await sleep(Math.max(pollMilliseconds, 1000));
     }
   }
 }

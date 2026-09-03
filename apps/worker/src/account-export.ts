@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type pg from 'pg';
+import type { Pool } from 'pg';
 
 type AccountExportRequest = {
   requester_snapshot: Record<string, unknown>;
@@ -28,7 +28,7 @@ function numberOrNull(value: string | number | null): number | null {
   return Number(value);
 }
 
-export async function expireAccountExports(pool: pg.Pool): Promise<number> {
+export async function expireAccountExports(pool: Pool): Promise<number> {
   const result = await pool.query(
     `
       update account_exports
@@ -43,7 +43,7 @@ export async function expireAccountExports(pool: pg.Pool): Promise<number> {
 }
 
 export async function generateAccountExport(
-  pool: pg.Pool,
+  pool: Pool,
   exportId: string,
   userId: string,
   ttlHours: number,

@@ -4,6 +4,7 @@ import { registerSW } from 'virtual:pwa-register';
 import { App } from './App';
 import { ConnectivityStatus } from './ConnectivityStatus';
 import { MaginaDirectoryPage } from './MaginaDirectoryPage';
+import { MaginaHubPage } from './MaginaHubPage';
 import { MaginaWeatherPage } from './MaginaWeatherPage';
 import { NoticeCenter } from './NoticeCenter';
 import { ResetPassword } from './ResetPassword';
@@ -17,6 +18,7 @@ import './delivery-entry.css';
 import './offline-cold-start.css';
 import './magina-directory.css';
 import './magina-weather.css';
+import './magina-hub.css';
 
 registerSW({
   immediate: true,
@@ -34,6 +36,8 @@ createRoot(root).render(
   <StrictMode>
     {path === '/reset-password' ? (
       <ResetPassword />
+    ) : path === '/magina' ? (
+      <MaginaHubPage />
     ) : path === '/magina/directorio' ? (
       <MaginaDirectoryPage />
     ) : path === '/magina/tiempo' ? (

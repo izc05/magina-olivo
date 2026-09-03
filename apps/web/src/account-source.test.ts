@@ -1,0 +1,37 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import test from 'node:test';
+
+async function read(relativePath: string): Promise<string> {
+  return readFile(new URL(relativePath, import.meta.url), 'utf8');
+}
+
+test('Mi Cuenta is reachable only through an authenticated session signal', async () => {
+  const main = await read('./main.tsx');
+  const entry = await read('./RegistrationEntry.tsx');
+  const account = await read('./AccountPage.tsx');
+
+  assert.match(main, /path === '\/cuenta'/);
+  assert.match(main, /<AccountPage \/>/);
+  assert.match(entry, /response\.ok/);
+  assert.match(entry, /state === 'signed_in'/);
+  assert.match(entry, /href="\/cuenta"/);
+  assert.match(account, /\/api\/v1\/me/);
+  assert.match(account, /\/api\/v1\/account\/preferences/);
+  assert.match(account, /\/api\/v1\/public\/destinations/);
+});
+
+test('account preferences persist user choices without pretending unfinished destructive flows exist', async () => {
+  const account = await read('./AccountPage.tsx');
+
+  assert.match(account, /preferredCooperativeId/);
+  assert.match(account, /notifyWeather/);
+  assert.match(account, /notifyTasks/);
+  assert.match(account, /notifyPendingYield/);
+  assert.match(account, /weatherRainMmThreshold/);
+  assert.match(account, /weatherFrostCThreshold/);
+  assert.match(account, /weatherWindKmhThreshold/);
+  assert.match(account, /Seleccionarla no comparte tus entregas ni tus documentos/);
+  assert.match(account, /no mostraremos acciones destructivas o de portabilidad total/);
+  assert.doesNotMatch(account, /Eliminar cuenta<\/button>/);
+});

@@ -12,8 +12,10 @@ import {
   type Plot,
   type User,
 } from './api';
+import { CampaignDocuments } from './CampaignDocuments.tsx';
 import { DeliveryEntryCard, DeliveryTicketButton } from './DeliveryEntryCard.tsx';
 import { FieldNotebook } from './FieldNotebook.tsx';
+import { MaginaPrivateHub } from './MaginaPrivateHub.tsx';
 import { OfflineColdStart } from './OfflineColdStart.tsx';
 import { listPendingOperations } from './offline/outbox.ts';
 
@@ -328,7 +330,7 @@ export function App() {
             reloadCampaign={() => loadCampaign(selectedCampaignId)}
           />
         ) : null}
-        {tab === 'magina' ? <MaginaTab /> : null}
+        {tab === 'magina' ? <MaginaPrivateHub /> : null}
         {tab === 'more' ? <MoreTab user={user} holding={selectedHolding} busy={busy} onSignOut={() => void signOut()} /> : null}
       </main>
 
@@ -468,21 +470,9 @@ function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelect
             ))}
             {!deliveries.length ? <EmptyState title="Aún no hay entregas">Registra la primera cuando lleves aceituna a la almazara.</EmptyState> : null}
           </section>
+          {selectedHolding ? <CampaignDocuments holdingId={selectedHolding.id} campaignId={selectedCampaign.id} deliveries={deliveries} /> : null}
         </>
       ) : null}
-    </>
-  );
-}
-
-function MaginaTab() {
-  return (
-    <>
-      <PageIntro eyebrow="Mágina" title="Tu territorio" copy="La información local llegará aquí sin mezclarla con tus datos privados." />
-      <section className="section card card-body">
-        <span className="badge gold">Siguiente bloque</span>
-        <h2 className="section-title magina-card-title">Noticias, tiempo y alertas</h2>
-        <p className="section-copy">Este espacio está reservado para integrar las fuentes ya investigadas: AEMET, RAIF, cooperativas, mercado del aceite y noticias locales, manteniendo la misma identidad visual.</p>
-      </section>
     </>
   );
 }

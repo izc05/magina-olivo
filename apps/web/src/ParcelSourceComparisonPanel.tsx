@@ -15,7 +15,6 @@ type PlotComparison = {
   boundarySourceCheckedAt: string | null;
 };
 type ApiErrorBody = { error?: { message?: string } };
-
 type DifferenceBand = 'none' | 'low' | 'medium' | 'high';
 
 async function request<T>(url: string): Promise<T> {
@@ -102,6 +101,7 @@ function formatDate(value: string | null): string {
 export function ParcelSourceComparisonPanel({ farmId, revision = 0 }: { farmId: string; revision?: number }) {
   const [plots, setPlots] = useState<PlotComparison[]>([]);
   const [selectedPlotId, setSelectedPlotId] = useState('');
+  const [refreshRevision, setRefreshRevision] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -121,7 +121,7 @@ export function ParcelSourceComparisonPanel({ farmId, revision = 0 }: { farmId: 
       if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
-  }, [farmId, revision]);
+  }, [farmId, revision, refreshRevision]);
 
   const selected = useMemo(() => plots.find((plot) => plot.id === selectedPlotId) ?? null, [plots, selectedPlotId]);
   const percent = selected ? areaDifferencePercent(selected.areaHa, selected.boundaryAreaHa) : null;
@@ -148,11 +148,14 @@ export function ParcelSourceComparisonPanel({ farmId, revision = 0 }: { farmId: 
 
       {selected ? (
         <div className="card card-body parcel-comparison-card">
-          <div className="field parcel-comparison-selector">
-            <label htmlFor="parcel-comparison-plot">Parcela</label>
-            <select id="parcel-comparison-plot" value={selectedPlotId} onChange={(event) => setSelectedPlotId(event.target.value)}>
-              {plots.map((plot) => <option key={plot.id} value={plot.id}>{plot.name}</option>)}
-            </select>
+          <div className="parcel-comparison-toolbar">
+            <div className="field parcel-comparison-selector">
+              <label htmlFor="parcel-comparison-plot">Parcela</label>
+              <select id="parcel-comparison-plot" value={selectedPlotId} onChange={(event) => setSelectedPlotId(event.target.value)}>
+                {plots.map((plot) => <option key={plot.id} value={plot.id}>{plot.name}</option>)}
+              </select>
+            </div>
+            <button className="ghost-button" type="button" onClick={() => setRefreshRevision((current) => current + 1)}>Actualizar comparación</button>
           </div>
 
           <div className="parcel-comparison-metrics">

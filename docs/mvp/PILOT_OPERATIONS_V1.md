@@ -49,6 +49,7 @@ Se crea:
 ├── manifest.txt
 ├── results.csv
 ├── findings.csv
+├── round-checks.csv
 └── README.txt
 ```
 
@@ -59,6 +60,15 @@ El manifiesto conserva:
 - SHA de código;
 - hostname de staging;
 - alias de participantes.
+
+`round-checks.csv` obliga a cerrar explícitamente los criterios que no pueden deducirse solo de tiempos de tarea:
+
+- pérdidas de datos;
+- duplicados;
+- accesos cruzados;
+- comprensión Mercado ≠ liquidación;
+- comprensión de fuente/fecha pública;
+- bloqueos críticos de accesibilidad móvil.
 
 No conserva identidad personal ni credenciales.
 
@@ -76,12 +86,13 @@ bash scripts/pilot-participant-setup.sh
 El script:
 
 1. exige HTTPS;
-2. comprueba `/health/ready`;
-3. crea credenciales aleatorias;
-4. verifica la identidad autenticada;
-5. comprueba que la cuenta comienza con cero explotaciones privadas;
-6. cierra la sesión del facilitador;
-7. guarda las credenciales localmente con modo `0600` bajo `.deploy/pilot/`.
+2. bloquea por defecto emails que no sean sintéticos;
+3. comprueba `/health/ready`;
+4. crea credenciales aleatorias;
+5. verifica la identidad autenticada;
+6. comprueba que la cuenta comienza con cero explotaciones privadas;
+7. cierra la sesión del facilitador;
+8. guarda las credenciales localmente con modo `0600` bajo `.deploy/pilot/`.
 
 Si Cloudflare Access protege staging, usar también el service token de gate mediante `CF_ACCESS_CLIENT_ID` y `CF_ACCESS_CLIENT_SECRET`. Nunca guardar estos valores en Git.
 
@@ -93,6 +104,7 @@ No incluir la contraseña en:
 
 - `results.csv`;
 - `findings.csv`;
+- `round-checks.csv`;
 - capturas destinadas a documentación;
 - issue #7;
 - PR #6;
@@ -171,22 +183,45 @@ Antes de pasar al siguiente participante:
 - no borrar evidencia técnica necesaria para reproducir un fallo;
 - no conservar capturas con credenciales visibles.
 
-## 9. Cierre de ronda
+## 9. Cierre de ronda y decisión automática
 
-No declarar `GO` solo por impresiones positivas.
+Antes de calcular el resultado, completar todos los valores de `round-checks.csv`.
 
-Aplicar los umbrales de `PILOT_PROTOCOL_V1.md`:
+Después ejecutar:
 
-- ≥80 % de tareas centrales sin ayuda;
+```bash
+export PILOT_RUN_ID=round-01
+node scripts/pilot-evidence-summary.mjs
+```
+
+El script genera localmente:
+
+```text
+summary.txt
+summary.json
+```
+
+Y devuelve una de tres decisiones:
+
+- `GO`: la evidencia completa alcanza los umbrales definidos;
+- `NO-GO`: la ronda está completa pero falla al menos un criterio o existe P0;
+- `INCOMPLETE`: faltan tareas, participantes o comprobaciones de ronda.
+
+El cálculo aplica:
+
+- ≥80 % de tareas centrales completadas sin ayuda;
 - mediana entrega <30 s;
 - mediana labor <45 s;
 - mediana rendimiento <15 s;
 - 0 pérdidas de datos;
 - 0 duplicados;
 - 0 accesos cruzados;
-- 100 % entiende Mercado ≠ liquidación.
+- 100 % entiende Mercado ≠ liquidación;
+- 100 % identifica fuente/estado público;
+- 0 bloqueos críticos de accesibilidad móvil;
+- 0 hallazgos P0.
 
-Si existe un P0: `NO-GO` automático hasta corregir y repetir la tarea afectada.
+No alterar manualmente el resultado para convertir un `NO-GO` en `GO`. Si una regla necesita cambiarse, debe modificarse primero en el protocolo y en el script, con commit trazable.
 
 ## 10. Qué sí puede salir del directorio local de evidencia
 

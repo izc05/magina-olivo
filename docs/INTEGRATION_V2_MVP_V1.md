@@ -57,11 +57,12 @@ Los repositorios demo se permiten únicamente para:
 
 Nunca serán fuente de verdad en producción.
 
-## Primera rebanada integrada
+## Rebanadas integradas
 
 La rama parte directamente de `feat/mvp-core-v1`.
 
-Primer cambio aplicado:
+### Base visual
+
 - se conserva `App.tsx` y toda su lógica real;
 - se conserva autenticación, API, offline y cálculos;
 - se añade `apps/web/src/integration-v2.css` como capa de presentación;
@@ -69,15 +70,30 @@ Primer cambio aplicado:
 - no se introduce `lucide-react` ni otra dependencia visual nueva;
 - no se copian valores demo desde Visual V2.
 
-Objetivo de este corte: acercar Login, cabecera, Inicio y componentes base al sistema V2 sin alterar comportamiento productivo.
+### Mi Campo
+
+- explotación, fincas y parcelas proceden exclusivamente de `/api/v1`;
+- la finca activa se mantiene como selección canónica del MVP Core;
+- las parcelas conservan sus campos reales: superficie, olivos, riego y SIGPAC;
+- formularios de explotación, finca y parcela siguen escribiendo contra la API real;
+- la presentación de finca activa, tarjetas de parcela y formularios se ha llevado a la jerarquía Visual V2;
+- no se ha introducido `localStorage` como fuente de verdad alternativa.
+
+### Cuaderno
+
+- las labores se escriben contra la API real y mantienen outbox offline;
+- tratamientos, abonado, riego, costes, notas, parcela y campaña siguen usando el modelo canónico;
+- la historia de parcela unifica labores, entregas y rendimientos sin duplicar datos;
+- se añade resumen real por parcela y filtros `Todo / Labores / Entregas / Rendimientos`;
+- el aviso CUE/SIEX se mantiene explícito: el cuaderno personal V1 no se presenta como registro oficial.
 
 ## Orden P0
 
-1. Login/sesión.
-2. Inicio/dashboard real.
-3. Mi Campo: explotación -> finca -> parcela.
-4. Cuaderno/labores.
-5. Campaña -> entrega -> rendimiento.
+1. Login/sesión. ✅ presentación V2 sobre flujo real
+2. Inicio/dashboard real. ✅ primera integración V2
+3. Mi Campo: explotación -> finca -> parcela. ✅ integración visual real
+4. Cuaderno/labores. ✅ integración visual + resumen/filtros reales
+5. Campaña -> entrega -> rendimiento. 🟡 siguiente corte
 6. Documentos privados.
 7. Offline/sync.
 8. Meteorología y datos públicos.
@@ -108,4 +124,4 @@ La fase podrá considerarse cerrada cuando:
 
 ## Siguiente paso
 
-Migrar la composición de **Mi Campo** hacia la jerarquía visual V2 usando exclusivamente `Holding`, `Farm`, `Plot` y datos derivados del backend MVP Core. Después, aplicar el mismo patrón a Cuaderno y Campaña.
+Migrar **Campaña -> Entrega -> Rendimiento** a la misma jerarquía Visual V2 manteniendo `Campaign`, `Delivery`, `CampaignSummary`, documentos privados y cálculos del MVP Core como única autoridad. Después se cerrará Documentos + Offline y se preparará el primer staging real navegable.

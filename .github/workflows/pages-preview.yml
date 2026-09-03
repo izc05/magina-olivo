@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/integration-v2-mvp-v1
+      - fix/staging-backup-manifest-v3
   workflow_dispatch:
 
 permissions:
@@ -30,6 +31,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Validate backup and restore safety contract
+        run: bash scripts/staging-backup-restore-contract-gate.sh
 
       - name: Typecheck workspaces
         run: npm run typecheck

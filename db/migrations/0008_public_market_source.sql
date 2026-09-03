@@ -8,16 +8,18 @@ values (
   'Observatorio de Precios y Mercados · Junta de Andalucía',
   'https://ws142.juntadeandalucia.es/agriculturaypesca/opendata/prb/',
   'CC BY 4.0',
-  'daily (catalog declaration)',
+  'daily (catalog declaration; freshness requires verification)',
   null,
   '2026-09-03T00:00:00Z',
   '{
     "formats":["CSV","JSON"],
     "weeklyCsv":"https://ws142.juntadeandalucia.es/agriculturaypesca/opendata/prb/SEMANAL.csv",
     "weeklyJson":"https://ws142.juntadeandalucia.es/agriculturaypesca/opendata/prb/SEMANAL_0.js",
+    "catalogLastUpdatedAt":"2020-06-25",
+    "catalogDeclaredFrequency":"daily",
     "currentness":"requires-staging-verification",
     "latestEditorialOilPublication":"Informe semanal de aceite. Semana 35",
-    "latestEditorialOilPublicationDate":"2026-09-02",
+    "latestEditorialOilPublicationDate":"2026-08-30",
     "usage":"market-context-not-member-settlement"
   }'::jsonb
 )

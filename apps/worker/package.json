@@ -7,6 +7,7 @@
     "dev": "node --env-file-if-exists=../../.env --watch src/worker.ts",
     "start": "node --env-file-if-exists=../../.env src/worker.ts",
     "source:raif:enqueue": "node --env-file-if-exists=../../.env scripts/enqueue-raif-inspection.ts",
+    "source:raif:snapshot": "node --env-file-if-exists=../../.env scripts/download-raif-snapshot.ts",
     "source:market:enqueue": "node --env-file-if-exists=../../.env scripts/enqueue-market-inspection.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test"

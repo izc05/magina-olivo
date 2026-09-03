@@ -10,7 +10,6 @@ import { MaginaMarketPage } from './MaginaMarketPage';
 import { MaginaNewsPage } from './MaginaNewsPage';
 import { MaginaWeatherPage } from './MaginaWeatherPage';
 import { NoticeCenter } from './NoticeCenter';
-import { OfflineColdStart } from './OfflineColdStart';
 import { OnboardingPage } from './OnboardingPage';
 import { RegisterPage } from './RegisterPage';
 import { RegistrationEntry } from './RegistrationEntry';

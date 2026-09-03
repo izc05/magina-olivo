@@ -125,17 +125,16 @@ async function inspectRaifPublicSource(): Promise<void> {
     await pool.query(
       `
         update public_data_sources
-        set source_url = $2,
-            source_updated_at = coalesce($3::timestamptz, source_updated_at),
-            last_checked_at = $4::timestamptz,
-            last_success_at = $4::timestamptz,
+        set source_url = $1,
+            source_updated_at = coalesce($2::timestamptz, source_updated_at),
+            last_checked_at = $3::timestamptz,
+            last_success_at = $3::timestamptz,
             last_error = null,
-            metadata = metadata || $5::jsonb,
+            metadata = metadata || $4::jsonb,
             updated_at = now()
         where source_key = 'raif-olivar-observations'
       `,
       [
-        'raif-olivar-observations',
         inspection.url,
         sourceUpdatedAt,
         inspection.checkedAt,

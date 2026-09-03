@@ -29,6 +29,12 @@ Login
      -> outbox
      -> sync
      -> modo protegido
+  -> Mágina
+     -> Tiempo / AEMET
+     -> Campo / RAIF
+     -> Noticias verificadas
+     -> Mercado
+     -> Cooperativas y almazaras
 ```
 
 Staging debe validar este recorrido integrado, no una imagen anterior del MVP sin la capa Visual V2.
@@ -61,8 +67,9 @@ El entorno debe disponer de:
 - HTTPS válido;
 - API y PWA same-origin según la arquitectura definida;
 - PostgreSQL de staging;
-- migraciones aplicadas, incluida `0004_activities.sql`;
+- todas las migraciones aplicadas, incluidas actividades y fuentes públicas;
 - Better Auth configurado con secreto exclusivo de staging;
+- clave AEMET solo en servidor;
 - correo de recuperación de staging o buzón de pruebas controlado;
 - almacenamiento privado configurado;
 - backup/restore disponible;
@@ -72,8 +79,6 @@ El entorno debe disponer de:
 ## Orden del gate
 
 ### 1. Preflight del host
-
-Ejecutar los scripts ya preparados:
 
 ```bash
 export STAGING_ENV_FILE=/etc/magina-olivo/staging.env
@@ -152,7 +157,39 @@ Salida esperada:
 [mvp-core-gate] PASS: MVP synthetic journey, idempotency, timeline, summary and private ticket isolation
 ```
 
-### 4. Almacenamiento privado externo
+### 4. Mágina pública y fuentes externas
+
+Ejecutar sobre el mismo hostname:
+
+```bash
+export STAGING_BASE_URL=https://<staging-host>
+export STAGING_PUBLIC_WEATHER_MUNICIPALITY=bedmar-y-garciez
+bash scripts/staging-public-magina-gate.sh
+```
+
+Debe demostrar que responden por HTTPS las rutas:
+
+- `/magina`;
+- `/magina/tiempo`;
+- `/magina/campo`;
+- `/magina/noticias`;
+- `/magina/mercado`;
+- `/magina/directorio`.
+
+Y que sus contratos públicos cumplen:
+
+- registro de AEMET, RAIF, Observatorio, DOP Sierra Mágina y noticias oficiales;
+- directorio no vacío y sin URLs públicas no HTTPS;
+- RAIF con procedencia, frescura y `regional-fitosanitary-context-not-plot-diagnosis`;
+- Noticias con política `verified-metadata-only-no-article-copy`, sin cuerpo de artículo y con enlaces originales HTTPS;
+- mercado con metadatos y fecha de verificación antes de mostrar datos estructurados;
+- AEMET con municipio verificado, atribución, predicción no vacía, frescura y modo de disponibilidad válido.
+
+El municipio meteorológico por defecto es `bedmar-y-garciez`; puede sustituirse por otro slug verificado sin modificar el script.
+
+Si Cloudflare Access protege staging, este gate debe usar el mismo par `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET`. Un token parcial debe ser rechazado antes de realizar llamadas.
+
+### 5. Almacenamiento privado externo
 
 Con el bucket privado de staging y un bucket separado de restore-validation:
 
@@ -168,7 +205,7 @@ PUT -> GET -> SHA-256 -> DELETE -> GET must fail
 
 sin exponer credenciales ni objetos públicamente.
 
-### 5. Recuperación de contraseña / correo
+### 6. Recuperación de contraseña / correo
 
 Comprobar en el entorno real:
 
@@ -181,7 +218,7 @@ Comprobar en el entorno real:
 
 `AUTH_MAIL_TRANSPORT=capture` no es válido en staging externo.
 
-### 6. Backup y restore
+### 7. Backup y restore
 
 ```bash
 export BACKUP_DESTINATION_DIR=/mnt/off-host/magina-staging-backups
@@ -209,11 +246,11 @@ Debe demostrarse que se recuperan conjuntamente:
 
 Una copia que no se haya restaurado con éxito no cuenta como backup validado.
 
-### 7. Accesibilidad manual
+### 8. Accesibilidad + PWA / offline manual
 
 Ejecutar `docs/mvp/ACCESSIBILITY_GATE_V1.md` sobre este mismo staging.
 
-Mínimo:
+Accesibilidad mínima:
 
 - teclado completo;
 - TalkBack + Chrome Android o NVDA + navegador desktop;
@@ -223,9 +260,7 @@ Mínimo:
 - navegación activa anunciada;
 - adjunto de ticket operable sin ratón.
 
-### 8. PWA / offline manual
-
-Con un usuario sintético:
+Después, con un usuario sintético:
 
 1. instalar/abrir PWA;
 2. iniciar sesión online;
@@ -241,7 +276,22 @@ Con un usuario sintético:
 12. comprobar una sola entrega y una sola labor en servidor;
 13. confirmar que el timeline se actualiza;
 14. comprobar que logout queda bloqueado mientras hay operaciones pendientes y vuelve a estar permitido tras sync;
-15. confirmar que un ticket no se promete como guardado offline si su archivo todavía no se ha subido.
+15. provocar o simular un fallo recuperable y confirmar que la interfaz muestra `Sincronización pendiente` / `Reintentar` sin borrar la outbox;
+16. confirmar que un ticket no se promete como guardado offline si su archivo todavía no se ha subido.
+
+## Ejecución agregada
+
+Una vez configuradas las variables, la fase externa combina los tres primeros gates externos:
+
+```bash
+bash scripts/staging-acceptance.sh external
+```
+
+Orden:
+
+1. HTTPS/seguridad;
+2. recorrido agrícola sintético;
+3. Mágina pública y fuentes.
 
 ## Evidencia que conservar
 
@@ -251,6 +301,7 @@ Para cada ejecución guardar únicamente evidencia no sensible:
 - **SHA completo real desplegado (`current_source_sha`)**;
 - etiqueta de release, si se usa;
 - resultados PASS/FAIL de cada gate;
+- municipio AEMET usado en el gate público;
 - IDs sintéticos cuando sean necesarios para diagnóstico;
 - navegador/SO usados en accesibilidad;
 - incidencias encontradas y commit de corrección.
@@ -265,16 +316,16 @@ No guardar:
 
 ## Criterio de salida de staging
 
-Staging V1 queda en **PASS** solo cuando todos estos bloques estén verdes:
+Staging V1 queda en **PASS** solo cuando estos ocho bloques estén verdes:
 
 1. host/contenedores;
 2. HTTPS/seguridad;
 3. recorrido funcional MVP sintético;
-4. almacenamiento privado;
-5. correo/reset;
-6. backup/restore;
-7. accesibilidad manual;
-8. PWA/offline manual.
+4. Mágina pública/fuentes externas;
+5. almacenamiento privado;
+6. correo/reset;
+7. backup/restore;
+8. accesibilidad + PWA/offline manual.
 
 El issue #7 solo debe cerrarse cuando exista evidencia PASS de los ocho bloques.
 
@@ -284,5 +335,6 @@ Después de ese PASS se puede iniciar la validación con 2–5 olivareros usando
 
 - PR #6 — integración Visual V2 + MVP Core.
 - issue #7 — checklist operativo P0 de staging.
+- `scripts/staging-public-magina-gate.sh` — validación externa de páginas y fuentes públicas.
 - `docs/spike/EXTERNAL_STAGING_RUNBOOK.md` — procedimiento de ejecución externo.
 - `docs/INTEGRATION_V2_MVP_V1.md` — contrato de autoridad visual/funcional.

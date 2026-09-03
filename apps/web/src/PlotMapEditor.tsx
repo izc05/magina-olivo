@@ -200,6 +200,10 @@ function boundarySourceLabel(source: BoundarySource | null): string {
   return 'Sin perímetro';
 }
 
+function isOfficialBoundarySource(source: BoundarySource | null): source is 'sigpac' | 'catastro' {
+  return source === 'sigpac' || source === 'catastro';
+}
+
 function formatArea(areaSquareMeters: number): string {
   if (!Number.isFinite(areaSquareMeters) || areaSquareMeters <= 0) return '—';
   const hectares = areaSquareMeters / 10_000;
@@ -425,6 +429,11 @@ export function PlotMapPanel({ farmId }: { farmId: string }) {
       setError('Marca al menos tres vértices distintos antes de guardar el perímetro.');
       return;
     }
+    if (isOfficialBoundarySource(boundaryDraftSource)) {
+      setError(null);
+      setNotice('El perímetro oficial ya está guardado. Para modificarlo, edita sus vértices; al guardar pasará a ser un perímetro manual.');
+      return;
+    }
 
     setSaving(true);
     setError(null);
@@ -464,6 +473,13 @@ export function PlotMapPanel({ farmId }: { farmId: string }) {
     } finally {
       setSaving(false);
     }
+  }
+
+  function undoBoundaryVertex() {
+    setBoundaryVertices((current) => current.slice(0, -1));
+    setBoundaryDraftSource((current) => isOfficialBoundarySource(current) ? 'manual_map' : current);
+    setError(null);
+    setNotice(null);
   }
 
   function handleMapClick(event: MouseEvent<SVGSVGElement>) {
@@ -583,7 +599,7 @@ export function PlotMapPanel({ farmId }: { farmId: string }) {
                   <p className="plot-editor-help">Toca el mapa sobre cada esquina/linde. Si estás recorriendo la finca, pulsa “Añadir mi posición” en cada cambio de dirección.</p>
                   <div className="plot-map-actions">
                     <button className="ghost-button" type="button" onClick={() => void addDeviceBoundaryVertex()} disabled={locating || saving || boundaryVertices.length >= 500}>{locating ? 'Leyendo GPS…' : 'Añadir mi posición'}</button>
-                    <button className="ghost-button" type="button" onClick={() => setBoundaryVertices((current) => current.slice(0, -1))} disabled={!boundaryVertices.length || saving}>Deshacer vértice</button>
+                    <button className="ghost-button" type="button" onClick={undoBoundaryVertex} disabled={!boundaryVertices.length || saving}>Deshacer vértice</button>
                   </div>
                   <div className="plot-map-actions">
                     <button className="ghost-button" type="button" onClick={() => { setBoundaryVertices([]); setBoundaryDraftSource('manual_map'); }} disabled={!boundaryVertices.length || saving}>Limpiar borrador</button>
@@ -644,7 +660,7 @@ export function PlotMapPanel({ farmId }: { farmId: string }) {
         </>
       ) : null}
 
-      <p className="plot-map-disclaimer">El perímetro V2 es una geometría privada de trabajo. La superficie calculada no sustituye por sí sola la superficie administrativa. SIGPAC y Catastro se conectarán como fuentes oficiales separadas y verificables.</p>
+      <p className="plot-map-disclaimer">El perímetro es una geometría privada de trabajo. La superficie calculada no sustituye por sí sola la superficie administrativa. SIGPAC y Catastro se consultan e importan como fuentes oficiales separadas y verificables. Si editas manualmente un perímetro oficial, la procedencia oficial se elimina al guardar.</p>
     </section>
   );
 }

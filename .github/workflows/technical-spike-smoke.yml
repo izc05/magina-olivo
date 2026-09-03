@@ -130,6 +130,9 @@ jobs:
       - name: Verify API security, agricultural flow, concurrency and restore
         run: bash scripts/spike-api-flow.sh
 
+      - name: Verify persisted account preferences
+        run: bash scripts/spike-account-preferences.sh
+
       - name: Verify password reset and session revocation
         run: bash scripts/spike-password-reset-gate.sh
 

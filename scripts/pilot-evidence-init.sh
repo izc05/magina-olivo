@@ -63,6 +63,16 @@ cat > "$RUN_DIR/findings.csv" <<'EOF'
 finding_id,participant_id,task,severity,area,summary,reproducible,blocking,fix_commit,status
 EOF
 
+cat > "$RUN_DIR/round-checks.csv" <<'EOF'
+check,value,required,notes
+data_loss_count,,0,
+duplicate_count,,0,
+cross_user_access_count,,0,
+market_understanding_percent,,100,
+source_understanding_percent,,100,
+critical_mobile_accessibility_blockers,,0,
+EOF
+
 cat > "$RUN_DIR/README.txt" <<'EOF'
 Use participant aliases only (p01..p05).
 
@@ -75,6 +85,8 @@ Allowed values:
 - retry: yes/no
 - confidence_1_5: 1..5
 - severity: none/P0/P1/P2
+
+Complete round-checks.csv before calculating GO/NO-GO. Do not leave a required round check blank.
 
 Record concise behavioral observations, not personal information.
 Never copy participant credentials into this directory.

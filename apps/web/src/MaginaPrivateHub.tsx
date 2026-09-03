@@ -14,6 +14,13 @@ const publicServices = [
     action: 'Ver estado del campo',
   },
   {
+    href: '/magina/noticias',
+    eyebrow: 'Junta de Andalucía',
+    title: 'Noticias',
+    copy: 'Actualidad agraria verificada con título, fecha, tema y enlace a la fuente oficial.',
+    action: 'Ver actualidad',
+  },
+  {
     href: '/magina/mercado',
     eyebrow: 'Observatorio',
     title: 'Aceite y mercado',
@@ -52,7 +59,7 @@ export function MaginaPrivateHub() {
       <section className="section card card-body magina-private-note">
         <span className="badge">Datos públicos</span>
         <h2 className="section-title">Fuentes visibles y separadas</h2>
-        <p className="section-copy">Tiempo, RAIF, mercado y directorio se consultan desde fuentes públicas. Tus datos de explotación continúan dentro del área privada y no se publican al abrir estas pantallas.</p>
+        <p className="section-copy">Tiempo, RAIF, noticias, mercado y directorio se consultan desde fuentes públicas. Tus datos de explotación continúan dentro del área privada y no se publican al abrir estas pantallas.</p>
         <a className="text-button magina-private-all" href="/magina">Ver todas las fuentes y su estado →</a>
       </section>
     </>

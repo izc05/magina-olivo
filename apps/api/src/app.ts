@@ -22,6 +22,7 @@ import { registerPublicNewsRoutes } from './public-news-routes.ts';
 import { registerPublicSourceRoutes } from './public-source-routes.ts';
 import { registerPublicWeatherRoutes } from './public-weather-routes.ts';
 import { registerRequestSecurity } from './request-security.ts';
+import { registerSigpacMapRoutes } from './sigpac-map-routes.ts';
 import { registerTaskRoutes } from './task-routes.ts';
 
 export function buildApp(): FastifyInstance {
@@ -74,6 +75,7 @@ export function buildApp(): FastifyInstance {
   registerFarmRoutes(app);
   registerPlotRoutes(app);
   registerPlotTimelineRoutes(app);
+  registerSigpacMapRoutes(app);
   registerCampaignRoutes(app);
   registerCampaignExportRoutes(app);
   registerDeliveryRoutes(app);

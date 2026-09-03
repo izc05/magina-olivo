@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Bell, ChevronRight, ExternalLink, Newspaper, RefreshCw, Search } from 'lucide-react';
+import { Bell, CheckCircle2, ChevronRight, ExternalLink, Newspaper, RefreshCw, Search, TriangleAlert } from 'lucide-react';
 import type { AppNavigate, MaginaTarget } from '../../app/navigation';
 import { BottomNav } from '../../components/BottomNav';
 import { Brand } from '../../components/Brand';
@@ -18,8 +18,12 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
   const [mode, setMode] = useState<MaginaTarget>(initialTab);
   const [stories, setStories] = useState<RealNewsStory[]>([]);
   const [generatedAt, setGeneratedAt] = useState<string>('');
+  const [sourceCount, setSourceCount] = useState(0);
+  const [healthySourceCount, setHealthySourceCount] = useState(0);
+  const [collectorErrors, setCollectorErrors] = useState<string[]>([]);
   const [state, setState] = useState<FeedState>('loading');
   const [query, setQuery] = useState('');
+  const [scopeFilter, setScopeFilter] = useState('Todos');
 
   const refresh = async () => {
     setState('loading');
@@ -27,6 +31,9 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
       const payload = await loadRealNews();
       setStories(payload.stories);
       setGeneratedAt(payload.generatedAt);
+      setSourceCount(payload.sourceCount ?? 0);
+      setHealthySourceCount(payload.healthySourceCount ?? payload.sourceCount ?? 0);
+      setCollectorErrors(payload.collectorErrors ?? []);
       setState('ready');
     } catch {
       setState('error');
@@ -37,16 +44,24 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
     if (mode === 'actualidad') void refresh();
   }, [mode]);
 
+  const availableScopes = useMemo(() => {
+    const preferred = ['Sierra Mágina', 'Jaén', 'Andalucía', 'Sector'];
+    return preferred.filter((scope) => stories.some((story) => story.scope === scope));
+  }, [stories]);
+
   const filteredStories = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase('es');
-    if (!needle) return stories;
 
-    return stories.filter((story) =>
-      `${story.title} ${story.excerpt} ${story.source} ${story.category}`
+    return stories.filter((story) => {
+      const matchesScope = scopeFilter === 'Todos' || story.scope === scopeFilter;
+      if (!matchesScope) return false;
+      if (!needle) return true;
+
+      return `${story.title} ${story.excerpt} ${story.source} ${story.category} ${story.scope ?? ''}`
         .toLocaleLowerCase('es')
-        .includes(needle),
-    );
-  }, [query, stories]);
+        .includes(needle);
+    });
+  }, [query, scopeFilter, stories]);
 
   if (mode !== 'actualidad') {
     return <NewsPage onNavigate={onNavigate} initialTab={mode} />;
@@ -73,7 +88,7 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
         <section className="magina-heading">
           <span className="eyebrow">Sierra Mágina</span>
           <h1>Mágina al día</h1>
-          <p>Noticias reales del olivar, aceite, agricultura, Jaén y Sierra Mágina.</p>
+          <p>Primero Mágina y Jaén; después la actualidad del olivar y el aceite que realmente te afecta.</p>
         </section>
 
         <nav className="hub-tabs hub-tabs--primary" aria-label="Secciones principales de Mágina">
@@ -94,17 +109,32 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
           />
         </section>
 
+        {state === 'ready' && availableScopes.length > 0 && (
+          <div className="real-news-filters" aria-label="Filtrar noticias por ámbito">
+            {['Todos', ...availableScopes].map((scope) => (
+              <button
+                key={scope}
+                type="button"
+                className={scopeFilter === scope ? 'real-news-filter real-news-filter--active' : 'real-news-filter'}
+                onClick={() => setScopeFilter(scope)}
+              >
+                {scope}
+              </button>
+            ))}
+          </div>
+        )}
+
         {state === 'loading' && (
           <section className="real-news-status">
             <RefreshCw size={22} className="real-news-spin" />
-            <div><strong>Actualizando noticias</strong><span>Consultando el feed de Mágina Olivo.</span></div>
+            <div><strong>Actualizando noticias</strong><span>Consultando fuentes locales, oficiales y del sector.</span></div>
           </section>
         )}
 
         {state === 'error' && (
           <section className="real-news-status real-news-status--error">
             <Newspaper size={22} />
-            <div><strong>No se ha podido actualizar</strong><span>Conservamos el módulo preparado. Prueba de nuevo en unos minutos.</span></div>
+            <div><strong>No se ha podido actualizar</strong><span>El feed anterior sigue protegido. Prueba de nuevo en unos minutos.</span></div>
             <button type="button" className="text-action" onClick={() => void refresh()}>Reintentar</button>
           </section>
         )}
@@ -115,7 +145,11 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
               <div className="news-hero-card__image"><Newspaper size={38} /></div>
               <div className="news-hero-card__overlay" />
               <div className="news-hero-card__copy">
-                <span>{hero.category}</span>
+                <div className="real-news-badges">
+                  <span>{hero.category}</span>
+                  {hero.scope && <span className="real-news-scope">{hero.scope}</span>}
+                  {hero.official && <span className="real-news-official">Oficial</span>}
+                </div>
                 <h2>{hero.title}</h2>
                 <small>{hero.source} · {formatNewsAge(hero.publishedAt)}</small>
               </div>
@@ -123,7 +157,7 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
 
             <section className="section-block">
               <div className="section-heading">
-                <div><span className="eyebrow">Actualidad real</span><h2>Lo último</h2></div>
+                <div><span className="eyebrow">Actualidad real</span><h2>Lo más relevante</h2></div>
                 <span className="real-news-live">● En directo</span>
               </div>
 
@@ -132,7 +166,11 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
                   <a key={story.id} className="story-row real-news-row" href={story.url} target="_blank" rel="noreferrer">
                     <div className="story-row__image"><Newspaper size={22} /></div>
                     <div className="story-row__copy">
-                      <span>{story.category}</span>
+                      <div className="real-news-row-meta">
+                        <span>{story.category}</span>
+                        {story.scope && <span className="real-news-scope real-news-scope--small">{story.scope}</span>}
+                        {story.official && <span className="real-news-official real-news-official--small">Oficial</span>}
+                      </div>
                       <strong>{story.title}</strong>
                       <small>{story.source} · {formatNewsAge(story.publishedAt)}</small>
                     </div>
@@ -143,12 +181,17 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
             </section>
 
             <section className="section-block section-block--last real-news-source-note">
-              <ExternalLink size={18} />
+              {collectorErrors.length === 0 ? <CheckCircle2 size={18} /> : <TriangleAlert size={18} />}
               <div>
-                <strong>Fuente visible y enlace original</strong>
-                <span>Cada titular abre la publicación original. Mágina Olivo no copia el artículo completo.</span>
-                {generatedAt && <small>Feed generado: {new Date(generatedAt).toLocaleString('es-ES')}</small>}
+                <strong>{collectorErrors.length === 0 ? 'Fuentes operativas' : 'Actualización parcial'}</strong>
+                <span>
+                  {sourceCount > 0
+                    ? `${healthySourceCount}/${sourceCount} fuentes respondieron correctamente. Cada titular abre la publicación original.`
+                    : 'Cada titular abre la publicación original. Mágina Olivo no copia el artículo completo.'}
+                </span>
+                {generatedAt && <small>Última actualización: {new Date(generatedAt).toLocaleString('es-ES')}</small>}
               </div>
+              <ExternalLink size={16} />
             </section>
           </>
         )}
@@ -156,7 +199,7 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
         {state === 'ready' && !hero && (
           <section className="real-news-status">
             <Newspaper size={22} />
-            <div><strong>Sin resultados</strong><span>Prueba con otra búsqueda.</span></div>
+            <div><strong>Sin resultados</strong><span>Prueba con otra búsqueda o cambia el ámbito.</span></div>
           </section>
         )}
       </main>

@@ -85,6 +85,16 @@ jobs:
           grep -q -- '-u AEMET_API_KEY' scripts/staging-backup.sh
           grep -q -- '-u AEMET_API_KEY' scripts/staging-restore-gate.sh
 
+      - name: Verify Raspberry external data guard
+        run: |
+          grep -q '^MAGINA_POSTGRES_DATA_DIR=' infra/docker/staging.env.example
+          grep -q '^STAGING_REQUIRE_EXTERNAL_DATA=' infra/docker/staging.env.example
+          grep -q 'MAGINA_POSTGRES_DATA_DIR:-magina_staging_postgres' infra/docker/compose.staging.yml
+          grep -q 'STAGING_REQUIRE_EXTERNAL_DATA' scripts/staging-host-preflight.sh
+          grep -q 'findmnt' scripts/staging-host-preflight.sh
+          grep -q "PostgreSQL data path is still on the root filesystem" scripts/staging-host-preflight.sh
+          grep -q -- '-u MAGINA_POSTGRES_DATA_DIR' scripts/staging-release.sh
+
       - name: Verify Docker build context excludes local evidence
         run: |
           grep -qxF '.deploy/' .dockerignore

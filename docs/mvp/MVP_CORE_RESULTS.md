@@ -8,18 +8,17 @@ Base: `feat/technical-spike-v1`
 ## Última regresión verde de código
 
 - workflow: `MVP Core Smoke`
-- run: `33714642767` (#60)
+- run: `33715150669` (#71)
 - conclusión: `success`
 
 La regresión valida sobre el estado actual:
 
 - `npm ci` reproducible;
 - TypeScript strict;
-- unit tests, incluidos delivery y labor offline;
+- unit tests, incluidos delivery/labor offline y regresiones de accesibilidad;
+- validación sintáctica del gate de staging `scripts/mvp-core-flow-gate.sh`;
 - build PWA;
 - inspección del bundle para impedir secretos de servidor.
-
-Después del gate #60 solo se añadió documentación de accesibilidad; no se modificó código de ejecución.
 
 ## Recorrido usable implementado
 
@@ -49,19 +48,22 @@ Login
 
 ### Identidad y navegación
 
-El MVP sigue la Biblia Visual V2 del proyecto:
+El MVP usa ya la identidad oficial V2 del proyecto:
 
+- logo oficial importado desde `feat/visual-v2-foundation` sin redibujarlo;
+- activo: `apps/web/public/brand/magina-olivo-mark.svg`;
+- concepto del isotipo: rama de olivo + paisaje de Sierra Mágina + gota dorada de aceite;
 - marfil `#F4F1E6`;
 - verde oscuro `#2E3A22`;
 - verde olivar `#5C7A46`;
 - verde suave `#A7B497`;
 - dorado `#D4A017`;
-- familias tipográficas declaradas Playfair Display + Inter con fallbacks;
+- Playfair Display + Inter con fallbacks;
 - tarjetas limpias;
 - mobile-first;
 - barra fija V2: `Inicio · Mi Campo · + · Mágina · Mi Mágina`.
 
-No se ha creado otro logo. El asset gráfico aprobado en el flujo visual se importará como recurso único cuando esté disponible.
+El mismo isotipo oficial se utiliza también en el manifest de la PWA para evitar una identidad distinta al instalarla.
 
 ### Identidad / cuenta
 
@@ -157,7 +159,7 @@ La integración de campo cubre ya **entregas y labores**:
 - existen avisos específicos `Entrega guardada en este móvil` y `Labor guardada en este móvil`;
 - otro aviso confirma la sincronización terminada;
 - los reintentos de entrega conservan su `Idempotency-Key`;
-- las labores usan un `clientGeneratedId` estable como UUID de dominio para que un reintento ambiguo no cree una segunda labor;
+- las labores usan un `clientGeneratedId` estable para que un reintento ambiguo no cree una segunda labor;
 - las operaciones solo se eliminan de la outbox después de una respuesta HTTP satisfactoria;
 - una respuesta no-2xx mantiene la operación pendiente y registra intento/error;
 - cambiar de usuario no expone ni sincroniza operaciones pendientes de otro usuario;
@@ -177,7 +179,7 @@ El P0 de arranque en frío offline queda cerrado para el piloto V1 con política
 - cuando vuelve la red se revalida la sesión online;
 - no se permite cerrar sesión con operaciones pendientes.
 
-La política queda documentada en `docs/OFFLINE_SYNC_SPEC.md` y la UI en `OfflineColdStart.tsx`.
+La política queda documentada en `docs/OFFLINE_SYNC_SPEC.md`.
 
 ### Archivos y offline
 
@@ -187,8 +189,6 @@ Los tickets/fotos **no se guardan todavía en IndexedDB**. Es una decisión deli
 - el archivo privado requiere conexión;
 - si se seleccionó archivo mientras la entrega quedó en outbox, la UI avisa de que el archivo no se ha subido;
 - una vez sincronizada la entrega puede adjuntarse el ticket desde la propia fila.
-
-Esto evita persistir archivos privados grandes en el navegador antes de definir una política explícita de cifrado, retención y espacio.
 
 ### Accesibilidad V1
 
@@ -203,34 +203,57 @@ Aplicado en código:
 - estados de upload y guardado con `aria-live`, `aria-busy` y `role=alert/status` donde corresponde;
 - soporte `prefers-reduced-motion`;
 - mejora para `forced-colors`;
-- campo de rendimiento con nombre accesible y `inputMode=decimal`.
+- campo de rendimiento con nombre accesible e `inputMode=decimal`.
 
-Gate reproducible: `docs/mvp/ACCESSIBILITY_GATE_V1.md`.
+Existe además `apps/web/src/accessibility-source.test.ts` para detectar regresiones básicas de estas garantías dentro del CI.
 
-La parte de código está verde en smoke #60. La accesibilidad **no se declara auditada completamente** hasta probar teclado + TalkBack/NVDA + zoom/reflow en staging real.
+Gate manual: `docs/mvp/ACCESSIBILITY_GATE_V1.md`.
 
-## Pendientes P0 del núcleo
+La parte de código está verde. La accesibilidad **no se declara auditada completamente** hasta probar teclado + TalkBack/NVDA + zoom/reflow en staging real.
 
-Antes de considerar este recorrido listo para piloto:
+### Staging preparado
 
-1. integrar el logo gráfico aprobado real del flujo visual;
-2. ejecutar la validación manual de accesibilidad definida en `ACCESSIBILITY_GATE_V1.md` sobre staging;
-3. añadir/ejecutar pruebas browser/end-to-end sobre staging real;
-4. ejecutar los gates externos HTTPS/R2/correo/restore definidos por el spike técnico;
+Se añadió `scripts/mvp-core-flow-gate.sh`, cuya sintaxis ya forma parte de `MVP Core Smoke`.
+
+Cuando exista staging real, el gate sintético comprobará:
+
+- dos usuarios aislados;
+- explotación -> finca -> parcela -> campaña;
+- entrega de 1.842 kg e idempotencia;
+- rendimiento posterior 21,9 %;
+- labor retry-safe;
+- timeline con labor + entrega + rendimiento;
+- resumen determinista de 1.842 kg, cobertura 100 % y rendimiento ponderado 21,9 %;
+- ticket PDF privado y roundtrip de bytes;
+- bloqueo de acceso al timeline/documento desde el segundo usuario.
+
+Orden completo: `docs/mvp/STAGING_ACCEPTANCE_V1.md`.
+
+## Pendientes P0 antes de piloto
+
+Los pendientes que quedan requieren ya entorno o personas reales de validación:
+
+1. ejecutar el gate funcional sintético contra staging real;
+2. ejecutar HTTPS/R2/correo/restore del runbook externo;
+3. ejecutar teclado + TalkBack/NVDA + zoom/reflow sobre staging;
+4. añadir/ejecutar browser E2E sobre staging real;
 5. validar el flujo con 2–5 olivareros usando datos sintéticos o documentos anonimizados antes de introducir información real.
 
-Ya cerrados respecto a la primera versión del MVP:
+Ya cerrados en código:
 
+- logo oficial V2 integrado;
 - dependencia `Finca -> Parcelas` en nueva entrega;
-- foto/ticket privado en la UI;
+- foto/ticket privado en UI;
 - labores de campo;
 - timeline de parcela;
 - delivery offline;
 - labor offline;
 - avisos y conteo visible de sincronización pendiente;
 - cold-start offline protegido;
-- base de accesibilidad por teclado/lector de pantalla en código.
+- base de accesibilidad por teclado/lector de pantalla;
+- tests automáticos de regresión accesible;
+- gate sintético de recorrido MVP preparado para staging.
 
 ## Regla de datos reales
 
-Este PR continúa usando únicamente datos sintéticos en validación. No introducir datos reales de agricultores hasta superar los gates de staging externo definidos en `docs/spike/EXTERNAL_STAGING_RUNBOOK.md`.
+Este PR continúa usando únicamente datos sintéticos en validación. No introducir datos reales de agricultores hasta superar los gates de staging externo definidos en `docs/spike/EXTERNAL_STAGING_RUNBOOK.md` y `docs/mvp/STAGING_ACCEPTANCE_V1.md`.

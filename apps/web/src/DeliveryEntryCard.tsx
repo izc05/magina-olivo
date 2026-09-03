@@ -3,6 +3,13 @@ import type { FormEvent } from 'react';
 import { api, type Farm, type Plot } from './api.ts';
 import { uploadDeliveryTicket } from './document-api.ts';
 
+type DestinationSuggestion = {
+  id: string;
+  officialName: string;
+  brandName: string | null;
+  municipality: string | null;
+};
+
 function localDateTimeValue(): string {
   const now = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000);
   return now.toISOString().slice(0, 16);
@@ -22,12 +29,33 @@ export function DeliveryEntryCard({
   const [farmId, setFarmId] = useState('');
   const [plots, setPlots] = useState<Plot[]>([]);
   const [plotId, setPlotId] = useState('');
+  const [destinations, setDestinations] = useState<DestinationSuggestion[]>([]);
   const [ticketFile, setTicketFile] = useState<File | null>(null);
   const [loadingPlots, setLoadingPlots] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return () => controller.abort();
+
+    void fetch('/api/v1/public/destinations', {
+      credentials: 'same-origin',
+      headers: { accept: 'application/json' },
+      signal: controller.signal,
+    }).then(async (response) => {
+      if (!response.ok) return null;
+      return response.json() as Promise<{ items: DestinationSuggestion[] }>;
+    }).then((result) => {
+      if (result) setDestinations(result.items);
+    }).catch(() => {
+      // Suggestions are an enhancement. Manual destination entry must always remain usable.
+    });
+
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -137,7 +165,24 @@ export function DeliveryEntryCard({
           </div>
           <div className="field">
             <label htmlFor="delivery-destination">Almazara / cooperativa</label>
-            <input id="delivery-destination" name="destination" type="text" maxLength={200} placeholder="San Sebastián" required />
+            <input
+              id="delivery-destination"
+              name="destination"
+              type="text"
+              list="magina-destination-suggestions"
+              maxLength={200}
+              placeholder="San Sebastián"
+              aria-describedby="delivery-destination-help"
+              required
+            />
+            <datalist id="magina-destination-suggestions">
+              {destinations.map((item) => (
+                <option key={item.id} value={item.officialName}>
+                  {[item.brandName, item.municipality].filter(Boolean).join(' · ')}
+                </option>
+              ))}
+            </datalist>
+            <small id="delivery-destination-help">Puedes elegir una entidad pública de Mágina o escribir cualquier otro destino.</small>
           </div>
         </div>
 

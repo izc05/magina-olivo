@@ -2,6 +2,9 @@ export type CooperativeProduct = {
   name: string;
   type: string;
   format?: string;
+  storePriceLabel?: string;
+  priceCapturedAt?: string;
+  priceSourceUrl?: string;
 };
 
 export type CooperativeRecord = {

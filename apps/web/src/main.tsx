@@ -6,6 +6,7 @@ import { ConnectivityStatus } from './ConnectivityStatus';
 import { NoticeCenter } from './NoticeCenter';
 import { ResetPassword } from './ResetPassword';
 import './styles.css';
+import './brand.css';
 import './connectivity.css';
 import './navigation-v2.css';
 import './notices.css';

@@ -28,10 +28,16 @@ test('pilot core keeps the complete grower journey wired end to end', async () =
   assert.match(deliveryEntry, /crypto\.randomUUID\(\)/);
   assert.match(deliveryEntry, /customDestination/);
   assert.match(deliveryEntry, /ticketNumber/);
+  assert.match(deliveryEntry, /api\.deliveryResults\(deliveryId\)/);
+  assert.match(deliveryEntry, /Rendimiento pendiente/);
+  assert.match(deliveryEntry, /Rendimiento \$\{formatYield\(yieldPercent\)\}/);
+  assert.match(deliveryEntry, /magina:yield-saved/);
 
   assert.match(api, /queueDeliveryOffline/);
   assert.match(api, /\/api\/v1\/campaigns\/\$\{campaignId\}\/deliveries/);
+  assert.match(api, /deliveryResults: \(deliveryId: string\)/);
   assert.match(api, /\/api\/v1\/deliveries\/\$\{deliveryId\}\/results/);
+  assert.match(api, /magina:yield-saved/);
 
   assert.match(deliveryRoutes, /Idempotency-Key/);
   assert.match(deliveryRoutes, /IDEMPOTENCY_KEY_REQUIRED/);

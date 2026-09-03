@@ -1,0 +1,234 @@
+/* Cuaderno — Visual V2.6 presentation over the real MVP notebook logic. */
+
+.notebook-shell {
+  margin-top: 34px;
+  padding-bottom: 10px;
+}
+
+.notebook-shell > .section-heading:first-child {
+  margin-bottom: 14px;
+}
+
+.notebook-shell > .section-heading:first-child .page-eyebrow {
+  color: var(--v2-gold);
+  opacity: 1;
+}
+
+.notebook-card {
+  position: relative;
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255,253,248,.98), rgba(251,248,239,.96));
+  box-shadow: 0 12px 34px rgba(47,59,39,.055);
+}
+
+.notebook-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--v2-olive), var(--v2-gold));
+  opacity: .72;
+}
+
+.notebook-selector-row {
+  gap: 10px;
+  padding-bottom: 15px;
+  margin-bottom: 17px;
+  border-bottom: 1px solid var(--v2-line);
+}
+
+.notebook-selector-row .field label,
+.notebook-form .field label {
+  font-size: .72rem;
+  letter-spacing: .025em;
+}
+
+.notebook-selector-row .field select {
+  background: rgba(245,240,228,.74);
+}
+
+.notebook-form {
+  gap: 12px;
+}
+
+.notebook-context-fields {
+  gap: 10px;
+  padding: 13px;
+  border-radius: 15px;
+  background: rgba(86,111,67,.065);
+  border-color: rgba(86,111,67,.13);
+}
+
+.notebook-form textarea {
+  min-height: 104px;
+}
+
+.notebook-form .form-actions {
+  margin-top: 2px;
+}
+
+.notebook-form .primary-button {
+  min-width: 150px;
+  min-height: 50px;
+  box-shadow: 0 8px 20px rgba(47,59,39,.12);
+}
+
+.notebook-history-heading {
+  margin-top: 28px;
+  padding-inline: 2px;
+}
+
+.notebook-history-title {
+  font-size: clamp(1.35rem, 5vw, 1.65rem);
+}
+
+.timeline-list {
+  gap: 9px;
+}
+
+.timeline-list::before {
+  left: 30px;
+  top: 22px;
+  bottom: 22px;
+  background: linear-gradient(180deg, rgba(86,111,67,.3), rgba(201,155,44,.18));
+}
+
+.timeline-item {
+  min-height: 72px;
+  grid-template-columns: 34px minmax(0,1fr);
+  gap: 11px;
+  padding: 13px 15px 13px 13px;
+  border-color: rgba(86,111,67,.14);
+  background: rgba(255,253,248,.9);
+  box-shadow: 0 5px 18px rgba(47,59,39,.035);
+}
+
+.timeline-dot {
+  width: 12px;
+  height: 12px;
+  margin-top: 6px;
+  background: var(--v2-olive);
+  box-shadow: 0 0 0 5px var(--v2-paper);
+}
+
+.timeline-dot.delivery {
+  background: var(--v2-gold);
+}
+
+.timeline-dot.yield_result {
+  background: var(--v2-olive-deep);
+}
+
+.timeline-topline {
+  gap: 10px;
+}
+
+.timeline-topline strong {
+  color: var(--v2-olive-deep);
+  font-size: .86rem;
+  line-height: 1.25;
+}
+
+.timeline-topline time {
+  padding: 5px 7px;
+  border-radius: 9px;
+  background: rgba(245,240,228,.82);
+  color: #6c705f;
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .045em;
+}
+
+.timeline-copy p {
+  margin-top: 6px;
+  font-size: .76rem;
+}
+
+.notebook-disclaimer {
+  position: relative;
+  margin: 16px 2px 0;
+  padding: 11px 12px 11px 34px;
+  border: 1px solid rgba(201,155,44,.18);
+  border-radius: 13px;
+  background: rgba(239,225,184,.22);
+  color: #686455;
+  font-size: .68rem;
+}
+
+.notebook-disclaimer::before {
+  content: "i";
+  position: absolute;
+  left: 11px;
+  top: 10px;
+  width: 15px;
+  height: 15px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--v2-gold-soft);
+  color: #665018;
+  font-family: Georgia, serif;
+  font-size: .67rem;
+  font-weight: 800;
+}
+
+.notebook-empty {
+  border-style: dashed;
+  background: rgba(255,253,248,.72);
+}
+
+@media (max-width: 560px) {
+  .notebook-card {
+    padding: 16px;
+    border-radius: 21px;
+  }
+
+  .notebook-selector-row,
+  .notebook-form .inline-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .notebook-form .primary-button {
+    width: 100%;
+  }
+
+  .timeline-item {
+    grid-template-columns: 28px minmax(0,1fr);
+    padding-inline: 10px 12px;
+  }
+
+  .timeline-list::before {
+    left: 24px;
+  }
+
+  .timeline-topline {
+    align-items: flex-start;
+  }
+}
+
+@media (min-width: 820px) {
+  .notebook-card {
+    padding: 22px;
+  }
+
+  .timeline-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .timeline-list::before {
+    display: none;
+  }
+
+  .timeline-item {
+    min-height: 86px;
+  }
+}
+
+@media (forced-colors: active) {
+  .notebook-card::before,
+  .notebook-disclaimer::before,
+  .timeline-list::before {
+    display: none;
+  }
+}

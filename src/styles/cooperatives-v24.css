@@ -79,6 +79,45 @@
   grid-template-columns: 1fr !important;
 }
 
+.coop-sync-status {
+  display: grid;
+  grid-template-columns: 28px minmax(0,1fr);
+  gap: 9px;
+  margin-bottom: 11px;
+  padding: 10px 11px;
+  border: 1px solid rgba(85,112,68,.17);
+  border-radius: 13px;
+  background: rgba(85,112,68,.07);
+  color: #526544;
+}
+
+.coop-sync-status > svg {
+  margin-top: 2px;
+}
+
+.coop-sync-status > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.coop-sync-status strong {
+  font-size: 11px;
+}
+
+.coop-sync-status span,
+.coop-sync-status small {
+  color: var(--color-text-muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.coop-sync-status--partial {
+  border-color: rgba(212,160,23,.24);
+  background: rgba(212,160,23,.08);
+  color: #80651a;
+}
+
 .coop-search {
   min-height: 44px;
   margin-bottom: 12px;

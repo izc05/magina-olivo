@@ -7,7 +7,7 @@ const MAX_FRAMES = 18;
 const ALLOWED_IMAGE_TYPES = new Set(['image/png', 'image/gif', 'image/jpeg', 'image/webp']);
 
 type AemetEnvelope = {
-  estado?: number;
+  estado?: number | string;
   datos?: string;
 };
 
@@ -45,7 +45,7 @@ export async function captureRadarFrame(pool: pg.Pool): Promise<{ inserted: bool
   }
 
   const envelope = await metadataResponse.json() as AemetEnvelope;
-  if (envelope.estado !== 200 || typeof envelope.datos !== 'string' || !envelope.datos) {
+  if (Number(envelope.estado) !== 200 || typeof envelope.datos !== 'string' || !envelope.datos) {
     throw new Error('AEMET radar metadata did not include a usable image URL');
   }
 

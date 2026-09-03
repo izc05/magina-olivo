@@ -38,25 +38,19 @@
   color: #66500f;
 }
 
-.delivery-actions {
-  display: grid;
-  justify-items: end;
-  gap: 5px;
-}
-
 .delivery-ticket-action {
   display: grid;
   justify-items: end;
   gap: 4px;
+  margin-top: 8px;
 }
 
 .ticket-upload-button {
-  position: relative;
   display: inline-flex;
   align-items: center;
-  min-height: 34px;
-  padding: 0 10px;
-  overflow: hidden;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 12px;
   border: 1px solid rgba(46, 58, 34, .14);
   border-radius: 10px;
   background: #fffdf7;
@@ -66,22 +60,20 @@
   cursor: pointer;
 }
 
-.ticket-upload-button.disabled {
+.ticket-upload-button:disabled {
   opacity: .55;
   cursor: wait;
 }
 
-.ticket-upload-button input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
+.ticket-status {
+  display: block;
+  min-height: 1em;
 }
 
 .ticket-success,
 .ticket-error {
-  max-width: 190px;
+  display: block;
+  max-width: 210px;
   font-size: .65rem;
   text-align: right;
 }
@@ -94,12 +86,17 @@
     width: 100%;
   }
 
-  .delivery-actions,
   .delivery-ticket-action {
     justify-items: stretch;
   }
 
   .ticket-upload-button {
-    justify-content: center;
+    width: 100%;
+  }
+
+  .ticket-success,
+  .ticket-error {
+    max-width: none;
+    text-align: left;
   }
 }

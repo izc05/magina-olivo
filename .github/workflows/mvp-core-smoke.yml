@@ -59,6 +59,13 @@ jobs:
           grep -q -- '-u AEMET_API_KEY' scripts/staging-backup.sh
           grep -q -- '-u AEMET_API_KEY' scripts/staging-restore-gate.sh
 
+      - name: Verify Docker build context excludes local evidence
+        run: |
+          grep -qxF '.deploy/' .dockerignore
+          grep -qxF '.tmp/' .dockerignore
+          grep -qxF '.cache/' .dockerignore
+          grep -qxF '**/*.credentials' .dockerignore
+
       - name: Verify staging release source guard
         run: |
           bash scripts/staging-release-source-gate.sh

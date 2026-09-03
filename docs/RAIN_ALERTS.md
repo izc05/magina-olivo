@@ -21,14 +21,15 @@ Esta función es un apoyo para la planificación agrícola. No es un aviso ofici
 
 ## Flujo
 
-1. La migración `0017_rain_alert_events.sql` crea la tabla de eventos y encola un primer trabajo `weather.rain.scan`.
-2. El worker obtiene los usuarios con avisos meteorológicos activos y una explotación activa con municipio reconocido.
-3. El worker consulta AEMET una sola vez por municipio dentro de cada barrido y reutiliza esa respuesta para todos los usuarios de la misma zona.
-4. La probabilidad diaria se interpreta igual que en el adaptador público de Tiempo: se usa el periodo `00-24` cuando existe y, si no, el máximo de los subperiodos válidos.
-5. Si la probabilidad de alguno de los dos primeros días es mayor o igual al umbral del usuario, se crea o actualiza un evento de alarma.
-6. Si una predicción válida deja de superar el umbral, el evento anterior se marca como `resolved`.
-7. Si AEMET falla para un municipio, no se eliminan alarmas activas basándose en una ausencia de datos.
-8. El trabajo programa el siguiente barrido según `RAIN_ALERT_SCAN_MINUTES`.
+1. La migración `0017_rain_alert_events.sql` crea únicamente la tabla e índices de eventos; no ejecuta trabajos externos durante una migración.
+2. Al arrancar un worker persistente, éste garantiza que exista un primer trabajo `weather.rain.scan`. El arranque usa un advisory lock de PostgreSQL para evitar que varios workers creen simultáneamente el mismo barrido. Los procesos `RUN_ONCE=1` usados en gates/pruebas no autoencolan este trabajo.
+3. El worker obtiene los usuarios con avisos meteorológicos activos y una explotación activa con municipio reconocido.
+4. El worker consulta AEMET una sola vez por municipio dentro de cada barrido y reutiliza esa respuesta para todos los usuarios de la misma zona.
+5. La probabilidad diaria se interpreta igual que en el adaptador público de Tiempo: se usa el periodo `00-24` cuando existe y, si no, el máximo de los subperiodos válidos.
+6. Si la probabilidad de alguno de los dos primeros días es mayor o igual al umbral del usuario, se crea o actualiza un evento de alarma.
+7. Si una predicción válida deja de superar el umbral, el evento anterior se marca como `resolved`.
+8. Si AEMET falla para un municipio, no se eliminan alarmas activas basándose en una ausencia de datos.
+9. Cada trabajo programa el siguiente barrido según `RAIN_ALERT_SCAN_MINUTES`.
 
 ## Configuración
 

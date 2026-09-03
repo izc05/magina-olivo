@@ -11,6 +11,7 @@ import { getAuthenticatedSession } from './session.ts';
 
 type HoldingParams = { holdingId: string };
 type DocumentParams = { documentId: string };
+type DocumentListQuery = { campaignId?: string };
 type UploadQuery = {
   filename: string;
   mimeType: string;
@@ -29,6 +30,17 @@ type DocumentAccessRow = {
   document_type: string;
   created_at: Date;
   role: 'owner' | 'admin' | 'collaborator' | 'viewer';
+};
+
+type DocumentListRow = {
+  id: string;
+  original_filename: string;
+  mime_type: string;
+  size_bytes: string;
+  sha256: string | null;
+  document_type: string;
+  created_at: Date;
+  delivery_id: string | null;
 };
 
 async function getDocumentAccess(userId: string, documentId: string): Promise<DocumentAccessRow | null> {
@@ -56,6 +68,94 @@ export function registerDocumentRoutes(app: FastifyInstance): void {
     'application/octet-stream',
     { parseAs: 'buffer', bodyLimit: 10 * 1024 * 1024 },
     (_request, body, done) => done(null, body),
+  );
+
+  app.get<{ Params: HoldingParams; Querystring: DocumentListQuery }>(
+    '/api/v1/holdings/:holdingId/documents',
+    {
+      schema: {
+        querystring: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            campaignId: { type: 'string', format: 'uuid' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const session = await getAuthenticatedSession(request);
+      if (!session) {
+        return reply.code(401).send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
+      }
+
+      const membership = await getPool().query<{ role: string }>(
+        `
+          select hm.role
+          from holding_members hm
+          join holdings h on h.id = hm.holding_id
+          where hm.holding_id = $1
+            and hm.user_id = $2
+            and hm.status = 'active'
+            and h.active = true
+          limit 1
+        `,
+        [request.params.holdingId, session.user.id],
+      );
+      if (!membership.rows[0]) {
+        return reply.code(404).send(apiError(request, 'HOLDING_NOT_FOUND', 'Holding not found'));
+      }
+
+      if (request.query.campaignId) {
+        const campaign = await getPool().query<{ id: string }>(
+          `select id from campaigns where id = $1 and holding_id = $2 limit 1`,
+          [request.query.campaignId, request.params.holdingId],
+        );
+        if (!campaign.rows[0]) {
+          return reply.code(404).send(apiError(request, 'CAMPAIGN_NOT_FOUND', 'Campaign not found'));
+        }
+      }
+
+      const result = await getPool().query<DocumentListRow>(
+        `
+          select
+            d.id,
+            d.original_filename,
+            d.mime_type,
+            d.size_bytes,
+            d.sha256,
+            d.document_type,
+            d.created_at,
+            dl.entity_id as delivery_id
+          from documents d
+          left join document_links dl
+            on dl.document_id = d.id
+           and dl.holding_id = d.holding_id
+           and dl.entity_type = 'delivery'
+          left join deliveries dy
+            on dy.id = dl.entity_id
+           and dy.holding_id = d.holding_id
+          where d.holding_id = $1
+            and ($2::uuid is null or dy.campaign_id = $2::uuid)
+          order by d.created_at desc
+          limit 100
+        `,
+        [request.params.holdingId, request.query.campaignId ?? null],
+      );
+
+      return {
+        items: result.rows.map((row) => ({
+          id: row.id,
+          filename: row.original_filename,
+          mimeType: row.mime_type,
+          sizeBytes: Number(row.size_bytes),
+          sha256: row.sha256,
+          documentType: row.document_type,
+          deliveryId: row.delivery_id,
+          createdAt: row.created_at,
+        })),
+      };
+    },
   );
 
   app.post<{ Params: HoldingParams; Querystring: UploadQuery; Body: Buffer }>(

@@ -25,6 +25,12 @@ function ticketFileError(file: File): string | null {
   return null;
 }
 
+function formatYield(value: string): string {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return `${value} %`;
+  return `${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 }).format(numeric)} %`;
+}
+
 export function DeliveryEntryCard({
   holdingId,
   campaignId,
@@ -315,7 +321,40 @@ export function DeliveryTicketButton({
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [yieldPercent, setYieldPercent] = useState<string | null>(null);
+  const [yieldLoaded, setYieldLoaded] = useState(false);
+  const [yieldUnavailable, setYieldUnavailable] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadYield() {
+      try {
+        const result = await api.deliveryResults(deliveryId);
+        const current = [...result.items].reverse().find((item) => item.resultType === 'fat_yield' && item.status === 'current') ?? null;
+        if (!cancelled) {
+          setYieldPercent(current?.value ?? null);
+          setYieldUnavailable(false);
+        }
+      } catch {
+        if (!cancelled) setYieldUnavailable(true);
+      } finally {
+        if (!cancelled) setYieldLoaded(true);
+      }
+    }
+
+    const refresh = (event: Event) => {
+      if (event instanceof CustomEvent && event.detail?.deliveryId === deliveryId) void loadYield();
+    };
+
+    void loadYield();
+    window.addEventListener('magina:yield-saved', refresh);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('magina:yield-saved', refresh);
+    };
+  }, [deliveryId]);
 
   async function choose(file: File | null) {
     if (!file) return;
@@ -337,8 +376,15 @@ export function DeliveryTicketButton({
     }
   }
 
+  const yieldLabel = yieldPercent
+    ? `Rendimiento ${formatYield(yieldPercent)}`
+    : yieldLoaded
+      ? (yieldUnavailable ? 'Rendimiento no disponible' : 'Rendimiento pendiente')
+      : 'Cargando rendimiento…';
+
   return (
     <div className="delivery-ticket-action" aria-busy={busy}>
+      <span className={`badge${yieldPercent ? ' gold' : ''}`} aria-live="polite">{yieldLabel}</span>
       <button
         className="ticket-upload-button"
         type="button"

@@ -129,26 +129,47 @@ async function resolveActiveRainAlerts(pool: Pool, userId: string, holdingId: st
   );
 }
 
-export async function scanRainAlerts(pool: Pool): Promise<{ users: number; alerts: number; sourceFailures: number }> {
-  const apiKey = process.env.AEMET_API_KEY?.trim();
-  if (!apiKey) throw new Error('AEMET_API_KEY is required for weather.rain.scan');
-
+async function resolveRainAlertsOutsideCurrentSelection(pool: Pool): Promise<void> {
   await pool.query(
     `
+      with ranked as (
+        select
+          hm.user_id,
+          h.id as holding_id,
+          row_number() over (partition by hm.user_id order by h.created_at asc, h.id asc) as position
+        from holding_members hm
+        join holdings h
+          on h.id = hm.holding_id
+         and h.active = true
+        left join user_preferences up on up.user_id = hm.user_id
+        where hm.status = 'active'
+          and coalesce(up.notify_weather, true) = true
+          and h.municipality is not null
+          and length(trim(h.municipality)) > 0
+      ), selected as (
+        select user_id, holding_id
+        from ranked
+        where position = 1
+      )
       update weather_alert_events e
       set status = 'resolved',
           resolved_at = now(),
           updated_at = now()
       where e.kind = 'rain'
         and e.status = 'active'
-        and exists (
+        and not exists (
           select 1
-          from user_preferences up
-          where up.user_id = e.user_id
-            and up.notify_weather = false
+          from selected s
+          where s.user_id = e.user_id
+            and s.holding_id = e.holding_id
         )
     `,
   );
+}
+
+export async function scanRainAlerts(pool: Pool): Promise<{ users: number; alerts: number; sourceFailures: number }> {
+  const apiKey = process.env.AEMET_API_KEY?.trim();
+  if (!apiKey) throw new Error('AEMET_API_KEY is required for weather.rain.scan');
 
   const candidateResult = await pool.query<CandidateRow>(
     `
@@ -175,6 +196,8 @@ export async function scanRainAlerts(pool: Pool): Promise<{ users: number; alert
       order by user_id
     `,
   );
+
+  await resolveRainAlertsOutsideCurrentSelection(pool);
 
   const municipalityResult = await pool.query<MunicipalityRow>(
     `

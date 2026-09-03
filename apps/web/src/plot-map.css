@@ -12,6 +12,40 @@
   gap: 1rem;
 }
 
+.plot-map-counts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.plot-map-mode-tabs {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin: 0.85rem 0 0.9rem;
+  padding: 0.25rem;
+  border: 1px solid var(--line, #d9ddcf);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.plot-map-mode-tabs button {
+  min-height: 2.5rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.45rem 1rem;
+  background: transparent;
+  color: var(--muted, #66705c);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.plot-map-mode-tabs button.active {
+  background: var(--text, #26301f);
+  color: #fff;
+}
+
 .plot-map-meta {
   display: flex;
   flex-wrap: wrap;
@@ -31,6 +65,36 @@
   font-variant-numeric: tabular-nums;
 }
 
+.plot-editor-help {
+  margin: -0.2rem 0 0;
+  color: var(--muted, #66705c);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.plot-boundary-summary {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.9rem;
+  border: 1px solid var(--line, #d9ddcf);
+  border-radius: 0.9rem;
+  background: rgba(244, 246, 238, 0.74);
+}
+
+.plot-boundary-summary strong {
+  font-size: 1.05rem;
+}
+
+.plot-boundary-summary span {
+  color: var(--text, #26301f);
+  font-variant-numeric: tabular-nums;
+}
+
+.plot-boundary-summary small {
+  color: var(--muted, #66705c);
+  line-height: 1.4;
+}
+
 .plot-map-actions {
   display: flex;
   flex-wrap: wrap;
@@ -46,18 +110,123 @@
 }
 
 .plot-map-card {
+  position: relative;
   overflow: hidden;
   min-height: 22rem;
   display: flex;
   flex-direction: column;
+  background: #eef1e8;
 }
 
-.plot-map-frame {
+.plot-map-toolbar {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.28rem;
+  border: 1px solid rgba(38, 48, 31, 0.16);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 8px 24px rgba(38, 48, 31, 0.12);
+}
+
+.plot-map-toolbar button {
+  min-width: 2.35rem;
+  min-height: 2.35rem;
+  border: 0;
+  border-radius: 0.55rem;
+  background: #f2f4ec;
+  color: var(--text, #26301f);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.plot-map-toolbar button:nth-of-type(3) {
+  min-width: auto;
+  padding-inline: 0.7rem;
+  font-size: 0.8rem;
+}
+
+.plot-map-toolbar button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.plot-map-toolbar span {
+  padding: 0 0.35rem;
+  color: var(--muted, #66705c);
+  font-size: 0.75rem;
+}
+
+.plot-map-editor {
+  display: block;
   width: 100%;
   min-height: 20rem;
   flex: 1;
-  border: 0;
-  background: #eef1e8;
+  aspect-ratio: 1 / 1;
+  background: #e8ecdf;
+  cursor: crosshair;
+  touch-action: manipulation;
+}
+
+.plot-map-editor image {
+  pointer-events: none;
+}
+
+.plot-boundary-shape {
+  fill: rgba(118, 135, 72, 0.28);
+  stroke: #52632e;
+  stroke-width: 7;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.plot-boundary-line {
+  fill: none;
+  stroke: #52632e;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.plot-boundary-vertex {
+  pointer-events: none;
+}
+
+.plot-boundary-vertex circle {
+  fill: #fff;
+  stroke: #52632e;
+  stroke-width: 5;
+}
+
+.plot-boundary-vertex text {
+  fill: #26301f;
+  stroke: rgba(255, 255, 255, 0.9);
+  stroke-width: 5;
+  paint-order: stroke;
+  font-size: 27px;
+  font-weight: 900;
+}
+
+.plot-location-marker {
+  pointer-events: none;
+}
+
+.plot-location-marker circle:not(.plot-location-marker-ring) {
+  fill: #25301d;
+  stroke: #fff;
+  stroke-width: 5;
+}
+
+.plot-location-marker-ring {
+  fill: rgba(255, 255, 255, 0.28);
+  stroke: rgba(38, 48, 31, 0.55);
+  stroke-width: 4;
 }
 
 .plot-map-footer {
@@ -66,6 +235,7 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 0.9rem 1rem;
+  background: #fff;
 }
 
 .plot-map-footer > div {
@@ -78,36 +248,12 @@
   font-variant-numeric: tabular-nums;
 }
 
-.plot-map-footer a {
+.plot-map-footer small a {
+  color: inherit;
+}
+
+.plot-map-footer > a {
   white-space: nowrap;
-}
-
-.plot-map-placeholder {
-  min-height: 22rem;
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 0.55rem;
-  padding: 2rem;
-  text-align: center;
-  color: var(--muted, #66705c);
-  background:
-    radial-gradient(circle at 50% 46%, rgba(112, 127, 72, 0.12), transparent 28%),
-    linear-gradient(135deg, rgba(244, 246, 238, 0.92), rgba(233, 238, 222, 0.82));
-}
-
-.plot-map-placeholder span {
-  font-size: 2.4rem;
-  line-height: 1;
-}
-
-.plot-map-placeholder strong {
-  color: var(--text, #26301f);
-}
-
-.plot-map-placeholder p {
-  max-width: 32rem;
-  margin: 0;
 }
 
 .plot-map-disclaimer {
@@ -123,23 +269,39 @@
     align-items: stretch;
   }
 
-  .plot-map-card,
-  .plot-map-placeholder {
-    min-height: 27rem;
+  .plot-map-card {
+    min-height: 30rem;
   }
 
-  .plot-map-frame {
-    min-height: 24rem;
+  .plot-map-editor {
+    min-height: 27rem;
   }
 }
 
 @media (max-width: 520px) {
+  .plot-map-counts {
+    justify-content: flex-start;
+  }
+
+  .plot-map-mode-tabs {
+    width: 100%;
+  }
+
+  .plot-map-mode-tabs button {
+    flex: 1;
+  }
+
+  .plot-map-toolbar {
+    top: 0.55rem;
+    right: 0.55rem;
+  }
+
   .plot-map-footer {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .plot-map-footer a {
+  .plot-map-footer > a {
     align-self: flex-start;
   }
 }

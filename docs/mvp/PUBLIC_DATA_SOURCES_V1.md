@@ -1,6 +1,6 @@
 # Mágina Olivo — Fuentes públicas V1
 
-Estado: arquitectura e integración inicial en `feat/mvp-core-v1`.
+Estado: integración pública funcional en `feat/mvp-core-v1`, con validaciones externas todavía pendientes de staging.
 
 ## Principio
 
@@ -19,11 +19,19 @@ Datos privados
   -> Cache-Control: no-store
 ```
 
+## Superficies públicas
+
+Preparadas actualmente:
+
+- `/magina` — hub territorial;
+- `/magina/tiempo` — predicción municipal AEMET;
+- `/magina/directorio` — 23 cooperativas/almazaras/entidades auditadas.
+
+El hub consulta además `GET /api/v1/public/sources` para mostrar procedencia y frescura sin revelar secretos ni errores internos completos.
+
 ## Registro de fuentes
 
 Migración: `db/migrations/0006_public_data_sources.sql`.
-
-Tablas:
 
 ### `public_data_sources`
 
@@ -54,11 +62,34 @@ Preparada para ingestas reproducibles:
 
 Regla: **primero snapshot; después interpretación**. Un cambio de parser no debe borrar la evidencia de qué artefacto produjo los datos.
 
-## Endpoint de transparencia
+## Municipios públicos verificados
 
-`GET /api/v1/public/sources`
+Migración: `db/migrations/0007_public_municipalities.sql`.
 
-Expone únicamente información de procedencia pública y salud de la fuente. No expone secretos, credenciales ni errores internos completos.
+Se almacenan 14 municipios canónicos usados por las entidades auditadas de Sierra Mágina, cada uno con:
+
+- `slug` humano;
+- nombre oficial;
+- provincia;
+- código AEMET verificado;
+- aliases/núcleos;
+- URL de fuente;
+- fecha de comprobación.
+
+Aliases relevantes:
+
+- `Arbuniel -> Cambil`;
+- `Solera -> Huelma`;
+- `Bedmar / Garcíez -> Bedmar y Garcíez`;
+- `Carchelejo / Cárchel -> Cárcheles`.
+
+Los núcleos no reciben códigos AEMET inventados.
+
+Endpoint:
+
+`GET /api/v1/public/municipalities`
+
+La interfaz trabaja con slugs y nombres; el código AEMET queda como detalle interno del backend.
 
 ## AEMET
 
@@ -67,12 +98,13 @@ Fuente: **AEMET OpenData**.
 V1 implementa:
 
 - adaptador server-side `aemet-weather-provider.ts`;
-- endpoint `GET /api/v1/public/weather?municipalityCode=#####`;
+- endpoint `GET /api/v1/public/weather?municipality=huelma`;
 - `AEMET_API_KEY` solo en backend;
-- allowlist `AEMET_ALLOWED_MUNICIPALITY_CODES` para impedir que el servicio sea un proxy abierto;
+- allowlist efectiva basada en filas activas de `public_municipalities`;
 - caché backend de 30 minutos;
 - caché PWA únicamente dentro del namespace público;
-- parser probado con fixtures.
+- parser probado con fixtures;
+- pantalla `/magina/tiempo`.
 
 Normalización V1 por día:
 
@@ -84,7 +116,9 @@ Normalización V1 por día:
 
 Si AEMET omite un valor, la API devuelve `null`; no se convierte en `0`.
 
-La respuesta incluye atribución `AEMET`.
+La respuesta incluye atribución `AEMET` y recuerda que la predicción representa la capital del municipio y puede variar dentro del término por altitud/localización.
+
+La página no formula recomendaciones agronómicas automáticas a partir del tiempo.
 
 ## RAIF — Olivar
 
@@ -121,6 +155,8 @@ El worker:
 7. utiliza los reintentos y leases existentes de `job_queue`;
 8. registra el error de fuente si falla.
 
+La inspección real del ZIP debe ejecutarse en staging. El entorno usado durante el desarrollo no pudo resolver directamente el host para descargar el binario, por lo que **no se afirma que el esquema XML haya sido inspeccionado todavía**.
+
 ### Deliberadamente NO implementado todavía
 
 - descargar el ZIP completo automáticamente en producción;
@@ -129,7 +165,7 @@ El worker:
 - crear alertas por municipio;
 - inferir riesgo para una parcela del usuario.
 
-Antes hay que inspeccionar archivos reales y definir campos canónicos con tests.
+Antes hay que obtener un snapshot real, registrar hash e inspeccionar la estructura con tests.
 
 ## DOP Sierra Mágina
 
@@ -141,6 +177,7 @@ Implementado:
 - distinción jurídica `cooperative / sat / company / other`;
 - búsqueda pública;
 - fecha de revisión;
+- pantalla `/magina/directorio`;
 - sugerencias opcionales en Nueva entrega;
 - `cooperativeId` canónico cuando la selección coincide exactamente;
 - entrada manual siempre disponible.
@@ -185,11 +222,11 @@ Las recomendaciones oficiales se enlazan/citan; Mágina Olivo no inventa tratami
 
 ## Próximas fases
 
-1. validar códigos AEMET de los municipios piloto;
-2. probar AEMET contra staging con una clave real server-side;
-3. ejecutar `public.raif.inspect` en staging;
-4. descargar un snapshot RAIF controlado y registrar hash;
-5. inspeccionar estructura XML real;
-6. diseñar parser V1 de Jaén/olivar;
-7. agregar señales por municipio/semana sin convertir observación regional en diagnóstico individual;
-8. añadir cards de Tiempo y RAIF a la composición final de la pestaña `Mágina`.
+1. probar `/magina/tiempo` contra staging con una clave AEMET real server-side;
+2. ejecutar `public.raif.inspect` en staging;
+3. descargar un snapshot RAIF controlado y registrar hash;
+4. inspeccionar estructura XML real;
+5. diseñar parser V1 de Jaén/olivar;
+6. agregar señales por municipio/semana sin convertir observación regional en diagnóstico individual;
+7. sincronizar el hub público `/magina` con la composición final de la pestaña `Mágina` del hilo visual;
+8. continuar después con mercado del aceite y noticias públicas versionadas.

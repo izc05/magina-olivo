@@ -44,6 +44,8 @@ jobs:
           bash -n scripts/staging-release-source-gate.sh
           bash -n scripts/staging-acceptance.sh
           bash -n scripts/staging-public-magina-gate.sh
+          bash -n scripts/staging-backup.sh
+          bash -n scripts/staging-restore-gate.sh
           bash -n scripts/pilot-participant-setup.sh
           bash -n scripts/pilot-evidence-init.sh
           node --check scripts/pilot-evidence-summary.mjs
@@ -53,9 +55,24 @@ jobs:
           grep -q '^AEMET_API_KEY=' infra/docker/staging.env.example
           grep -q 'AEMET_API_KEY:.*AEMET_API_KEY' infra/docker/compose.staging.yml
           grep -q 'AEMET_API_KEY' scripts/staging-host-preflight.sh
+          grep -q -- '-u AEMET_API_KEY' scripts/staging-release.sh
+          grep -q -- '-u AEMET_API_KEY' scripts/staging-backup.sh
+          grep -q -- '-u AEMET_API_KEY' scripts/staging-restore-gate.sh
 
       - name: Verify staging release source guard
-        run: bash scripts/staging-release-source-gate.sh
+        run: |
+          bash scripts/staging-release-source-gate.sh
+
+          trace_state=/tmp/magina-staging-traceability-state
+          rm -rf "$trace_state"
+          mkdir -p "$trace_state"
+          printf '%s\n' 'ci-trace-release' > "$trace_state/current"
+          printf '%s\n' '0123456789abcdef0123456789abcdef01234567' > "$trace_state/current-source-sha"
+          trace_status="$(MAGINA_STAGING_STATE_DIR="$trace_state" bash scripts/staging-acceptance.sh status)"
+          printf '%s\n' "$trace_status"
+          grep -q '^release=ci-trace-release$' <<<"$trace_status"
+          grep -q '^source_sha=0123456789abcdef0123456789abcdef01234567$' <<<"$trace_status"
+          rm -rf "$trace_state"
 
       - name: Verify Cloudflare Access gate configuration guard
         run: |

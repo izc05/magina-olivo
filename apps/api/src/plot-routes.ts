@@ -13,6 +13,7 @@ type CreatePlotBody = {
   name: string;
   areaHa?: number;
   sigpacReference?: string;
+  cadastralReference?: string;
   latitude?: number;
   longitude?: number;
   irrigationType?: 'dryland' | 'irrigated' | 'mixed' | 'unknown';
@@ -33,6 +34,7 @@ type PlotRow = {
   name: string;
   area_ha: string | null;
   sigpac_reference: string | null;
+  cadastral_reference: string | null;
   latitude: number | null;
   longitude: number | null;
   boundary_geojson: GeoJsonPolygon | null;
@@ -49,7 +51,7 @@ type PlotRow = {
 };
 
 const PLOT_COLUMNS = `
-  id, name, area_ha, sigpac_reference, latitude, longitude,
+  id, name, area_ha, sigpac_reference, cadastral_reference, latitude, longitude,
   boundary_geojson, boundary_area_ha, boundary_source, boundary_updated_at,
   boundary_external_id, boundary_source_checked_at,
   irrigation_type, olive_tree_count, notes, created_at, updated_at
@@ -61,6 +63,7 @@ function serializePlot(row: PlotRow) {
     name: row.name,
     areaHa: row.area_ha,
     sigpacReference: row.sigpac_reference,
+    cadastralReference: row.cadastral_reference,
     latitude: row.latitude,
     longitude: row.longitude,
     boundaryGeoJson: row.boundary_geojson,
@@ -128,6 +131,7 @@ export function registerPlotRoutes(app: FastifyInstance): void {
             name: { type: 'string', minLength: 1, maxLength: 120 },
             areaHa: { type: 'number', minimum: 0, maximum: 1000000 },
             sigpacReference: { type: 'string', maxLength: 300 },
+            cadastralReference: { type: 'string', pattern: '^[A-Za-z0-9]{14}$' },
             latitude: { type: 'number', minimum: -90, maximum: 90 },
             longitude: { type: 'number', minimum: -180, maximum: 180 },
             irrigationType: { type: 'string', enum: ['dryland', 'irrigated', 'mixed', 'unknown'] },
@@ -163,10 +167,10 @@ export function registerPlotRoutes(app: FastifyInstance): void {
       const row = (
         await getPool().query<PlotRow>(
           `insert into plots (
-             id, holding_id, farm_id, name, area_ha, sigpac_reference,
+             id, holding_id, farm_id, name, area_ha, sigpac_reference, cadastral_reference,
              latitude, longitude, irrigation_type, olive_tree_count, notes
            )
-           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
            returning ${PLOT_COLUMNS}`,
           [
             id,
@@ -175,6 +179,7 @@ export function registerPlotRoutes(app: FastifyInstance): void {
             name,
             request.body.areaHa ?? null,
             request.body.sigpacReference?.trim() || null,
+            request.body.cadastralReference?.trim().toUpperCase() || null,
             request.body.latitude ?? null,
             request.body.longitude ?? null,
             request.body.irrigationType ?? null,

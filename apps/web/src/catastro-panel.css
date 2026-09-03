@@ -1,0 +1,158 @@
+.catastro-shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.catastro-search-card {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.catastro-plot-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.catastro-plot-status span {
+  border: 1px solid var(--line, #d9ddcf);
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.82rem;
+  color: var(--muted, #66705c);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.catastro-warning {
+  margin: 0;
+  border-left: 3px solid #8b7a45;
+  padding: 0.75rem 0.9rem;
+  background: rgba(139, 122, 69, 0.08);
+  color: var(--muted, #66705c);
+  line-height: 1.5;
+}
+
+.catastro-results-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.catastro-result-list {
+  display: grid;
+  gap: 0.65rem;
+  align-content: start;
+  max-height: 34rem;
+  overflow: auto;
+  padding-right: 0.2rem;
+}
+
+.catastro-result {
+  width: 100%;
+  text-align: left;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.9rem 1rem;
+  cursor: pointer;
+  color: inherit;
+}
+
+.catastro-result.active {
+  outline: 2px solid rgba(94, 111, 60, 0.38);
+  outline-offset: 1px;
+}
+
+.catastro-result span,
+.catastro-result small,
+.catastro-attribution,
+.catastro-unsupported {
+  color: var(--muted, #66705c);
+}
+
+.catastro-detail {
+  display: grid;
+  gap: 1rem;
+}
+
+.catastro-geometry-preview,
+.catastro-preview-empty {
+  width: 100%;
+  min-height: 16rem;
+  border-radius: 1rem;
+  background: linear-gradient(145deg, rgba(241, 244, 234, 0.95), rgba(229, 235, 217, 0.92));
+  border: 1px solid var(--line, #d9ddcf);
+}
+
+.catastro-geometry-preview polygon {
+  fill: rgba(112, 127, 72, 0.2);
+  stroke: currentColor;
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+}
+
+.catastro-preview-empty {
+  display: grid;
+  place-items: center;
+  color: var(--muted, #66705c);
+}
+
+.catastro-detail-copy {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.catastro-detail-copy h3 {
+  margin: 0;
+  word-break: break-all;
+}
+
+.catastro-detail-copy dl {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.catastro-detail-copy dl div {
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.8fr) minmax(0, 1.2fr);
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--line, #d9ddcf);
+}
+
+.catastro-detail-copy dt {
+  color: var(--muted, #66705c);
+}
+
+.catastro-detail-copy dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.catastro-attribution {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+@media (min-width: 860px) {
+  .catastro-results-grid {
+    grid-template-columns: minmax(18rem, 0.78fr) minmax(26rem, 1.22fr);
+    align-items: start;
+  }
+
+  .catastro-detail {
+    grid-template-columns: minmax(13rem, 0.75fr) minmax(18rem, 1.25fr);
+    align-items: start;
+  }
+}
+
+@media (max-width: 540px) {
+  .catastro-detail-copy dl div {
+    grid-template-columns: 1fr;
+  }
+
+  .catastro-detail-copy dd {
+    text-align: left;
+  }
+}

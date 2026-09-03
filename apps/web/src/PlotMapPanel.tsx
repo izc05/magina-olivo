@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CatastroParcelPanel } from './CatastroParcelPanel.tsx';
 import { PlotMapPanel as PlotMapEditor } from './PlotMapEditor.tsx';
 import { SigpacRecintoPanel } from './SigpacRecintoPanel.tsx';
 
@@ -13,6 +14,7 @@ export function PlotMapPanel({ farmId }: { farmId: string }) {
     <>
       <PlotMapEditor key={`${farmId}-${mapRevision}`} farmId={farmId} />
       <SigpacRecintoPanel farmId={farmId} onImported={refreshPrivateMap} />
+      <CatastroParcelPanel farmId={farmId} onImported={refreshPrivateMap} />
     </>
   );
 }

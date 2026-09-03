@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { MainSection } from '../components/BottomNav';
+import { DiscoverPage } from '../features/discover/DiscoverPage';
 import { FieldPage } from '../features/field/FieldPage';
 import { HomePage } from '../features/home/HomePage';
 import { NewsPage } from '../features/news/NewsPage';
@@ -32,6 +33,10 @@ export default function App() {
 
   if (section === 'news') {
     return <NewsPage onNavigate={navigate} initialTab={maginaTarget} />;
+  }
+
+  if (section === 'discover') {
+    return <DiscoverPage onNavigate={navigate} />;
   }
 
   if (section === 'profile') {

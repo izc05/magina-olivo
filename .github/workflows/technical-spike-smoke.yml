@@ -127,7 +127,7 @@ jobs:
           cat /tmp/magina-api.log
           exit 1
 
-      - name: Verify API security and agricultural vertical slice
+      - name: Verify API security, agricultural flow, concurrency and restore
         run: bash scripts/spike-api-flow.sh
 
       - name: Verify password reset and session revocation
@@ -135,9 +135,6 @@ jobs:
 
       - name: Verify auth rate limiting
         run: bash scripts/spike-auth-rate-limit.sh
-
-      - name: Verify backup and restore drill
-        run: bash scripts/spike-backup-restore.sh
 
       - name: Verify isolated staging container stack
         run: bash scripts/staging-container-gate.sh

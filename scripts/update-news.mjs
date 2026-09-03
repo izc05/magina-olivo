@@ -18,7 +18,6 @@ const sources = [
   { name: 'La Perla de Mágina · Oficial', url: 'https://laperlademagina.es/feed/', weight: 26, scope: 'magina', official: true, cooperativeId: 'paz-belmez' },
   { name: 'Santa Isabel de Torres · Oficial', url: 'https://santaisabeldetorres.com/feed/', weight: 26, scope: 'magina', official: true, cooperativeId: 'santa-isabel-torres' },
   { name: 'Salud Sierra · Oficial', url: 'https://saludsierra.es/feed/', weight: 26, scope: 'magina', official: true, cooperativeId: 'union-santo-cristo-cabra' },
-  { name: 'Esmeralda de Mágina · Oficial', url: 'https://esmeraldamagina.es/feed/', weight: 27, scope: 'magina', official: true, cooperativeId: 'union-oleicola-cambil' },
   { name: 'Cooperativa Campillo de Arenas · Oficial', url: 'https://cooperativacampillodearenas.com/feed/', weight: 26, scope: 'magina', official: true, cooperativeId: 'cabeza-campillo' },
   { name: 'CIT Jaén · Diputación', url: 'https://cit.dipujaen.es/feed/', weight: 18, scope: 'jaen', official: true },
   { name: 'Diario JAÉN', url: 'https://www.diariojaen.es/rss/provincia.xml', weight: 12, scope: 'jaen' },

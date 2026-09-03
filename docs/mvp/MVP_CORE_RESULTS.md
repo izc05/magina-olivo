@@ -5,10 +5,10 @@ Estado: **V1 funcional en desarrollo, PR #3 Draft**.
 Rama: `feat/mvp-core-v1`  
 Base: `feat/technical-spike-v1`
 
-## Última regresión verde
+## Última regresión verde de código
 
 - workflow: `MVP Core Smoke`
-- run: `33713395781` (#48)
+- run: `33714642767` (#60)
 - conclusión: `success`
 
 La regresión valida sobre el estado actual:
@@ -18,6 +18,8 @@ La regresión valida sobre el estado actual:
 - unit tests, incluidos delivery y labor offline;
 - build PWA;
 - inspección del bundle para impedir secretos de servidor.
+
+Después del gate #60 solo se añadió documentación de accesibilidad; no se modificó código de ejecución.
 
 ## Recorrido usable implementado
 
@@ -71,7 +73,8 @@ Implementado:
 - petición de recuperación de contraseña;
 - `/reset-password?token=...` para completar el cambio;
 - mensajes públicos que no revelan si un email existe;
-- sesiones anteriores revocadas por el backend tras reset, según el gate técnico ya validado.
+- sesiones anteriores revocadas por el backend tras reset, según el gate técnico ya validado;
+- logout bloqueado si existen operaciones privadas pendientes de sincronizar.
 
 ### Inicio
 
@@ -160,7 +163,21 @@ La integración de campo cubre ya **entregas y labores**:
 - cambiar de usuario no expone ni sincroniza operaciones pendientes de otro usuario;
 - una actualización PWA se aplaza mientras haya outbox pendiente.
 
-Las lecturas recientes de esta sesión usan únicamente una caché privada en memoria; al hacer logout se borra. La outbox sí es persistente.
+Las lecturas recientes de una sesión abierta usan únicamente una caché privada en memoria. La outbox sí es persistente.
+
+### Cold-start offline protegido
+
+El P0 de arranque en frío offline queda cerrado para el piloto V1 con política **fail closed**:
+
+- si la PWA se reabre sin conexión y existe identidad local previa, no simula un logout definitivo;
+- entra en `Modo protegido`;
+- no persiste ni muestra una réplica completa en claro de fincas/campañas privadas;
+- muestra únicamente el conteo de operaciones pendientes de la outbox del propietario local;
+- las operaciones pendientes permanecen intactas;
+- cuando vuelve la red se revalida la sesión online;
+- no se permite cerrar sesión con operaciones pendientes.
+
+La política queda documentada en `docs/OFFLINE_SYNC_SPEC.md` y la UI en `OfflineColdStart.tsx`.
 
 ### Archivos y offline
 
@@ -173,16 +190,34 @@ Los tickets/fotos **no se guardan todavía en IndexedDB**. Es una decisión deli
 
 Esto evita persistir archivos privados grandes en el navegador antes de definir una política explícita de cifrado, retención y espacio.
 
+### Accesibilidad V1
+
+Aplicado en código:
+
+- `aria-current` para sección activa;
+- `aria-pressed` para finca seleccionada;
+- foco programático al contenido principal tras cambiar de sección;
+- foco visible de alto contraste mediante `:focus-visible`;
+- controles críticos con objetivos táctiles aproximados de al menos 44 px;
+- adjunto posterior de ticket mediante botón real operable con teclado;
+- estados de upload y guardado con `aria-live`, `aria-busy` y `role=alert/status` donde corresponde;
+- soporte `prefers-reduced-motion`;
+- mejora para `forced-colors`;
+- campo de rendimiento con nombre accesible y `inputMode=decimal`.
+
+Gate reproducible: `docs/mvp/ACCESSIBILITY_GATE_V1.md`.
+
+La parte de código está verde en smoke #60. La accesibilidad **no se declara auditada completamente** hasta probar teclado + TalkBack/NVDA + zoom/reflow en staging real.
+
 ## Pendientes P0 del núcleo
 
 Antes de considerar este recorrido listo para piloto:
 
-1. decidir y probar política segura de lectura `cold-start` offline para datos privados;
-2. integrar el logo gráfico aprobado real;
-3. completar accesibilidad/teclado/lector de pantalla del recorrido;
-4. añadir pruebas browser/end-to-end cuando exista staging real;
-5. ejecutar los gates externos HTTPS/R2/correo/restore definidos por el spike técnico;
-6. validar el flujo con 2–5 olivareros usando datos sintéticos o documentos anonimizados antes de introducir información real.
+1. integrar el logo gráfico aprobado real del flujo visual;
+2. ejecutar la validación manual de accesibilidad definida en `ACCESSIBILITY_GATE_V1.md` sobre staging;
+3. añadir/ejecutar pruebas browser/end-to-end sobre staging real;
+4. ejecutar los gates externos HTTPS/R2/correo/restore definidos por el spike técnico;
+5. validar el flujo con 2–5 olivareros usando datos sintéticos o documentos anonimizados antes de introducir información real.
 
 Ya cerrados respecto a la primera versión del MVP:
 
@@ -192,7 +227,9 @@ Ya cerrados respecto a la primera versión del MVP:
 - timeline de parcela;
 - delivery offline;
 - labor offline;
-- avisos y conteo visible de sincronización pendiente.
+- avisos y conteo visible de sincronización pendiente;
+- cold-start offline protegido;
+- base de accesibilidad por teclado/lector de pantalla en código.
 
 ## Regla de datos reales
 

@@ -9,6 +9,7 @@ export type RealNewsStory = {
   publishedAt: string;
   region?: string;
   official?: boolean;
+  cooperativeId?: string;
 };
 
 export type RealNewsPayload = {

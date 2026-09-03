@@ -3,6 +3,7 @@ import { Bell, CheckCircle2, ChevronRight, ExternalLink, Newspaper, RefreshCw, S
 import type { AppNavigate, MaginaTarget } from '../../app/navigation';
 import { BottomNav } from '../../components/BottomNav';
 import { Brand } from '../../components/Brand';
+import { AlertsPanel } from './AlertsPanel';
 import { NewsPage } from './NewsPage';
 import { formatNewsAge, loadRealNews, type RealNewsStory } from './newsFeed';
 import '../../styles/news-real.css';
@@ -62,6 +63,21 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
         .includes(needle);
     });
   }, [query, scopeFilter, stories]);
+
+  if (mode === 'alertas') {
+    return (
+      <div className="app-shell">
+        <main className="mobile-page">
+          <header className="topbar">
+            <Brand />
+            <button className="icon-button" type="button" aria-label="Volver a noticias" onClick={() => setMode('actualidad')}><Newspaper size={19} /></button>
+          </header>
+          <AlertsPanel onBack={() => setMode('actualidad')} />
+        </main>
+        <BottomNav active="news" onNavigate={onNavigate} />
+      </div>
+    );
+  }
 
   if (mode !== 'actualidad') {
     return <NewsPage onNavigate={onNavigate} initialTab={mode} />;

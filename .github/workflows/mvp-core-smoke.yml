@@ -38,11 +38,18 @@ jobs:
       - name: Validate staging gate scripts
         run: |
           bash -n scripts/mvp-core-flow-gate.sh
+          bash -n scripts/staging-host-preflight.sh
           bash -n scripts/staging-release.sh
           bash -n scripts/staging-release-source-gate.sh
           bash -n scripts/staging-acceptance.sh
           bash -n scripts/staging-public-magina-gate.sh
           bash -n scripts/pilot-participant-setup.sh
+
+      - name: Verify staging public-data configuration
+        run: |
+          grep -q '^AEMET_API_KEY=' infra/docker/staging.env.example
+          grep -q 'AEMET_API_KEY:.*AEMET_API_KEY' infra/docker/compose.staging.yml
+          grep -q 'AEMET_API_KEY' scripts/staging-host-preflight.sh
 
       - name: Verify staging release source guard
         run: bash scripts/staging-release-source-gate.sh
@@ -82,7 +89,7 @@ jobs:
 
       - name: Inspect frontend bundle for server secrets
         run: |
-          if grep -R -E 'BETTER_AUTH_SECRET|DATABASE_URL|RESEND_API_KEY|OBJECT_STORAGE_SECRET_ACCESS_KEY' apps/web/dist; then
+          if grep -R -E 'BETTER_AUTH_SECRET|DATABASE_URL|RESEND_API_KEY|AEMET_API_KEY|OBJECT_STORAGE_SECRET_ACCESS_KEY' apps/web/dist; then
             echo 'Server-only secret material found in frontend bundle'
             exit 1
           fi

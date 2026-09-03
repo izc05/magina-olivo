@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { classifyWeatherFreshness } from './weather-freshness.ts';
+import { canServeWeatherFallback, classifyWeatherFreshness } from './weather-freshness.ts';
 
 const NOW = Date.parse('2026-09-03T18:00:00Z');
 
@@ -36,4 +36,11 @@ test('tolerates small provider or clock skew without reporting a negative age', 
     status: 'fresh',
     ageHours: 0,
   });
+});
+
+test('only fresh or aging forecasts may be served while AEMET is unavailable', () => {
+  assert.equal(canServeWeatherFallback({ status: 'fresh', ageHours: 2 }), true);
+  assert.equal(canServeWeatherFallback({ status: 'aging', ageHours: 30 }), true);
+  assert.equal(canServeWeatherFallback({ status: 'stale', ageHours: 48 }), false);
+  assert.equal(canServeWeatherFallback({ status: 'unknown', ageHours: null }), false);
 });

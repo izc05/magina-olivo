@@ -10,6 +10,69 @@ export type CampaignSummary = { campaignId: string; deliveriesCount: number; tot
 export type DeliveryCreateBody = { deliveredAt: string; kilograms: string; customDestination: string; farmId?: string; plotId?: string; ticketNumber?: string; variety?: string; notes?: string; clientGeneratedId: string };
 export type DeliveryCreateResult = Delivery | { offlineQueued: true; clientGeneratedId: string };
 
+export type ActivityType =
+  | 'treatment'
+  | 'fertilization'
+  | 'pruning'
+  | 'mowing'
+  | 'tillage'
+  | 'irrigation'
+  | 'harvest'
+  | 'maintenance'
+  | 'planting'
+  | 'sampling'
+  | 'observation'
+  | 'other';
+
+export type Activity = {
+  id: string;
+  holdingId: string;
+  campaignId: string | null;
+  farmId: string | null;
+  plotId: string | null;
+  activityType: ActivityType;
+  occurredAt: string;
+  affectedAreaHa: string | null;
+  productName: string | null;
+  productRegistrationNumber: string | null;
+  quantity: string | null;
+  quantityUnit: string | null;
+  costEur: string | null;
+  notes: string | null;
+  verificationStatus: string;
+  version: number;
+  createdAt: string;
+};
+
+export type ActivityCreateBody = {
+  activityType: ActivityType;
+  occurredAt: string;
+  campaignId?: string;
+  farmId?: string;
+  plotId?: string;
+  affectedAreaHa?: number;
+  productName?: string;
+  productRegistrationNumber?: string;
+  quantity?: number;
+  quantityUnit?: string;
+  costEur?: number;
+  notes?: string;
+};
+
+export type PlotTimelineItem = {
+  type: 'activity' | 'delivery' | 'yield_result';
+  id: string;
+  occurredAt: string;
+  deliveryId?: string;
+  kilograms?: string;
+  destination?: string;
+  ticketNumber?: string;
+  yieldPercent?: string;
+  activityType?: ActivityType;
+  notes?: string;
+  costEur?: string;
+};
+
 const OWNER_CACHE_KEY = 'magina-olivo-current-user-id';
 const memoryCache = new Map<string, unknown>();
 
@@ -35,6 +98,12 @@ export function cachedOwnerUserId(): string | null {
 
 function forgetOwnerUserId(): void {
   if (typeof localStorage !== 'undefined') localStorage.removeItem(OWNER_CACHE_KEY);
+}
+
+function invalidateCachePrefix(prefix: string): void {
+  for (const key of memoryCache.keys()) {
+    if (key.startsWith(prefix)) memoryCache.delete(key);
+  }
 }
 
 async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
@@ -123,4 +192,23 @@ export const api = {
 
   createYield: (deliveryId: string, value: string) => request<unknown>(`/api/v1/deliveries/${deliveryId}/results`, { method: 'POST', body: JSON.stringify({ value, measuredAt: new Date().toISOString() }) }),
   campaignSummary: (campaignId: string) => cachedGet<CampaignSummary>(`/api/v1/campaigns/${campaignId}/summary`),
+
+  activities: (holdingId: string, query: { plotId?: string; campaignId?: string; activityType?: ActivityType; limit?: number } = {}) => {
+    const params = new URLSearchParams();
+    if (query.plotId) params.set('plotId', query.plotId);
+    if (query.campaignId) params.set('campaignId', query.campaignId);
+    if (query.activityType) params.set('activityType', query.activityType);
+    if (query.limit) params.set('limit', String(query.limit));
+    const suffix = params.size ? `?${params.toString()}` : '';
+    return cachedGet<{ items: Activity[] }>(`/api/v1/holdings/${holdingId}/activities${suffix}`);
+  },
+
+  createActivity: async (holdingId: string, body: ActivityCreateBody) => {
+    const result = await request<Activity>(`/api/v1/holdings/${holdingId}/activities`, { method: 'POST', body: JSON.stringify(body) });
+    invalidateCachePrefix(`/api/v1/holdings/${holdingId}/activities`);
+    if (body.plotId) memoryCache.delete(`/api/v1/plots/${body.plotId}/timeline`);
+    return result;
+  },
+
+  plotTimeline: (plotId: string) => cachedGet<{ items: PlotTimelineItem[] }>(`/api/v1/plots/${plotId}/timeline`),
 };

@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "news:sync": "node scripts/update-news.mjs",
+    "alerts:sync": "node scripts/update-alerts.mjs",
     "photos:sync": "node scripts/fetch-approved-photos.mjs",
     "test:responsive": "node scripts/responsive-smoke.mjs"
   },

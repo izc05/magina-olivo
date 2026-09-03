@@ -12,9 +12,8 @@
   grid-column: 1;
   grid-row: 1 / 3;
   width: 40px;
-  height: 40px;
+  height: 47px;
   background: url('/brand/magina-olivo-mark.svg') center / contain no-repeat;
-  filter: drop-shadow(0 4px 8px rgba(46, 58, 34, .12));
 }
 
 .brand-lockup .brand-title,
@@ -24,8 +23,8 @@
 
 .login-brand {
   position: relative;
-  min-height: 72px;
-  padding-left: 76px;
+  min-height: 82px;
+  padding-left: 82px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -36,22 +35,32 @@
   position: absolute;
   left: 0;
   top: 50%;
-  width: 62px;
-  height: 62px;
+  width: 66px;
+  height: 76px;
   transform: translateY(-50%);
   background: url('/brand/magina-olivo-mark.svg') center / contain no-repeat;
-  filter: drop-shadow(0 7px 14px rgba(46, 58, 34, .14));
+}
+
+.login-brand .brand-title {
+  font-size: 1.55rem;
+  line-height: 1.05;
+}
+
+.login-brand .brand-kicker {
+  margin-top: 5px;
+  max-width: 24rem;
+  line-height: 1.35;
 }
 
 @media (max-width: 390px) {
   .brand-lockup {
-    grid-template-columns: 36px minmax(0, 1fr);
+    grid-template-columns: 34px minmax(0, 1fr);
     column-gap: 8px;
   }
 
   .brand-lockup::before {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 38px;
   }
 
   .brand-lockup .brand-title {
@@ -59,12 +68,16 @@
   }
 
   .login-brand {
-    min-height: 64px;
-    padding-left: 68px;
+    min-height: 74px;
+    padding-left: 72px;
   }
 
   .login-brand::before {
-    width: 56px;
-    height: 56px;
+    width: 58px;
+    height: 68px;
+  }
+
+  .login-brand .brand-title {
+    font-size: 1.4rem;
   }
 }

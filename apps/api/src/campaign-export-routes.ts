@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply } from 'fastify';
 import { getCampaignAccess } from './authorization.ts';
 import { getPool } from './db.ts';
 import { apiError } from './http-errors.ts';
@@ -233,7 +233,7 @@ async function loadCampaignExport(
   };
 }
 
-function privateDownloadHeaders(reply: Parameters<Parameters<FastifyInstance['get']>[2]>[1], filename: string) {
+function privateDownloadHeaders(reply: FastifyReply, filename: string): void {
   reply.header('Cache-Control', 'private, no-store');
   reply.header('Content-Disposition', `attachment; filename="${filename}"`);
 }

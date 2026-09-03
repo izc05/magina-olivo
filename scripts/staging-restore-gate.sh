@@ -18,6 +18,11 @@ fail() {
   exit 1
 }
 
+meta_value() {
+  local key="$1"
+  awk -F= -v wanted="$key" '$1 == wanted { sub(/^[^=]*=/, ""); print; exit }' "$BUNDLE/backup-meta.txt"
+}
+
 [[ -n "$ENV_FILE" && -f "$ENV_FILE" ]] || fail "STAGING_ENV_FILE must point to the staging env file"
 [[ -n "$BUNDLE" && -d "$BUNDLE" ]] || fail "RESTORE_BUNDLE_DIR must point to an existing backup bundle"
 [[ "$BUNDLE" = /* ]] || fail "RESTORE_BUNDLE_DIR must be an absolute path"
@@ -38,6 +43,11 @@ log "Verifying backup bundle checksums before restore"
 ) || fail "backup bundle checksum verification failed"
 
 grep -q '^format_version=1$' "$BUNDLE/backup-meta.txt" || fail "unsupported backup bundle format"
+BACKUP_RELEASE="$(meta_value application_release)"
+BACKUP_SOURCE_SHA="$(meta_value application_source_sha)"
+[[ -n "$BACKUP_RELEASE" ]] || fail "backup metadata is missing application_release"
+[[ "$BACKUP_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || fail "backup metadata is missing a valid application_source_sha"
+log "Backup provenance release=$BACKUP_RELEASE source_sha=$BACKUP_SOURCE_SHA"
 
 CURRENT_RELEASE=""
 [[ ! -f "$STATE_DIR/current" ]] || CURRENT_RELEASE="$(cat "$STATE_DIR/current")"
@@ -142,4 +152,4 @@ docker exec \
   "$API_CONTAINER" \
   node scripts/import-private-objects.mjs
 
-log "RESTORE GATE PASS database=$RESTORE_DB bucket=$RESTORE_BUCKET"
+log "RESTORE GATE PASS database=$RESTORE_DB bucket=$RESTORE_BUCKET source_sha=$BACKUP_SOURCE_SHA"

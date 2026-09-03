@@ -35,6 +35,9 @@ jobs:
       - name: Typecheck workspaces
         run: npm run typecheck
 
+      - name: Run unit tests
+        run: npm test
+
       - name: Build web preview
         env:
           VITE_BASE_PATH: /magina-olivo/

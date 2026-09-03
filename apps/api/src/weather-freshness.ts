@@ -43,3 +43,7 @@ export function classifyWeatherFreshness(
   if (ageHours <= AGING_MAX_HOURS) return { status: 'aging', ageHours };
   return { status: 'stale', ageHours };
 }
+
+export function canServeWeatherFallback(freshness: WeatherFreshness): boolean {
+  return freshness.status === 'fresh' || freshness.status === 'aging';
+}

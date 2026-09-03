@@ -1,0 +1,21 @@
+{
+  "generatedAt": "2026-09-03T20:00:00+02:00",
+  "sourceLabel": "D.O.P. Sierra Mágina · Marcas",
+  "sourceUrl": "https://aove.sierramagina.org/marcas/",
+  "cooperatives": [
+    { "id": "cristo-misericordia-jodar", "name": "Cooperativa Stmo. Cristo de la Misericordia", "town": "Jódar", "brand": "La Quinta Esencia", "dop": true },
+    { "id": "remedios-mancha-real", "name": "Cooperativa Nuestra Señora de los Remedios", "town": "Mancha Real", "brand": "Oro de Cánava", "dop": true },
+    { "id": "bedmarense-bedmar", "name": "Cooperativa Bedmarense", "town": "Bedmar", "brand": "Oro Magnasur", "dop": true },
+    { "id": "paz-belmez", "name": "Cooperativa Ntra. Sra. de la Paz", "town": "Bélmez de la Moraleda", "brand": "La Perla de Mágina", "dop": true },
+    { "id": "san-francisco-albanchez", "name": "Cooperativa San Francisco", "town": "Albanchez de Mágina", "brand": "Reino de Jaén", "dop": true },
+    { "id": "santa-isabel-torres", "name": "Cooperativa Santa Isabel", "town": "Torres", "brand": "Señorío de Camarasa", "dop": true },
+    { "id": "union-santo-cristo-cabra", "name": "Cooperativa La Unión del Santo Cristo", "town": "Cabra del Santo Cristo", "brand": "Salud Sierra", "dop": true },
+    { "id": "union-oleicola-cambil", "name": "Cooperativa Unión Oleícola Cambil", "town": "Cambil", "brand": "Esmeralda de Mágina", "dop": true },
+    { "id": "cabeza-campillo", "name": "Cooperativa Ntra. Sra. de la Cabeza", "town": "Campillo de Arenas", "brand": "Vergilia", "dop": true },
+    { "id": "san-isidro-huelma", "name": "Cooperativa San Isidro Labrador", "town": "Huelma", "brand": "Santuario de Mágina", "dop": true },
+    { "id": "rosario-arbuniel", "name": "Cooperativa Ntra. Sra. del Rosario", "town": "Arbuniel", "brand": "Sierra de Arbuniel", "dop": true },
+    { "id": "san-antonio-carchel", "name": "Cooperativa San Antonio Abad", "town": "Cárchel", "brand": "Solana de Cárchel", "dop": true },
+    { "id": "san-roque-carchelejo", "name": "Cooperativa San Roque", "town": "Carchelejo", "brand": "Tierras del Marquesado", "dop": true },
+    { "id": "san-sebastian-guardia", "name": "Cooperativa San Sebastián", "town": "La Guardia de Jaén", "brand": "Señorío de Mesía", "dop": true }
+  ]
+}

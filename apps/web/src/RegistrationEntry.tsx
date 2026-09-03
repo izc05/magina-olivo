@@ -23,7 +23,6 @@ export function RegistrationEntry() {
       }
       setState('unavailable');
     }).catch(() => {
-      // Avoid advertising account actions while the API is unavailable.
       setState('unavailable');
     });
 
@@ -39,11 +38,11 @@ export function RegistrationEntry() {
     );
   }
 
-  if (state !== 'signed_out') return null;
+  if (state === 'checking') return null;
 
   return (
     <aside className="registration-entry" aria-label="Crear una cuenta nueva">
-      <span>¿Primera vez en Mágina Olivo?</span>
+      <span>¿Aún no tienes cuenta?</span>
       <a className="text-button" href="/register">Crear cuenta</a>
     </aside>
   );

@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - feat/visual-v2-foundation
+      - feat/real-news-v1
+      - main
+  schedule:
+    - cron: '17 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -29,6 +33,12 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Refresh real news feed
+        run: npm run news:sync
+
+      - name: Validate real news feed
+        run: node scripts/validate-news.mjs
 
       - name: Generate approved photography
         run: npm run photos:sync

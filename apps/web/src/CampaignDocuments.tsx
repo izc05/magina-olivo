@@ -39,6 +39,7 @@ export function CampaignDocuments({
 }: {
   holdingId: string;
   campaignId: string;
+  deliveries?: readonly unknown[];
 }) {
   const [documents, setDocuments] = useState<UploadedDocument[]>([]);
   const [loading, setLoading] = useState(true);

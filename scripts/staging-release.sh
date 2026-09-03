@@ -22,8 +22,21 @@ fail() {
 [[ -f "$ENV_FILE" ]] || fail "staging env file not found: $ENV_FILE"
 [[ -f "$COMPOSE_FILE" ]] || fail "compose file not found: $COMPOSE_FILE"
 
-mkdir -p "$STATE_DIR"
-chmod 700 "$STATE_DIR"
+ensure_state_dir() {
+  mkdir -p "$STATE_DIR"
+  chmod 700 "$STATE_DIR"
+}
+
+assert_clean_checkout() {
+  git rev-parse --is-inside-work-tree >/dev/null 2>&1 || fail "deploy must run from a Git working tree"
+  local dirty
+  dirty="$(git status --porcelain --untracked-files=normal)"
+  [[ -z "$dirty" ]] || fail "refusing to build staging from a dirty working tree; commit or remove local changes first"
+}
+
+git_source_sha() {
+  git rev-parse HEAD 2>/dev/null || fail "unable to resolve current Git commit"
+}
 
 read_env_value() {
   local key="$1"
@@ -95,19 +108,29 @@ ensure_release_images() {
   docker image inspect "magina-olivo-web:$release" >/dev/null 2>&1 || fail "missing web image for release $release"
 }
 
+image_source_sha() {
+  local release="$1"
+  docker image inspect \
+    --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' \
+    "magina-olivo-runtime:$release" 2>/dev/null || true
+}
+
 build_release() {
   local release="$1"
-  log "building runtime image for $release"
+  local source_sha="$2"
+  log "building runtime image for $release source_sha=$source_sha"
   docker build \
     --file infra/docker/Dockerfile.runtime \
-    --label "org.opencontainers.image.revision=$release" \
+    --label "org.opencontainers.image.revision=$source_sha" \
+    --label "org.opencontainers.image.version=$release" \
     --tag "magina-olivo-runtime:$release" \
     .
 
-  log "building web image for $release"
+  log "building web image for $release source_sha=$source_sha"
   docker build \
     --file infra/docker/Dockerfile.web \
-    --label "org.opencontainers.image.revision=$release" \
+    --label "org.opencontainers.image.revision=$source_sha" \
+    --label "org.opencontainers.image.version=$release" \
     --tag "magina-olivo-web:$release" \
     .
 }
@@ -120,33 +143,57 @@ previous_release() {
   [[ -f "$STATE_DIR/previous" ]] && cat "$STATE_DIR/previous" || true
 }
 
+current_source_sha() {
+  [[ -f "$STATE_DIR/current-source-sha" ]] && cat "$STATE_DIR/current-source-sha" || true
+}
+
+previous_source_sha() {
+  [[ -f "$STATE_DIR/previous-source-sha" ]] && cat "$STATE_DIR/previous-source-sha" || true
+}
+
 write_state_after_successful_deploy() {
   local new_release="$1"
   local old_release="$2"
+  local new_source_sha="$3"
+  local old_source_sha
+  old_source_sha="$(current_source_sha)"
+
   if [[ -n "$old_release" && "$old_release" != "$new_release" ]]; then
     printf '%s\n' "$old_release" > "$STATE_DIR/previous"
+    if [[ -n "$old_source_sha" ]]; then
+      printf '%s\n' "$old_source_sha" > "$STATE_DIR/previous-source-sha"
+    fi
   fi
+
   printf '%s\n' "$new_release" > "$STATE_DIR/current"
-  chmod 600 "$STATE_DIR/current"
+  printf '%s\n' "$new_source_sha" > "$STATE_DIR/current-source-sha"
+  chmod 600 "$STATE_DIR/current" "$STATE_DIR/current-source-sha"
   [[ ! -f "$STATE_DIR/previous" ]] || chmod 600 "$STATE_DIR/previous"
+  [[ ! -f "$STATE_DIR/previous-source-sha" ]] || chmod 600 "$STATE_DIR/previous-source-sha"
 }
 
 case "$ACTION" in
   deploy)
-    RELEASE="${REQUESTED_RELEASE:-$(git rev-parse --short=12 HEAD 2>/dev/null || true)}"
-    [[ -n "$RELEASE" ]] || fail "provide a release tag when Git metadata is unavailable"
+    # Reproducibility gate: the image must correspond exactly to a committed
+    # revision. The release label may be human-readable (CI uses A/B labels),
+    # but the image and deployment state always record the real Git SHA.
+    assert_clean_checkout
+    SOURCE_SHA="$(git_source_sha)"
+    RELEASE="${REQUESTED_RELEASE:-${SOURCE_SHA:0:12}}"
+    [[ -n "$RELEASE" ]] || fail "unable to derive release tag"
     [[ "$RELEASE" =~ ^[A-Za-z0-9._-]+$ ]] || fail "release tag contains unsupported characters"
 
+    ensure_state_dir
     OLD_RELEASE="$(current_release)"
     ensure_base_image
-    build_release "$RELEASE"
+    build_release "$RELEASE" "$SOURCE_SHA"
     ensure_release_images "$RELEASE"
 
     export MAGINA_IMAGE_TAG="$RELEASE"
     log "validating rendered Compose configuration"
     compose config >/tmp/magina-staging-release-compose.yml
 
-    log "deploying release $RELEASE"
+    log "deploying release $RELEASE source_sha=$SOURCE_SHA"
     if ! compose up -d --pull never; then
       compose ps --all || true
       compose logs --no-color || true
@@ -166,19 +213,24 @@ case "$ACTION" in
       fail "release $RELEASE failed health verification"
     fi
 
-    write_state_after_successful_deploy "$RELEASE" "$OLD_RELEASE"
-    log "DEPLOY PASS current=$RELEASE previous=${OLD_RELEASE:-none}"
+    write_state_after_successful_deploy "$RELEASE" "$OLD_RELEASE" "$SOURCE_SHA"
+    log "DEPLOY PASS current=$RELEASE source_sha=$SOURCE_SHA previous=${OLD_RELEASE:-none}"
     ;;
 
   rollback)
+    ensure_state_dir
     CURRENT_RELEASE="$(current_release)"
+    CURRENT_SOURCE_SHA="$(current_source_sha)"
     TARGET_RELEASE="${REQUESTED_RELEASE:-$(previous_release)}"
     [[ -n "$TARGET_RELEASE" ]] || fail "no previous release recorded; optionally pass an explicit release tag"
     ensure_base_image
     ensure_release_images "$TARGET_RELEASE"
 
+    TARGET_SOURCE_SHA="$(image_source_sha "$TARGET_RELEASE")"
+    [[ -n "$TARGET_SOURCE_SHA" && "$TARGET_SOURCE_SHA" != "<no value>" ]] || fail "rollback image $TARGET_RELEASE does not contain source revision metadata"
+
     export MAGINA_IMAGE_TAG="$TARGET_RELEASE"
-    log "rolling back code to $TARGET_RELEASE"
+    log "rolling back code to $TARGET_RELEASE source_sha=$TARGET_SOURCE_SHA"
     compose up -d --pull never
 
     if ! wait_for_health "$TARGET_RELEASE"; then
@@ -188,17 +240,25 @@ case "$ACTION" in
     fi
 
     printf '%s\n' "$TARGET_RELEASE" > "$STATE_DIR/current"
+    printf '%s\n' "$TARGET_SOURCE_SHA" > "$STATE_DIR/current-source-sha"
     if [[ -n "$CURRENT_RELEASE" && "$CURRENT_RELEASE" != "$TARGET_RELEASE" ]]; then
       printf '%s\n' "$CURRENT_RELEASE" > "$STATE_DIR/previous"
+      if [[ -n "$CURRENT_SOURCE_SHA" ]]; then
+        printf '%s\n' "$CURRENT_SOURCE_SHA" > "$STATE_DIR/previous-source-sha"
+      fi
     fi
-    chmod 600 "$STATE_DIR/current"
+    chmod 600 "$STATE_DIR/current" "$STATE_DIR/current-source-sha"
     [[ ! -f "$STATE_DIR/previous" ]] || chmod 600 "$STATE_DIR/previous"
-    log "ROLLBACK PASS current=$TARGET_RELEASE previous=${CURRENT_RELEASE:-none}"
+    [[ ! -f "$STATE_DIR/previous-source-sha" ]] || chmod 600 "$STATE_DIR/previous-source-sha"
+    log "ROLLBACK PASS current=$TARGET_RELEASE source_sha=$TARGET_SOURCE_SHA previous=${CURRENT_RELEASE:-none}"
     ;;
 
   status)
+    ensure_state_dir
     printf 'current=%s\n' "$(current_release)"
+    printf 'current_source_sha=%s\n' "$(current_source_sha)"
     printf 'previous=%s\n' "$(previous_release)"
+    printf 'previous_source_sha=%s\n' "$(previous_source_sha)"
     ;;
 
   *)

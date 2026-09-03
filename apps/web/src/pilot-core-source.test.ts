@@ -9,6 +9,7 @@ async function read(relativePath: string): Promise<string> {
 test('pilot core keeps the complete grower journey wired end to end', async () => {
   const app = await read('./App.tsx');
   const deliveryEntry = await read('./DeliveryEntryCard.tsx');
+  const campaignDocuments = await read('./CampaignDocuments.tsx');
   const api = await read('./api.ts');
   const deliveryRoutes = await read('../../api/src/delivery-routes.ts');
   const resultRoutes = await read('../../api/src/delivery-result-routes.ts');
@@ -32,6 +33,11 @@ test('pilot core keeps the complete grower journey wired end to end', async () =
   assert.match(deliveryEntry, /Rendimiento pendiente/);
   assert.match(deliveryEntry, /Rendimiento \$\{formatYield\(yieldPercent\)\}/);
   assert.match(deliveryEntry, /magina:yield-saved/);
+
+  assert.match(campaignDocuments, /\/api\/v1\/campaigns\/\$\{campaignId\}\/export\.csv/);
+  assert.match(campaignDocuments, /\/api\/v1\/campaigns\/\$\{campaignId\}\/export\.json/);
+  assert.match(campaignDocuments, /Descargar CSV/);
+  assert.match(campaignDocuments, /Descargar JSON/);
 
   assert.match(api, /queueDeliveryOffline/);
   assert.match(api, /\/api\/v1\/campaigns\/\$\{campaignId\}\/deliveries/);

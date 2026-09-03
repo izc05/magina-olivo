@@ -19,6 +19,21 @@ type Preferences = {
   updatedAt?: string;
 };
 
+type AccountExport = {
+  id: string;
+  schemaVersion: number;
+  status: 'requested' | 'generating' | 'ready' | 'expired' | 'failed';
+  filename: string;
+  sizeBytes: string | null;
+  sha256: string | null;
+  error: string | null;
+  requestedAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  expiresAt: string | null;
+  downloadUrl: string | null;
+};
+
 const DEFAULT_PREFERENCES: Preferences = {
   preferredCooperativeId: null,
   notifyWeather: true,
@@ -47,12 +62,33 @@ async function jsonRequest<T>(url: string, init: RequestInit = {}): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+function exportStatusLabel(status: AccountExport['status']): string {
+  switch (status) {
+    case 'requested': return 'En cola';
+    case 'generating': return 'Preparando';
+    case 'ready': return 'Lista';
+    case 'expired': return 'Caducada';
+    case 'failed': return 'Error';
+  }
+}
+
+function formatBytes(value: string | null): string | null {
+  if (!value) return null;
+  const bytes = Number(value);
+  if (!Number.isFinite(bytes)) return null;
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function AccountPage() {
   const [user, setUser] = useState<User | null>(null);
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [preferences, setPreferences] = useState<Preferences>(DEFAULT_PREFERENCES);
+  const [exports, setExports] = useState<AccountExport[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -62,15 +98,17 @@ export function AccountPage() {
       setLoading(true);
       setError(null);
       try {
-        const [session, preferenceResult, directory] = await Promise.all([
+        const [session, preferenceResult, directory, exportResult] = await Promise.all([
           jsonRequest<{ user: User }>('/api/v1/me'),
           jsonRequest<Preferences>('/api/v1/account/preferences'),
           jsonRequest<{ items: Destination[] }>('/api/v1/public/destinations'),
+          jsonRequest<{ items: AccountExport[] }>('/api/v1/account/exports'),
         ]);
         if (cancelled) return;
         setUser(session.user);
         setPreferences(preferenceResult);
         setDestinations(directory.items);
+        setExports(exportResult.items);
       } catch (reason) {
         if (!cancelled) setError(reason instanceof Error ? reason.message : 'No se ha podido cargar Mi Cuenta.');
       } finally {
@@ -85,6 +123,25 @@ export function AccountPage() {
     () => destinations.find((item) => item.id === preferences.preferredCooperativeId) ?? null,
     [destinations, preferences.preferredCooperativeId],
   );
+  const latestExport = exports[0] ?? null;
+
+  useEffect(() => {
+    if (!latestExport || !['requested', 'generating'].includes(latestExport.status)) return;
+    let cancelled = false;
+    const timer = window.setInterval(() => {
+      void jsonRequest<{ items: AccountExport[] }>('/api/v1/account/exports')
+        .then((result) => {
+          if (!cancelled) setExports(result.items);
+        })
+        .catch(() => {
+          // Keep the last known state; a transient polling failure is not destructive.
+        });
+    }, 2000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [latestExport?.id, latestExport?.status]);
 
   async function save() {
     setBusy(true);
@@ -109,6 +166,23 @@ export function AccountPage() {
       setError(reason instanceof Error ? reason.message : 'No se han podido guardar las preferencias.');
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function requestExport() {
+    setExportBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const result = await jsonRequest<{ export: AccountExport }>('/api/v1/account/exports', {
+        method: 'POST',
+      });
+      setExports((current) => [result.export, ...current.filter((item) => item.id !== result.export.id)]);
+      setNotice(result.export.status === 'ready' ? 'Ya tienes una copia preparada y vigente.' : 'Copia solicitada. Puedes seguir usando la aplicación mientras se prepara.');
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'No se ha podido solicitar la copia de tus datos.');
+    } finally {
+      setExportBusy(false);
     }
   }
 
@@ -195,9 +269,32 @@ export function AccountPage() {
         </section>
 
         <section className="section card card-body account-privacy-card">
-          <h2 className="section-title account-section-title">Tus datos</h2>
-          <p className="section-copy">Tus fincas, campañas y documentos son privados por defecto. La exportación por campaña ya está disponible dentro de cada campaña.</p>
-          <p className="section-copy"><strong>Copia integral y baja:</strong> no mostraremos acciones destructivas o de portabilidad total hasta que el flujo completo de autorización, exportación y supresión esté implementado y probado.</p>
+          <h2 className="section-title account-section-title">Copia de tus datos</h2>
+          <p className="section-copy">Puedes preparar una copia estructurada y versionada de tu perfil, preferencias y de las explotaciones donde eres propietario: fincas, parcelas, campañas, entregas, rendimientos, labores e índice de documentos.</p>
+          <p className="section-copy"><strong>Importante:</strong> esta fase no incluye todavía los archivos binarios originales dentro de un ZIP. El índice sí conserva nombre, tipo, tamaño y hash cuando existe; los documentos siguen disponibles mediante descarga privada.</p>
+
+          {latestExport ? (
+            <div className="card list-card account-export-status">
+              <div className="list-card-main">
+                <p className="list-card-title">{exportStatusLabel(latestExport.status)}</p>
+                <p className="list-card-meta">
+                  Solicitada {new Date(latestExport.requestedAt).toLocaleString('es-ES')}
+                  {formatBytes(latestExport.sizeBytes) ? ` · ${formatBytes(latestExport.sizeBytes)}` : ''}
+                </p>
+                {latestExport.expiresAt && latestExport.status === 'ready' ? <p className="list-card-meta">Disponible hasta {new Date(latestExport.expiresAt).toLocaleString('es-ES')}.</p> : null}
+                {latestExport.error ? <p className="list-card-meta">No se pudo preparar la copia. Puedes volver a solicitarla.</p> : null}
+              </div>
+              {latestExport.downloadUrl ? <a className="secondary-button account-download-link" href={latestExport.downloadUrl}>Descargar JSON</a> : <span className="badge">{exportStatusLabel(latestExport.status)}</span>}
+            </div>
+          ) : null}
+
+          <div className="form-actions account-export-actions">
+            <button className="secondary-button" type="button" onClick={() => void requestExport()} disabled={exportBusy || latestExport?.status === 'requested' || latestExport?.status === 'generating'}>
+              {exportBusy ? 'Solicitando…' : latestExport?.status === 'ready' ? 'Usar copia vigente' : 'Preparar copia de mis datos'}
+            </button>
+          </div>
+
+          <p className="section-copy"><strong>Baja de cuenta:</strong> sigue separada de la exportación. No mostraremos una acción destructiva hasta implementar reautenticación, ownership, revocación de sesiones y política de retención completa.</p>
         </section>
 
         <div className="section form-actions account-save-row">

@@ -5,9 +5,9 @@ export type Holding = { id: string; name: string; municipality: string | null; p
 export type Farm = { id: string; name: string; description: string | null; areaHa: string | null };
 export type Plot = { id: string; name: string; areaHa: string | null; sigpacReference: string | null; irrigationType: string | null; oliveTreeCount: number | null; notes: string | null };
 export type Campaign = { id: string; name: string; seasonStartYear: number; seasonEndYear: number; startDate: string | null; status: string; notes: string | null };
-export type Delivery = { id: string; deliveredAt: string; kilograms: string; customDestination: string | null; farmId: string | null; plotId: string | null; ticketNumber: string | null; variety: string | null; verificationStatus: string; version: number };
+export type Delivery = { id: string; deliveredAt: string; kilograms: string; cooperativeId: string | null; customDestination: string | null; farmId: string | null; plotId: string | null; ticketNumber: string | null; variety: string | null; verificationStatus: string; version: number };
 export type CampaignSummary = { campaignId: string; deliveriesCount: number; totalKilograms: string; deliveriesWithResult: number; pendingResultCount: number; resultCoveredKilograms: string; coveragePercent: string | null; weightedYieldPercent: string | null };
-export type DeliveryCreateBody = { deliveredAt: string; kilograms: string; customDestination: string; farmId?: string; plotId?: string; ticketNumber?: string; variety?: string; notes?: string; clientGeneratedId: string };
+export type DeliveryCreateBody = { deliveredAt: string; kilograms: string; cooperativeId?: string; customDestination?: string; farmId?: string; plotId?: string; ticketNumber?: string; variety?: string; notes?: string; clientGeneratedId: string };
 export type DeliveryCreateResult = Delivery | { offlineQueued: true; clientGeneratedId: string };
 
 export type ActivityType =

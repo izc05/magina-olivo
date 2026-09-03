@@ -74,12 +74,12 @@ export function MaginaHubPage() {
           <strong>No diagnostica tu parcela</strong>
         </article>
 
-        <article className="card magina-hub-card pending">
-          <span className="badge">Siguiente fase</span>
-          <h2>Mercado y noticias</h2>
-          <p>Información del aceite, cooperativas y actualidad local con fuentes verificadas y fecha visible.</p>
-          <strong>Sin datos privados</strong>
-        </article>
+        <a className="card magina-hub-card ready" href="/magina/mercado">
+          <span className="badge gold">Fuente oficial</span>
+          <h2>Aceite y mercado</h2>
+          <p>Publicaciones del Observatorio con fecha visible y control de frescura antes de mostrar precios estructurados.</p>
+          <strong>Ver contexto de mercado →</strong>
+        </a>
       </section>
 
       <section className="magina-source-section" aria-labelledby="source-health-title">

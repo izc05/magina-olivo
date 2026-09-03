@@ -11,7 +11,6 @@ import {
   MapPinned,
   Mountain,
   Ruler,
-  Scissors,
   Settings2,
   Sprout,
   Tractor,
@@ -27,6 +26,7 @@ import { demoRepositories } from '../../data/demo/repositories';
 import { loadFieldOverview, type FieldOverviewData } from '../../data/fieldOverview';
 import type { Parcel } from '../../domain/models';
 import { FarmManagementPanel } from './FarmManagementPanel';
+import { FieldJournalPanel } from './FieldJournalPanel';
 
 type FieldPageProps = {
   onNavigate: AppNavigate;
@@ -36,13 +36,6 @@ type FieldPageProps = {
 
 type FieldPrimaryTab = 'overview' | 'journal' | 'campaign' | 'management';
 type ManagementMode = 'costs' | 'machinery';
-
-const journalEntries = [
-  { date: '02 SEP', title: 'Tratamiento', detail: 'Cobre + aceite · Parcela 3', meta: 'Completado', icon: Leaf },
-  { date: '31 AGO', title: 'Riego', detail: 'Parcela 2 · 30 mm', meta: 'Completado', icon: Droplets },
-  { date: '29 AGO', title: 'Poda en verde', detail: 'Parcela 1', meta: 'Completado', icon: Scissors },
-  { date: '22 AGO', title: 'Abonado', detail: 'Parcela 3 · Los Llanos', meta: 'Registrado', icon: Sprout },
-];
 
 function getInitialPrimaryTab(initialTab: FieldTarget): FieldPrimaryTab {
   return initialTab === 'costs' || initialTab === 'machinery' ? 'management' : initialTab;
@@ -254,32 +247,7 @@ export function FieldPage({
         )}
 
         {tab === 'journal' && (
-          <section className="section-block section-block--last">
-            <div className="section-heading">
-              <div><span className="eyebrow">Cuaderno de campo</span><h1>Actividad reciente</h1></div>
-              <button className="text-action" type="button">Filtrar</button>
-            </div>
-
-            <div className="journal-filters">
-              <button type="button" className="journal-filter journal-filter--active">Todas</button>
-              <button type="button" className="journal-filter">Tratamientos</button>
-              <button type="button" className="journal-filter">Riego</button>
-              <button type="button" className="journal-filter">Labores</button>
-            </div>
-
-            <div className="journal-list">
-              {journalEntries.map(({ date, title, detail, meta, icon: Icon }) => (
-                <article key={`${date}-${title}`} className="journal-entry">
-                  <div className="journal-entry__date">{date}</div>
-                  <div className="journal-entry__icon"><Icon size={20} /></div>
-                  <div className="journal-entry__copy"><strong>{title}</strong><span>{detail}</span></div>
-                  <small>{meta}</small>
-                </article>
-              ))}
-            </div>
-
-            <button className="primary-button primary-button--wide" type="button">+ Nueva anotación</button>
-          </section>
+          <FieldJournalPanel repositories={repositories} farmId={farm.id} />
         )}
 
         {tab === 'campaign' && (

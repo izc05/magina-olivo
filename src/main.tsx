@@ -8,6 +8,7 @@ import './styles/field-map-v2.css';
 import './styles/responsive.css';
 import './styles/navigation-v2.css';
 import './styles/polish-v23.css';
+import './styles/market-v25.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

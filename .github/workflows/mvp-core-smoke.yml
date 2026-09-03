@@ -44,6 +44,15 @@ jobs:
       - name: Verify staging release source guard
         run: bash scripts/staging-release-source-gate.sh
 
+      - name: Verify Cloudflare Access gate configuration guard
+        run: |
+          if CF_ACCESS_CLIENT_ID=ci-only-id API_BASE=http://127.0.0.1:9 bash scripts/mvp-core-flow-gate.sh > /tmp/mvp-access-guard.log 2>&1; then
+            echo 'MVP gate unexpectedly accepted a partial Cloudflare Access service token'
+            cat /tmp/mvp-access-guard.log
+            exit 1
+          fi
+          grep -q 'both CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET must be set' /tmp/mvp-access-guard.log
+
       - name: Build web PWA
         run: npm run build --workspace @magina/web
 

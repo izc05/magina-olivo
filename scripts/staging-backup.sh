@@ -94,6 +94,8 @@ select 'holdings', count(*) from holdings;
 select 'farms', count(*) from farms;
 select 'plots', count(*) from plots;
 select 'campaigns', count(*) from campaigns;
+select 'activities', count(*) from activities;
+select 'tasks', count(*) from tasks;
 select 'deliveries', count(*) from deliveries;
 select 'delivery_results', count(*) from delivery_results;
 select 'documents', count(*) from documents;

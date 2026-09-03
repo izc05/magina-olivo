@@ -32,7 +32,21 @@ current_release() {
 }
 
 current_source_sha() {
-  [[ -f "$STATE_DIR/current_source_sha" ]] && cat "$STATE_DIR/current_source_sha" || true
+  if [[ -f "$STATE_DIR/current-source-sha" ]]; then
+    cat "$STATE_DIR/current-source-sha"
+  elif [[ -f "$STATE_DIR/current_source_sha" ]]; then
+    # Backward-compatible read for any pre-fix local state. New deployments use
+    # the canonical hyphenated filename written by staging-release.sh.
+    cat "$STATE_DIR/current_source_sha"
+  fi
+}
+
+assert_deployed_traceability() {
+  local release source_sha
+  release="$(current_release)"
+  source_sha="$(current_source_sha)"
+  [[ -n "$release" ]] || fail "staging release state is missing after deploy"
+  [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || fail "deployed source SHA is missing or invalid: '${source_sha:-empty}'"
 }
 
 run_preflight() {
@@ -50,6 +64,7 @@ run_deploy_local() {
   run_preflight
   log "Deploying release=$release"
   bash scripts/staging-release.sh deploy "$release"
+  assert_deployed_traceability
 
   log "Running post-deploy isolation gate"
   bash scripts/staging-host-postdeploy-gate.sh

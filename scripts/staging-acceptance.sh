@@ -27,6 +27,25 @@ require_staging_env() {
   require_file "$STAGING_ENV_FILE"
 }
 
+checkout_source_sha() {
+  git rev-parse HEAD 2>/dev/null || true
+}
+
+assert_expected_checkout() {
+  require_env STAGING_EXPECTED_SOURCE_SHA
+  [[ "$STAGING_EXPECTED_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] \
+    || fail "STAGING_EXPECTED_SOURCE_SHA must be the approved 40-character lowercase Git SHA"
+
+  local checkout_sha
+  checkout_sha="$(checkout_source_sha)"
+  [[ "$checkout_sha" =~ ^[0-9a-f]{40}$ ]] \
+    || fail "unable to resolve the current checkout source SHA"
+  [[ "$checkout_sha" = "$STAGING_EXPECTED_SOURCE_SHA" ]] \
+    || fail "checkout source SHA $checkout_sha does not match approved staging SHA $STAGING_EXPECTED_SOURCE_SHA"
+
+  log "Approved staging source confirmed sha=$checkout_sha"
+}
+
 current_release() {
   [[ -f "$STATE_DIR/current" ]] && cat "$STATE_DIR/current" || true
 }
@@ -47,10 +66,13 @@ assert_deployed_traceability() {
   source_sha="$(current_source_sha)"
   [[ -n "$release" ]] || fail "staging release state is missing after deploy"
   [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || fail "deployed source SHA is missing or invalid: '${source_sha:-empty}'"
+  [[ "$source_sha" = "$STAGING_EXPECTED_SOURCE_SHA" ]] \
+    || fail "deployed source SHA $source_sha does not match approved staging SHA $STAGING_EXPECTED_SOURCE_SHA"
 }
 
 run_preflight() {
   require_staging_env
+  assert_expected_checkout
   log "Running host preflight"
   bash scripts/staging-host-preflight.sh
 }
@@ -126,6 +148,8 @@ run_restore() {
 show_status() {
   printf 'release=%s\n' "$(current_release)"
   printf 'source_sha=%s\n' "$(current_source_sha)"
+  printf 'expected_source_sha=%s\n' "${STAGING_EXPECTED_SOURCE_SHA:-unset}"
+  printf 'checkout_source_sha=%s\n' "$(checkout_source_sha)"
   printf 'staging_env=%s\n' "${STAGING_ENV_FILE:-unset}"
   printf 'staging_base_url=%s\n' "${STAGING_BASE_URL:-unset}"
   printf 'public_weather_municipality=%s\n' "${STAGING_PUBLIC_WEATHER_MUNICIPALITY:-bedmar-y-garciez}"

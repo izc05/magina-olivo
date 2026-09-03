@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   smoke:
+    name: Technical Spike Gate
     runs-on: ubuntu-latest
     timeout-minutes: 25
 

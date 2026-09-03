@@ -26,13 +26,3 @@ create index weather_alert_events_user_active_idx
 
 comment on table weather_alert_events is
   'Server-generated contextual weather alerts. V1 stores rain alerts derived from AEMET daily municipal precipitation probability; these are not official AEMET warning levels nor parcel-level diagnoses.';
-
-insert into job_queue (id, kind, payload, dedupe_key, run_after)
-values (
-  '00000000-0000-4000-8000-000000000017',
-  'weather.rain.scan',
-  '{}'::jsonb,
-  'weather.rain.scan:bootstrap',
-  now()
-)
-on conflict do nothing;

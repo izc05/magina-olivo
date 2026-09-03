@@ -55,6 +55,7 @@ for key in \
   BETTER_AUTH_SECRET \
   BETTER_AUTH_URL \
   BETTER_AUTH_TRUSTED_ORIGINS \
+  AEMET_API_KEY \
   OBJECT_STORAGE_ENDPOINT \
   OBJECT_STORAGE_BUCKET \
   OBJECT_STORAGE_ACCESS_KEY_ID \
@@ -124,4 +125,4 @@ else
   warn "ss unavailable; Mágina host-port exposure will be verified after deploy via Docker inspect"
 fi
 
-log "PASS linux=$(uname -m) docker=yes compose=yes env_mode=$ENV_MODE free_kb=$AVAILABLE_KB"
+log "PASS linux=$(uname -m) docker=yes compose=yes env_mode=$ENV_MODE free_kb=$AVAILABLE_KB aemet=yes"

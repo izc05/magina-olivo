@@ -32,15 +32,53 @@ fi
 grep -q 'refusing to build staging from a dirty working tree' "$LOG_FILE"
 rm -f "$DIRTY_MARKER"
 
-# Status is non-destructive and should expose the source-SHA fields even before
-# the first deploy, making the evidence contract stable for operators/tools.
+# The acceptance wrapper must refuse to proceed when no approved source SHA was
+# supplied. This must happen before host/Docker validation.
+if STAGING_ENV_FILE="$ENV_FILE" \
+  MAGINA_STAGING_STATE_DIR="$STATE_DIR" \
+  bash scripts/staging-acceptance.sh preflight >"$LOG_FILE" 2>&1; then
+  cat "$LOG_FILE"
+  echo '[staging-release-source-gate] ERROR: preflight accepted a missing approved source SHA'
+  exit 1
+fi
+grep -q 'required environment variable is missing: STAGING_EXPECTED_SOURCE_SHA' "$LOG_FILE"
+
+# A syntactically valid but different 40-character SHA must also be rejected
+# before any host preflight action is reached.
+ACTUAL_SHA="$(git rev-parse HEAD)"
+WRONG_SHA="0000000000000000000000000000000000000000"
+[[ "$ACTUAL_SHA" != "$WRONG_SHA" ]] || WRONG_SHA="1111111111111111111111111111111111111111"
+if STAGING_ENV_FILE="$ENV_FILE" \
+  STAGING_EXPECTED_SOURCE_SHA="$WRONG_SHA" \
+  MAGINA_STAGING_STATE_DIR="$STATE_DIR" \
+  bash scripts/staging-acceptance.sh preflight >"$LOG_FILE" 2>&1; then
+  cat "$LOG_FILE"
+  echo '[staging-release-source-gate] ERROR: preflight accepted an unapproved checkout SHA'
+  exit 1
+fi
+grep -q 'does not match approved staging SHA' "$LOG_FILE"
+
+# Status is non-destructive and must expose both the approved expected SHA and
+# the current checkout SHA, in addition to deployed-source metadata.
 STATUS_OUTPUT="$(
+  STAGING_EXPECTED_SOURCE_SHA="$ACTUAL_SHA" \
+  STAGING_ENV_FILE="$ENV_FILE" \
+  MAGINA_STAGING_STATE_DIR="$STATE_DIR" \
+  bash scripts/staging-acceptance.sh status
+)"
+printf '%s\n' "$STATUS_OUTPUT"
+grep -q '^source_sha=' <<<"$STATUS_OUTPUT"
+grep -q "^expected_source_sha=$ACTUAL_SHA$" <<<"$STATUS_OUTPUT"
+grep -q "^checkout_source_sha=$ACTUAL_SHA$" <<<"$STATUS_OUTPUT"
+
+# staging-release.sh status remains stable for lower-level release tooling.
+RELEASE_STATUS_OUTPUT="$(
   STAGING_ENV_FILE="$ENV_FILE" \
   MAGINA_STAGING_STATE_DIR="$STATE_DIR" \
   bash scripts/staging-release.sh status
 )"
-printf '%s\n' "$STATUS_OUTPUT"
-grep -q '^current_source_sha=' <<<"$STATUS_OUTPUT"
-grep -q '^previous_source_sha=' <<<"$STATUS_OUTPUT"
+printf '%s\n' "$RELEASE_STATUS_OUTPUT"
+grep -q '^current_source_sha=' <<<"$RELEASE_STATUS_OUTPUT"
+grep -q '^previous_source_sha=' <<<"$RELEASE_STATUS_OUTPUT"
 
-printf '[staging-release-source-gate] PASS dirty-checkout rejection and source metadata contract\n'
+printf '[staging-release-source-gate] PASS dirty-checkout=yes expected-source-required=yes mismatch-rejected=yes source-metadata=yes\n'

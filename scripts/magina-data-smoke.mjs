@@ -41,15 +41,17 @@ async function run() {
     await nav.getByRole('button', { name: 'Mágina', exact: true }).click();
     await page.locator('.hub-tabs--primary').waitFor({ state: 'visible' });
 
-    // Cooperativas: directorio real, búsqueda, ficha, aceites, precios y noticias.
+    // Cooperativas: directorio real, sincronización de tiendas, ficha, aceites, precios y noticias propias.
     await page.locator('.hub-tabs--primary').getByRole('button', { name: 'Cooperativas', exact: true }).click();
     const coopList = page.locator('.coop-list--verified');
     await coopList.waitFor({ state: 'visible' });
     assert(await page.locator('.coop-card--territorial').count() >= 10, 'Cooperativas: el directorio no contiene el mínimo esperado.');
+    await page.locator('.coop-sync-status').waitFor({ state: 'visible', timeout: 10_000 });
+    await page.getByText(/precios comprobados automáticamente/i).waitFor({ state: 'visible' });
     await assertNoOverflow(page, 'Cooperativas');
 
     const search = page.getByRole('textbox', { name: 'Buscar cooperativas' });
-    await search.fill('Bélmez');
+    await search.fill('Jódar');
     await page.locator('.coop-card--territorial').first().waitFor({ state: 'visible', timeout: 10_000 });
     assert(await page.locator('.coop-card--territorial').count() >= 1, 'Cooperativas: la búsqueda por municipio no devuelve resultados.');
     await page.locator('.coop-card--territorial').first().getByRole('button', { name: 'Ver ficha', exact: true }).click();
@@ -59,9 +61,8 @@ async function run() {
 
     const detailTabs = page.locator('.coop-detail-tabs');
     await detailTabs.getByRole('button', { name: 'Aceites', exact: true }).click();
-    await page.getByText('La Perla de Mágina', { exact: true }).first().waitFor({ state: 'visible' });
-    assert(await page.locator('.coop-product-card').count() >= 3, 'Cooperativas: La Perla no muestra los productos verificados esperados.');
-    await page.getByText('88,50 € / caja', { exact: true }).first().waitFor({ state: 'visible' });
+    await page.getByText('La Quinta Esencia Cosecha Temprana', { exact: true }).first().waitFor({ state: 'visible' });
+    assert(await page.locator('.coop-product-card').count() >= 3, 'Cooperativas: La Quinta Esencia no muestra los productos verificados esperados.');
     assert(await page.getByText(/Precio de tienda · verificado/i).count() >= 3, 'Cooperativas: faltan fechas de precio de tienda verificadas.');
 
     await detailTabs.getByRole('button', { name: 'Precios', exact: true }).click();
@@ -76,6 +77,8 @@ async function run() {
 
     await detailTabs.getByRole('button', { name: 'Noticias', exact: true }).click();
     await page.getByText('Noticias relacionadas', { exact: true }).waitFor({ state: 'visible' });
+    await page.locator('.coop-direct-news').waitFor({ state: 'visible' });
+    assert(await page.getByRole('link', { name: /Noticias oficiales de La Quinta Esencia/i }).count() === 1, 'Cooperativas: falta el acceso a noticias oficiales de La Quinta Esencia.');
     const relatedCount = await page.locator('.coop-related-news a').count();
     const emptyCount = await page.locator('.coop-empty-state').count();
     assert(relatedCount >= 1 || emptyCount === 1, 'Cooperativas: la pestaña Noticias no presenta resultados ni estado vacío válido.');
@@ -106,7 +109,7 @@ async function run() {
     await assertNoOverflow(page, 'Alertas');
 
     await context.close();
-    console.log('✓ Smoke Mágina: cooperativa con tienda, aceites, precios separados, noticias, mercado y alertas funcionan en 390×844 y bajo /magina-olivo/.');
+    console.log('✓ Smoke Mágina: sincronización de tiendas, cooperativa con precios separados, noticias oficiales, mercado y alertas funcionan en 390×844 y bajo /magina-olivo/.');
   } finally {
     if (browser) await browser.close();
     await closePreview(previewServer);

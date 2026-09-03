@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - feat/integration-v2-mvp-v1
-      - feat/parcel-source-comparison-v1
   workflow_dispatch:
 
 permissions:

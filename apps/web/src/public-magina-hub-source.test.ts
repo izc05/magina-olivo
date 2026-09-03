@@ -12,9 +12,11 @@ test('Mágina public hub links only to implemented public surfaces', async () =>
   assert.match(page, /href="\/magina\/tiempo"/);
   assert.match(page, /href="\/magina\/directorio"/);
   assert.match(page, /href="\/magina\/campo"/);
+  assert.match(page, /href="\/magina\/noticias"/);
   assert.match(page, /href="\/magina\/mercado"/);
   assert.match(page, /RAIF/);
   assert.match(page, /Campo y alertas/);
+  assert.match(page, /Noticias/);
   assert.match(page, /\/api\/v1\/public\/sources/);
 });
 
@@ -24,6 +26,8 @@ test('main router exposes public Mágina surfaces without requiring the private 
   assert.match(main, /<MaginaHubPage \/>/);
   assert.match(main, /path === '\/magina\/campo'/);
   assert.match(main, /<MaginaFieldAlertsPage \/>/);
+  assert.match(main, /path === '\/magina\/noticias'/);
+  assert.match(main, /<MaginaNewsPage \/>/);
   assert.match(main, /path === '\/magina\/mercado'/);
   assert.match(main, /<MaginaMarketPage \/>/);
 });

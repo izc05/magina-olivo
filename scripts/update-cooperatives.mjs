@@ -9,6 +9,8 @@ const sourceOverrides = {
   'san-roque-carchelejo': 'https://tierrasdelmarquesado.com/categoria-producto/seleccion/',
 };
 
+const productScopedCatalogs = new Set(['san-roque-carchelejo']);
+
 function decodeEntities(value = '') {
   return value
     .replaceAll('&amp;', '&')
@@ -126,7 +128,9 @@ async function fetchHtml(url) {
     signal: AbortSignal.timeout(12_000),
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return response.text();
+  const html = await response.text();
+  if (/please wait while your request is being verified/i.test(html)) throw new Error('protección anti-bot');
+  return html;
 }
 
 async function main() {
@@ -171,7 +175,7 @@ async function main() {
       const current = parseAmount(product.storePriceLabel);
       if (current == null) continue;
 
-      const scoped = priceNearProduct(html, product.name);
+      const scoped = productScopedCatalogs.has(cooperative.id) ? priceNearProduct(html, product.name) : null;
       if (scoped != null && scoped >= current * 0.4 && scoped <= current * 2.5) {
         if (Math.abs(scoped - current) > 0.001) {
           product.storePriceLabel = replaceAmount(product.storePriceLabel, scoped);

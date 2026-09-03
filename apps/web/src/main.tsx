@@ -4,6 +4,7 @@ import { registerSW } from 'virtual:pwa-register';
 import { App } from './App';
 import { ConnectivityStatus } from './ConnectivityStatus';
 import { MaginaDirectoryPage } from './MaginaDirectoryPage';
+import { MaginaFieldAlertsPage } from './MaginaFieldAlertsPage';
 import { MaginaHubPage } from './MaginaHubPage';
 import { MaginaMarketPage } from './MaginaMarketPage';
 import { MaginaWeatherPage } from './MaginaWeatherPage';
@@ -21,6 +22,7 @@ import './magina-directory.css';
 import './magina-weather.css';
 import './magina-hub.css';
 import './magina-market.css';
+import './magina-field-alerts.css';
 import './integration-v2.css';
 import './field-v2-integration.css';
 import './journal-v2-integration.css';
@@ -49,6 +51,8 @@ createRoot(root).render(
       <MaginaDirectoryPage />
     ) : path === '/magina/tiempo' ? (
       <MaginaWeatherPage />
+    ) : path === '/magina/campo' ? (
+      <MaginaFieldAlertsPage />
     ) : path === '/magina/mercado' ? (
       <MaginaMarketPage />
     ) : (

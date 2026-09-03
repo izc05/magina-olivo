@@ -10,6 +10,7 @@ import './connectivity.css';
 import './navigation-v2.css';
 import './notices.css';
 import './field-notebook.css';
+import './delivery-entry.css';
 
 registerSW({
   immediate: true,

@@ -30,6 +30,7 @@ export function DeliveryEntryCard({
   const [plots, setPlots] = useState<Plot[]>([]);
   const [plotId, setPlotId] = useState('');
   const [destinations, setDestinations] = useState<DestinationSuggestion[]>([]);
+  const [destinationText, setDestinationText] = useState('');
   const [ticketFile, setTicketFile] = useState<File | null>(null);
   const [loadingPlots, setLoadingPlots] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -82,11 +83,12 @@ export function DeliveryEntryCard({
     const form = event.currentTarget;
     const data = new FormData(form);
     const kilograms = String(data.get('kilograms') || '').trim();
-    const destination = String(data.get('destination') || '').trim();
+    const destination = destinationText.trim();
     const deliveredAt = String(data.get('deliveredAt') || '').trim();
     const ticketNumber = String(data.get('ticketNumber') || '').trim();
     const variety = String(data.get('variety') || '').trim();
     const notes = String(data.get('notes') || '').trim();
+    const canonicalDestination = destinations.find((item) => item.officialName === destination);
 
     setBusy(true);
     setError(null);
@@ -99,6 +101,7 @@ export function DeliveryEntryCard({
         deliveredAt: string;
         kilograms: string;
         customDestination: string;
+        cooperativeId?: string;
         clientGeneratedId: string;
         farmId?: string;
         plotId?: string;
@@ -112,6 +115,7 @@ export function DeliveryEntryCard({
         clientGeneratedId,
       };
 
+      if (canonicalDestination) body.cooperativeId = canonicalDestination.id;
       if (farmId) body.farmId = farmId;
       if (plotId) body.plotId = plotId;
       if (ticketNumber) body.ticketNumber = ticketNumber;
@@ -135,6 +139,7 @@ export function DeliveryEntryCard({
       }
 
       form.reset();
+      setDestinationText('');
       setFarmId('');
       setPlots([]);
       setPlotId('');
@@ -173,6 +178,8 @@ export function DeliveryEntryCard({
               maxLength={200}
               placeholder="San Sebastián"
               aria-describedby="delivery-destination-help"
+              value={destinationText}
+              onChange={(event) => setDestinationText(event.target.value)}
               required
             />
             <datalist id="magina-destination-suggestions">

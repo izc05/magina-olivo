@@ -7,6 +7,7 @@ import { MaginaDirectoryPage } from './MaginaDirectoryPage';
 import { MaginaFieldAlertsPage } from './MaginaFieldAlertsPage';
 import { MaginaHubPage } from './MaginaHubPage';
 import { MaginaMarketPage } from './MaginaMarketPage';
+import { MaginaNewsPage } from './MaginaNewsPage';
 import { MaginaWeatherPage } from './MaginaWeatherPage';
 import { NoticeCenter } from './NoticeCenter';
 import { ResetPassword } from './ResetPassword';
@@ -55,6 +56,8 @@ createRoot(root).render(
       <MaginaWeatherPage />
     ) : path === '/magina/campo' ? (
       <MaginaFieldAlertsPage />
+    ) : path === '/magina/noticias' ? (
+      <MaginaNewsPage />
     ) : path === '/magina/mercado' ? (
       <MaginaMarketPage />
     ) : (

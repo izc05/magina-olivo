@@ -11,6 +11,7 @@ import {
   type Plot,
   type User,
 } from './api';
+import { FieldNotebook } from './FieldNotebook.tsx';
 
 type Tab = 'home' | 'field' | 'campaign' | 'magina' | 'more';
 type SessionState = 'checking' | 'signed_out' | 'signed_in';
@@ -280,11 +281,14 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
       </section>
       <CreateFarmCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} />
     </> : null}
-    {selectedFarm ? <section className="section"><div className="section-heading"><div><h2 className="section-title">Parcelas de {selectedFarm.name}</h2><p className="section-copy">SIGPAC, superficie, olivos y tipo de riego.</p></div></div>
-      {plots.map((plot) => <article className="card list-card" key={plot.id}><div className="list-card-main"><p className="list-card-title">{plot.name}</p><p className="list-card-meta">{plot.areaHa ? `${plot.areaHa} ha` : 'Sin superficie'} · {plot.oliveTreeCount ?? '—'} olivos · {plot.irrigationType || 'riego sin definir'}</p></div><span className="badge">{plot.sigpacReference ? 'SIGPAC' : 'Manual'}</span></article>)}
-      {!plots.length ? <EmptyState title="Sin parcelas todavía">Añade una para construir su línea de tiempo.</EmptyState> : null}
-      <CreatePlotCard farmId={selectedFarm.id} busy={busy} runAction={runAction} onCreated={reloadPlots} />
-    </section> : null}
+    {selectedFarm && selectedHolding ? <>
+      <section className="section"><div className="section-heading"><div><h2 className="section-title">Parcelas de {selectedFarm.name}</h2><p className="section-copy">SIGPAC, superficie, olivos y tipo de riego.</p></div></div>
+        {plots.map((plot) => <article className="card list-card" key={plot.id}><div className="list-card-main"><p className="list-card-title">{plot.name}</p><p className="list-card-meta">{plot.areaHa ? `${plot.areaHa} ha` : 'Sin superficie'} · {plot.oliveTreeCount ?? '—'} olivos · {plot.irrigationType || 'riego sin definir'}</p></div><span className="badge">{plot.sigpacReference ? 'SIGPAC' : 'Manual'}</span></article>)}
+        {!plots.length ? <EmptyState title="Sin parcelas todavía">Añade una para construir su línea de tiempo.</EmptyState> : null}
+        <CreatePlotCard farmId={selectedFarm.id} busy={busy} runAction={runAction} onCreated={reloadPlots} />
+      </section>
+      <FieldNotebook holdingId={selectedHolding.id} farmId={selectedFarm.id} plots={plots} />
+    </> : null}
   </>;
 }
 

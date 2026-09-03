@@ -41,6 +41,7 @@ jobs:
           bash -n scripts/staging-release.sh
           bash -n scripts/staging-release-source-gate.sh
           bash -n scripts/staging-acceptance.sh
+          bash -n scripts/pilot-participant-setup.sh
 
       - name: Verify staging release source guard
         run: bash scripts/staging-release-source-gate.sh
@@ -53,6 +54,18 @@ jobs:
             exit 1
           fi
           grep -q 'both CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET must be set' /tmp/mvp-access-guard.log
+
+      - name: Verify pilot participant Access guard
+        run: |
+          if STAGING_BASE_URL=https://staging.example.com \
+            PILOT_PARTICIPANT_ID=p01 \
+            CF_ACCESS_CLIENT_ID=ci-only-id \
+            bash scripts/pilot-participant-setup.sh > /tmp/pilot-access-guard.log 2>&1; then
+            echo 'Pilot participant setup unexpectedly accepted a partial Cloudflare Access service token'
+            cat /tmp/pilot-access-guard.log
+            exit 1
+          fi
+          grep -q 'both CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET must be set' /tmp/pilot-access-guard.log
 
       - name: Build web PWA
         run: npm run build --workspace @magina/web

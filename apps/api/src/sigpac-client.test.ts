@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildSigpacRecintosUrl, normalizeSigpacFeature, validateSigpacBbox } from './sigpac-client.ts';
+import {
+  buildSigpacRecintoByIdUrl,
+  buildSigpacRecintosUrl,
+  normalizeSigpacFeature,
+  validateSigpacBbox,
+  validateSigpacFeatureId,
+} from './sigpac-client.ts';
 
 test('SIGPAC adapter builds a bounded official OGC API query', () => {
   const url = new URL(buildSigpacRecintosUrl({
@@ -14,6 +20,17 @@ test('SIGPAC adapter builds a bounded official OGC API query', () => {
   assert.equal(url.searchParams.get('f'), 'json');
   assert.equal(url.searchParams.get('bbox'), '-3.51,37.7,-3.5,37.71');
   assert.equal(url.searchParams.get('limit'), '100');
+});
+
+test('SIGPAC adapter builds verified item lookup only from a numeric feature id', () => {
+  assert.equal(validateSigpacFeatureId('233788127'), true);
+  assert.equal(validateSigpacFeatureId('../items'), false);
+  assert.equal(validateSigpacFeatureId('123?f=json'), false);
+
+  const url = new URL(buildSigpacRecintoByIdUrl('233788127'));
+  assert.equal(url.origin, 'https://sigpac-hubcloud.es');
+  assert.equal(url.pathname, '/ogcapi/collections/recintos/items/233788127');
+  assert.equal(url.searchParams.get('f'), 'json');
 });
 
 test('SIGPAC adapter rejects oversized or inverted bbox queries', () => {

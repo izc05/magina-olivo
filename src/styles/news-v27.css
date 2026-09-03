@@ -65,10 +65,10 @@
   .hub-tabs--primary .hub-tab {
     min-width: 0;
     min-height: 40px;
-    padding: 0 3px;
-    overflow: hidden;
-    font-size: 9px;
-    letter-spacing: -.015em;
+    padding: 0 1px;
+    font-size: 8.5px;
+    letter-spacing: -.03em;
+    white-space: nowrap;
   }
 }
 

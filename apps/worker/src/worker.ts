@@ -234,6 +234,60 @@ async function inspectMarketPublicSource(): Promise<void> {
   }
 }
 
+async function ensureRainAlertScanScheduled(): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query('begin');
+    await client.query("select pg_advisory_xact_lock(hashtext('magina-weather-rain-scheduler'))");
+
+    const active = await client.query<{ count: string }>(
+      `
+        select count(*)::text as count
+        from job_queue
+        where kind = 'weather.rain.scan'
+          and status in ('queued', 'retry', 'running')
+      `,
+    );
+
+    if (Number(active.rows[0]?.count ?? '0') === 0) {
+      const revived = await client.query(
+        `
+          update job_queue
+          set status = 'queued',
+              attempts = 0,
+              run_after = now(),
+              locked_at = null,
+              locked_by = null,
+              last_error = null,
+              completed_at = null,
+              updated_at = now()
+          where dedupe_key = 'weather.rain.scan:bootstrap'
+            and status in ('succeeded', 'failed')
+          returning id
+        `,
+      );
+
+      if (revived.rowCount === 0) {
+        await client.query(
+          `
+            insert into job_queue (id, kind, payload, dedupe_key, run_after)
+            values ($1, 'weather.rain.scan', '{}'::jsonb, 'weather.rain.scan:bootstrap', now())
+            on conflict (dedupe_key) do nothing
+          `,
+          [randomUUID()],
+        );
+      }
+    }
+
+    await client.query('commit');
+  } catch (error) {
+    await client.query('rollback');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function scheduleNextRainAlertScan(currentJobId: string): Promise<void> {
   await pool.query(
     `
@@ -341,6 +395,8 @@ async function main(): Promise<void> {
       await runWorkerIteration();
       return;
     }
+
+    await ensureRainAlertScanScheduled();
 
     while (true) {
       const processed = await runWorkerIteration();

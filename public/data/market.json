@@ -1,0 +1,38 @@
+{
+  "generatedAt": "2026-09-03T20:20:00+02:00",
+  "sourceLabel": "Observatorio de Precios y Mercados · Junta de Andalucía",
+  "sourceUrl": "https://www.juntadeandalucia.es/agriculturaypesca/observatorio/servlet/FrontController?action=UltimosPrecios&posicion=2291332&producto=33000&subsector=33",
+  "market": "Almazara o Bodega · Andalucía",
+  "unit": "€/kg",
+  "provisional": false,
+  "periods": [
+    "Sem. 28 · 6–12 jul",
+    "Sem. 29 · 13–19 jul",
+    "Sem. 30 · 20–26 jul",
+    "Sem. 31 · 27 jul–2 ago",
+    "Sem. 32 · 3–9 ago",
+    "Sem. 33 · 10–16 ago",
+    "Sem. 34 · 17–23 ago",
+    "Sem. 35 · 24–30 ago"
+  ],
+  "series": [
+    {
+      "id": "aove",
+      "label": "Virgen Extra",
+      "shortLabel": "AOVE",
+      "values": [3.65, 3.76, 3.58, 3.71, 3.63, 3.42, 3.48, 3.61]
+    },
+    {
+      "id": "virgen",
+      "label": "Virgen",
+      "shortLabel": "Virgen",
+      "values": [3.24, 3.34, 3.25, 3.24, 3.15, 3.28, 3.25, 3.29]
+    },
+    {
+      "id": "lampante",
+      "label": "Lampante (1 g)",
+      "shortLabel": "Lampante",
+      "values": [3.06, 3.05, 2.99, 3.00, 3.01, 3.04, 3.09, 3.14]
+    }
+  ]
+}

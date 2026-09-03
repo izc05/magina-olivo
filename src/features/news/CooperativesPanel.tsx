@@ -1,16 +1,28 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Building2, ChevronRight, ExternalLink, LoaderCircle, MapPin, Search, ShieldCheck } from 'lucide-react';
+import { Building2, ChevronRight, CircleAlert, ExternalLink, LoaderCircle, MapPin, Search, ShieldCheck } from 'lucide-react';
 import { CooperativeDetail, type CooperativeSummary } from './CooperativeDetail';
-import { loadCooperatives, type CooperativeRecord } from './cooperativesFeed';
+import { loadCooperatives, type CooperativeRecord, type CooperativeShopSync } from './cooperativesFeed';
 import '../../styles/cooperatives-v24.css';
 
 type LoadState = 'loading' | 'ready' | 'error';
+
+function formatSyncDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'ahora';
+  return new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
 
 export function CooperativesPanel() {
   const [selected, setSelected] = useState<CooperativeSummary | null>(null);
   const [cooperatives, setCooperatives] = useState<CooperativeRecord[]>([]);
   const [sourceLabel, setSourceLabel] = useState('D.O.P. Sierra Mágina');
   const [sourceUrl, setSourceUrl] = useState('https://aove.sierramagina.org/marcas/');
+  const [shopSync, setShopSync] = useState<CooperativeShopSync | null>(null);
   const [query, setQuery] = useState('');
   const [state, setState] = useState<LoadState>('loading');
 
@@ -20,6 +32,7 @@ export function CooperativesPanel() {
         setCooperatives(payload.cooperatives);
         setSourceLabel(payload.sourceLabel);
         setSourceUrl(payload.sourceUrl);
+        setShopSync(payload.shopSync ?? null);
         setState('ready');
       })
       .catch(() => setState('error'));
@@ -35,12 +48,26 @@ export function CooperativesPanel() {
     return <CooperativeDetail cooperative={selected} onBack={() => setSelected(null)} />;
   }
 
+  const syncHasWarnings = Boolean(shopSync?.collectorErrors?.length);
+
   return (
     <section className="section-block hub-panel hub-panel--flush cooperatives-v24">
       <div className="section-heading">
         <div><span className="eyebrow">Directorio verificado</span><h2>Cooperativas</h2></div>
         <span className="coop-verified-count"><ShieldCheck size={15} /> {cooperatives.length}</span>
       </div>
+
+      {shopSync && (
+        <div className={syncHasWarnings ? 'coop-sync-status coop-sync-status--partial' : 'coop-sync-status'}>
+          {syncHasWarnings ? <CircleAlert size={18} /> : <ShieldCheck size={18} />}
+          <div>
+            <strong>{shopSync.verifiedProducts} precios comprobados automáticamente</strong>
+            <span>{shopSync.healthySourceCount}/{shopSync.sourceCount} páginas de tienda accesibles · {formatSyncDate(shopSync.generatedAt)}</span>
+            {shopSync.updatedProducts > 0 && <small>{shopSync.updatedProducts} precio{shopSync.updatedProducts === 1 ? '' : 's'} actualizado{shopSync.updatedProducts === 1 ? '' : 's'} en esta ejecución.</small>}
+            {syncHasWarnings && <small>Actualización parcial: los datos no verificables conservan su último valor trazable.</small>}
+          </div>
+        </div>
+      )}
 
       <div className="coop-search">
         <Search size={17} />

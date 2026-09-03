@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import {
   ApiError,
@@ -122,6 +122,7 @@ export function App() {
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [summary, setSummary] = useState<CampaignSummary | null>(null);
+  const pageRef = useRef<HTMLElement | null>(null);
 
   const selectedHolding = useMemo(
     () => holdings.find((item) => item.id === selectedHoldingId) ?? null,
@@ -228,6 +229,15 @@ export function App() {
     return () => window.removeEventListener('magina:sync-complete', refreshAfterSync);
   }, [selectedCampaignId, loadCampaign]);
 
+  useEffect(() => {
+    if (sessionState !== 'signed_in') return;
+    const frame = window.requestAnimationFrame(() => {
+      pageRef.current?.focus({ preventScroll: true });
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [tab, sessionState]);
+
   async function runAction(action: () => Promise<void>) {
     setBusy(true);
     setError(null);
@@ -258,7 +268,7 @@ export function App() {
     });
   }
 
-  if (sessionState === 'checking') return <div className="loading-screen">Abriendo Mágina Olivo…</div>;
+  if (sessionState === 'checking') return <div className="loading-screen" role="status" aria-live="polite">Abriendo Mágina Olivo…</div>;
   if (sessionState === 'offline_locked') return <OfflineColdStart onRetry={() => void checkSession()} />;
   if (sessionState === 'signed_out' || !user) {
     return <LoginScreen onSignedIn={(signedInUser) => { setUser(signedInUser); setSessionState('signed_in'); }} />;
@@ -274,10 +284,10 @@ export function App() {
           <span className="brand-title">Mágina Olivo</span>
           <span className="brand-kicker">Sierra Mágina · Jaén</span>
         </div>
-        <button type="button" className="user-chip" onClick={() => setTab('more')} aria-label="Abrir perfil">{initials}</button>
+        <button type="button" className="user-chip" onClick={() => setTab('more')} aria-label="Abrir perfil" aria-current={tab === 'more' ? 'page' : undefined}>{initials}</button>
       </header>
 
-      <main className="page">
+      <main className="page" ref={pageRef} tabIndex={-1}>
         {error ? <div className="alert" role="alert">{error}</div> : null}
         {holdings.length > 1 ? (
           <select className="selector" value={selectedHoldingId} onChange={(event) => setSelectedHoldingId(event.target.value)} aria-label="Explotación activa">
@@ -325,7 +335,7 @@ export function App() {
       <nav className="bottom-nav bottom-nav-v2" aria-label="Navegación principal">
         <NavButton active={tab === 'home'} icon="⌂" label="Inicio" onClick={() => setTab('home')} />
         <NavButton active={tab === 'field'} icon="◒" label="Mi Campo" onClick={() => setTab('field')} />
-        <button type="button" className={`nav-plus${tab === 'campaign' ? ' active' : ''}`} onClick={() => setTab('campaign')} aria-label="Añadir entrega o trabajar con la campaña"><span aria-hidden="true">+</span></button>
+        <button type="button" className={`nav-plus${tab === 'campaign' ? ' active' : ''}`} onClick={() => setTab('campaign')} aria-label="Campaña y nueva entrega" aria-current={tab === 'campaign' ? 'page' : undefined}><span aria-hidden="true">+</span></button>
         <NavButton active={tab === 'magina'} icon="◇" label="Mágina" onClick={() => setTab('magina')} />
         <NavButton active={tab === 'more'} icon="•••" label="Mi Mágina" onClick={() => setTab('more')} />
       </nav>
@@ -334,7 +344,7 @@ export function App() {
 }
 
 function NavButton({ active, icon, label, onClick }: { active: boolean; icon: string; label: string; onClick: () => void }) {
-  return <button type="button" className={`nav-button${active ? ' active' : ''}`} onClick={onClick}><span aria-hidden="true">{icon}</span>{label}</button>;
+  return <button type="button" className={`nav-button${active ? ' active' : ''}`} onClick={onClick} aria-current={active ? 'page' : undefined}><span aria-hidden="true">{icon}</span>{label}</button>;
 }
 
 function HomeTab({ holding, campaign, summary, coverage, onNavigate }: { holding: Holding | null; campaign: Campaign | null; summary: CampaignSummary | null; coverage: number; onNavigate: (tab: Tab) => void }) {
@@ -380,7 +390,7 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
           <section className="section">
             <div className="section-heading"><div><h2 className="section-title">Fincas</h2><p className="section-copy">{selectedHolding.municipality || 'Sierra Mágina'}{selectedHolding.province ? ` · ${selectedHolding.province}` : ''}</p></div></div>
             {farms.map((farm) => (
-              <button key={farm.id} type="button" className="card list-card interactive" style={{ width: '100%', textAlign: 'left' }} onClick={() => setSelectedFarmId(farm.id)}>
+              <button key={farm.id} type="button" className="card list-card interactive" style={{ width: '100%', textAlign: 'left' }} onClick={() => setSelectedFarmId(farm.id)} aria-pressed={farm.id === selectedFarmId}>
                 <div className="list-card-main"><p className="list-card-title">{farm.name}</p><p className="list-card-meta">{farm.areaHa ? `${farm.areaHa} ha` : 'Superficie pendiente'}</p></div>
                 <span className={`badge${farm.id === selectedFarmId ? ' gold' : ''}`}>{farm.id === selectedFarmId ? 'Activa' : 'Ver'}</span>
               </button>
@@ -555,8 +565,8 @@ function YieldForm({ deliveryId, busy, runAction, onCreated }: { deliveryId: str
       });
     }}>
       <label className="sr-only" htmlFor={`yield-${deliveryId}`}>Rendimiento porcentual</label>
-      <input id={`yield-${deliveryId}`} type="number" min="0" max="100" step="0.01" placeholder="21,7" value={value} onChange={(event) => setValue(event.target.value)} />
-      <button type="submit" disabled={busy || !value}>% +</button>
+      <input id={`yield-${deliveryId}`} type="number" min="0" max="100" step="0.01" inputMode="decimal" placeholder="21,7" value={value} onChange={(event) => setValue(event.target.value)} />
+      <button type="submit" disabled={busy || !value} aria-label="Guardar rendimiento porcentual">% +</button>
     </form>
   );
 }

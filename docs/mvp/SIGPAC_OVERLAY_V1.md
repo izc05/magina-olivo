@@ -17,9 +17,10 @@ Servicio: OGC API Features SIGPAC.
 
 Colección: `recintos`.
 
-Endpoint base verificado:
+Endpoints verificados:
 
-`https://sigpac-hubcloud.es/ogcapi/collections/recintos/items`
+- zona: `https://sigpac-hubcloud.es/ogcapi/collections/recintos/items`
+- elemento por ID: `https://sigpac-hubcloud.es/ogcapi/collections/recintos/items/{featureId}`
 
 Licencia declarada por el servicio: CC BY 4.0.
 
@@ -31,6 +32,10 @@ El navegador no consume directamente la API externa para lógica de producto. To
 
 `web -> /api/v1/maps/sigpac/recintos -> sigpac-client -> FEGA OGC API`
 
+La importación usa una segunda verificación independiente:
+
+`web -> POST /api/v1/plots/:plotId/import-sigpac -> sigpac-client -> FEGA /items/{featureId} -> plots`
+
 Esto permite:
 
 - validar parámetros;
@@ -38,10 +43,12 @@ Esto permite:
 - limitar resultados;
 - aplicar timeout;
 - normalizar propiedades;
+- verificar de nuevo el recinto elegido antes de persistirlo;
 - sustituir el proveedor o endpoint si cambia;
-- evitar acoplamiento del frontend con el esquema externo.
+- evitar acoplamiento del frontend con el esquema externo;
+- impedir que el cliente pueda etiquetar una geometría arbitraria como `sigpac`.
 
-## API interna
+## API interna de consulta
 
 `GET /api/v1/maps/sigpac/recintos`
 
@@ -80,19 +87,45 @@ Cada recinto incluirá cuando esté disponible:
 - `usoSigpac`;
 - geometría GeoJSON `Polygon` o `MultiPolygon` solo para visualización/selección.
 
-## Confirmación de importación
+## Confirmación e importación verificada
 
 La interfaz mostrará los recintos cercanos a la parcela seleccionada.
 
-Solo se habilitará `Usar como perímetro` cuando la geometría sea compatible con el modelo privado V2: `Polygon` simple con un único anillo exterior y sin huecos.
+Solo se habilitará `Usar como perímetro` cuando la geometría mostrada sea compatible con el modelo privado V2: `Polygon` simple con un único anillo exterior y sin huecos.
 
-Al confirmar:
+La primera pulsación únicamente arma la confirmación. La segunda confirma la intención del usuario y envía al backend **solo** el ID oficial del recinto:
 
-`PATCH /api/v1/plots/:plotId/boundary`
+`POST /api/v1/plots/:plotId/import-sigpac`
 
-con `source: "sigpac"`.
+```json
+{
+  "recintoId": "233788127"
+}
+```
 
-El backend de parcelas vuelve a validar y recalcular el área. No se confía en la superficie informada por SIGPAC para el campo privado `boundary_area_ha`.
+El backend:
+
+1. vuelve a consultar `FEGA /collections/recintos/items/{featureId}`;
+2. comprueba que el ID devuelto coincide;
+3. rechaza MultiPolygon/huecos en V1;
+4. valida el GeoJSON con las reglas privadas de Mágina Olivo;
+5. recalcula `boundary_area_ha` sin confiar en la superficie declarada por SIGPAC;
+6. persiste `boundary_source = 'sigpac'`;
+7. guarda `boundary_external_id = featureId`;
+8. guarda `boundary_source_checked_at`.
+
+El endpoint general `PATCH /api/v1/plots/:plotId/boundary` queda reservado a fuentes editables (`manual_map`, `manual_gps`, `imported`) y limpia cualquier procedencia oficial previa cuando el usuario sustituye el perímetro manualmente.
+
+## Trazabilidad
+
+Los perímetros procedentes de fuentes oficiales conservan:
+
+- proveedor lógico (`boundary_source`);
+- identificador externo (`boundary_external_id`);
+- momento de verificación (`boundary_source_checked_at`);
+- momento de actualización de geometría (`boundary_updated_at`).
+
+Esto permite distinguir una geometría oficial verificada de una copia manual o importación de usuario.
 
 ## Fuera de alcance
 

@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Bell, CheckCircle2, ChevronRight, ExternalLink, Newspaper, RefreshCw, Search, TriangleAlert } from 'lucide-react';
 import type { AppNavigate, MaginaTarget } from '../../app/navigation';
+import type { MainSection } from '../../components/BottomNav';
 import { BottomNav } from '../../components/BottomNav';
 import { Brand } from '../../components/Brand';
+import { AlertsPanel } from './AlertsPanel';
+import { CooperativesPanel } from './CooperativesPanel';
 import { NewsPage } from './NewsPage';
 import { formatNewsAge, loadRealNews, type RealNewsStory } from './newsFeed';
 import '../../styles/news-real.css';
@@ -63,8 +66,71 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
     });
   }, [query, scopeFilter, stories]);
 
+  const handleBottomNavigate = (section: MainSection) => {
+    if (section === 'news') setMode('actualidad');
+    onNavigate(section);
+  };
+
+  const handleNestedNavigate: AppNavigate = (section, target) => {
+    if (section === 'news') {
+      setMode(target ? target as MaginaTarget : 'actualidad');
+    }
+    onNavigate(section, target);
+  };
+
+  const primaryTabs = (
+    <nav className="hub-tabs hub-tabs--primary" aria-label="Secciones principales de Mágina">
+      <button className={mode === 'actualidad' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setMode('actualidad')}>Noticias</button>
+      <button className={mode === 'cooperativas' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setMode('cooperativas')}>Cooperativas</button>
+      <button className={mode === 'mercado' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setMode('mercado')}>Mercado</button>
+      <button className={mode === 'discover' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setMode('discover')}>Descubre</button>
+      <button className={mode === 'local' || mode === 'community' || mode === 'agenda' ? 'hub-tab hub-tab--active' : 'hub-tab'} type="button" onClick={() => setMode('local')}>Más</button>
+    </nav>
+  );
+
+  if (mode === 'alertas') {
+    return (
+      <div className="app-shell">
+        <main className="mobile-page">
+          <header className="topbar">
+            <Brand />
+            <button className="icon-button" type="button" aria-label="Volver a noticias" onClick={() => setMode('actualidad')}><Newspaper size={19} /></button>
+          </header>
+          <AlertsPanel onBack={() => setMode('actualidad')} />
+        </main>
+        <BottomNav active="news" onNavigate={handleBottomNavigate} />
+      </div>
+    );
+  }
+
+  if (mode === 'cooperativas') {
+    return (
+      <div className="app-shell">
+        <main className="mobile-page">
+          <header className="topbar">
+            <Brand />
+            <div className="topbar-actions">
+              <button className="icon-button" type="button" aria-label="Volver a noticias" onClick={() => setMode('actualidad')}><Newspaper size={19} /></button>
+              <button className="icon-button" type="button" aria-label="Alertas" onClick={() => setMode('alertas')}><Bell size={20} /></button>
+            </div>
+          </header>
+
+          <section className="magina-heading">
+            <span className="eyebrow">Sierra Mágina</span>
+            <h1>Cooperativas</h1>
+            <p>Directorio verificado de entidades y marcas de la D.O.P., preparado para incorporar servicios operativos trazables.</p>
+          </section>
+
+          {primaryTabs}
+          <CooperativesPanel />
+        </main>
+        <BottomNav active="news" onNavigate={handleBottomNavigate} />
+      </div>
+    );
+  }
+
   if (mode !== 'actualidad') {
-    return <NewsPage onNavigate={onNavigate} initialTab={mode} />;
+    return <NewsPage onNavigate={handleNestedNavigate} initialTab={mode} />;
   }
 
   const hero = filteredStories[0] ?? null;
@@ -91,13 +157,7 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
           <p>Primero Mágina y Jaén; después la actualidad del olivar y el aceite que realmente te afecta.</p>
         </section>
 
-        <nav className="hub-tabs hub-tabs--primary" aria-label="Secciones principales de Mágina">
-          <button className="hub-tab hub-tab--active" type="button">Noticias</button>
-          <button className="hub-tab" type="button" onClick={() => setMode('cooperativas')}>Cooperativas</button>
-          <button className="hub-tab" type="button" onClick={() => setMode('mercado')}>Mercado</button>
-          <button className="hub-tab" type="button" onClick={() => setMode('discover')}>Descubre</button>
-          <button className="hub-tab" type="button" onClick={() => setMode('local')}>Más</button>
-        </nav>
+        {primaryTabs}
 
         <section className="real-news-toolbar" aria-label="Buscar noticias">
           <Search size={18} />
@@ -204,7 +264,7 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
         )}
       </main>
 
-      <BottomNav active="news" onNavigate={onNavigate} />
+      <BottomNav active="news" onNavigate={handleBottomNavigate} />
     </div>
   );
 }

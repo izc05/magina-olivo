@@ -364,12 +364,12 @@ export async function generateAccountExport(
     await pool.query(
       `
         update account_exports
-        set status = 'ready',
+        set status = 'generating',
             artifact_text = $3,
             size_bytes = $4,
             sha256 = $5,
             error_message = null,
-            completed_at = now(),
+            completed_at = null,
             expires_at = now() + ($6 * interval '1 hour'),
             updated_at = now()
         where id = $1 and user_id = $2

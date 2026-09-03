@@ -19,6 +19,7 @@ json_value() {
 }
 
 rm -f /tmp/account-export-a.cookies /tmp/account-export-b.cookies /tmp/account-export-*.json /tmp/account-export-*.headers
+TASK_DATE=$(date -u -d 'tomorrow' +%F)
 
 log "Registering isolated portability users"
 status=$(curl --silent --output /tmp/account-export-signup-a.json --write-out "%{http_code}" \
@@ -50,6 +51,7 @@ status=$(curl --silent --output /tmp/account-export-holding-b.json --write-out "
   --data '{"name":"Portability Holding B","municipality":"Huelma","province":"Jaen"}' \
   "$API_BASE/api/v1/holdings")
 [[ "$status" = "201" ]] || fail "Holding B expected 201, got $status"
+HOLDING_B=$(json_value /tmp/account-export-holding-b.json 'value.id')
 
 log "Saving a preference that must be portable"
 status=$(curl --silent --output /tmp/account-export-prefs-a.json --write-out "%{http_code}" \
@@ -59,6 +61,23 @@ status=$(curl --silent --output /tmp/account-export-prefs-a.json --write-out "%{
   --data '{"preferredCooperativeId":null,"notifyWeather":false,"notifyTasks":true,"notifyPendingYield":true,"weatherRainMmThreshold":7.5,"weatherFrostCThreshold":-1,"weatherWindKmhThreshold":55}' \
   "$API_BASE/api/v1/account/preferences")
 [[ "$status" = "200" ]] || fail "Preference update expected 200, got $status"
+
+log "Creating one private task per user before export"
+status=$(curl --silent --output /tmp/account-export-task-a.json --write-out "%{http_code}" \
+  --cookie /tmp/account-export-a.cookies \
+  --header 'content-type: application/json' \
+  --data "{\"title\":\"Tarea portable A\",\"dueDate\":\"$TASK_DATE\",\"priority\":\"high\",\"reminderDaysBefore\":1}" \
+  "$API_BASE/api/v1/holdings/$HOLDING_A/tasks")
+[[ "$status" = "201" ]] || fail "Task A expected 201, got $status"
+TASK_A=$(json_value /tmp/account-export-task-a.json 'value.id')
+
+status=$(curl --silent --output /tmp/account-export-task-b.json --write-out "%{http_code}" \
+  --cookie /tmp/account-export-b.cookies \
+  --header 'content-type: application/json' \
+  --data "{\"title\":\"Tarea privada B\",\"dueDate\":\"$TASK_DATE\",\"priority\":\"normal\"}" \
+  "$API_BASE/api/v1/holdings/$HOLDING_B/tasks")
+[[ "$status" = "201" ]] || fail "Task B expected 201, got $status"
+TASK_B=$(json_value /tmp/account-export-task-b.json 'value.id')
 
 unauth=$(curl --silent --output /tmp/account-export-unauth.json --write-out "%{http_code}" \
   "$API_BASE/api/v1/account/exports")
@@ -112,7 +131,7 @@ ACTUAL_SHA=$(sha256sum /tmp/account-export-download.json | awk '{print $1}')
 HEADER_SHA=$(awk -F': ' 'tolower($1)=="x-content-sha256" {gsub("\r", "", $2); print $2}' /tmp/account-export-download.headers)
 [[ "$HEADER_SHA" = "$EXPECTED_SHA" ]] || fail "X-Content-SHA256 header mismatch"
 
-EXPORT_FILE=/tmp/account-export-download.json HOLDING_A="$HOLDING_A" node --input-type=module <<'NODE'
+EXPORT_FILE=/tmp/account-export-download.json HOLDING_A="$HOLDING_A" TASK_A="$TASK_A" TASK_B="$TASK_B" node --input-type=module <<'NODE'
 import fs from 'node:fs';
 const value = JSON.parse(fs.readFileSync(process.env.EXPORT_FILE, 'utf8'));
 if (value.schemaVersion !== 1) throw new Error('schemaVersion must be 1');
@@ -125,6 +144,13 @@ if (!value.holdings?.some((item) => item.id === process.env.HOLDING_A && item.na
 }
 if (value.holdings?.some((item) => item.name === 'Portability Holding B')) {
   throw new Error('cross-user holding leaked into export');
+}
+if (!Array.isArray(value.tasks)) throw new Error('tasks array missing from structured export');
+if (!value.tasks.some((item) => item.id === process.env.TASK_A && item.holdingId === process.env.HOLDING_A)) {
+  throw new Error('owned task missing from export');
+}
+if (value.tasks.some((item) => item.id === process.env.TASK_B || item.title === 'Tarea privada B')) {
+  throw new Error('cross-user task leaked into export');
 }
 const raw = fs.readFileSync(process.env.EXPORT_FILE, 'utf8');
 if (raw.includes('object_key')) throw new Error('private object key leaked into export');

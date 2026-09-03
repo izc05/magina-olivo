@@ -1,6 +1,7 @@
 import { hostname } from 'node:os';
 import { setTimeout as sleep } from 'node:timers/promises';
 import pg from 'pg';
+import { augmentAccountExportWithTasks } from './account-export-tasks.ts';
 import { expireAccountExports, generateAccountExport } from './account-export.ts';
 import { inspectMarketSources } from './market-source.ts';
 import { inspectRaifOlivarSource } from './raif-source.ts';
@@ -234,6 +235,7 @@ async function executeJob(job: JobRow): Promise<void> {
     case 'account.export.generate': {
       const payload = parseAccountExportPayload(job.payload);
       await generateAccountExport(pool, payload.exportId, payload.userId, accountExportTtlHours);
+      await augmentAccountExportWithTasks(pool, payload.exportId, payload.userId);
       return;
     }
     case 'public.raif.inspect':

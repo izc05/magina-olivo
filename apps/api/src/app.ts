@@ -22,6 +22,7 @@ import { registerPublicNewsRoutes } from './public-news-routes.ts';
 import { registerPublicSourceRoutes } from './public-source-routes.ts';
 import { registerPublicWeatherRoutes } from './public-weather-routes.ts';
 import { registerRequestSecurity } from './request-security.ts';
+import { registerTaskRoutes } from './task-routes.ts';
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({
@@ -81,6 +82,7 @@ export function buildApp(): FastifyInstance {
   registerCampaignSummaryRoutes(app);
   registerDocumentRoutes(app);
   registerActivityRoutes(app);
+  registerTaskRoutes(app);
 
   return app;
 }

@@ -20,21 +20,20 @@ type PreferenceRow = {
   notify_tasks: boolean;
   notify_pending_yield: boolean;
   weather_rain_probability_percent_threshold: string;
+  weather_rain_mm_threshold: string;
   weather_frost_c_threshold: string;
   weather_wind_kmh_threshold: string;
   updated_at: Date;
 };
 
 function mapPreference(row: PreferenceRow) {
-  const rainProbabilityThreshold = Number(row.weather_rain_probability_percent_threshold);
   return {
     preferredCooperativeId: row.preferred_cooperative_id,
     notifyWeather: row.notify_weather,
     notifyTasks: row.notify_tasks,
     notifyPendingYield: row.notify_pending_yield,
-    weatherRainProbabilityPercentThreshold: rainProbabilityThreshold,
-    // Transitional alias for older clients. It mirrors the new percentage value in API responses only.
-    weatherRainMmThreshold: rainProbabilityThreshold,
+    weatherRainProbabilityPercentThreshold: Number(row.weather_rain_probability_percent_threshold),
+    weatherRainMmThreshold: Number(row.weather_rain_mm_threshold),
     weatherFrostCThreshold: Number(row.weather_frost_c_threshold),
     weatherWindKmhThreshold: Number(row.weather_wind_kmh_threshold),
     updatedAt: row.updated_at,
@@ -60,6 +59,7 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
           notify_tasks,
           notify_pending_yield,
           weather_rain_probability_percent_threshold,
+          weather_rain_mm_threshold,
           weather_frost_c_threshold,
           weather_wind_kmh_threshold,
           updated_at
@@ -94,7 +94,7 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
             notifyTasks: { type: 'boolean' },
             notifyPendingYield: { type: 'boolean' },
             weatherRainProbabilityPercentThreshold: { type: 'number', minimum: 0, maximum: 100 },
-            weatherRainMmThreshold: { type: 'number', minimum: 0, maximum: 100 },
+            weatherRainMmThreshold: { type: 'number', minimum: 0, maximum: 500 },
             weatherFrostCThreshold: { type: 'number', minimum: -50, maximum: 20 },
             weatherWindKmhThreshold: { type: 'number', minimum: 0, maximum: 300 },
           },
@@ -119,41 +119,35 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
         }
       }
 
-      const rainProbabilityThreshold = request.body.weatherRainProbabilityPercentThreshold
-        ?? request.body.weatherRainMmThreshold
-        ?? 60;
-      const legacyRainMmThreshold = request.body.weatherRainMmThreshold ?? 5;
+      await db.query(
+        `
+          insert into user_preferences (user_id)
+          values ($1)
+          on conflict (user_id) do nothing
+        `,
+        [session.user.id],
+      );
 
       const result = await db.query<PreferenceRow>(
         `
-          insert into user_preferences (
-            user_id,
-            preferred_cooperative_id,
-            notify_weather,
-            notify_tasks,
-            notify_pending_yield,
-            weather_rain_probability_percent_threshold,
-            weather_rain_mm_threshold,
-            weather_frost_c_threshold,
-            weather_wind_kmh_threshold,
-            updated_at
-          ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, now())
-          on conflict (user_id) do update set
-            preferred_cooperative_id = excluded.preferred_cooperative_id,
-            notify_weather = excluded.notify_weather,
-            notify_tasks = excluded.notify_tasks,
-            notify_pending_yield = excluded.notify_pending_yield,
-            weather_rain_probability_percent_threshold = excluded.weather_rain_probability_percent_threshold,
-            weather_rain_mm_threshold = excluded.weather_rain_mm_threshold,
-            weather_frost_c_threshold = excluded.weather_frost_c_threshold,
-            weather_wind_kmh_threshold = excluded.weather_wind_kmh_threshold,
-            updated_at = now()
+          update user_preferences
+          set preferred_cooperative_id = $2,
+              notify_weather = $3,
+              notify_tasks = $4,
+              notify_pending_yield = $5,
+              weather_rain_probability_percent_threshold = coalesce($6, weather_rain_probability_percent_threshold),
+              weather_rain_mm_threshold = coalesce($7, weather_rain_mm_threshold),
+              weather_frost_c_threshold = $8,
+              weather_wind_kmh_threshold = $9,
+              updated_at = now()
+          where user_id = $1
           returning
             preferred_cooperative_id,
             notify_weather,
             notify_tasks,
             notify_pending_yield,
             weather_rain_probability_percent_threshold,
+            weather_rain_mm_threshold,
             weather_frost_c_threshold,
             weather_wind_kmh_threshold,
             updated_at
@@ -164,8 +158,8 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
           request.body.notifyWeather,
           request.body.notifyTasks,
           request.body.notifyPendingYield,
-          rainProbabilityThreshold,
-          legacyRainMmThreshold,
+          request.body.weatherRainProbabilityPercentThreshold ?? null,
+          request.body.weatherRainMmThreshold ?? null,
           request.body.weatherFrostCThreshold,
           request.body.weatherWindKmhThreshold,
         ],

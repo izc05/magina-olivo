@@ -5,6 +5,7 @@ on:
     branches:
       - feat/visual-v2-foundation
       - feat/real-news-v1
+      - feat/cooperatives-alerts-v1
       - main
   schedule:
     - cron: '17 * * * *'
@@ -39,6 +40,12 @@ jobs:
 
       - name: Validate real news feed
         run: node scripts/validate-news.mjs
+
+      - name: Refresh official alerts
+        run: npm run alerts:sync
+
+      - name: Validate official alerts
+        run: node scripts/validate-alerts.mjs
 
       - name: Generate approved photography
         run: npm run photos:sync

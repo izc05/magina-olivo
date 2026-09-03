@@ -71,8 +71,21 @@ async function run() {
     assert(await page.getByText('Oficial', { exact: true }).count() >= 1, 'Alertas: no aparece la trazabilidad oficial.');
     await assertNoOverflow(page, 'Alertas');
 
+    // Mercado: precios oficiales, selector de calidad, gráfico y trazabilidad.
+    await page.locator('.alerts-real__top .text-action').click();
+    await page.locator('.hub-tabs--primary').waitFor({ state: 'visible' });
+    await page.locator('.hub-tabs--primary').getByRole('button', { name: 'Mercado', exact: true }).click();
+    const marketPanel = page.locator('.market-real');
+    await marketPanel.waitFor({ state: 'visible' });
+    await page.locator('.market-real__price').first().waitFor({ state: 'visible', timeout: 10_000 });
+    assert(await page.locator('.market-real__price').count() === 3, 'Mercado: deben mostrarse AOVE, Virgen y Lampante.');
+    assert(await page.getByRole('link', { name: /Observatorio de Precios y Mercados/i }).count() === 1, 'Mercado: falta la fuente pública de la Junta.');
+    await page.locator('.market-real__price').filter({ hasText: 'Virgen' }).last().click();
+    await page.locator('.market-real-chart').waitFor({ state: 'visible' });
+    await assertNoOverflow(page, 'Mercado');
+
     await context.close();
-    console.log('✓ Smoke Mágina: directorio, búsqueda, ficha verificada y alertas oficiales funcionan en 390×844 y bajo /magina-olivo/.');
+    console.log('✓ Smoke Mágina: cooperativas, ficha verificada, alertas oficiales y mercado real funcionan en 390×844 bajo /magina-olivo/.');
   } finally {
     if (browser) await browser.close();
     await closePreview(previewServer);

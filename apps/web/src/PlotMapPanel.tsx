@@ -220,6 +220,11 @@ function requestDeviceLocation(): Promise<GeolocationPosition> {
   });
 }
 
+function geolocationPermissionDenied(reason: unknown): boolean {
+  if (typeof reason !== 'object' || reason === null || !('code' in reason)) return false;
+  return Number((reason as { code?: unknown }).code) === 1;
+}
+
 export function PlotMapPanel({ farmId }: { farmId: string }) {
   const [plots, setPlots] = useState<LocatedPlot[]>([]);
   const [selectedPlotId, setSelectedPlotId] = useState('');
@@ -326,7 +331,7 @@ export function PlotMapPanel({ farmId }: { farmId: string }) {
       setMapCenter({ latitude: latitudeValue, longitude: longitudeValue });
       setNotice(`Ubicación obtenida con una precisión aproximada de ${Math.round(position.coords.accuracy)} m. Revisa el punto y pulsa Guardar ubicación.`);
     } catch (reason) {
-      const denied = reason instanceof GeolocationPositionError && reason.code === reason.PERMISSION_DENIED;
+      const denied = geolocationPermissionDenied(reason);
       setError(denied
         ? 'No se ha concedido permiso de ubicación. Puedes introducir las coordenadas manualmente.'
         : 'No se ha podido obtener una ubicación fiable. Inténtalo de nuevo al aire libre o introduce las coordenadas.');
@@ -351,7 +356,7 @@ export function PlotMapPanel({ farmId }: { farmId: string }) {
       setMapCenter({ latitude: next[1], longitude: next[0] });
       setNotice(`Vértice ${boundaryVertices.length + 1} añadido por GPS · precisión aproximada ${Math.round(position.coords.accuracy)} m.`);
     } catch (reason) {
-      const denied = reason instanceof GeolocationPositionError && reason.code === reason.PERMISSION_DENIED;
+      const denied = geolocationPermissionDenied(reason);
       setError(denied
         ? 'No se ha concedido permiso de ubicación. Puedes marcar el vértice tocando el mapa.'
         : 'No se ha podido obtener el vértice por GPS. Prueba al aire libre o marca el punto sobre el mapa.');

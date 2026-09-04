@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { runPushReminderMaintenance } from './push-reminder-scan.ts';
 import { runRewardRedemptionExpiryMaintenance } from './reward-redemption-expiry.ts';
 
 const { Pool } = pg;
@@ -15,6 +16,7 @@ async function runMaintenance(force = false): Promise<void> {
   maintenanceInFlight = true;
   try {
     await runRewardRedemptionExpiryMaintenance(maintenancePool, force);
+    await runPushReminderMaintenance(maintenancePool, force);
   } finally {
     maintenanceInFlight = false;
   }

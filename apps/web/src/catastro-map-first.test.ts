@@ -2,12 +2,14 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
+  buildCatastroSelectorMap,
   DEFAULT_CATASTRO_CENTER,
   MIN_CATASTRO_ZOOM,
   exteriorRings,
   geometryCenter,
   isSimpleImportablePolygon,
   panCenter,
+  pnoaTileUrl,
   viewportBbox,
   type CatastroGeometry,
 } from './catastro-selector-map.ts';
@@ -46,6 +48,25 @@ test('Catastro geometry helpers keep complex parcels visible but non-importable'
   assert.equal(isSimpleImportablePolygon(multi), false);
   assert.equal(exteriorRings(multi).length, 2);
   assert.ok(geometryCenter(multi));
+});
+
+test('PNOA base layer uses the official IGN WMTS GoogleMapsCompatible contract', () => {
+  const url = new URL(pnoaTileUrl(18, 128743, 101234));
+  assert.equal(url.origin, 'https://www.ign.es');
+  assert.equal(url.pathname, '/wmts/pnoa-ma');
+  assert.equal(url.searchParams.get('SERVICE'), 'WMTS');
+  assert.equal(url.searchParams.get('REQUEST'), 'GetTile');
+  assert.equal(url.searchParams.get('VERSION'), '1.0.0');
+  assert.equal(url.searchParams.get('LAYER'), 'OI.OrthoimageCoverage');
+  assert.equal(url.searchParams.get('FORMAT'), 'image/jpeg');
+  assert.equal(url.searchParams.get('TILEMATRIXSET'), 'GoogleMapsCompatible');
+  assert.equal(url.searchParams.get('TILEMATRIX'), '18');
+  assert.equal(url.searchParams.get('TILECOL'), '128743');
+  assert.equal(url.searchParams.get('TILEROW'), '101234');
+
+  const map = buildCatastroSelectorMap(DEFAULT_CATASTRO_CENTER, 18, 'pnoa');
+  assert.ok(map.tiles.length > 0);
+  assert.ok(map.tiles.every((tile) => tile.href.startsWith('https://www.ign.es/wmts/pnoa-ma?')));
 });
 
 test('selector is wired into Mi Campo and preserves explicit user selection semantics', async () => {
@@ -90,4 +111,32 @@ test('batch review keeps olive count individual per parcel and confirms through 
   assert.match(routes, /validationItems\.some/);
   assert.match(routes, /await client\.query\('begin'\)/);
   assert.match(routes, /await client\.query\('commit'\)/);
+});
+
+test('PNOA, SIGPAC and private plot layers remain visual aids and preserve Catastro selection', async () => {
+  const selector = await read('./CatastroMapFirstSelector.tsx');
+  const overlays = await read('./OfficialMapOverlays.tsx');
+  const styles = await read('./official-map-layers.css');
+
+  assert.match(selector, /Ortofoto PNOA/);
+  assert.match(selector, /handleBaseTileError/);
+  assert.match(selector, /Hemos vuelto al mapa sin perder tu selección/);
+  assert.match(selector, /OfficialMapOverlays/);
+  assert.match(selector, /boundaryGeoJson/);
+  assert.match(selector, /ayudas visuales/);
+
+  assert.match(overlays, /\/api\/v1\/maps\/sigpac\/recintos\?/);
+  assert.match(overlays, /450/);
+  assert.match(overlays, /AbortController/);
+  assert.match(overlays, /SIGPAC/);
+  assert.match(overlays, /Mis parcelas/);
+  assert.match(overlays, /pointer-events/);
+  assert.doesNotMatch(overlays, /method:\s*['"]POST['"]/);
+  assert.doesNotMatch(overlays, /import-sigpac/);
+
+  assert.match(styles, /catastro-map-first-base-toggle/);
+  assert.match(styles, /catastro-map-first-layer-toggle/);
+  assert.match(styles, /sigpac-overlay-polygon/);
+  assert.match(styles, /my-plot-overlay-polygon/);
+  assert.match(styles, /pointer-events:\s*none/);
 });

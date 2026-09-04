@@ -1,11 +1,21 @@
 import { useEffect, useState } from 'react';
 
+type NoticeKind = 'offline' | 'success' | 'warning' | 'info';
+
 type Notice = {
   id: number;
-  kind: 'offline' | 'success';
+  kind: NoticeKind;
   title: string;
   detail: string;
 };
+
+type AppNoticeDetail = {
+  kind: NoticeKind;
+  title: string;
+  detail: string;
+};
+
+const noticeKinds = new Set<NoticeKind>(['offline', 'success', 'warning', 'info']);
 
 export function NoticeCenter() {
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -39,14 +49,24 @@ export function NoticeCenter() {
       detail: 'Las operaciones pendientes ya están guardadas en tu cuenta.',
     });
 
+    const appNotice = (event: Event) => {
+      if (!(event instanceof CustomEvent)) return;
+      const detail = event.detail as Partial<AppNoticeDetail> | null;
+      if (!detail || typeof detail.title !== 'string' || typeof detail.detail !== 'string') return;
+      if (!detail.kind || !noticeKinds.has(detail.kind)) return;
+      show({ kind: detail.kind, title: detail.title, detail: detail.detail });
+    };
+
     window.addEventListener('magina:delivery-offline-queued', deliveryQueued);
     window.addEventListener('magina:activity-offline-queued', activityQueued);
     window.addEventListener('magina:sync-complete', synced);
+    window.addEventListener('magina:notice', appNotice);
     return () => {
       if (timer !== null) window.clearTimeout(timer);
       window.removeEventListener('magina:delivery-offline-queued', deliveryQueued);
       window.removeEventListener('magina:activity-offline-queued', activityQueued);
       window.removeEventListener('magina:sync-complete', synced);
+      window.removeEventListener('magina:notice', appNotice);
     };
   }, []);
 

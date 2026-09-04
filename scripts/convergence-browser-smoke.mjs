@@ -41,9 +41,24 @@ async function assertNavCurrent(name) {
   await assertFitsViewport(name);
 }
 
+async function waitForTour() {
+  const tour = page.locator('main.product-tour');
+  try {
+    await tour.waitFor({ state: 'visible', timeout: 5000 });
+  } catch (error) {
+    console.error('Smoke diagnostic URL:', page.url());
+    console.error('Smoke diagnostic title:', await page.title());
+    console.error('Smoke diagnostic body:', (await page.locator('body').innerText()).slice(0, 2000));
+    console.error('Smoke diagnostic page errors:', pageErrors);
+    console.error('Smoke diagnostic console errors:', consoleErrors);
+    console.error('Smoke diagnostic HTTP failures:', failedSameOrigin);
+    throw error;
+  }
+}
+
 try {
-  await page.goto(`${baseUrl}?tour=1`, { waitUntil: 'networkidle' });
-  await page.getByRole('main', { name: 'Introducción a Mágina Olivo' }).waitFor();
+  await page.goto(`${baseUrl}?tour=1`, { waitUntil: 'domcontentloaded' });
+  await waitForTour();
   await page.getByRole('heading', { name: 'Tu olivar, en un solo lugar' }).waitFor();
   await assertFitsViewport('product tour');
 
@@ -68,7 +83,8 @@ try {
 
   const deepRoutes = ['magina', 'magina/tiempo', 'magina/campo', 'magina/noticias', 'magina/mercado'];
   for (const route of deepRoutes) {
-    await page.goto(new URL(route, baseUrl).toString(), { waitUntil: 'networkidle' });
+    await page.goto(new URL(route, baseUrl).toString(), { waitUntil: 'domcontentloaded' });
+    await page.locator('main').first().waitFor({ timeout: 5000 });
     assert.ok((await page.locator('body').innerText()).trim().length > 80, `${route}: page rendered too little content`);
     assert.equal(await page.getByRole('heading', { name: 'Bienvenido', exact: true }).count(), 0, `${route}: login rendered unexpectedly`);
     await assertFitsViewport(route);

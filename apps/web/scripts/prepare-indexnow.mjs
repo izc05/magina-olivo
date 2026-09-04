@@ -13,8 +13,8 @@ if (!rawKey) {
   process.exit(0);
 }
 
-if (!/^[A-Za-z0-9_-]{8,128}$/.test(rawKey)) {
-  throw new Error('INDEXNOW_KEY must contain 8–128 URL-safe alphanumeric, underscore or hyphen characters.');
+if (!/^[A-Za-z0-9-]{8,128}$/.test(rawKey)) {
+  throw new Error('INDEXNOW_KEY must contain 8–128 letters, numbers or hyphen characters.');
 }
 
 await writeFile(join(distDir, `${rawKey}.txt`), `${rawKey}\n`, 'utf8');

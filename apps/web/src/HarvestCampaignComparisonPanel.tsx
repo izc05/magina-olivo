@@ -5,6 +5,7 @@ import {
   type HarvestMetricComparison,
   type HarvestPlotComparison,
 } from './harvestComparisonApi.ts';
+import './HarvestCampaignComparisonPanel.css';
 
 function formatNumber(value: number | null, digits = 1): string {
   if (value == null) return '—';

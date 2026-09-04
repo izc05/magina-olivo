@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { canWrite, getHoldingAccess } from './authorization.ts';
+import { isUniqueViolation } from './database-errors.ts';
 import { getPool } from './db.ts';
 import { apiError } from './http-errors.ts';
 import { getAuthenticatedSession } from './session.ts';
@@ -12,13 +13,6 @@ type CreateCampaignBody = {
   startDate?: string;
   notes?: string;
 };
-
-export function isUniqueViolation(reason: unknown): boolean {
-  return typeof reason === 'object'
-    && reason !== null
-    && 'code' in reason
-    && (reason as { code?: unknown }).code === '23505';
-}
 
 export function registerCampaignRoutes(app: FastifyInstance): void {
   app.get<{ Params: HoldingParams }>(
@@ -160,7 +154,7 @@ export function registerCampaignRoutes(app: FastifyInstance): void {
           return reply.code(409).send(apiError(
             request,
             'CAMPAIGN_ALREADY_EXISTS',
-            'A campaign for that season already exists',
+            'Ya existe una campaña para esa temporada.',
           ));
         }
         throw reason;

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { LocalRewardQr } from './LocalRewardQr';
+import './reward-local-qr.css';
 
 type RewardPickupCodePanelProps = {
   token: string;

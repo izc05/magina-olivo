@@ -13,6 +13,10 @@ type Preferences = {
   notifyWeather: boolean;
   notifyTasks: boolean;
   notifyPendingYield: boolean;
+  notifyFieldAlerts: boolean;
+  notifyRewards: boolean;
+  notifyMarket: boolean;
+  notifyNews: boolean;
   weatherRainProbabilityPercentThreshold: number;
   weatherFrostCThreshold: number;
   weatherWindKmhThreshold: number;
@@ -39,6 +43,10 @@ const DEFAULT_PREFERENCES: Preferences = {
   notifyWeather: true,
   notifyTasks: true,
   notifyPendingYield: true,
+  notifyFieldAlerts: true,
+  notifyRewards: true,
+  notifyMarket: false,
+  notifyNews: true,
   weatherRainProbabilityPercentThreshold: 60,
   weatherFrostCThreshold: 0,
   weatherWindKmhThreshold: 50,
@@ -106,7 +114,7 @@ export function AccountPage() {
         ]);
         if (cancelled) return;
         setUser(session.user);
-        setPreferences(preferenceResult);
+        setPreferences({ ...DEFAULT_PREFERENCES, ...preferenceResult });
         setDestinations(directory.items);
         setExports(exportResult.items);
       } catch (reason) {
@@ -155,12 +163,16 @@ export function AccountPage() {
           notifyWeather: preferences.notifyWeather,
           notifyTasks: preferences.notifyTasks,
           notifyPendingYield: preferences.notifyPendingYield,
+          notifyFieldAlerts: preferences.notifyFieldAlerts,
+          notifyRewards: preferences.notifyRewards,
+          notifyMarket: preferences.notifyMarket,
+          notifyNews: preferences.notifyNews,
           weatherRainProbabilityPercentThreshold: Number(preferences.weatherRainProbabilityPercentThreshold),
           weatherFrostCThreshold: Number(preferences.weatherFrostCThreshold),
           weatherWindKmhThreshold: Number(preferences.weatherWindKmhThreshold),
         }),
       });
-      setPreferences(saved);
+      setPreferences({ ...DEFAULT_PREFERENCES, ...saved });
       setNotice('Preferencias guardadas.');
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'No se han podido guardar las preferencias.');
@@ -196,6 +208,7 @@ export function AccountPage() {
           <span className="brand-title">Mágina Olivo</span>
           <span className="brand-kicker">Mi Cuenta</span>
         </div>
+        <a className="text-button" href="/notificaciones">Avisos</a>
       </header>
 
       <div className="account-page">
@@ -236,7 +249,14 @@ export function AccountPage() {
         </section>
 
         <section className="section card card-body">
-          <h2 className="section-title account-section-title">Avisos</h2>
+          <div className="account-section-heading">
+            <div>
+              <h2 className="section-title account-section-title">Avisos</h2>
+              <p className="section-copy">Elige qué señales quieres reunir en tu Centro de avisos. Estas preferencias son de producto: no equivalen a consentimiento publicitario y no comparten los datos de tus parcelas con cooperativas, anunciantes ni otros colaboradores.</p>
+            </div>
+            <a className="text-button" href="/notificaciones">Abrir Centro de avisos →</a>
+          </div>
+
           <p className="section-copy">La alarma de lluvia se revisa automáticamente en el servidor para los próximos 2 días con la predicción municipal de AEMET y tu umbral. Helada y viento siguen apareciendo como avisos meteorológicos complementarios. Son contexto para organizarte, no un diagnóstico de parcela.</p>
 
           <label className="account-toggle">
@@ -245,11 +265,27 @@ export function AccountPage() {
           </label>
           <label className="account-toggle">
             <input type="checkbox" checked={preferences.notifyTasks} onChange={(event) => setPreferences((current) => ({ ...current, notifyTasks: event.target.checked }))} />
-            <span><strong>Tareas</strong><small>Preferencia guardada para cuando el calendario esté activo.</small></span>
+            <span><strong>Tareas</strong><small>Tareas próximas, vencidas y recordatorios del calendario.</small></span>
           </label>
           <label className="account-toggle">
             <input type="checkbox" checked={preferences.notifyPendingYield} onChange={(event) => setPreferences((current) => ({ ...current, notifyPendingYield: event.target.checked }))} />
-            <span><strong>Rendimientos pendientes</strong><small>Entregas que todavía no tienen resultado.</small></span>
+            <span><strong>Rendimientos pendientes</strong><small>Entregas que todavía no tienen resultado de almazara.</small></span>
+          </label>
+          <label className="account-toggle">
+            <input type="checkbox" checked={preferences.notifyFieldAlerts} onChange={(event) => setPreferences((current) => ({ ...current, notifyFieldAlerts: event.target.checked }))} />
+            <span><strong>Campo / RAIF</strong><small>Avisos sobre frescura o incidencias de la información regional. No generan diagnósticos ni tratamientos para tu parcela.</small></span>
+          </label>
+          <label className="account-toggle">
+            <input type="checkbox" checked={preferences.notifyRewards} onChange={(event) => setPreferences((current) => ({ ...current, notifyRewards: event.target.checked }))} />
+            <span><strong>Recompensas</strong><small>Caducidad de canjes, confirmación de recogida y devolución de 🫒 al saldo.</small></span>
+          </label>
+          <label className="account-toggle">
+            <input type="checkbox" checked={preferences.notifyMarket} onChange={(event) => setPreferences((current) => ({ ...current, notifyMarket: event.target.checked }))} />
+            <span><strong>Mercado</strong><small>Preparado para cambios relevantes de precio solo cuando dispongamos de datos estructurados, actuales y verificados. Esta fase todavía no genera alertas de precio.</small></span>
+          </label>
+          <label className="account-toggle">
+            <input type="checkbox" checked={preferences.notifyNews} onChange={(event) => setPreferences((current) => ({ ...current, notifyNews: event.target.checked }))} />
+            <span><strong>Noticias importantes</strong><small>Preferencia para noticias verificadas relevantes para Sierra Mágina y el olivar; se mantiene separada del marketing.</small></span>
           </label>
 
           <div className="account-threshold-grid">

@@ -1,5 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import { municipalAlertEligible, municipalCategory, municipalSeverity } from './municipal-alert-rules.mjs';
 
 const OUTPUT = new URL('../public/data/alerts.json', import.meta.url);
 const NEWS = new URL('../public/data/news.json', import.meta.url);
@@ -38,28 +39,6 @@ const strictAlertTerms = [
   'tratamiento', 'control', 'vigilancia', 'fitosanitario', 'envero', 'recolección', 'recoleccion',
   'mosca del olivo', 'repilo', 'antracnosis', 'aceituna jabonosa', 'verticilosis', 'prays', 'barrenillo',
   'xylella', 'recepción', 'recepcion', 'cierre', 'horario', 'turno',
-];
-
-const municipalDirectTerms = [
-  'corte de agua', 'corte del agua', 'interrupción del suministro', 'interrupcion del suministro',
-  'abastecimiento de agua', 'avería de agua', 'averia de agua',
-  'camino rural', 'caminos rurales', 'corte de camino', 'cierre de camino',
-  'incendio', 'riesgo de incendio', 'emergencia', 'restricción', 'restriccion', 'prohibición', 'prohibicion',
-  'alerta', 'aviso', 'bando', 'desprendimiento', 'inundación', 'inundacion', 'inundaciones',
-];
-
-const municipalAgricultureTerms = [
-  'agricultura', 'agrario', 'agraria', 'agrícola', 'agricola', 'agricultor', 'agricultores',
-  'olivar', 'olivo', 'aceituna', 'cosecha', 'campaña', 'pac', 'ganadería', 'ganaderia', 'regadío', 'regadio',
-];
-
-const municipalAidTerms = [
-  'ayuda', 'ayudas', 'subvención', 'subvencion', 'subvenciones', 'plazo', 'solicitud', 'solicitudes',
-];
-
-const culturalTerms = [
-  'concierto', 'coro', 'música', 'musica', 'fiesta', 'fiestas', 'tobogán', 'tobogan', 'hinchable',
-  'verbena', 'festival', 'teatro', 'exposición', 'exposicion', 'campeonato', 'grand prix',
 ];
 
 function decodeEntities(value = '') {
@@ -130,30 +109,6 @@ function includesAny(text, terms) {
   return terms.some((term) => text.includes(term));
 }
 
-function municipalAlertEligible(story) {
-  if (!story?.municipalityId || story.official !== true) return false;
-  const text = textFor(story);
-  if (includesAny(text, culturalTerms) && !includesAny(text, municipalDirectTerms)) return false;
-  if (includesAny(text, municipalDirectTerms)) return true;
-  return includesAny(text, municipalAgricultureTerms) && includesAny(text, municipalAidTerms);
-}
-
-function municipalSeverity(story) {
-  const text = textFor(story);
-  if (['emergencia', 'incendio', 'prohibición', 'prohibicion', 'alerta'].some((term) => text.includes(term))) return 'critical';
-  if (['corte', 'interrupción', 'interrupcion', 'restricción', 'restriccion', 'desprendimiento', 'inundación', 'inundacion'].some((term) => text.includes(term))) return 'warning';
-  return 'info';
-}
-
-function municipalCategory(story) {
-  const text = textFor(story);
-  if (['camino rural', 'caminos rurales', 'corte de camino', 'cierre de camino'].some((term) => text.includes(term))) return 'Caminos rurales';
-  if (['agua', 'abastecimiento', 'suministro'].some((term) => text.includes(term))) return 'Agua';
-  if (text.includes('incendio')) return 'Incendios';
-  if (includesAny(text, municipalAgricultureTerms) && includesAny(text, municipalAidTerms)) return 'Ayudas agrarias';
-  return 'Aviso municipal';
-}
-
 function severityFor(item) {
   const text = textFor(item);
   if (['medidas obligatorias', 'alerta', 'xylella', 'emergencia fitosanitaria'].some((term) => text.includes(term))) return 'critical';
@@ -193,7 +148,7 @@ function normalizeTitle(title) {
 async function fetchSource(source) {
   const response = await fetch(source.url, {
     headers: {
-      'user-agent': 'MaginaOlivoAlertsBot/1.2 (+https://github.com/izc05/magina-olivo)',
+      'user-agent': 'MaginaOlivoAlertsBot/1.3 (+https://github.com/izc05/magina-olivo)',
       accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml',
     },
     signal: AbortSignal.timeout(15_000),

@@ -39,6 +39,12 @@ export type PlotHarvestReportInput = {
     endDate: string | null;
     status: string;
   };
+  previousCampaign?: {
+    name: string;
+    seasonStartYear: number;
+    seasonEndYear: number;
+    deliveries: PlotHarvestDelivery[];
+  } | null;
   deliveries: PlotHarvestDelivery[];
   documents: PlotHarvestDocumentCount[];
 };
@@ -56,6 +62,20 @@ export type PlotHarvestSummary = {
 export type PlotHarvestProductivity = {
   kilogramsPerHectare: number | null;
   kilogramsPerOliveTree: number | null;
+};
+
+export type PlotHarvestMetricComparison = {
+  current: number | null;
+  previous: number | null;
+  difference: number | null;
+  percentChange: number | null;
+};
+
+export type PlotHarvestCampaignComparison = {
+  totalKilograms: PlotHarvestMetricComparison;
+  kilogramsPerHectare: PlotHarvestMetricComparison;
+  kilogramsPerOliveTree: PlotHarvestMetricComparison;
+  weightedYieldPercent: PlotHarvestMetricComparison;
 };
 
 function numberValue(value: string | null): number | null {
@@ -115,6 +135,48 @@ export function calculatePlotHarvestProductivity(
   };
 }
 
+function compareMetric(current: number | null, previous: number | null): PlotHarvestMetricComparison {
+  if (current == null || previous == null) {
+    return {
+      current,
+      previous,
+      difference: null,
+      percentChange: null,
+    };
+  }
+
+  const difference = current - previous;
+  return {
+    current,
+    previous,
+    difference,
+    percentChange: previous === 0 ? null : (difference / previous) * 100,
+  };
+}
+
+export function calculatePlotHarvestCampaignComparison(
+  currentSummary: PlotHarvestSummary,
+  currentProductivity: PlotHarvestProductivity,
+  previousSummary: PlotHarvestSummary,
+  previousProductivity: PlotHarvestProductivity,
+): PlotHarvestCampaignComparison {
+  return {
+    totalKilograms: compareMetric(currentSummary.totalKilograms, previousSummary.totalKilograms),
+    kilogramsPerHectare: compareMetric(
+      currentProductivity.kilogramsPerHectare,
+      previousProductivity.kilogramsPerHectare,
+    ),
+    kilogramsPerOliveTree: compareMetric(
+      currentProductivity.kilogramsPerOliveTree,
+      previousProductivity.kilogramsPerOliveTree,
+    ),
+    weightedYieldPercent: compareMetric(
+      currentSummary.weightedYieldPercent,
+      previousSummary.weightedYieldPercent,
+    ),
+  };
+}
+
 function asciiPdfText(value: string | number | null | undefined): string {
   return (value == null ? '' : String(value))
     .normalize('NFD')
@@ -136,20 +198,46 @@ function truncate(value: string, maxLength: number): string {
   return value.length <= maxLength ? value : `${value.slice(0, Math.max(0, maxLength - 3))}...`;
 }
 
-function formatKg(value: number): string {
-  return new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 })
+function formatNumber(value: number, maximumFractionDigits: number): string {
+  return new Intl.NumberFormat('es-ES', { maximumFractionDigits })
     .format(value)
     .replaceAll('.', ' ');
 }
 
+function formatKg(value: number): string {
+  return formatNumber(value, 1);
+}
+
 function formatMetric(value: number | null): string {
-  return value == null ? '-' : new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 })
-    .format(value)
-    .replaceAll('.', ' ');
+  return value == null ? '-' : formatNumber(value, 1);
 }
 
 function formatPercent(value: number | null): string {
   return value == null ? '-' : `${value.toFixed(2)} %`;
+}
+
+function formatSignedNumber(value: number | null, maximumFractionDigits: number): string {
+  if (value == null) return '-';
+  const formatted = formatNumber(value, maximumFractionDigits);
+  return value > 0 ? `+${formatted}` : formatted;
+}
+
+function formatRelativeChange(value: number | null): string {
+  return value == null ? '' : ` (${formatSignedNumber(value, 1)} %)`;
+}
+
+function formatComparisonLine(
+  label: string,
+  metric: PlotHarvestMetricComparison,
+  valueUnit: string,
+  differenceUnit: string,
+  maximumFractionDigits: number,
+): string {
+  if (metric.current == null || metric.previous == null || metric.difference == null) {
+    return `${label}: sin dato comparable`;
+  }
+
+  return `${label}: ${formatNumber(metric.current, maximumFractionDigits)} vs ${formatNumber(metric.previous, maximumFractionDigits)} ${valueUnit} | ${formatSignedNumber(metric.difference, maximumFractionDigits)} ${differenceUnit}${formatRelativeChange(metric.percentChange)}`;
 }
 
 function formatDate(value: string | null): string {
@@ -283,6 +371,26 @@ export function buildPlotHarvestPdf(input: PlotHarvestReportInput): Buffer {
     input.plot.areaHa,
     input.plot.oliveTreeCount,
   );
+
+  const previousSummary = input.previousCampaign
+    ? summarizePlotHarvest(input.previousCampaign.deliveries)
+    : null;
+  const previousProductivity = previousSummary
+    ? calculatePlotHarvestProductivity(
+        previousSummary.totalKilograms,
+        input.plot.areaHa,
+        input.plot.oliveTreeCount,
+      )
+    : null;
+  const comparison = previousSummary && previousProductivity
+    ? calculatePlotHarvestCampaignComparison(
+        summary,
+        productivity,
+        previousSummary,
+        previousProductivity,
+      )
+    : null;
+
   const pages: string[] = [];
   let pageNumber = 1;
   let page = reportHeader(input, pageNumber);
@@ -315,9 +423,47 @@ export function buildPlotHarvestPdf(input: PlotHarvestReportInput): Buffer {
     page += text(170, 572, 7, truncate(breakdown, 80));
   }
 
-  page += text(42, 544, 11, 'Entregas registradas', true);
-  page += deliveriesTableHeader(527);
-  let y = 507;
+  page += text(42, 546, 11, 'Comparativa con campana anterior', true);
+  page += line(42, 539, 553, 539, 0.5);
+  if (comparison && input.previousCampaign) {
+    const previousSeason = `${input.previousCampaign.seasonStartYear}/${String(input.previousCampaign.seasonEndYear).slice(-2)}`;
+    page += text(42, 522, 8, `Campana anterior: ${previousSeason}`, true);
+    page += text(42, 506, 7.5, formatComparisonLine(
+      'Kilos',
+      comparison.totalKilograms,
+      'kg',
+      'kg',
+      1,
+    ));
+    page += text(42, 491, 7.5, formatComparisonLine(
+      'Kg/ha',
+      comparison.kilogramsPerHectare,
+      'kg/ha',
+      'kg/ha',
+      1,
+    ));
+    page += text(42, 476, 7.5, formatComparisonLine(
+      'Kg/olivo',
+      comparison.kilogramsPerOliveTree,
+      'kg/olivo',
+      'kg/olivo',
+      1,
+    ));
+    page += text(42, 461, 7.5, formatComparisonLine(
+      'Rendimiento',
+      comparison.weightedYieldPercent,
+      '%',
+      'puntos',
+      2,
+    ));
+    page += text(42, 446, 6.5, 'Productividad comparada usando superficie y numero de olivos actuales de la parcela.');
+  } else {
+    page += text(42, 520, 8, 'Sin datos suficientes de una campana anterior para realizar la comparativa.');
+  }
+
+  page += text(42, 420, 11, 'Entregas registradas', true);
+  page += deliveriesTableHeader(403);
+  let y = 383;
 
   if (input.deliveries.length === 0) {
     page += text(42, y, 9, 'No hay entregas registradas para esta parcela en la campana seleccionada.');

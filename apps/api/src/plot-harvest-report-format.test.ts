@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
   buildPlotHarvestPdf,
+  calculatePlotHarvestCampaignComparison,
   calculatePlotHarvestProductivity,
   summarizePlotHarvest,
   type PlotHarvestDelivery,
@@ -72,6 +73,43 @@ test('plot productivity derives kg per hectare and kg per olive tree only from v
   });
 });
 
+test('plot campaign comparison derives absolute and relative changes without inventing missing metrics', () => {
+  const currentSummary = summarizePlotHarvest([
+    delivery({ kilograms: '1842', yieldPercent: '21.4' }),
+  ]);
+  const previousSummary = summarizePlotHarvest([
+    delivery({ kilograms: '1500', yieldPercent: '20' }),
+  ]);
+  const currentProductivity = calculatePlotHarvestProductivity(1842, '2.45', 320);
+  const previousProductivity = calculatePlotHarvestProductivity(1500, '2.45', 320);
+
+  const comparison = calculatePlotHarvestCampaignComparison(
+    currentSummary,
+    currentProductivity,
+    previousSummary,
+    previousProductivity,
+  );
+
+  assert.equal(comparison.totalKilograms.difference, 342);
+  assert.ok(comparison.totalKilograms.percentChange != null);
+  assert.ok(Math.abs(comparison.totalKilograms.percentChange - 22.8) < 0.0001);
+  assert.ok(comparison.kilogramsPerHectare.difference != null);
+  assert.ok(Math.abs(comparison.kilogramsPerHectare.difference - 139.59183673) < 0.0001);
+  assert.ok(comparison.kilogramsPerOliveTree.difference != null);
+  assert.ok(Math.abs(comparison.kilogramsPerOliveTree.difference - 1.06875) < 0.0001);
+  assert.ok(comparison.weightedYieldPercent.difference != null);
+  assert.ok(Math.abs(comparison.weightedYieldPercent.difference - 1.4) < 0.0001);
+
+  const missingProductivity = calculatePlotHarvestCampaignComparison(
+    currentSummary,
+    calculatePlotHarvestProductivity(1842, null, null),
+    previousSummary,
+    calculatePlotHarvestProductivity(1500, null, null),
+  );
+  assert.equal(missingProductivity.kilogramsPerHectare.difference, null);
+  assert.equal(missingProductivity.kilogramsPerOliveTree.percentChange, null);
+});
+
 test('plot harvest PDF is a private-report-ready A4 PDF payload', () => {
   const input: PlotHarvestReportInput = {
     generatedAt: '2026-12-01T12:00:00.000Z',
@@ -92,6 +130,18 @@ test('plot harvest PDF is a private-report-ready A4 PDF payload', () => {
       startDate: '2026-10-01',
       endDate: null,
       status: 'active',
+    },
+    previousCampaign: {
+      name: 'Campana 2025/26',
+      seasonStartYear: 2025,
+      seasonEndYear: 2026,
+      deliveries: [
+        delivery({
+          deliveredAt: '2025-11-12T08:30:00.000Z',
+          kilograms: '1500',
+          yieldPercent: '20',
+        }),
+      ],
     },
     deliveries: [
       delivery({
@@ -116,6 +166,10 @@ test('plot harvest PDF is a private-report-ready A4 PDF payload', () => {
   assert.match(body, /kg\/ha/);
   assert.match(body, /Media por olivo:/);
   assert.match(body, /kg\/olivo/);
+  assert.match(body, /Comparativa con campana anterior/);
+  assert.match(body, /Campana anterior: 2025\/26/);
+  assert.match(body, /Kilos:/);
+  assert.match(body, /Rendimiento:/);
   assert.match(body, /Documentos vinculados: 2/);
   assert.match(body, /xref/);
   assert.match(body, /%%EOF/);
@@ -132,6 +186,11 @@ test('plot harvest report route is authenticated, holding-isolated and registere
   assert.match(routes, /d\.campaign_id = \$2/);
   assert.match(routes, /d\.plot_id = \$3/);
   assert.match(routes, /d\.verification_status <> 'archived'/);
+  assert.match(routes, /c\.holding_id = \$1/);
+  assert.match(routes, /c\.season_start_year < \$3/);
+  assert.match(routes, /c\.status <> 'archived'/);
+  assert.match(routes, /loadPlotDeliveries\(holdingId, previousCampaignRow\.id, plotId\)/);
+  assert.match(routes, /previousDeliveries\.length > 0/);
   assert.match(routes, /private, no-store/);
   assert.match(routes, /application\/pdf/);
   assert.match(routes, /\/api\/v1\/campaigns\/:campaignId\/plots\/:plotId\/harvest-report\.pdf/);

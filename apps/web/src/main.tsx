@@ -5,6 +5,7 @@ import { AccountPage } from './AccountPage';
 import { App } from './App';
 import { CalendarPage } from './CalendarPage';
 import { ConnectivityStatus } from './ConnectivityStatus';
+import { installDemoDocumentPreview } from './demoDocumentPreview';
 import { installDemoPreview } from './demoPreview';
 import { installDemoPreviewExtras } from './demoPreviewExtras';
 import { MaginaDirectoryPage } from './MaginaDirectoryPage';
@@ -50,6 +51,7 @@ document.documentElement.style.setProperty('--magina-brand-logo', `url("${brandA
 
 installDemoPreview();
 installDemoPreviewExtras();
+installDemoDocumentPreview();
 
 registerSW({
   immediate: true,

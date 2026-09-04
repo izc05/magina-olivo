@@ -5,6 +5,7 @@ import { registerAccountPreferenceRoutes } from './account-preference-routes.ts'
 import { registerActivityRoutes } from './activity-routes.ts';
 import { registerAuthRoutes } from './auth-routes.ts';
 import { registerCampaignExportRoutes } from './campaign-export-routes.ts';
+import { registerCampaignHarvestHistoryAliasRoutes } from './campaign-harvest-history-alias-routes.ts';
 import { registerCampaignRoutes } from './campaign-routes.ts';
 import { registerCampaignSummaryRoutes } from './campaign-summary-routes.ts';
 import { registerCatastroMapRoutes } from './catastro-map-routes.ts';
@@ -83,6 +84,7 @@ export function buildApp(): FastifyInstance {
   registerPlotRoutes(app);
   registerPlotTimelineRoutes(app);
   registerHoldingHarvestReportRoutes(app);
+  registerCampaignHarvestHistoryAliasRoutes(app);
   registerPlotHarvestReportRoutes(app);
   registerSigpacMapRoutes(app);
   registerCatastroMapRoutes(app);

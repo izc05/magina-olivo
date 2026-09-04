@@ -9,6 +9,7 @@
     "source:raif:enqueue": "node --env-file-if-exists=../../.env scripts/enqueue-raif-inspection.ts",
     "source:raif:snapshot": "node --env-file-if-exists=../../.env scripts/download-raif-snapshot.ts",
     "source:market:enqueue": "node --env-file-if-exists=../../.env scripts/enqueue-market-inspection.ts",
+    "push:vapid:generate": "node scripts/generate-vapid-keys.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test"
   },

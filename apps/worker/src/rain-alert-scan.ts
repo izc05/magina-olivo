@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Pool } from 'pg';
 import { normalizePlace, selectRainTriggers, type RainForecastDay } from './rain-alert-rules.ts';
+import { sendEmptyPushToUser } from './web-push-empty.ts';
 
 const AEMET_BASE_URL = 'https://opendata.aemet.es/opendata';
 const AEMET_DATA_HOST = 'opendata.aemet.es';
@@ -264,7 +265,7 @@ export async function scanRainAlerts(pool: Pool): Promise<{ users: number; alert
     await resolveActiveRainAlerts(pool, candidate.user_id, candidate.holding_id);
 
     for (const trigger of triggers) {
-      await pool.query(
+      const upsert = await pool.query<{ is_new_detection: boolean }>(
         `
           insert into weather_alert_events (
             id,
@@ -295,6 +296,7 @@ export async function scanRainAlerts(pool: Pool): Promise<{ users: number; alert
             last_detected_at = now(),
             resolved_at = null,
             updated_at = now()
+          returning first_detected_at = last_detected_at as is_new_detection
         `,
         [
           randomUUID(),
@@ -309,6 +311,10 @@ export async function scanRainAlerts(pool: Pool): Promise<{ users: number; alert
         ],
       );
       alerts += 1;
+
+      if (upsert.rows[0]?.is_new_detection) {
+        await sendEmptyPushToUser(pool, candidate.user_id, 'weather').catch(() => undefined);
+      }
     }
   }
 

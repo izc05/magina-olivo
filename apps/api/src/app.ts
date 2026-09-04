@@ -24,6 +24,7 @@ import { registerPublicNewsRoutes } from './public-news-routes.ts';
 import { registerPublicRadarRoutes } from './public-radar-routes.ts';
 import { registerPublicSourceRoutes } from './public-source-routes.ts';
 import { registerPublicWeatherRoutes } from './public-weather-routes.ts';
+import { registerPushSubscriptionRoutes } from './push-subscription-routes.ts';
 import { registerRainAlertRoutes } from './rain-alert-routes.ts';
 import { registerRequestSecurity } from './request-security.ts';
 import { registerRewardPartnerRoutes } from './reward-partner-routes.ts';
@@ -71,6 +72,7 @@ export function buildApp(): FastifyInstance {
   registerAuthRoutes(app);
   registerAccountPreferenceRoutes(app);
   registerAccountExportRoutes(app);
+  registerPushSubscriptionRoutes(app);
   registerRainAlertRoutes(app);
   registerPublicDestinationRoutes(app);
   registerPublicMunicipalityRoutes(app);

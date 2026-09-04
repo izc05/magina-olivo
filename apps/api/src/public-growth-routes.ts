@@ -33,6 +33,7 @@ const RATE_WINDOW_MS = 60_000;
 const RATE_MAX = 60;
 const rateBuckets = new Map<string, RateBucket>();
 const trustedOriginSet = new Set(trustedOrigins);
+let lastRateSweepAt = 0;
 
 const bodySchema = {
   type: 'object',
@@ -73,12 +74,17 @@ function requestOriginAllowed(request: FastifyRequest): boolean {
   return trustedOriginSet.has(origin);
 }
 
-function consumeRateLimit(ip: string, now = Date.now()): boolean {
-  if (rateBuckets.size > 0 && now % 97 < 2) {
-    for (const [key, bucket] of rateBuckets) {
-      if (now - bucket.startedAt >= RATE_WINDOW_MS) rateBuckets.delete(key);
-    }
+function sweepExpiredRateBuckets(now: number): void {
+  if (now - lastRateSweepAt < RATE_WINDOW_MS) return;
+  lastRateSweepAt = now;
+
+  for (const [key, bucket] of rateBuckets) {
+    if (now - bucket.startedAt >= RATE_WINDOW_MS) rateBuckets.delete(key);
   }
+}
+
+function consumeRateLimit(ip: string, now = Date.now()): boolean {
+  sweepExpiredRateBuckets(now);
 
   const existing = rateBuckets.get(ip);
   if (!existing || now - existing.startedAt >= RATE_WINDOW_MS) {

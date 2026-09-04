@@ -30,3 +30,22 @@ test('public directory UI does not imply private cooperation or integration', as
   assert.match(page, /S\.A\.T\./);
   assert.match(page, /Empresa \/ almazara/);
 });
+
+test('public directory sends only municipality-level context for sponsored priority', async () => {
+  const page = await read('./MaginaDirectoryPage.tsx');
+
+  assert.match(page, /contextMunicipality/);
+  assert.match(page, /Cambiar de municipio recalcula la prioridad/);
+  assert.match(page, /sin compartir coordenadas de parcelas/i);
+  assert.doesNotMatch(page, /latitude|longitude|plotId|holdingId/);
+});
+
+test('public API limits zoned sponsorships to the requested municipality or general campaigns', async () => {
+  const route = await read('../../api/src/public-destination-routes.ts');
+
+  assert.match(route, /contextMunicipality/);
+  assert.match(route, /sponsorship_municipalities sm_scope/);
+  assert.match(route, /lower\(sm_scope\.municipality\) = lower/);
+  assert.match(route, /not exists \(\s*select 1\s*from sponsorship_municipalities sm_scope/);
+  assert.match(route, /precision: contextMunicipality \? 'municipality' : 'general'/);
+});

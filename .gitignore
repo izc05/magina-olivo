@@ -2,6 +2,7 @@ node_modules/
 dist/
 coverage/
 .vite/
+apps/web/dev-dist/
 .DS_Store
 *.log
 .env

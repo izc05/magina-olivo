@@ -10,12 +10,17 @@ export type RealNewsStory = {
   region?: string;
   official?: boolean;
   cooperativeId?: string;
+  municipalityId?: string;
+  municipalityName?: string;
 };
 
 export type RealNewsPayload = {
   generatedAt: string;
   sourceCount?: number;
   healthySourceCount?: number;
+  municipalSourceCount?: number;
+  healthyMunicipalSourceCount?: number;
+  municipalStoryCount?: number;
   collectorErrors?: string[];
   stories: RealNewsStory[];
 };

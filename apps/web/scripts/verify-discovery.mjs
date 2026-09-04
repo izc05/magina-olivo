@@ -1,11 +1,15 @@
 import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const webDir = dirname(scriptDir);
 const distDir = join(webDir, 'dist');
+
+const defaultSiteUrl = 'https://izc05.github.io/magina-olivo';
+const siteUrl = (process.env.PUBLIC_SITE_URL || defaultSiteUrl).replace(/\/$/, '');
+const site = new URL(`${siteUrl}/`);
+const basePath = site.pathname.replace(/\/$/, '');
 
 const publicCanonicalPaths = [
   '/',
@@ -82,10 +86,12 @@ for (const path of privateUiPaths) {
 const robots = await readFile(join(distDir, 'robots.txt'), 'utf8');
 requireIncludes(robots, 'User-agent: OAI-SearchBot', 'robots.txt');
 requireIncludes(robots, 'User-agent: ChatGPT-User', 'robots.txt');
-requireIncludes(robots, 'Disallow: /api/', 'robots.txt');
-requireIncludes(robots, 'Disallow: /health/', 'robots.txt');
+requireIncludes(robots, `Disallow: ${basePath}/api/`, 'robots.txt');
+requireIncludes(robots, `Disallow: ${basePath}/health/`, 'robots.txt');
 for (const path of privateUiPaths) {
-  if (robots.includes(`Disallow: ${path}`)) fail(`robots.txt must allow ${path} so crawlers can read noindex`);
+  if (robots.includes(`Disallow: ${basePath}${path}`)) {
+    fail(`robots.txt must allow ${path} so crawlers can read noindex`);
+  }
 }
 
 const sitemap = await readFile(join(distDir, 'sitemap.xml'), 'utf8');
@@ -101,4 +107,4 @@ const llms = await readFile(join(distDir, 'llms.txt'), 'utf8');
 requireIncludes(llms, 'Mercado del aceite', 'llms.txt');
 requireIncludes(llms, 'Los datos privados', 'llms.txt');
 
-console.info('Discovery build verification passed: public metadata, social cards, private noindex, robots and sitemap are coherent.');
+console.info(`Discovery build verification passed for ${siteUrl}: public metadata, social cards, private noindex, robots and sitemap are coherent.`);

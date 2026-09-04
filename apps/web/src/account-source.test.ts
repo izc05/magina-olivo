@@ -46,4 +46,18 @@ test('account preferences persist user choices and portability does not overprom
   assert.doesNotMatch(account, /Eliminar cuenta<\/button>/);
 });
 
+test('Mi Cuenta uses the Visual V2 layer without changing private behavior', async () => {
+  const main = await read('./main.tsx');
+  const styles = await read('./account-v2.css');
+
+  assert.match(main, /import '\.\/account-v2\.css'/);
+  assert.match(styles, /Visual V2/);
+  assert.match(styles, /--magina-brand-logo/);
+  assert.match(styles, /--v2-olive-deep/);
+  assert.match(styles, /--v2-gold/);
+  assert.match(styles, /env\(safe-area-inset-bottom\)/);
+  assert.match(styles, /prefers-reduced-motion:\s*reduce/);
+  assert.match(styles, /forced-colors:\s*active/);
+});
+
 // Keep this source gate in the CI-triggering slice so portability changes always re-run both repository gates.

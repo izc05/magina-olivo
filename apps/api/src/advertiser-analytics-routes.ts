@@ -206,7 +206,7 @@ export function registerAdvertiserAnalyticsRoutes(app: FastifyInstance): void {
           count(e.id) filter (where e.event_type in ('profile_view','phone_click','whatsapp_click','website_click'))::int as actions
         from sponsorships s
         left join advertising_events e on e.sponsorship_id=s.id and e.occurred_at >= now() - ($1 * interval '1 day')
-        where s.plan_code in ('featured','premium') and s.status in ('active','paused','ended')
+        where s.plan_code in ('featured','premium') and s.status in ('active','paused','expired')
         group by s.plan_code order by s.plan_code
       `, [days]);
       reply.header('cache-control', 'private, no-store');

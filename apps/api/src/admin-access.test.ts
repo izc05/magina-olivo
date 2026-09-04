@@ -3,7 +3,7 @@ import test from 'node:test';
 import {
   isPlatformAdminEmail,
   parsePlatformAdminEmails,
-} from './admin-access.ts';
+} from './admin-access-policy.ts';
 
 test('platform admin email parsing is normalized and exact', () => {
   const emails = parsePlatformAdminEmails(' Owner@Example.test,admin@example.test ,, ');

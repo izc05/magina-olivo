@@ -95,7 +95,10 @@ createRoot(root).render(
     ) : path === '/admin/operaciones' ? (
       <AdminOperationsPage />
     ) : path === '/admin' ? (
-      <AdminPage />
+      <>
+        <AdminPage />
+        <a className="admin-ops-entry" href="/admin/operaciones">Usuarios · Directorio · Fuentes · Auditoría</a>
+      </>
     ) : path === '/cuenta' ? (
       <AccountPage />
     ) : path === '/calendario' ? (

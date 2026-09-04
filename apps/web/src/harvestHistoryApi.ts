@@ -19,8 +19,8 @@ export type HarvestHistory = {
   items: HarvestHistoryPoint[];
 };
 
-export async function getHarvestHistory(holdingId: string): Promise<HarvestHistory> {
-  const response = await fetch(`/api/v1/holdings/${holdingId}/harvest-history`, {
+export async function getHarvestHistory(campaignId: string): Promise<HarvestHistory> {
+  const response = await fetch(`/api/v1/campaigns/${campaignId}/harvest-history`, {
     credentials: 'include',
     headers: { accept: 'application/json' },
   });

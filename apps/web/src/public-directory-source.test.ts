@@ -49,3 +49,18 @@ test('public API limits zoned sponsorships to the requested municipality or gene
   assert.match(route, /not exists \(\s*select 1\s*from sponsorship_municipalities sm_scope/);
   assert.match(route, /precision: contextMunicipality \? 'municipality' : 'general'/);
 });
+
+test('sponsored directory metrics count visible impressions and contact actions without private identifiers', async () => {
+  const page = await read('./MaginaDirectoryPage.tsx');
+
+  assert.match(page, /IntersectionObserver/);
+  assert.match(page, /intersectionRatio < 0\.5/);
+  assert.match(page, /recordedImpressions/);
+  assert.match(page, /\/api\/v1\/public\/advertising\/events/);
+  assert.match(page, /phone_click/);
+  assert.match(page, /whatsapp_click/);
+  assert.match(page, /website_click/);
+  assert.match(page, /keepalive: true/);
+  assert.match(page, /No se guardan IP, usuario, explotación ni coordenadas de parcelas/i);
+  assert.doesNotMatch(page, /plotId|holdingId|latitude|longitude/);
+});

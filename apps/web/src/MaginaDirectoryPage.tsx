@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type EntityType = 'cooperative' | 'sat' | 'company' | 'other';
 type VerificationStatus = 'unverified' | 'verified' | 'stale';
@@ -15,6 +15,8 @@ type AdvertisingCategory =
   | 'insurance'
   | 'advisory'
   | 'other';
+type AdvertisingEventType = 'impression' | 'phone_click' | 'whatsapp_click' | 'website_click';
+type AdvertisingPlacement = 'directory_card' | 'directory_action';
 
 type PublicDestination = {
   id: string;
@@ -110,6 +112,29 @@ function whatsappHref(value: string | null): string | null {
   return normalized ? `https://wa.me/${normalized}` : null;
 }
 
+function recordAdvertisingEvent(
+  destinationId: string,
+  eventType: AdvertisingEventType,
+  contextMunicipality: string | null,
+  placement: AdvertisingPlacement,
+): void {
+  void fetch('/api/v1/public/advertising/events', {
+    method: 'POST',
+    credentials: 'same-origin',
+    keepalive: true,
+    headers: {
+      accept: 'application/json',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      destinationId,
+      eventType,
+      contextMunicipality,
+      placement,
+    }),
+  }).catch(() => undefined);
+}
+
 export function MaginaDirectoryPage() {
   const [data, setData] = useState<DirectoryResponse | null>(null);
   const [query, setQuery] = useState('');
@@ -118,6 +143,7 @@ export function MaginaDirectoryPage() {
   const [category, setCategory] = useState<AdvertisingCategory | ''>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const recordedImpressions = useRef(new Set<string>());
 
   useEffect(() => {
     const controller = new AbortController();
@@ -175,8 +201,39 @@ export function MaginaDirectoryPage() {
     });
   }, [category, data, entityType, municipality, query]);
 
+  useEffect(() => {
+    if (!data?.advertisingEnabled || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting || entry.intersectionRatio < 0.5) continue;
+        const element = entry.target as HTMLElement;
+        const destinationId = element.dataset.advertisingDestination;
+        if (!destinationId) continue;
+
+        const contextMunicipality = municipality || null;
+        const impressionKey = `${contextMunicipality ?? 'general'}:${destinationId}`;
+        if (!recordedImpressions.current.has(impressionKey)) {
+          recordedImpressions.current.add(impressionKey);
+          recordAdvertisingEvent(destinationId, 'impression', contextMunicipality, 'directory_card');
+        }
+        observer.unobserve(element);
+      }
+    }, { threshold: [0.5] });
+
+    document.querySelectorAll<HTMLElement>('[data-advertising-destination]')
+      .forEach((element) => observer.observe(element));
+
+    return () => observer.disconnect();
+  }, [data?.advertisingEnabled, filtered, municipality]);
+
   const globalCheckedAt = formatCheckedAt(data?.source.checkedAt ?? null);
   const sponsoredCount = filtered.filter((item) => item.sponsorship?.sponsored).length;
+
+  function trackSponsoredClick(item: PublicDestination, eventType: Exclude<AdvertisingEventType, 'impression'>): void {
+    if (!data?.advertisingEnabled || !item.sponsorship?.sponsored) return;
+    recordAdvertisingEvent(item.id, eventType, municipality || null, 'directory_action');
+  }
 
   return (
     <main className="directory-shell" id="main-content">
@@ -260,7 +317,11 @@ export function MaginaDirectoryPage() {
             const sponsored = Boolean(item.sponsorship?.sponsored);
 
             return (
-              <article className={`card directory-card${sponsored ? ' directory-card-sponsored' : ''}`} key={item.id}>
+              <article
+                className={`card directory-card${sponsored ? ' directory-card-sponsored' : ''}`}
+                key={item.id}
+                data-advertising-destination={sponsored ? item.id : undefined}
+              >
                 <div className="directory-card-topline">
                   <span className={`directory-type ${item.entityType}`}>
                     {item.commercial?.category ? categoryLabels[item.commercial.category] : entityLabels[item.entityType]}
@@ -286,9 +347,9 @@ export function MaginaDirectoryPage() {
 
                 {item.commercial && (phone || whatsapp || item.websiteUrl) ? (
                   <div className="directory-actions" aria-label={`Contactar con ${item.officialName}`}>
-                    {phone ? <a className="directory-action" href={phone}>Llamar</a> : null}
-                    {whatsapp ? <a className="directory-action primary" href={whatsapp} target="_blank" rel="noreferrer noopener">WhatsApp</a> : null}
-                    {item.websiteUrl ? <a className="directory-action" href={item.websiteUrl} target="_blank" rel="noreferrer noopener">Web</a> : null}
+                    {phone ? <a className="directory-action" href={phone} onClick={() => trackSponsoredClick(item, 'phone_click')}>Llamar</a> : null}
+                    {whatsapp ? <a className="directory-action primary" href={whatsapp} target="_blank" rel="noreferrer noopener" onClick={() => trackSponsoredClick(item, 'whatsapp_click')}>WhatsApp</a> : null}
+                    {item.websiteUrl ? <a className="directory-action" href={item.websiteUrl} target="_blank" rel="noreferrer noopener" onClick={() => trackSponsoredClick(item, 'website_click')}>Web</a> : null}
                   </div>
                 ) : null}
 
@@ -317,6 +378,7 @@ export function MaginaDirectoryPage() {
 
       <footer className="directory-footer">
         <p><strong>Transparencia:</strong> una empresa puede pagar por mayor visibilidad y aparecer como <strong>Patrocinado</strong>. El pago no modifica precios del aceite, meteorología, alertas, noticias ni ningún dato privado de tu explotación.</p>
+        <p><strong>Privacidad de métricas:</strong> las interacciones con contenido patrocinado se contabilizan de forma agregada para medir el rendimiento de la campaña. No se guardan IP, usuario, explotación ni coordenadas de parcelas en estos eventos.</p>
         <p><strong>Importante:</strong> aparecer en el directorio no significa que la entidad colabore con Mágina Olivo ni que exista integración con su área privada.</p>
         {data ? (
           <p>

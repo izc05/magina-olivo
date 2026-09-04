@@ -42,6 +42,9 @@ jobs:
       - name: Validate real news feed
         run: node scripts/validate-news.mjs
 
+      - name: Validate municipal alert rules
+        run: node scripts/validate-municipal-alert-rules.mjs
+
       - name: Refresh official alerts
         run: npm run alerts:sync
 

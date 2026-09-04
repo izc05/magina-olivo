@@ -1,9 +1,10 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import { municipalNewsSources } from './municipal-news-sources.mjs';
 
 const OUTPUT = new URL('../public/data/news.json', import.meta.url);
 
-const sources = [
+const baseSources = [
   { name: 'D.O.P. Sierra Mágina', url: 'https://sierramagina.org/feed/', weight: 24, scope: 'magina', official: true },
   { name: 'La Quinta Esencia · Oficial', url: 'https://laquintaesencia.com/feed/', weight: 28, scope: 'magina', official: true, cooperativeId: 'cristo-misericordia-jodar' },
   {
@@ -57,12 +58,14 @@ const sources = [
   },
 ];
 
+const sources = [...municipalNewsSources, ...baseSources];
+
 const maginaTerms = [
   'sierra mágina', 'huelma', 'bedmar', 'bedmar y garcíez', 'jódar', 'cambil', 'mancha real',
   'torres', 'jimena', 'pegalajar', 'bélmez de la moraleda', 'belmez de la moraleda',
-  'cabrá del santo cristo', 'cabra del santo cristo', 'campillo de arenas', 'la guardia de jaén',
-  'carchelejo', 'cárcheles', 'carcheles', 'arbuniel', 'solera', 'albanchez de mágina',
-  'gérgal', 'expohuelma', 'oro de cánava', 'oro magnasur', 'santuario de mágina',
+  'cabra del santo cristo', 'campillo de arenas', 'la guardia de jaén', 'carchelejo',
+  'cárcheles', 'carcheles', 'arbuniel', 'solera', 'albanchez de mágina', 'albanchez de magina',
+  'larva', 'noalejo', 'expohuelma', 'oro de cánava', 'oro magnasur', 'santuario de mágina',
 ];
 
 const oliveTerms = [
@@ -75,6 +78,7 @@ const agricultureTerms = [
   'agricultura', 'agrario', 'campo', 'rural', 'pac', 'ayuda', 'subvención', 'subvencion',
   'mercado', 'precio', 'exportación', 'exportacion', 'importación', 'importacion', 'maquinaria',
   'digitalización', 'digitalizacion', 'tecnología', 'tecnologia', 'dron', 'sensor', 'suelo',
+  'camino', 'caminos', 'agua', 'abastecimiento', 'bando', 'incendio', 'empleo',
 ];
 
 function decodeEntities(value = '') {
@@ -108,7 +112,6 @@ function getTag(block, names) {
 function getLink(block) {
   const textLink = getTag(block, ['link']);
   if (textLink.startsWith('http')) return textLink;
-
   const href = block.match(/<link[^>]+href=["']([^"']+)["'][^>]*>/i)?.[1];
   return decodeEntities(href ?? '');
 }
@@ -137,18 +140,20 @@ function parseXml(xml, configuredSource) {
       title,
       excerpt: description.slice(0, 280),
       url,
-      source: sourceFromFeed || configuredSource.name,
+      source: configuredSource.municipalityId ? configuredSource.name : (sourceFromFeed || configuredSource.name),
       publishedAt: Number.isNaN(publishedAt.getTime()) ? new Date().toISOString() : publishedAt.toISOString(),
       weight: configuredSource.weight,
       scope: configuredSource.scope,
       official: Boolean(configuredSource.official),
       cooperativeId: configuredSource.cooperativeId,
+      municipalityId: configuredSource.municipalityId,
+      municipalityName: configuredSource.municipalityName,
     };
   }).filter((item) => item.title && item.url);
 }
 
 function textFor(item) {
-  return `${item.title} ${item.excerpt}`.toLocaleLowerCase('es');
+  return `${item.title} ${item.excerpt} ${item.municipalityName ?? ''}`.toLocaleLowerCase('es');
 }
 
 function includesAny(text, terms) {
@@ -171,13 +176,14 @@ function freshnessBonus(publishedAt) {
 }
 
 function scopeFor(item, text) {
-  if (item.scope === 'magina' || includesAny(text, maginaTerms)) return 'Sierra Mágina';
+  if (item.municipalityId || item.scope === 'magina' || includesAny(text, maginaTerms)) return 'Sierra Mágina';
   if (item.scope === 'jaen') return 'Jaén';
   if (item.scope === 'andalucia') return 'Andalucía';
   return 'Sector';
 }
 
-function categoryFor(text, scope) {
+function categoryFor(item, text, scope) {
+  if (item.municipalityId) return 'Ayuntamientos';
   if (scope === 'Sierra Mágina' && includesAny(text, maginaTerms)) return 'Sierra Mágina';
   if (includesAny(text, ['precio', 'mercado', 'exportación', 'exportacion', 'importación', 'importacion'])) return 'Mercado';
   if (includesAny(text, ['tecnología', 'tecnologia', 'dron', 'sensor', 'digitalización', 'digitalizacion', 'inteligencia artificial'])) return 'Tecnología';
@@ -192,7 +198,8 @@ function relevanceFor(item) {
   const maginaCount = countTerms(text, maginaTerms);
   const oliveCount = countTerms(text, oliveTerms);
   const agricultureCount = countTerms(text, agricultureTerms);
-  const relevance = item.weight + maginaCount * 9 + oliveCount * 5 + agricultureCount * 2 + (item.official ? 4 : 0);
+  const municipalBonus = item.municipalityId ? 14 : 0;
+  const relevance = item.weight + municipalBonus + maginaCount * 9 + oliveCount * 5 + agricultureCount * 2 + (item.official ? 4 : 0);
   return { text, relevance, maginaCount, sectorCount: oliveCount + agricultureCount };
 }
 
@@ -211,7 +218,7 @@ function normalizeTitle(title) {
 
 async function fetchText(url) {
   const response = await fetch(url, {
-    headers: { 'user-agent': 'MaginaOlivoNewsBot/1.0 (+https://github.com/izc05/magina-olivo)' },
+    headers: { 'user-agent': 'MaginaOlivoNewsBot/1.1 (+https://github.com/izc05/magina-olivo)' },
     signal: AbortSignal.timeout(12_000),
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -223,6 +230,7 @@ async function main() {
   const all = [];
   const errors = [];
   let healthySourceCount = 0;
+  let healthyMunicipalSourceCount = 0;
 
   for (const source of sources) {
     try {
@@ -230,6 +238,7 @@ async function main() {
       const items = parseXml(xml, source);
       all.push(...items);
       healthySourceCount += 1;
+      if (source.municipalityId) healthyMunicipalSourceCount += 1;
     } catch (error) {
       errors.push(`${source.name}: ${error?.message ?? String(error)}`);
     }
@@ -248,7 +257,9 @@ async function main() {
         sectorCount,
       };
     })
-    .filter(({ relevance, maginaCount, sectorCount }) => relevance >= 15 && (maginaCount > 0 || sectorCount > 0))
+    .filter(({ item, relevance, maginaCount, sectorCount }) => (
+      relevance >= 15 && (Boolean(item.municipalityId) || maginaCount > 0 || sectorCount > 0)
+    ))
     .sort((a, b) => b.rankScore - a.rankScore || new Date(b.item.publishedAt) - new Date(a.item.publishedAt));
 
   const seenTitles = new Set();
@@ -263,7 +274,7 @@ async function main() {
     const scope = scopeFor(item, text);
     stories.push({
       id: storyId(item),
-      category: categoryFor(text, scope),
+      category: categoryFor(item, text, scope),
       scope,
       title: item.title,
       excerpt: item.excerpt,
@@ -272,8 +283,12 @@ async function main() {
       publishedAt: item.publishedAt,
       official: item.official,
       ...(item.cooperativeId ? { cooperativeId: item.cooperativeId } : {}),
+      ...(item.municipalityId ? {
+        municipalityId: item.municipalityId,
+        municipalityName: item.municipalityName,
+      } : {}),
     });
-    if (stories.length >= 36) break;
+    if (stories.length >= 42) break;
   }
 
   if (!stories.length) {
@@ -283,16 +298,21 @@ async function main() {
     return;
   }
 
+  const municipalStoryCount = stories.filter((story) => story.municipalityId).length;
   const payload = {
     generatedAt: new Date().toISOString(),
     sourceCount: sources.length,
     healthySourceCount,
+    municipalSourceCount: municipalNewsSources.length,
+    healthyMunicipalSourceCount,
+    municipalStoryCount,
     collectorErrors: errors,
     stories,
   };
 
   await writeFile(OUTPUT, `${JSON.stringify(payload, null, 2)}\n`);
   console.log(`Feed actualizado: ${stories.length} noticias; ${healthySourceCount}/${sources.length} fuentes operativas.`);
+  console.log(`Ayuntamientos: ${municipalStoryCount} noticias · ${healthyMunicipalSourceCount}/${municipalNewsSources.length} fuentes municipales operativas.`);
   if (errors.length) console.warn(`Fuentes con error: ${errors.join(' | ')}`);
 }
 

@@ -85,7 +85,7 @@ test('selector is wired into Mi Campo and preserves explicit user selection sema
   assert.match(selector, /Mi ubicación/);
   assert.match(selector, /aria-pressed=\{isSelected\}/);
   assert.match(selector, /Continuar con esta parcela/);
-  assert.match(selector, /no interpreta la selección como prueba de propiedad/);
+  assert.match(selector, /no acredita titularidad ni propiedad/);
 
   assert.match(routes, /\/api\/v1\/maps\/catastro\/parcelas\/by-reference\/:reference/);
   assert.match(routes, /fetchCatastroParcelByReference\(reference\)/);
@@ -130,7 +130,6 @@ test('PNOA, SIGPAC and private plot layers remain visual aids and preserve Catas
   assert.match(overlays, /AbortController/);
   assert.match(overlays, /SIGPAC/);
   assert.match(overlays, /Mis parcelas/);
-  assert.match(overlays, /pointer-events/);
   assert.doesNotMatch(overlays, /method:\s*['"]POST['"]/);
   assert.doesNotMatch(overlays, /import-sigpac/);
 

@@ -13,7 +13,7 @@ import { MaginaMarketPage } from './MaginaMarketPage';
 import { MaginaNewsPage } from './MaginaNewsPage';
 import { MaginaWeatherPage } from './MaginaWeatherPage';
 import { NoticeCenter } from './NoticeCenter';
-import { OnboardingPage } from './OnboardingPage';
+import { OnboardingRouter } from './OnboardingRouter';
 import { PilotAlerts } from './PilotAlerts';
 import { RegisterPage } from './RegisterPage';
 import { RegistrationEntry } from './RegistrationEntry';
@@ -87,7 +87,7 @@ createRoot(root).render(
     ) : path === '/register' ? (
       <RegisterPage />
     ) : path === '/onboarding' ? (
-      <OnboardingPage />
+      <OnboardingRouter />
     ) : path === '/cuenta' ? (
       <AccountPage />
     ) : path === '/calendario' ? (

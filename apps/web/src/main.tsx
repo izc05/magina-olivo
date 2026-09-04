@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { AccountPage } from './AccountPage';
 import { AdminCommandCenterPage } from './AdminCommandCenterPage';
+import { AdminCommandShortcuts } from './AdminCommandShortcuts';
 import { AdminContentPage } from './AdminContentPage';
 import { AdminFinancePage } from './AdminFinancePage';
 import { AdminOperationsPage } from './AdminOperationsPage';
@@ -56,6 +57,7 @@ import './admin.css';
 import './admin-operations.css';
 import './admin-content.css';
 import './admin-finance-roles.css';
+import './admin-command-shortcuts.css';
 import './platform-announcements.css';
 import './support-legal-system.css';
 
@@ -122,7 +124,10 @@ createRoot(root).render(
           <a className="admin-ops-entry" href="/admin">← Centro de mando</a>
         </>
       ) : path === '/admin' ? (
-        <AdminCommandCenterPage />
+        <>
+          <AdminCommandCenterPage />
+          <AdminCommandShortcuts />
+        </>
       ) : path === '/contacto' ? (
         <ContactPage />
       ) : path === '/legal/privacidad' ? (

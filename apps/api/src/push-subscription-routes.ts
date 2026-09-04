@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { isIP } from 'node:net';
 import type { FastifyInstance } from 'fastify';
 import { getPool } from './db.ts';
 import { apiError } from './http-errors.ts';
@@ -28,6 +29,7 @@ export function isAllowedPushEndpoint(value: string): boolean {
   }
   if (url.protocol !== 'https:' || url.username || url.password || !url.hostname) return false;
   const hostname = url.hostname.toLowerCase();
+  if (isIP(hostname) !== 0 || hostname === 'localhost' || hostname.endsWith('.localhost')) return false;
   return allowedPushHosts().some((allowed) => hostname === allowed || hostname.endsWith(`.${allowed}`));
 }
 

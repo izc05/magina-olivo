@@ -81,22 +81,15 @@ export function PlotOliveCountPanel({ farmId, onSaved }: { farmId: string; onSav
     setNotice(null);
   }, [selectedPlot?.id, selectedPlot?.oliveTreeCount]);
 
-  async function saveOliveCount() {
+  async function persistOliveCount(value: number | null) {
     if (!selectedPlot) return;
-    const trimmed = oliveTreeCount.trim();
-    const parsed = trimmed === '' ? null : Number(trimmed);
-    if (parsed != null && (!Number.isInteger(parsed) || parsed < 0 || parsed > 100000000)) {
-      setError('Escribe un número entero de olivos igual o superior a 0.');
-      return;
-    }
-
     setSaving(true);
     setError(null);
     setNotice(null);
     try {
       const updated = await request<UpdateResponse>(`/api/v1/plots/${selectedPlot.id}/olive-count`, {
         method: 'PATCH',
-        body: JSON.stringify({ oliveTreeCount: parsed }),
+        body: JSON.stringify({ oliveTreeCount: value }),
       });
       setPlots((current) => current.map((plot) => plot.id === updated.id ? {
         ...plot,
@@ -114,6 +107,21 @@ export function PlotOliveCountPanel({ farmId, onSaved }: { farmId: string; onSav
     } finally {
       setSaving(false);
     }
+  }
+
+  async function saveOliveCount() {
+    const trimmed = oliveTreeCount.trim();
+    const parsed = trimmed === '' ? null : Number(trimmed);
+    if (parsed != null && (!Number.isInteger(parsed) || parsed < 0 || parsed > 100000000)) {
+      setError('Escribe un número entero de olivos igual o superior a 0.');
+      return;
+    }
+    await persistOliveCount(parsed);
+  }
+
+  async function clearOliveCount() {
+    setOliveTreeCount('');
+    await persistOliveCount(null);
   }
 
   if (loading) return <div className="card empty-state" role="status">Cargando inventario de olivos…</div>;
@@ -174,7 +182,7 @@ export function PlotOliveCountPanel({ farmId, onSaved }: { farmId: string; onSav
           <button className="primary-button" type="button" onClick={() => void saveOliveCount()} disabled={saving}>
             {saving ? 'Guardando…' : 'Guardar cantidad de olivos'}
           </button>
-          <button className="ghost-button" type="button" onClick={() => setOliveTreeCount('')} disabled={saving || oliveTreeCount === ''}>
+          <button className="ghost-button" type="button" onClick={() => void clearOliveCount()} disabled={saving || selectedPlot?.oliveTreeCount == null}>
             Dejar sin informar
           </button>
         </div>

@@ -35,6 +35,34 @@ async function fetchWithTimeout(url: URL | string): Promise<Response> {
   });
 }
 
+async function readBodyWithinLimit(response: Response, maxBytes: number): Promise<Buffer> {
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('AEMET radar image response had no body');
+
+  const chunks: Buffer[] = [];
+  let totalBytes = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value?.byteLength) continue;
+
+      totalBytes += value.byteLength;
+      if (totalBytes > maxBytes) {
+        await reader.cancel().catch(() => undefined);
+        throw new Error('AEMET radar image exceeds the configured size limit');
+      }
+      chunks.push(Buffer.from(value));
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  if (totalBytes === 0) throw new Error('AEMET radar image is empty');
+  return Buffer.concat(chunks, totalBytes);
+}
+
 export async function captureRadarFrame(pool: pg.Pool): Promise<{ inserted: boolean; hash: string }> {
   const endpoint = new URL(AEMET_RADAR_URL);
   endpoint.searchParams.set('api_key', aemetApiKey());
@@ -62,13 +90,11 @@ export async function captureRadarFrame(pool: pg.Pool): Promise<{ inserted: bool
 
   const declaredLength = Number(imageResponse.headers.get('content-length') ?? '0');
   if (Number.isFinite(declaredLength) && declaredLength > MAX_IMAGE_BYTES) {
+    await imageResponse.body?.cancel().catch(() => undefined);
     throw new Error('AEMET radar image exceeds the configured size limit');
   }
 
-  const image = Buffer.from(await imageResponse.arrayBuffer());
-  if (image.length === 0 || image.length > MAX_IMAGE_BYTES) {
-    throw new Error('AEMET radar image is empty or exceeds the configured size limit');
-  }
+  const image = await readBodyWithinLimit(imageResponse, MAX_IMAGE_BYTES);
 
   const hash = createHash('sha256').update(image).digest('hex');
   const inserted = await pool.query(

@@ -12,6 +12,7 @@ import {
   type Plot,
   type User,
 } from './api';
+import { CampaignDashboardV2 } from './CampaignDashboardV2';
 import { CampaignDocuments } from './CampaignDocuments.tsx';
 import { DeliveryEntryCard, DeliveryTicketButton } from './DeliveryEntryCard.tsx';
 import { FieldDashboardV2 } from './FieldDashboardV2';
@@ -405,56 +406,55 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
 }
 
 function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelectedCampaignId, selectedCampaign, farms, deliveries, summary, busy, runAction, reloadHoldingData, reloadCampaign }: { selectedHolding: Holding | null; campaigns: Campaign[]; selectedCampaignId: string; setSelectedCampaignId: (id: string) => void; selectedCampaign: Campaign | null; farms: Farm[]; deliveries: Delivery[]; summary: CampaignSummary | null; busy: boolean; runAction: ActionRunner; reloadHoldingData: () => Promise<void>; reloadCampaign: () => Promise<void> }) {
+  const createCampaign = selectedHolding && !campaigns.length
+    ? <CreateCampaignCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} />
+    : null;
+
+  const deliveryEntry = selectedCampaign && selectedHolding
+    ? (
+      <DeliveryEntryCard
+        holdingId={selectedHolding.id}
+        campaignId={selectedCampaign.id}
+        farms={farms}
+        onSaved={reloadCampaign}
+      />
+    )
+    : null;
+
+  const deliveryList = selectedCampaign ? (
+    <section className="section campaign-v2-delivery-list">
+      {deliveries.map((delivery) => (
+        <article className="card delivery-row" key={delivery.id}>
+          <div>
+            <div className="delivery-kilos">{formatKg(delivery.kilograms)}</div>
+            <div className="delivery-date">{new Date(delivery.deliveredAt).toLocaleDateString('es-ES')} · {delivery.customDestination || 'Cooperativa'}{delivery.ticketNumber ? ` · Ticket ${delivery.ticketNumber}` : ''}</div>
+          </div>
+          <div className="delivery-actions">
+            <YieldForm deliveryId={delivery.id} busy={busy} runAction={runAction} onCreated={reloadCampaign} />
+            {selectedHolding ? <DeliveryTicketButton holdingId={selectedHolding.id} deliveryId={delivery.id} /> : null}
+          </div>
+        </article>
+      ))}
+      {!deliveries.length ? <EmptyState title="Aún no hay entregas">Registra la primera cuando lleves aceituna a la almazara.</EmptyState> : null}
+    </section>
+  ) : null;
+
+  const documents = selectedCampaign && selectedHolding
+    ? <CampaignDocuments holdingId={selectedHolding.id} campaignId={selectedCampaign.id} deliveries={deliveries} />
+    : null;
+
   return (
-    <>
-      <PageIntro eyebrow="Campaña" title="Entregas y rendimiento" copy="El núcleo productivo del olivar, con trazabilidad por entrega." />
-      {selectedHolding && !campaigns.length ? <CreateCampaignCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} /> : null}
-      {campaigns.length ? (
-        <section className="section">
-          <select className="selector" value={selectedCampaignId} onChange={(event) => setSelectedCampaignId(event.target.value)} aria-label="Campaña activa">
-            {campaigns.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}
-          </select>
-        </section>
-      ) : null}
-
-      {selectedCampaign ? (
-        <>
-          <section className="section card card-body">
-            <div className="metrics" style={{ marginTop: 0 }}>
-              <Metric value={formatKg(summary?.totalKilograms)} label="kilos" />
-              <Metric value={formatPercent(summary?.weightedYieldPercent)} label="rendimiento" />
-            </div>
-          </section>
-
-          {selectedHolding ? (
-            <DeliveryEntryCard
-              holdingId={selectedHolding.id}
-              campaignId={selectedCampaign.id}
-              farms={farms}
-              onSaved={reloadCampaign}
-            />
-          ) : null}
-
-          <section className="section">
-            <div className="section-heading"><div><h2 className="section-title">Entregas</h2><p className="section-copy">{deliveries.length} registradas en esta campaña.</p></div></div>
-            {deliveries.map((delivery) => (
-              <article className="card delivery-row" key={delivery.id}>
-                <div>
-                  <div className="delivery-kilos">{formatKg(delivery.kilograms)}</div>
-                  <div className="delivery-date">{new Date(delivery.deliveredAt).toLocaleDateString('es-ES')} · {delivery.customDestination || 'Cooperativa'}{delivery.ticketNumber ? ` · Ticket ${delivery.ticketNumber}` : ''}</div>
-                </div>
-                <div className="delivery-actions">
-                  <YieldForm deliveryId={delivery.id} busy={busy} runAction={runAction} onCreated={reloadCampaign} />
-                  {selectedHolding ? <DeliveryTicketButton holdingId={selectedHolding.id} deliveryId={delivery.id} /> : null}
-                </div>
-              </article>
-            ))}
-            {!deliveries.length ? <EmptyState title="Aún no hay entregas">Registra la primera cuando lleves aceituna a la almazara.</EmptyState> : null}
-          </section>
-          {selectedHolding ? <CampaignDocuments holdingId={selectedHolding.id} campaignId={selectedCampaign.id} deliveries={deliveries} /> : null}
-        </>
-      ) : null}
-    </>
+    <CampaignDashboardV2
+      campaigns={campaigns}
+      selectedCampaignId={selectedCampaignId}
+      selectedCampaign={selectedCampaign}
+      summary={summary}
+      onSelectCampaign={setSelectedCampaignId}
+      createCampaign={createCampaign}
+      deliveryEntry={deliveryEntry}
+      deliveries={deliveryList}
+      documents={documents}
+    />
   );
 }
 

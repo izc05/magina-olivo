@@ -1,26 +1,10 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { isPlatformAdminEmail } from './admin-access-policy.ts';
 import { apiError } from './http-errors.ts';
 import {
   getAuthenticatedSession,
   type AuthenticatedSession,
 } from './session.ts';
-
-export function parsePlatformAdminEmails(value: string | undefined): Set<string> {
-  return new Set(
-    (value ?? '')
-      .split(',')
-      .map((email) => email.trim().toLowerCase())
-      .filter(Boolean),
-  );
-}
-
-export function isPlatformAdminEmail(
-  email: string | null | undefined,
-  configured = process.env.MAGINA_ADMIN_EMAILS,
-): boolean {
-  if (!email) return false;
-  return parsePlatformAdminEmails(configured).has(email.trim().toLowerCase());
-}
 
 export async function requirePlatformAdmin(
   request: FastifyRequest,

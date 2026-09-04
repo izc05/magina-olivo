@@ -9,9 +9,20 @@ type Props = {
   onBack: () => void;
 };
 
+type MarketDifferential = {
+  key: string;
+  label: string;
+  value: number;
+};
+
 function formatPrice(value: number | null, unit: string) {
   if (value == null) return '—';
   return `${value.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`;
+}
+
+function formatDifferential(value: number, unit: string) {
+  const sign = value > 0 ? '+' : '';
+  return `${sign}${value.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`;
 }
 
 function trendText(series: MarketSeries) {
@@ -19,6 +30,22 @@ function trendText(series: MarketSeries) {
   if (!change) return 'Sin comparación';
   const sign = change.absolute > 0 ? '+' : '';
   return `${sign}${change.absolute.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} · ${sign}${change.percent.toLocaleString('es-ES', { maximumFractionDigits: 1 })}%`;
+}
+
+function buildDifferentials(series: MarketSeries[]): MarketDifferential[] {
+  const byId = new Map(series.map((item) => [item.id, latestValue(item)]));
+  const pairs: Array<[MarketSeries['id'], MarketSeries['id'], string]> = [
+    ['aove', 'virgen', 'AOVE vs Virgen'],
+    ['aove', 'lampante', 'AOVE vs Lampante'],
+    ['virgen', 'lampante', 'Virgen vs Lampante'],
+  ];
+
+  return pairs.flatMap(([leftId, rightId, label]) => {
+    const left = byId.get(leftId);
+    const right = byId.get(rightId);
+    if (left == null || right == null) return [];
+    return [{ key: `${leftId}-${rightId}`, label, value: left - right }];
+  });
 }
 
 function MultiTrendChart({
@@ -123,6 +150,8 @@ export function MarketPanel({ onBack }: Props) {
 
   useEffect(() => { void refresh(); }, []);
 
+  const differentials = useMemo(() => payload ? buildDifferentials(payload.series) : [], [payload]);
+
   return (
     <section className="section-block hub-panel hub-panel--flush market-real section-block--last">
       <div className="market-real__top">
@@ -177,6 +206,27 @@ export function MarketPanel({ onBack }: Props) {
             <p className="market-real__chart-note">Las categorías comparten el mismo eje de precios para que la distancia entre AOVE, Virgen y Lampante sea comparable de forma real.</p>
             <MultiTrendChart series={payload.series} periods={payload.periods} activeId={selectedId} />
           </article>
+
+          {differentials.length > 0 && (
+            <article className="market-real__differentials" aria-labelledby="market-differentials-title">
+              <div className="market-real__differentials-head">
+                <div>
+                  <span className="eyebrow">Separación entre calidades</span>
+                  <strong id="market-differentials-title">Diferenciales actuales</strong>
+                </div>
+                <Scale size={18} aria-hidden="true" />
+              </div>
+              <div className="market-real__differentials-grid">
+                {differentials.map((item) => (
+                  <div key={item.key} className="market-real__differential">
+                    <span>{item.label}</span>
+                    <strong>{formatDifferential(item.value, payload.unit)}</strong>
+                  </div>
+                ))}
+              </div>
+              <p className="market-real__differentials-note">Diferencia calculada con los últimos precios disponibles de cada categoría en la misma actualización.</p>
+            </article>
+          )}
 
           <a className="market-real__source" href={payload.sourceUrl} target="_blank" rel="noreferrer">
             {payload.collectorError ? <TriangleAlert size={18} /> : <CheckCircle2 size={18} />}

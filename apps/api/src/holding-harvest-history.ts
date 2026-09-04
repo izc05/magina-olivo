@@ -48,8 +48,8 @@ function fixedBase(plots: HoldingHarvestPlot[]): { activeAreaHa: number; activeO
 
 export function buildHoldingHarvestHistory(
   campaigns: HoldingHarvestHistoryCampaignInput[],
+  basePlots: HoldingHarvestPlot[] = campaigns[0]?.plots ?? [],
 ): HoldingHarvestHistory {
-  const basePlots = campaigns[0]?.plots ?? [];
   const base = fixedBase(basePlots);
 
   const items = campaigns

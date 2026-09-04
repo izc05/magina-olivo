@@ -5,6 +5,7 @@ import { preview } from 'vite';
 
 const baseUrl = 'http://127.0.0.1:4173';
 const outputDir = path.resolve('artifacts/responsive');
+const welcomeTourKey = 'magina-olivo:welcome-tour:v1';
 
 const viewports = [
   { name: '360x800', width: 360, height: 800 },
@@ -212,6 +213,7 @@ async function run() {
 
     for (const viewport of viewports) {
       const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height } });
+      await context.addInitScript((key) => window.localStorage.setItem(key, 'seen'), welcomeTourKey);
       const page = await context.newPage();
       await page.goto(baseUrl, { waitUntil: 'networkidle' });
 

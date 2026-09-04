@@ -19,6 +19,7 @@ import { FieldDashboardV2 } from './FieldDashboardV2';
 import { FieldNotebook } from './FieldNotebook.tsx';
 import { HomeDashboardV2 } from './HomeDashboardV2';
 import { MaginaPrivateHub } from './MaginaPrivateHub.tsx';
+import { MoreDashboardV2 } from './MoreDashboardV2';
 import { OfflineColdStart } from './OfflineColdStart.tsx';
 import { listPendingOperations } from './offline/outbox.ts';
 
@@ -459,14 +460,7 @@ function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelect
 }
 
 function MoreTab({ user, holding, busy, onSignOut }: { user: User; holding: Holding | null; busy: boolean; onSignOut: () => void }) {
-  return (
-    <>
-      <PageIntro eyebrow="Mi Mágina" title="Cuenta y proyecto" />
-      <section className="section card card-body"><p className="list-card-title">{user.name || 'Agricultor'}</p><p className="list-card-meta">{user.email}</p>{holding ? <p className="list-card-meta">Explotación activa · {holding.name}</p> : null}</section>
-      <section className="section card card-body"><h2 className="section-title more-card-title">Identidad visual</h2><p className="section-copy">Esta rama usa la Biblia Visual V2. El logo gráfico aprobado se importará como activo único; aquí no se genera uno alternativo.</p></section>
-      <section className="section"><button className="ghost-button danger-button" type="button" onClick={onSignOut} disabled={busy}>Cerrar sesión</button></section>
-    </>
-  );
+  return <MoreDashboardV2 user={user} holding={holding} busy={busy} onSignOut={onSignOut} />;
 }
 
 function PageIntro({ eyebrow, title, copy }: { eyebrow: string; title: string; copy?: string }) {

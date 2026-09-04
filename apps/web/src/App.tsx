@@ -14,6 +14,7 @@ import {
 } from './api';
 import { CampaignDocuments } from './CampaignDocuments.tsx';
 import { DeliveryEntryCard, DeliveryTicketButton } from './DeliveryEntryCard.tsx';
+import { FieldDashboardV2 } from './FieldDashboardV2';
 import { FieldNotebook } from './FieldNotebook.tsx';
 import { HomeDashboardV2 } from './HomeDashboardV2';
 import { MaginaPrivateHub } from './MaginaPrivateHub.tsx';
@@ -313,6 +314,7 @@ export function App() {
             reloadHoldings={loadHoldings}
             reloadHoldingData={() => loadHoldingData(selectedHoldingId)}
             reloadPlots={() => loadPlots(selectedFarmId)}
+            onNavigate={(next) => setTab(next)}
           />
         ) : null}
         {tab === 'campaign' ? (
@@ -383,44 +385,22 @@ function Metric({ value, label }: { value: string; label: string }) {
   return <div className="metric"><span className="metric-value">{value}</span><span className="metric-label">{label}</span></div>;
 }
 
-function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarmId, plots, busy, setSelectedFarmId, runAction, reloadHoldings, reloadHoldingData, reloadPlots }: { holdings: Holding[]; selectedHolding: Holding | null; farms: Farm[]; selectedFarm: Farm | null; selectedFarmId: string; plots: Plot[]; busy: boolean; setSelectedFarmId: (id: string) => void; runAction: ActionRunner; reloadHoldings: () => Promise<void>; reloadHoldingData: () => Promise<void>; reloadPlots: () => Promise<void> }) {
+function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarmId, plots, busy, setSelectedFarmId, onNavigate, runAction, reloadHoldings, reloadHoldingData, reloadPlots }: { holdings: Holding[]; selectedHolding: Holding | null; farms: Farm[]; selectedFarm: Farm | null; selectedFarmId: string; plots: Plot[]; busy: boolean; setSelectedFarmId: (id: string) => void; onNavigate: (tab: 'campaign') => void; runAction: ActionRunner; reloadHoldings: () => Promise<void>; reloadHoldingData: () => Promise<void>; reloadPlots: () => Promise<void> }) {
   return (
-    <>
-      <PageIntro eyebrow="Mi Campo" title="Fincas y parcelas" copy="Tu estructura agrícola es la base de todo el histórico." />
-      {holdings.length === 0 ? <CreateHoldingCard busy={busy} runAction={runAction} onCreated={reloadHoldings} /> : null}
-      {selectedHolding ? (
-        <>
-          <section className="section">
-            <div className="section-heading"><div><h2 className="section-title">Fincas</h2><p className="section-copy">{selectedHolding.municipality || 'Sierra Mágina'}{selectedHolding.province ? ` · ${selectedHolding.province}` : ''}</p></div></div>
-            {farms.map((farm) => (
-              <button key={farm.id} type="button" className="card list-card interactive" style={{ width: '100%', textAlign: 'left' }} onClick={() => setSelectedFarmId(farm.id)} aria-pressed={farm.id === selectedFarmId}>
-                <div className="list-card-main"><p className="list-card-title">{farm.name}</p><p className="list-card-meta">{farm.areaHa ? `${farm.areaHa} ha` : 'Superficie pendiente'}</p></div>
-                <span className={`badge${farm.id === selectedFarmId ? ' gold' : ''}`}>{farm.id === selectedFarmId ? 'Activa' : 'Ver'}</span>
-              </button>
-            ))}
-            {!farms.length ? <EmptyState title="Añade tu primera finca">Después podrás dividirla en parcelas y asociar tus entregas.</EmptyState> : null}
-          </section>
-          <CreateFarmCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} />
-        </>
-      ) : null}
-
-      {selectedFarm && selectedHolding ? (
-        <>
-          <section className="section">
-            <div className="section-heading"><div><h2 className="section-title">Parcelas de {selectedFarm.name}</h2><p className="section-copy">SIGPAC, superficie, olivos y tipo de riego.</p></div></div>
-            {plots.map((plot) => (
-              <article className="card list-card" key={plot.id}>
-                <div className="list-card-main"><p className="list-card-title">{plot.name}</p><p className="list-card-meta">{plot.areaHa ? `${plot.areaHa} ha` : 'Sin superficie'} · {plot.oliveTreeCount ?? '—'} olivos · {plot.irrigationType || 'riego sin definir'}</p></div>
-                <span className="badge">{plot.sigpacReference ? 'SIGPAC' : 'Manual'}</span>
-              </article>
-            ))}
-            {!plots.length ? <EmptyState title="Sin parcelas todavía">Añade una para construir su línea de tiempo.</EmptyState> : null}
-            <CreatePlotCard farmId={selectedFarm.id} busy={busy} runAction={runAction} onCreated={reloadPlots} />
-          </section>
-          <FieldNotebook holdingId={selectedHolding.id} farmId={selectedFarm.id} plots={plots} />
-        </>
-      ) : null}
-    </>
+    <FieldDashboardV2
+      holdings={holdings}
+      selectedHolding={selectedHolding}
+      farms={farms}
+      selectedFarm={selectedFarm}
+      selectedFarmId={selectedFarmId}
+      plots={plots}
+      setSelectedFarmId={setSelectedFarmId}
+      onNavigate={onNavigate}
+      createHolding={holdings.length === 0 ? <CreateHoldingCard busy={busy} runAction={runAction} onCreated={reloadHoldings} /> : null}
+      createFarm={selectedHolding ? <CreateFarmCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} /> : null}
+      createPlot={selectedFarm ? <CreatePlotCard farmId={selectedFarm.id} busy={busy} runAction={runAction} onCreated={reloadPlots} /> : null}
+      notebook={selectedFarm && selectedHolding ? <FieldNotebook holdingId={selectedHolding.id} farmId={selectedFarm.id} plots={plots} /> : null}
+    />
   );
 }
 

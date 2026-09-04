@@ -37,6 +37,7 @@ import './magina-market.css';
 import './magina-field-alerts.css';
 import './integration-v2.css';
 import './field-v2-integration.css';
+import './field-dashboard-v2.css';
 import './journal-v2-integration.css';
 import './campaign-v2-integration.css';
 import './campaign-documents.css';

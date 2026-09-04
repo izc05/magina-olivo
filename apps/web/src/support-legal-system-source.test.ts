@@ -23,5 +23,6 @@ test('admin support surface keeps restore outside the browser', () => {
   assert.match(admin, /Soporte, legal y sistema/);
   assert.match(admin, /Restauración.*fuera del navegador/i);
   assert.match(admin, /browserRestoreExecution/);
-  assert.doesNotMatch(admin, /Ejecutar restore|Restaurar ahora|method:\s*'POST'.*restore/is);
+  assert.doesNotMatch(admin, /Ejecutar restore|Restaurar ahora|Restaurar backup/i);
+  assert.doesNotMatch(admin, /\/api\/v1\/admin\/(?:restore|system\/restore|backup\/restore)/i);
 });

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { CampaignProgressPanel } from './CampaignProgressPanel.tsx';
 import {
   getHarvestCampaignComparison,
   type HarvestCampaignComparison,
@@ -121,25 +122,31 @@ export function HarvestCampaignComparisonPanel({ campaignId }: { campaignId: str
 
   if (loading && !comparison) {
     return (
-      <section className="section card card-body harvest-comparison-panel" aria-busy="true">
-        <span className="badge">Comparativa</span>
-        <h3 className="section-title harvest-comparison-title">Analizando campañas…</h3>
-        <p className="section-copy">Calculando kilos, productividad y rendimiento de la explotación.</p>
-      </section>
+      <>
+        <CampaignProgressPanel campaignId={campaignId} />
+        <section className="section card card-body harvest-comparison-panel" aria-busy="true">
+          <span className="badge">Comparativa</span>
+          <h3 className="section-title harvest-comparison-title">Analizando campañas…</h3>
+          <p className="section-copy">Calculando kilos, productividad y rendimiento de la explotación.</p>
+        </section>
+      </>
     );
   }
 
   if (error && !comparison) {
     return (
-      <section className="section card card-body harvest-comparison-panel">
-        <span className="badge">Comparativa</span>
-        <h3 className="section-title harvest-comparison-title">Comparativa no disponible</h3>
-        <p className="section-copy">{error}</p>
-      </section>
+      <>
+        <CampaignProgressPanel campaignId={campaignId} />
+        <section className="section card card-body harvest-comparison-panel">
+          <span className="badge">Comparativa</span>
+          <h3 className="section-title harvest-comparison-title">Comparativa no disponible</h3>
+          <p className="section-copy">{error}</p>
+        </section>
+      </>
     );
   }
 
-  if (!comparison) return null;
+  if (!comparison) return <CampaignProgressPanel campaignId={campaignId} />;
 
   const currentSeason = season(comparison.currentCampaign.seasonStartYear, comparison.currentCampaign.seasonEndYear);
   const previousSeason = comparison.previousCampaign
@@ -148,6 +155,7 @@ export function HarvestCampaignComparisonPanel({ campaignId }: { campaignId: str
 
   return (
     <>
+      <CampaignProgressPanel campaignId={campaignId} />
       <section className="section harvest-comparison-shell" aria-labelledby="harvest-comparison-title">
         <div className="section-heading harvest-comparison-heading">
           <div>

@@ -57,6 +57,73 @@ create table if not exists advertiser_notification_email_deliveries (
 create index if not exists advertiser_notification_email_delivery_status_idx
   on advertiser_notification_email_deliveries(status, created_at);
 
+create or replace function magina_notify_advertiser_application_approved()
+returns trigger
+language plpgsql
+as $$
+begin
+  if old.converted_at is null
+     and new.converted_at is not null
+     and new.converted_advertiser_id is not null then
+    insert into advertiser_notifications (
+      id, advertiser_id, target_user_id, notification_type, severity,
+      event_key, title, body, action_url, email_eligible
+    ) values (
+      md5('advertiser-application-approved:' || new.id::text)::uuid,
+      new.converted_advertiser_id,
+      null,
+      'application_approved',
+      'info',
+      'application-approved:' || new.id::text,
+      'Alta publicitaria aprobada',
+      'Tu solicitud ha sido aprobada y ya existe una campaña en borrador. La publicación sigue siendo un paso independiente.',
+      '/anunciante',
+      true
+    ) on conflict (event_key) do nothing;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists advertiser_application_approved_notification_trg on advertiser_applications;
+create trigger advertiser_application_approved_notification_trg
+after update of converted_at on advertiser_applications
+for each row execute function magina_notify_advertiser_application_approved();
+
+create or replace function magina_notify_advertiser_profile_change_review()
+returns trigger
+language plpgsql
+as $$
+begin
+  if old.status = 'pending' and new.status in ('approved', 'rejected') then
+    insert into advertiser_notifications (
+      id, advertiser_id, target_user_id, notification_type, severity,
+      event_key, title, body, action_url, email_eligible
+    ) values (
+      md5('advertiser-profile-change:' || new.id::text || ':' || new.status)::uuid,
+      new.advertiser_id,
+      new.submitted_by_user_id,
+      case when new.status = 'approved' then 'profile_change_approved' else 'profile_change_rejected' end,
+      case when new.status = 'approved' then 'info' else 'action' end,
+      'profile-change:' || new.id::text || ':' || new.status,
+      case when new.status = 'approved' then 'Cambio de ficha aprobado' else 'Cambio de ficha no aprobado' end,
+      case when new.status = 'approved'
+        then 'La modificación solicitada ha sido revisada y aplicada a tu ficha comercial.'
+        else 'La modificación solicitada ha sido revisada y no se ha aplicado. Consulta el Área del Anunciante para ver el estado.'
+      end,
+      '/anunciante',
+      true
+    ) on conflict (event_key) do nothing;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists advertiser_profile_change_review_notification_trg on advertiser_profile_change_requests;
+create trigger advertiser_profile_change_review_notification_trg
+after update of status on advertiser_profile_change_requests
+for each row execute function magina_notify_advertiser_profile_change_review();
+
 comment on table advertiser_notifications is
   'Commercial advertiser notices only. These notices are separate from agricultural, weather and official emergency alerts.';
 

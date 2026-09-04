@@ -50,17 +50,21 @@ test('Web Push V1 uses an empty payload and keeps agricultural data out of push 
 
 test('push capability URLs are guarded and VAPID private material never enters VITE variables', async () => {
   const routes = await read('../../api/src/push-subscription-routes.ts');
+  const endpointPolicy = await read('../../api/src/push-endpoint-policy.ts');
   const app = await read('../../api/src/app.ts');
   const env = await read('../../../.env.example');
 
   assert.match(app, /registerPushSubscriptionRoutes\(app\)/);
   assert.match(routes, /isAllowedPushEndpoint/);
-  assert.match(routes, /url\.protocol !== 'https:'/);
-  assert.match(routes, /WEB_PUSH_ALLOWED_HOST_SUFFIXES/);
+  assert.match(routes, /push-endpoint-policy\.ts/);
+  assert.match(endpointPolicy, /url\.protocol !== 'https:'/);
+  assert.match(endpointPolicy, /WEB_PUSH_ALLOWED_HOST_SUFFIXES/);
+  assert.match(endpointPolicy, /isIP\(hostname\) !== 0/);
   assert.match(routes, /WEB_PUSH_VAPID_PUBLIC_KEY/);
   assert.match(routes, /where push_subscriptions\.user_id = excluded\.user_id/);
   assert.match(routes, /PUSH_SUBSCRIPTION_CONFLICT/);
   assert.doesNotMatch(routes, /WEB_PUSH_VAPID_PRIVATE_KEY/);
+  assert.doesNotMatch(endpointPolicy, /WEB_PUSH_VAPID_PRIVATE_KEY/);
   assert.match(env, /WEB_PUSH_VAPID_PRIVATE_KEY=/);
   assert.doesNotMatch(env, /VITE_WEB_PUSH_VAPID_PRIVATE_KEY/);
 });

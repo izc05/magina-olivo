@@ -49,5 +49,5 @@ test('local discovery routes and private exclusions remain explicit', () => {
 
 test('sitemap is restricted to canonical routes', () => {
   assert.match(generator, /route\.path === route\.canonicalPath/);
-  assert.match(generator, /rel=\\"canonical\\"/);
+  assert.ok(generator.includes('rel="canonical"'));
 });

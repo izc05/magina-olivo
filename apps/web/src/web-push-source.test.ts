@@ -18,10 +18,17 @@ test('Web Push permission is user initiated and scoped to the notification cente
   assert.match(prompt, /onClick=\{\(\) => void enable\(\)\}/);
   assert.match(client, /export async function enablePushNotifications/);
   assert.equal((client.match(/Notification\.requestPermission\(\)/g) ?? []).length, 1);
+  assert.match(client, /window\.isSecureContext/);
   assert.doesNotMatch(main, /Notification\.requestPermission/);
   assert.doesNotMatch(prompt, /Notification\.requestPermission/);
   assert.doesNotMatch(account, /Notification\.requestPermission/);
   assert.doesNotMatch(center, /Notification\.requestPermission/);
+
+  const enableStart = client.indexOf('export async function enablePushNotifications');
+  const permissionIndex = client.indexOf('Notification.requestPermission()', enableStart);
+  const configIndex = client.indexOf('const config = await getConfig();', enableStart);
+  assert.ok(enableStart >= 0 && permissionIndex > enableStart);
+  assert.ok(configIndex > permissionIndex, 'permission request must happen before network awaits to preserve the click gesture');
 });
 
 test('Web Push V1 uses an empty payload and keeps agricultural data out of push infrastructure', async () => {
@@ -51,6 +58,8 @@ test('push capability URLs are guarded and VAPID private material never enters V
   assert.match(routes, /url\.protocol !== 'https:'/);
   assert.match(routes, /WEB_PUSH_ALLOWED_HOST_SUFFIXES/);
   assert.match(routes, /WEB_PUSH_VAPID_PUBLIC_KEY/);
+  assert.match(routes, /where push_subscriptions\.user_id = excluded\.user_id/);
+  assert.match(routes, /PUSH_SUBSCRIPTION_CONFLICT/);
   assert.doesNotMatch(routes, /WEB_PUSH_VAPID_PRIVATE_KEY/);
   assert.match(env, /WEB_PUSH_VAPID_PRIVATE_KEY=/);
   assert.doesNotMatch(env, /VITE_WEB_PUSH_VAPID_PRIVATE_KEY/);

@@ -7,13 +7,17 @@ async function source(path: string): Promise<string> {
 }
 
 test('primary SPA navigation keeps programmatic focus and current-page semantics', async () => {
-  const app = await source('./App.tsx');
+  const [app, field] = await Promise.all([
+    source('./App.tsx'),
+    source('./FieldDashboardV2.tsx'),
+  ]);
 
   assert.match(app, /tabIndex=\{-1\}/);
   assert.match(app, /pageRef\.current\?\.focus/);
   assert.match(app, /aria-current=\{active \? 'page' : undefined\}/);
   assert.match(app, /aria-current=\{tab === 'campaign' \? 'page' : undefined\}/);
-  assert.match(app, /aria-pressed=\{farm\.id === selectedFarmId\}/);
+  assert.match(field, /aria-pressed=\{active\}/);
+  assert.match(field, /aria-current="page"/);
 });
 
 test('global styles preserve visible focus and user motion/contrast preferences', async () => {

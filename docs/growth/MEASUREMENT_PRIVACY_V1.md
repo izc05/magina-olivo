@@ -176,6 +176,49 @@ Minimum weekly Growth V1 report:
 
 Prioritize activation and retention over raw downloads or page views.
 
+### Weekly report implementation
+
+The internal command is:
+
+```bash
+npm run growth:weekly --workspace @magina/api
+```
+
+JSON output for later automation:
+
+```bash
+npm run growth:weekly --workspace @magina/api -- --json
+```
+
+The report covers the most recent seven calendar days in `Europe/Madrid` and currently calculates:
+
+- total public page views and page views by route;
+- coarse referrer mix (`direct`, Google, Bing, social, other);
+- share starts/completions by allowed channel;
+- page views carrying `utm_medium=share`;
+- registrations from the Better Auth `user` table;
+- newly activated users;
+- registration → activation conversion for the report cohort;
+- seven-day activation rate for a fully matured registration cohort;
+- total registered and total activated user bases.
+
+For product activation, a user is considered activated only after an active holding membership has, for the same holding, at least one active farm, one active plot and one non-archived campaign. The report computes only aggregate counts and never emits the user IDs used internally for that calculation.
+
+The script validates the expected Better Auth and Growth schema before running and fails explicitly if the required tables/columns are not present. It is an internal database report, not an HTTP endpoint.
+
+### D7 / D30 retention status
+
+D7 and D30 are intentionally returned as `n/d` with status `pending_activity_heartbeat`.
+
+Reason: Better Auth sessions are authentication state, not a trustworthy historical record of each product return. A long-lived/reused session can make exact D7/D30 calculations misleading. Growth V1 therefore MUST NOT claim D7/D30 until an authenticated, privacy-reviewed activity signal is defined.
+
+When that signal is introduced it must:
+
+- stay entirely inside the authenticated product domain;
+- never inherit or carry a public anonymous visitor identifier;
+- support aggregate D7/D30 computation without exposing user-level histories in the Growth report;
+- have a documented retention/deletion policy before activation.
+
 ## Activation checklist
 
 Do not enable remote measurement until all are true:
@@ -186,6 +229,7 @@ Do not enable remote measurement until all are true:
 - privacy/legal text reflects the measurement actually used;
 - consent behavior is reviewed on mobile and desktop;
 - first-party endpoint and migration are validated by the project gates on an approved SHA;
+- weekly report SQL/schema contract is validated by the project gates on an approved SHA;
 - server/proxy logging behavior is reviewed;
 - abuse/rate controls are tested;
 - a deletion/retention policy for aggregate metrics is documented;

@@ -26,3 +26,17 @@ test('advertising admin UI states privacy boundaries explicitly', async () => {
   assert.match(page, /no se guardan IP/i);
   assert.match(page, /coordenadas precisas de parcelas/i);
 });
+
+test('advertising admin supports explicit sponsorship campaign lifecycle', async () => {
+  const page = await read('./AdminAdvertisingPage.tsx');
+  const styles = await read('./admin-advertising-campaigns.css');
+
+  assert.match(page, /Nueva campaña/);
+  assert.match(page, /Municipios/);
+  assert.match(page, /Crear campaña/);
+  assert.match(page, /Pausar/);
+  assert.match(page, /Activar/);
+  assert.match(page, /Cancelar/);
+  assert.match(page, /\/api\/v1\/admin\/advertising\/sponsorships/);
+  assert.match(styles, /campaign-row-actions/);
+});

@@ -74,7 +74,7 @@ export function CatastroBatchReview({
   onBack,
 }: {
   holdingId: string;
-  farmId?: string;
+  farmId?: string | undefined;
   parcels: ReviewParcel[];
   allowNewFarm?: boolean;
   defaultDestination?: Destination;

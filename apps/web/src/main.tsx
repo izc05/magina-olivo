@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { AccountPage } from './AccountPage';
 import { AdminAdvertisingPage } from './AdminAdvertisingPage';
+import { AdvertiserApplicationPage } from './AdvertiserApplicationPage';
 import { App } from './App';
 import { CalendarPage } from './CalendarPage';
 import { ConnectivityStatus } from './ConnectivityStatus';
@@ -46,6 +47,7 @@ import './pilot-alerts.css';
 import './calendar.css';
 import './admin-advertising.css';
 import './admin-advertising-campaigns.css';
+import './advertiser-application.css';
 
 installDemoPreview();
 installWeatherDemoPreview();
@@ -98,6 +100,8 @@ createRoot(root).render(
       <CalendarPage />
     ) : path === '/admin/publicidad' ? (
       <AdminAdvertisingPage />
+    ) : path === '/empresas/solicitud' ? (
+      <AdvertiserApplicationPage />
     ) : path === '/magina' ? (
       <MaginaHubPage />
     ) : path === '/magina/directorio' ? (

@@ -6,13 +6,14 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', 'VITE_');
   const requestedBase = env.VITE_BASE_PATH || '/';
   const base = requestedBase.endsWith('/') ? requestedBase : `${requestedBase}/`;
+  const isPagesPreview = base !== '/';
 
   return {
     base,
     plugins: [
       react(),
       VitePWA({
-        registerType: 'prompt',
+        registerType: isPagesPreview ? 'autoUpdate' : 'prompt',
         manifest: {
           name: 'Mágina Olivo',
           short_name: 'Mágina Olivo',

@@ -208,6 +208,7 @@ export function PilotAlerts() {
           {alert.source ? <small>Fuente: {alert.source}</small> : null}
         </article>
       ))}
+      <a className="pilot-alerts-more" href="/notificaciones">Ver todos los avisos →</a>
     </aside>
   );
 }

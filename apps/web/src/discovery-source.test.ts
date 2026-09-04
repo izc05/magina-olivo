@@ -4,13 +4,15 @@ import test from 'node:test';
 
 const generator = readFileSync(new URL('../scripts/generate-discovery.mjs', import.meta.url), 'utf8');
 const enrichment = readFileSync(new URL('../scripts/enrich-discovery.mjs', import.meta.url), 'utf8');
+const verifier = readFileSync(new URL('../scripts/verify-discovery.mjs', import.meta.url), 'utf8');
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
   scripts?: Record<string, string>;
 };
 
-test('web build generates public discovery assets', () => {
+test('web build generates and verifies public discovery assets', () => {
   assert.match(packageJson.scripts?.build ?? '', /generate-discovery\.mjs/);
   assert.match(packageJson.scripts?.build ?? '', /enrich-discovery\.mjs/);
+  assert.match(packageJson.scripts?.build ?? '', /verify-discovery\.mjs/);
   assert.match(generator, /sitemap\.xml/);
   assert.match(generator, /robots\.txt/);
   assert.match(generator, /llms\.txt/);
@@ -18,6 +20,7 @@ test('web build generates public discovery assets', () => {
   assert.match(generator, /ChatGPT-User/);
   assert.match(generator, /SoftwareApplication/);
   assert.match(generator, /application\/ld\+json/);
+  assert.match(verifier, /Discovery build verification passed/);
 });
 
 test('rich discovery semantics stay explicit and truthful', () => {
@@ -73,6 +76,7 @@ test('private UI routes publish noindex shells while server endpoints remain cra
     '/reset-password',
   ]) {
     assert.ok(generator.includes(privateRoute), `missing private noindex route: ${privateRoute}`);
+    assert.ok(verifier.includes(privateRoute), `missing private route verification: ${privateRoute}`);
   }
 
   assert.match(generator, /renderPrivateRoute/);
@@ -81,9 +85,10 @@ test('private UI routes publish noindex shells while server endpoints remain cra
   assert.match(generator, /crawlerBlockedPaths/);
   assert.ok(generator.includes('/api/'));
   assert.ok(generator.includes('/health/'));
+  assert.match(verifier, /basePath/);
 });
 
-test('social previews are generated per canonical public section', () => {
+test('social previews are generated and verified per canonical public section', () => {
   assert.match(generator, /writeSocialCards/);
   assert.match(generator, /socialCardSvg/);
   assert.match(generator, /summary_large_image/);
@@ -94,6 +99,7 @@ test('social previews are generated per canonical public section', () => {
   assert.match(generator, /height=\"630\"/);
   assert.match(generator, /hreflang=\"es-ES\"/);
   assert.match(generator, /hreflang=\"x-default\"/);
+  assert.match(verifier, /social card/);
 });
 
 test('sitemap is restricted to canonical routes and does not fake lastmod on every build', () => {
@@ -101,4 +107,5 @@ test('sitemap is restricted to canonical routes and does not fake lastmod on eve
   assert.ok(generator.includes('rel=\"canonical\"'));
   assert.doesNotMatch(generator, /<lastmod>/);
   assert.doesNotMatch(generator, /new Date\(\)\.toISOString/);
+  assert.match(verifier, /must not fake lastmod/);
 });

@@ -15,6 +15,7 @@ import { registerDeliveryUpdateRoutes } from './delivery-update-routes.ts';
 import { registerDocumentRoutes } from './document-routes.ts';
 import { registerFarmRoutes } from './farm-routes.ts';
 import { registerHoldingRoutes } from './holding-routes.ts';
+import { registerPlotAgronomyRoutes } from './plot-agronomy-routes.ts';
 import { registerPlotRoutes } from './plot-routes.ts';
 import { registerPlotSigpacAssociationRoutes } from './plot-sigpac-association-routes.ts';
 import { registerPlotTimelineRoutes } from './plot-timeline-routes.ts';
@@ -32,69 +33,15 @@ import { registerTaskRoutes } from './task-routes.ts';
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({
-    logger: {
-      level: process.env.LOG_LEVEL ?? 'info',
-      redact: [
-        'req.headers.authorization',
-        'req.headers.cookie',
-        'res.headers.set-cookie',
-      ],
-    },
-    requestIdHeader: 'x-request-id',
-    trustProxy: true,
+    logger: { level: process.env.LOG_LEVEL ?? 'info', redact: ['req.headers.authorization','req.headers.cookie','res.headers.set-cookie'] },
+    requestIdHeader: 'x-request-id', trustProxy: true,
   });
-
   registerRequestSecurity(app);
-
-  app.get('/health/live', async () => ({
-    status: 'ok',
-    service: 'magina-olivo-api',
-  }));
-
-  app.get('/health/ready', async (_request, reply) => {
-    try {
-      await checkDatabase();
-      return {
-        status: 'ready',
-        database: 'ok',
-      };
-    } catch (error) {
-      app.log.error({ err: error }, 'readiness check failed');
-      return reply.code(503).send({
-        status: 'not_ready',
-        database: 'unavailable',
-      });
-    }
-  });
-
-  registerAuthRoutes(app);
-  registerAccountPreferenceRoutes(app);
-  registerAccountExportRoutes(app);
-  registerRainAlertRoutes(app);
-  registerPublicDestinationRoutes(app);
-  registerPublicMunicipalityRoutes(app);
-  registerPublicSourceRoutes(app);
-  registerPublicWeatherRoutes(app);
-  registerPublicRadarRoutes(app);
-  registerPublicFieldAlertRoutes(app);
-  registerPublicNewsRoutes(app);
-  registerHoldingRoutes(app);
-  registerFarmRoutes(app);
-  registerPlotRoutes(app);
-  registerPlotTimelineRoutes(app);
-  registerPlotSigpacAssociationRoutes(app);
-  registerSigpacMapRoutes(app);
-  registerCatastroMapRoutes(app);
-  registerCatastroBatchImportRoutes(app);
-  registerCampaignRoutes(app);
-  registerCampaignExportRoutes(app);
-  registerDeliveryRoutes(app);
-  registerDeliveryUpdateRoutes(app);
-  registerDeliveryResultRoutes(app);
-  registerCampaignSummaryRoutes(app);
-  registerDocumentRoutes(app);
-  registerActivityRoutes(app);
-  registerTaskRoutes(app);
-
+  app.get('/health/live', async () => ({ status: 'ok', service: 'magina-olivo-api' }));
+  app.get('/health/ready', async (_request, reply) => { try { await checkDatabase(); return { status:'ready', database:'ok' }; } catch(error){ app.log.error({err:error},'readiness check failed'); return reply.code(503).send({status:'not_ready',database:'unavailable'}); } });
+  registerAuthRoutes(app); registerAccountPreferenceRoutes(app); registerAccountExportRoutes(app); registerRainAlertRoutes(app);
+  registerPublicDestinationRoutes(app); registerPublicMunicipalityRoutes(app); registerPublicSourceRoutes(app); registerPublicWeatherRoutes(app); registerPublicRadarRoutes(app); registerPublicFieldAlertRoutes(app); registerPublicNewsRoutes(app);
+  registerHoldingRoutes(app); registerFarmRoutes(app); registerPlotRoutes(app); registerPlotAgronomyRoutes(app); registerPlotTimelineRoutes(app); registerPlotSigpacAssociationRoutes(app); registerSigpacMapRoutes(app); registerCatastroMapRoutes(app); registerCatastroBatchImportRoutes(app);
+  registerCampaignRoutes(app); registerCampaignExportRoutes(app); registerDeliveryRoutes(app); registerDeliveryUpdateRoutes(app); registerDeliveryResultRoutes(app); registerCampaignSummaryRoutes(app); registerDocumentRoutes(app); registerActivityRoutes(app); registerTaskRoutes(app);
   return app;
 }

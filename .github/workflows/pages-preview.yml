@@ -40,6 +40,7 @@ jobs:
       - name: Build web preview
         env:
           VITE_BASE_PATH: /magina-olivo/
+          VITE_DEMO_MODE: "true"
         run: npm run build --workspace @magina/web
 
       - name: Prepare SPA fallback

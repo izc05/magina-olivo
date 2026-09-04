@@ -39,6 +39,9 @@ if (!Number.isFinite(radarCaptureMinutes) || radarCaptureMinutes < 5 || radarCap
   throw new Error('WEATHER_RADAR_CAPTURE_MINUTES must be between 5 and 60');
 }
 
+const radarScheduleReconcileMilliseconds = Math.min(radarCaptureMinutes * 60_000, 60_000);
+let nextRadarScheduleReconcileAt = 0;
+
 const pool = new Pool({ connectionString: databaseUrl });
 
 type JobRow = {
@@ -289,6 +292,13 @@ async function ensureRadarCaptureScheduled(): Promise<void> {
   }
 }
 
+async function reconcileRadarCaptureSchedule(force = false): Promise<void> {
+  const now = Date.now();
+  if (!force && now < nextRadarScheduleReconcileAt) return;
+  await ensureRadarCaptureScheduled();
+  nextRadarScheduleReconcileAt = now + radarScheduleReconcileMilliseconds;
+}
+
 async function scheduleNextRadarCapture(currentJobId: string): Promise<void> {
   await pool.query(
     `
@@ -390,32 +400,47 @@ export async function runWorkerIteration(): Promise<boolean> {
   return true;
 }
 
+function logLoopFailure(event: string, error: unknown): void {
+  console.warn(JSON.stringify({
+    event,
+    error: error instanceof Error ? error.message : String(error),
+  }));
+}
+
 async function main(): Promise<void> {
-  try {
-    if (runOnce) {
+  if (runOnce) {
+    try {
       await runWorkerIteration();
-      return;
-    }
-
-    await ensureRadarCaptureScheduled();
-
-    while (true) {
-      try {
-        const processed = await runWorkerIteration();
-        if (!processed) {
-          await sleep(pollMilliseconds);
-        }
-      } catch (error) {
-        console.warn(JSON.stringify({
-          event: 'worker_iteration_failed',
-          error: error instanceof Error ? error.message : String(error),
-        }));
-        await sleep(Math.max(1000, pollMilliseconds));
-      }
-    }
-  } finally {
-    if (runOnce) {
+    } finally {
       await pool.end();
+    }
+    return;
+  }
+
+  while (true) {
+    try {
+      await reconcileRadarCaptureSchedule(true);
+      break;
+    } catch (error) {
+      logLoopFailure('radar_scheduler_bootstrap_failed', error);
+      await sleep(Math.max(1000, pollMilliseconds));
+    }
+  }
+
+  while (true) {
+    try {
+      const processed = await runWorkerIteration();
+      try {
+        await reconcileRadarCaptureSchedule();
+      } catch (error) {
+        logLoopFailure('radar_scheduler_reconcile_failed', error);
+      }
+      if (!processed) {
+        await sleep(pollMilliseconds);
+      }
+    } catch (error) {
+      logLoopFailure('worker_iteration_failed', error);
+      await sleep(Math.max(1000, pollMilliseconds));
     }
   }
 }

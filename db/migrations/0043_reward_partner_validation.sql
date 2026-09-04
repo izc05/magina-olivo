@@ -1,3 +1,10 @@
+alter table loyalty_redemption_tokens
+  drop constraint if exists loyalty_redemption_tokens_redemption_id_key;
+
+create unique index loyalty_redemption_tokens_one_active_per_redemption_uq
+  on loyalty_redemption_tokens(redemption_id)
+  where status = 'active';
+
 create table reward_partner_members (
   id uuid primary key,
   partner_id uuid not null references reward_partners(id) on delete cascade,

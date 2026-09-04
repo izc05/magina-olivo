@@ -7,7 +7,7 @@ Añadir control económico interno a la monetización de Mágina Olivo sin intro
 Rutas:
 
 - `/admin/finanzas` — tarifas, acuerdos, cobros y renovaciones.
-- `/admin/roles` — delegación administrativa progresiva.
+- `/admin/roles` — delegación administrativa por responsabilidad.
 
 ## Precios de planes
 
@@ -62,7 +62,7 @@ Los pagos únicos no se convierten artificialmente en MRR.
 
 ## Roles administrativos
 
-La migración crea `platform_admin_memberships` con roles preparados:
+La migración crea `platform_admin_memberships` con los roles:
 
 - `superadmin`;
 - `commercial`;
@@ -70,26 +70,35 @@ La migración crea `platform_admin_memberships` con roles preparados:
 - `support`;
 - `operations`.
 
-### Delegación efectiva en V1
+### Delegación efectiva
 
-Solo `commercial` se delega de forma operativa en esta fase y permite acceder a `/api/v1/admin/finance/*` y `/admin/finanzas`.
+Los cuatro roles delegados ya tienen alcance operativo y limitado:
 
-Los roles `content`, `support` y `operations` quedan preparados en el esquema, pero los módulos existentes continúan protegidos por el Superadmin hasta que cada conjunto de endpoints sea migrado explícitamente a su permiso. Esto evita ampliar accesos accidentalmente.
+- `commercial`: economía de publicidad, contratos, cobros y renovaciones;
+- `content`: noticias, destacados, alertas agregadas y avisos de plataforma;
+- `support`: tickets, prioridad y notas internas;
+- `operations`: directorio, fuentes, auditoría resumida y evidencias operativas.
 
-## Superadmin de arranque
+La autorización se aplica endpoint por endpoint en servidor. Disponer de un rol no concede acceso a los demás módulos.
 
-`MAGINA_ADMIN_EMAILS` sigue siendo la autoridad de recuperación/arranque.
+Legal, usuarios globales, cierre de sesiones, activación pública de campañas y gestión de roles continúan reservados a Superadmin en esta fase.
 
-Las cuentas incluidas en esa variable:
+Los límites detallados se documentan en `docs/ADMIN_DELEGATED_ROLES.md`.
+
+## Superadmin de arranque y persistente
+
+`MAGINA_ADMIN_EMAILS` sigue siendo la autoridad de recuperación/arranque. Además, un rol persistente `superadmin` recibe la misma autoridad sobre los módulos administrativos.
+
+Las cuentas incluidas en `MAGINA_ADMIN_EMAILS`:
 
 - tienen acceso Superadmin;
 - no se pueden modificar desde `/admin/roles`;
 - se gestionan únicamente mediante configuración segura del servidor.
 
-El panel también bloquea el cambio de roles persistentes de la propia sesión administrativa para reducir el riesgo de bloqueo accidental.
+La interfaz también protege la sesión administrativa actual y los Superadmin persistentes contra cambios accidentales desde la tabla normal de delegación.
 
 ## Auditoría
 
-Los cambios de tarifas, acuerdos, cobros y roles se registran en `platform_admin_audit_log`.
+Los cambios de tarifas, acuerdos, cobros, roles y operaciones delegadas se registran en `platform_admin_audit_log`.
 
 No deben guardarse secretos, contraseñas, tokens, coordenadas agrícolas ni documentos privados dentro de los metadatos de auditoría.

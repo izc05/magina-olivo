@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type Role = 'superadmin' | 'commercial' | 'content' | 'support' | 'operations';
+type DelegatedRole = Exclude<Role, 'superadmin'>;
 type RoleResponse = {
   currentUserId: string;
   bootstrapSuperadmin: boolean;
@@ -17,11 +18,18 @@ type RoleResponse = {
 type LoadState = 'loading' | 'ready' | 'forbidden' | 'error';
 
 const roleCatalog: Array<{ role: Role; label: string; description: string; activeNow: boolean }> = [
-  { role: 'superadmin', label: 'Superadmin', description: 'Control completo. En V1 se mantiene mediante MAGINA_ADMIN_EMAILS.', activeNow: true },
+  { role: 'superadmin', label: 'Superadmin', description: 'Control completo. El allowlist MAGINA_ADMIN_EMAILS sigue siendo la vía de arranque y recuperación.', activeNow: true },
   { role: 'commercial', label: 'Comercial', description: 'Economía de publicidad, acuerdos, cobros y renovaciones.', activeNow: true },
-  { role: 'content', label: 'Contenido', description: 'Preparado para delegar noticias y avisos en la siguiente migración de permisos.', activeNow: false },
-  { role: 'support', label: 'Soporte', description: 'Preparado para delegar soporte y legal en una fase posterior.', activeNow: false },
-  { role: 'operations', label: 'Operaciones', description: 'Preparado para delegar usuarios, directorio y fuentes en una fase posterior.', activeNow: false },
+  { role: 'content', label: 'Contenido', description: 'Noticias, destacados, alertas agregadas y avisos de la plataforma.', activeNow: true },
+  { role: 'support', label: 'Soporte', description: 'Tickets, prioridades y notas internas. Sin acceso a legal, sistema ni datos agrícolas.', activeNow: true },
+  { role: 'operations', label: 'Operaciones', description: 'Directorio, fuentes, auditoría resumida y evidencias operativas. Sin usuarios ni sesiones.', activeNow: true },
+];
+
+const delegatedRoles: Array<{ role: DelegatedRole; label: string }> = [
+  { role: 'commercial', label: 'Comercial' },
+  { role: 'content', label: 'Contenido' },
+  { role: 'support', label: 'Soporte' },
+  { role: 'operations', label: 'Operaciones' },
 ];
 
 async function requestJson<T>(url: string, init: RequestInit = {}): Promise<T> {
@@ -74,18 +82,18 @@ export function AdminRolesPage() {
     return (data?.users ?? []).filter((user) => `${user.name ?? ''} ${user.email}`.toLowerCase().includes(needle));
   }, [data, search]);
 
-  async function setCommercial(userId: string, enabled: boolean) {
+  async function setRole(userId: string, role: DelegatedRole, enabled: boolean) {
     const user = data?.users.find((item) => item.id === userId);
     if (!user) return;
     setBusyUserId(userId); setNotice(null); setError(null);
     try {
-      const roles = new Set<Role>(user.roles.filter((role) => role === 'commercial'));
-      if (enabled) roles.add('commercial'); else roles.delete('commercial');
+      const roles = new Set<Role>(user.roles);
+      if (enabled) roles.add(role); else roles.delete(role);
       await requestJson(`/api/v1/admin/roles/${userId}`, {
         method: 'PUT',
         body: JSON.stringify({ roles: [...roles] }),
       });
-      setNotice(enabled ? 'Rol comercial concedido.' : 'Rol comercial retirado.');
+      setNotice(`${roleCatalog.find((item) => item.role === role)?.label ?? role}: ${enabled ? 'concedido' : 'retirado'}.`);
       await load();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'No se han podido actualizar los roles.');
@@ -99,7 +107,7 @@ export function AdminRolesPage() {
   return (
     <div className="roles-shell">
       <header className="roles-header">
-        <div><a href="/admin" className="roles-back">← Centro de mando</a><p className="roles-eyebrow">Seguridad</p><h1>Roles administrativos</h1><p>Delegación progresiva de funciones sin compartir una cuenta Superadmin.</p></div>
+        <div><a href="/admin" className="roles-back">← Centro de mando</a><p className="roles-eyebrow">Seguridad</p><h1>Roles administrativos</h1><p>Delegación por responsabilidad sin compartir una cuenta Superadmin.</p></div>
         <span className="roles-super-pill">{data.bootstrapSuperadmin ? 'Superadmin de arranque' : 'Superadmin persistente'}</span>
       </header>
 
@@ -107,30 +115,57 @@ export function AdminRolesPage() {
       {error ? <div className="roles-error" role="alert">{error}</div> : null}
 
       <section className="roles-section">
-        <div className="roles-heading"><div><p className="roles-eyebrow">Modelo</p><h2>Permisos por responsabilidad</h2></div><small>Activación gradual para reducir riesgo</small></div>
+        <div className="roles-heading"><div><p className="roles-eyebrow">Modelo</p><h2>Permisos por responsabilidad</h2></div><small>Todos los roles se verifican en servidor</small></div>
         <div className="roles-catalog">
           {roleCatalog.map((item) => <article key={item.role} className={`roles-card${item.activeNow ? ' active' : ''}`}><div className="roles-card-title"><strong>{item.label}</strong><span>{item.activeNow ? 'Operativo' : 'Preparado'}</span></div><p>{item.description}</p></article>)}
         </div>
       </section>
 
       <section className="roles-section">
-        <div className="roles-heading"><div><p className="roles-eyebrow">Delegación V1</p><h2>Acceso comercial</h2><p>En esta fase solo delegamos economía de publicidad. El resto continúa bajo Superadmin hasta migrar sus endpoints.</p></div></div>
+        <div className="roles-heading"><div><p className="roles-eyebrow">Delegación</p><h2>Permisos por usuario</h2><p>Los cambios conservan los demás roles del usuario. Las cuentas Superadmin quedan protegidas contra modificaciones accidentales desde esta tabla.</p></div></div>
         <div className="roles-toolbar"><label>Buscar usuario<input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nombre o correo" /></label><span>{visibleUsers.length} usuarios</span></div>
         <div className="roles-table-card">
-          <table><thead><tr><th>Usuario</th><th>Estado administrador</th><th>Rol comercial</th><th>Acción</th></tr></thead><tbody>
-            {visibleUsers.map((user) => {
-              const isSelf = user.id === data.currentUserId;
-              const commercial = user.roles.includes('commercial');
-              const immutable = user.bootstrapSuperadmin || isSelf;
-              return <tr key={user.id}><td><strong>{user.name ?? 'Sin nombre'}</strong><small>{user.email || 'Sin correo'}</small></td><td>{user.bootstrapSuperadmin ? <span className="roles-badge super">Superadmin · entorno</span> : user.roles.length ? <span className="roles-badge">{user.roles.join(', ')}</span> : <span className="roles-muted">Sin rol</span>}</td><td>{commercial ? 'Concedido' : 'No concedido'}</td><td>{immutable ? <span className="roles-muted">{isSelf ? 'Cuenta actual protegida' : 'Gestionado por entorno'}</span> : <button type="button" disabled={busyUserId === user.id} onClick={() => void setCommercial(user.id, !commercial)}>{busyUserId === user.id ? 'Guardando…' : commercial ? 'Retirar comercial' : 'Conceder comercial'}</button>}</td></tr>;
-            })}
-          </tbody></table>{!visibleUsers.length ? <p className="roles-empty">No hay usuarios que coincidan con la búsqueda.</p> : null}
+          <table>
+            <thead><tr><th>Usuario</th><th>Estado</th>{delegatedRoles.map((item) => <th key={item.role}>{item.label}</th>)}</tr></thead>
+            <tbody>
+              {visibleUsers.map((user) => {
+                const isSelf = user.id === data.currentUserId;
+                const persistentSuperadmin = user.roles.includes('superadmin');
+                const immutable = user.bootstrapSuperadmin || isSelf || persistentSuperadmin;
+                return (
+                  <tr key={user.id}>
+                    <td><strong>{user.name ?? 'Sin nombre'}</strong><small>{user.email || 'Sin correo'}</small></td>
+                    <td>
+                      {user.bootstrapSuperadmin ? <span className="roles-badge super">Superadmin · entorno</span>
+                        : persistentSuperadmin ? <span className="roles-badge super">Superadmin persistente</span>
+                          : user.roles.length ? <span className="roles-badge">{user.roles.join(', ')}</span>
+                            : <span className="roles-muted">Sin rol</span>}
+                      {isSelf ? <small className="roles-muted">Cuenta actual protegida</small> : null}
+                    </td>
+                    {delegatedRoles.map((item) => {
+                      const enabled = user.roles.includes(item.role);
+                      return (
+                        <td key={item.role}>
+                          {immutable ? <span className="roles-muted">{enabled ? 'Sí' : '—'}</span> : (
+                            <button type="button" disabled={busyUserId === user.id} onClick={() => void setRole(user.id, item.role, !enabled)}>
+                              {busyUserId === user.id ? 'Guardando…' : enabled ? 'Retirar' : 'Conceder'}
+                            </button>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {!visibleUsers.length ? <p className="roles-empty">No hay usuarios que coincidan con la búsqueda.</p> : null}
         </div>
       </section>
 
-      <section className="roles-warning"><strong>Protección de arranque</strong><p>Las cuentas incluidas en <code>MAGINA_ADMIN_EMAILS</code> no se pueden modificar desde esta pantalla. Se gestionan únicamente en el entorno del servidor para conservar una vía de recuperación administrativa.</p></section>
+      <section className="roles-warning"><strong>Protección de privilegios</strong><p>Las cuentas de <code>MAGINA_ADMIN_EMAILS</code>, la cuenta actual y los Superadmin persistentes no se modifican desde esta tabla. La creación o retirada de Superadmin debe tratarse como una operación excepcional y revisada.</p></section>
 
-      <footer className="roles-footer"><a href="/admin/finanzas">Economía de publicidad</a><a href="/admin/publicidad">Campañas publicitarias</a></footer>
+      <footer className="roles-footer"><a href="/admin/finanzas">Economía de publicidad</a><a href="/admin/contenido">Contenido</a><a href="/admin/soporte">Soporte</a><a href="/admin/operaciones">Operaciones</a></footer>
     </div>
   );
 }

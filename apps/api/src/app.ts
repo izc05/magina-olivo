@@ -5,6 +5,7 @@ import { registerAccountPreferenceRoutes } from './account-preference-routes.ts'
 import { registerActivityRoutes } from './activity-routes.ts';
 import { registerAdminCommandCenterRoutes } from './admin-command-center-routes.ts';
 import { registerAdminContentRoutes } from './admin-content-routes.ts';
+import { registerAdminDelegatedRoutes } from './admin-delegated-routes.ts';
 import { registerAdminFinanceRoutes } from './admin-finance-routes.ts';
 import { registerAdminOperationsRoutes } from './admin-operations-routes.ts';
 import { registerAdminRoutes } from './admin-routes.ts';
@@ -78,6 +79,7 @@ export function buildApp(): FastifyInstance {
   registerAuthRoutes(app);
   registerAdminRoutes(app);
   registerAdminCommandCenterRoutes(app);
+  registerAdminDelegatedRoutes(app);
   registerAdminFinanceRoutes(app);
   registerAdminOperationsRoutes(app);
   registerAdminContentRoutes(app);

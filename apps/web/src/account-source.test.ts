@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-// P0 source gate for authenticated account preferences, portability and privacy-safe UI promises.
+// Source gate for authenticated account preferences, portability and privacy-safe deletion UX.
 async function read(relativePath: string): Promise<string> {
   return readFile(new URL(relativePath, import.meta.url), 'utf8');
 }
@@ -21,9 +21,10 @@ test('Mi Cuenta is reachable only through an authenticated session signal', asyn
   assert.match(account, /\/api\/v1\/account\/preferences/);
   assert.match(account, /\/api\/v1\/public\/destinations/);
   assert.match(account, /\/api\/v1\/account\/exports/);
+  assert.match(account, /<AccountDeletionPanel email=\{user\.email\} \/>/);
 });
 
-test('account preferences persist user choices and portability does not overpromise destructive or ZIP flows', async () => {
+test('account preferences and portability remain available', async () => {
   const account = await read('./AccountPage.tsx');
 
   assert.match(account, /preferredCooperativeId/);
@@ -35,15 +36,26 @@ test('account preferences persist user choices and portability does not overprom
   assert.doesNotMatch(account, /Lluvia desde \(mm\)/);
   assert.match(account, /weatherFrostCThreshold/);
   assert.match(account, /weatherWindKmhThreshold/);
-  assert.match(account, /predicción municipal de AEMET/);
-  assert.match(account, /se revisa automáticamente en el servidor/);
-  assert.match(account, /Seleccionarla no comparte tus entregas ni tus documentos/);
+  assert.match(account, /predicción municipal disponible/);
+  assert.match(account, /no comparte tus entregas, parcelas ni documentos/);
   assert.match(account, /Preparar copia de mis datos/);
   assert.match(account, /Descargar JSON/);
-  assert.match(account, /no incluye todavía los archivos binarios originales dentro de un ZIP/i);
-  assert.match(account, /Baja de cuenta/);
-  assert.match(account, /No mostraremos una acción destructiva/);
-  assert.doesNotMatch(account, /Eliminar cuenta<\/button>/);
+  assert.match(account, /no empaqueta todavía sus archivos binarios originales dentro de un ZIP/i);
 });
 
-// Keep this source gate in the CI-triggering slice so portability changes always re-run both repository gates.
+test('account deletion requires strong confirmation and never claims immediate physical deletion', async () => {
+  const account = await read('./AccountPage.tsx');
+  const deletion = await read('./AccountDeletionPanel.tsx');
+
+  assert.match(account, /Privacidad y control de tus datos|AccountDeletionPanel/);
+  assert.match(deletion, /\/api\/v1\/account\/deletion-request/);
+  assert.match(deletion, /wordConfirmation.*ELIMINAR/s);
+  assert.match(deletion, /emailConfirmation/);
+  assert.match(deletion, /Solicitud registrada/);
+  assert.match(deletion, /supresión física todavía no se considera completada/);
+  assert.match(deletion, /href="\/privacidad"/);
+  assert.match(deletion, /href="\/contacto"/);
+  assert.doesNotMatch(deletion, /Tu cuenta ha sido eliminada/);
+});
+
+// Keep this source gate in the CI-triggering slice so privacy changes always re-run repository gates.

@@ -1,6 +1,7 @@
 export type Position = [number, number];
 export type MapCenter = { latitude: number; longitude: number };
 export type Bbox = { minLon: number; minLat: number; maxLon: number; maxLat: number };
+export type BaseMapLayer = 'map' | 'pnoa';
 export type CatastroGeometry = {
   type: 'Polygon' | 'MultiPolygon';
   coordinates: number[][][] | number[][][][];
@@ -12,6 +13,7 @@ export const MAP_VIEW_SIZE = 768;
 export const MIN_CATASTRO_ZOOM = 15;
 export const DEFAULT_CATASTRO_CENTER: MapCenter = { latitude: 37.74, longitude: -3.52 };
 const MAX_MERCATOR_LATITUDE = 85.05112878;
+const PNOA_WMTS_URL = 'https://www.ign.es/wmts/pnoa-ma';
 
 function clampMercatorLatitude(latitude: number): number {
   return Math.max(-MAX_MERCATOR_LATITUDE, Math.min(MAX_MERCATOR_LATITUDE, latitude));
@@ -37,7 +39,28 @@ export function worldPixelToLatLon(x: number, y: number, zoom: number): MapCente
   return { latitude, longitude };
 }
 
-export function buildCatastroSelectorMap(center: MapCenter, zoom: number) {
+export function pnoaTileUrl(zoom: number, tileX: number, tileY: number): string {
+  const params = new URLSearchParams({
+    SERVICE: 'WMTS',
+    REQUEST: 'GetTile',
+    VERSION: '1.0.0',
+    LAYER: 'OI.OrthoimageCoverage',
+    STYLE: 'default',
+    FORMAT: 'image/jpeg',
+    TILEMATRIXSET: 'GoogleMapsCompatible',
+    TILEMATRIX: String(zoom),
+    TILECOL: String(tileX),
+    TILEROW: String(tileY),
+  });
+  return `${PNOA_WMTS_URL}?${params.toString()}`;
+}
+
+function tileUrl(layer: BaseMapLayer, zoom: number, tileX: number, tileY: number): string {
+  if (layer === 'pnoa') return pnoaTileUrl(zoom, tileX, tileY);
+  return `https://tile.openstreetmap.org/${zoom}/${tileX}/${tileY}.png`;
+}
+
+export function buildCatastroSelectorMap(center: MapCenter, zoom: number, baseLayer: BaseMapLayer = 'map') {
   const centerPixel = latLonToWorldPixel(center.latitude, center.longitude, zoom);
   const topLeft = {
     x: centerPixel.x - MAP_VIEW_SIZE / 2,
@@ -55,8 +78,8 @@ export function buildCatastroSelectorMap(center: MapCenter, zoom: number) {
     for (let tileX = startTileX; tileX <= endTileX; tileX += 1) {
       const wrappedX = ((tileX % tileCount) + tileCount) % tileCount;
       tiles.push({
-        key: `${zoom}-${tileX}-${tileY}`,
-        href: `https://tile.openstreetmap.org/${zoom}/${wrappedX}/${tileY}.png`,
+        key: `${baseLayer}-${zoom}-${tileX}-${tileY}`,
+        href: tileUrl(baseLayer, zoom, wrappedX, tileY),
         x: tileX * TILE_SIZE - topLeft.x,
         y: tileY * TILE_SIZE - topLeft.y,
       });

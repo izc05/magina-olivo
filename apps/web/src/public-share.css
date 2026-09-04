@@ -1,0 +1,86 @@
+.public-share {
+  position: fixed;
+  z-index: 40;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  width: min(23rem, calc(100vw - 2rem));
+  padding: 0.8rem;
+  border: 1px solid rgba(46, 58, 34, 0.18);
+  border-radius: 1rem;
+  background: rgba(250, 248, 240, 0.96);
+  box-shadow: 0 0.75rem 2rem rgba(39, 45, 30, 0.16);
+  backdrop-filter: blur(12px);
+}
+
+.public-share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.public-share button {
+  min-height: 2.75rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid rgba(46, 58, 34, 0.24);
+  border-radius: 999px;
+  background: #fffdf7;
+  color: #25301d;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.public-share button:hover {
+  border-color: rgba(46, 58, 34, 0.5);
+}
+
+.public-share button:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 2px;
+}
+
+.public-share .public-share-primary {
+  background: #2e3a22;
+  color: #fffdf7;
+  border-color: #2e3a22;
+}
+
+.public-share-note {
+  margin: 0.65rem 0 0;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: #58604e;
+}
+
+.public-share-status {
+  display: block;
+  min-height: 1.1rem;
+  margin-top: 0.25rem;
+  font-size: 0.76rem;
+  color: #38422f;
+}
+
+@media (max-width: 640px) {
+  .public-share {
+    right: 0.75rem;
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    width: calc(100vw - 1.5rem);
+  }
+
+  .public-share-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .public-share button {
+    padding-inline: 0.45rem;
+    font-size: 0.82rem;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .public-share {
+    background: #faf8f0;
+    backdrop-filter: none;
+  }
+}

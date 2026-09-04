@@ -15,6 +15,7 @@ import { MaginaWeatherPage } from './MaginaWeatherPage';
 import { NoticeCenter } from './NoticeCenter';
 import { OnboardingPage } from './OnboardingPage';
 import { PilotAlerts } from './PilotAlerts';
+import { PublicShare } from './PublicShare';
 import { RegisterPage } from './RegisterPage';
 import { RegistrationEntry } from './RegistrationEntry';
 import { ResetPassword } from './ResetPassword';
@@ -42,6 +43,7 @@ import './offline-v2-integration.css';
 import './auth-onboarding.css';
 import './pilot-alerts.css';
 import './calendar.css';
+import './public-share.css';
 
 installDemoPreview();
 installWeatherDemoPreview();
@@ -80,6 +82,8 @@ if (basePath) {
   });
 }
 
+const publicShare = <PublicShare />;
+
 createRoot(root).render(
   <StrictMode>
     {path === '/reset-password' ? (
@@ -93,17 +97,17 @@ createRoot(root).render(
     ) : path === '/calendario' ? (
       <CalendarPage />
     ) : path === '/magina' ? (
-      <MaginaHubPage />
+      <><MaginaHubPage />{publicShare}</>
     ) : path === '/magina/directorio' ? (
-      <MaginaDirectoryPage />
+      <><MaginaDirectoryPage />{publicShare}</>
     ) : path === '/magina/tiempo' ? (
-      <MaginaWeatherPage />
+      <><MaginaWeatherPage />{publicShare}</>
     ) : path === '/magina/campo' ? (
-      <MaginaFieldAlertsPage />
+      <><MaginaFieldAlertsPage />{publicShare}</>
     ) : path === '/magina/noticias' ? (
-      <MaginaNewsPage />
+      <><MaginaNewsPage />{publicShare}</>
     ) : path === '/magina/mercado' ? (
-      <MaginaMarketPage />
+      <><MaginaMarketPage />{publicShare}</>
     ) : (
       <>
         <ConnectivityStatus />

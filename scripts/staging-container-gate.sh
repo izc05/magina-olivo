@@ -10,6 +10,7 @@ export DATABASE_URL="postgres://magina:magina_staging_ci_password@postgres:5432/
 export BETTER_AUTH_SECRET="ci-staging-only-better-auth-secret-2026-not-production"
 export BETTER_AUTH_URL="https://magina-staging.example.test"
 export BETTER_AUTH_TRUSTED_ORIGINS="https://magina-staging.example.test"
+export PUBLIC_SITE_URL="https://magina-staging.example.test"
 export OBJECT_STORAGE_ENDPOINT="https://example.invalid"
 export OBJECT_STORAGE_BUCKET="magina-ci-private"
 export OBJECT_STORAGE_REGION="auto"
@@ -49,6 +50,7 @@ docker build \
 
 log "Building release-tagged web image"
 docker build \
+  --build-arg "PUBLIC_SITE_URL=$PUBLIC_SITE_URL" \
   --file infra/docker/Dockerfile.web \
   --tag "magina-olivo-web:$MAGINA_IMAGE_TAG" \
   .
@@ -73,7 +75,16 @@ done
 
 grep -q '"status":"ready"' /tmp/magina-staging-ready.json
 curl --fail --silent http://127.0.0.1:18088/ >/tmp/magina-staging-index.html
-grep -q '<div id="root"></div>' /tmp/magina-staging-index.html
+grep -q '<div id="root">' /tmp/magina-staging-index.html
+grep -q 'data-discovery-fallback="true"' /tmp/magina-staging-index.html
+grep -q 'href="https://magina-staging.example.test"' /tmp/magina-staging-index.html
+
+curl --fail --silent http://127.0.0.1:18088/sitemap.xml >/tmp/magina-staging-sitemap.xml
+grep -q '<loc>https://magina-staging.example.test</loc>' /tmp/magina-staging-sitemap.xml
+if grep -q 'izc05.github.io/magina-olivo' /tmp/magina-staging-index.html /tmp/magina-staging-sitemap.xml; then
+  echo 'Fallback discovery domain leaked into configured staging web image'
+  exit 1
+fi
 
 API_PORTS="$(docker compose -f "$COMPOSE_FILE" port api 3001 2>/dev/null || true)"
 POSTGRES_PORTS="$(docker compose -f "$COMPOSE_FILE" port postgres 5432 2>/dev/null || true)"

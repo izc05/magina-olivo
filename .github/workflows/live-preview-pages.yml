@@ -39,6 +39,8 @@ jobs:
       - name: Prepare Pages review build
         run: |
           cp dist/index.html dist/404.html
+          cp dist/index.html dist/visual-v2-review.html
+          printf '{"source":"feat/visual-v2-foundation","commit":"%s"}\n' "$GITHUB_SHA" > dist/review-build.json
           touch dist/.nojekyll
 
       - name: Setup Pages

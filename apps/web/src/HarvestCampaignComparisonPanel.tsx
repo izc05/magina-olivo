@@ -5,6 +5,7 @@ import {
   type HarvestMetricComparison,
   type HarvestPlotComparison,
 } from './harvestComparisonApi.ts';
+import { HarvestHistoryPanel } from './HarvestHistoryPanel.tsx';
 import './HarvestCampaignComparisonPanel.css';
 
 function formatNumber(value: number | null, digits = 1): string {
@@ -146,81 +147,84 @@ export function HarvestCampaignComparisonPanel({ campaignId }: { campaignId: str
     : null;
 
   return (
-    <section className="section harvest-comparison-shell" aria-labelledby="harvest-comparison-title">
-      <div className="section-heading harvest-comparison-heading">
-        <div>
-          <p className="eyebrow page-eyebrow">Evolución de la explotación</p>
-          <h3 id="harvest-comparison-title" className="section-title">Comparativa de campañas</h3>
-          <p className="section-copy">
-            {comparison.previousCampaign
-              ? `${currentSeason} frente a ${previousSeason}. La productividad usa la misma base activa en ambas campañas.`
-              : `${currentSeason}. Todavía no existe una campaña anterior comparable.`}
-          </p>
-        </div>
-        <span className="badge gold">{comparison.previousCampaign ? `vs ${previousSeason}` : 'Primera campaña'}</span>
-      </div>
-
-      <div className="harvest-comparison-metrics">
-        {metrics.map((metric) => (
-          <article className="card harvest-comparison-metric" key={metric.key}>
-            <div className="harvest-metric-topline">
-              <span>{metric.label}</span>
-              <small className={`harvest-trend ${metric.trend}`}>{directionLabel(metric.trend === 'up' ? 1 : metric.trend === 'down' ? -1 : 0)}</small>
-            </div>
-            <strong>{metric.value}</strong>
-            <div className="harvest-metric-compare">
-              <span>Anterior {metric.previous}</span>
-              <b className={`harvest-delta ${metric.trend}`}>{metric.change}</b>
-            </div>
-          </article>
-        ))}
-      </div>
-
-      <div className="card card-body harvest-balance-card">
-        <div className="harvest-balance-heading">
+    <>
+      <section className="section harvest-comparison-shell" aria-labelledby="harvest-comparison-title">
+        <div className="section-heading harvest-comparison-heading">
           <div>
-            <strong>Balance por parcela</strong>
-            <span>Según variación de kg/ha</span>
+            <p className="eyebrow page-eyebrow">Evolución de la explotación</p>
+            <h3 id="harvest-comparison-title" className="section-title">Comparativa de campañas</h3>
+            <p className="section-copy">
+              {comparison.previousCampaign
+                ? `${currentSeason} frente a ${previousSeason}. La productividad usa la misma base activa en ambas campañas.`
+                : `${currentSeason}. Todavía no existe una campaña anterior comparable.`}
+            </p>
           </div>
-          <small>Base: {formatNumber(comparison.base.activeAreaHa, 2)} ha · {comparison.base.activeOliveTreeCount || '—'} olivos</small>
+          <span className="badge gold">{comparison.previousCampaign ? `vs ${previousSeason}` : 'Primera campaña'}</span>
         </div>
 
-        {comparison.previousCampaign ? (
-          <div className="harvest-balance-grid" aria-label="Balance de parcelas comparadas">
-            <div><span aria-hidden="true">↑</span><strong>{comparison.balance.improvedPlots}</strong><small>Mejoran</small></div>
-            <div><span aria-hidden="true">↓</span><strong>{comparison.balance.worsenedPlots}</strong><small>Empeoran</small></div>
-            <div><span aria-hidden="true">→</span><strong>{comparison.balance.stablePlots}</strong><small>Estables</small></div>
-          </div>
-        ) : (
-          <p className="section-copy harvest-first-campaign-copy">Cuando cierres una segunda campaña, aquí aparecerá automáticamente la evolución de cada parcela.</p>
-        )}
-      </div>
-
-      {comparison.previousCampaign && (comparison.improvedPlots.length > 0 || comparison.worsenedPlots.length > 0) ? (
-        <div className="harvest-highlights-grid">
-          <article className="card card-body harvest-highlight-card">
-            <div className="harvest-highlight-heading">
-              <span aria-hidden="true">↑</span>
-              <div><strong>Más mejora</strong><small>Kg/ha frente a la anterior</small></div>
-            </div>
-            <ul>
-              {comparison.improvedPlots.slice(0, 3).map((plot) => <PlotHighlight key={plot.id} plot={plot} tone="up" />)}
-              {comparison.improvedPlots.length === 0 ? <li className="harvest-highlight-empty">Sin parcelas al alza.</li> : null}
-            </ul>
-          </article>
-
-          <article className="card card-body harvest-highlight-card">
-            <div className="harvest-highlight-heading">
-              <span aria-hidden="true">↓</span>
-              <div><strong>Más retroceso</strong><small>Kg/ha frente a la anterior</small></div>
-            </div>
-            <ul>
-              {comparison.worsenedPlots.slice(0, 3).map((plot) => <PlotHighlight key={plot.id} plot={plot} tone="down" />)}
-              {comparison.worsenedPlots.length === 0 ? <li className="harvest-highlight-empty">Sin parcelas a la baja.</li> : null}
-            </ul>
-          </article>
+        <div className="harvest-comparison-metrics">
+          {metrics.map((metric) => (
+            <article className="card harvest-comparison-metric" key={metric.key}>
+              <div className="harvest-metric-topline">
+                <span>{metric.label}</span>
+                <small className={`harvest-trend ${metric.trend}`}>{directionLabel(metric.trend === 'up' ? 1 : metric.trend === 'down' ? -1 : 0)}</small>
+              </div>
+              <strong>{metric.value}</strong>
+              <div className="harvest-metric-compare">
+                <span>Anterior {metric.previous}</span>
+                <b className={`harvest-delta ${metric.trend}`}>{metric.change}</b>
+              </div>
+            </article>
+          ))}
         </div>
-      ) : null}
-    </section>
+
+        <div className="card card-body harvest-balance-card">
+          <div className="harvest-balance-heading">
+            <div>
+              <strong>Balance por parcela</strong>
+              <span>Según variación de kg/ha</span>
+            </div>
+            <small>Base: {formatNumber(comparison.base.activeAreaHa, 2)} ha · {comparison.base.activeOliveTreeCount || '—'} olivos</small>
+          </div>
+
+          {comparison.previousCampaign ? (
+            <div className="harvest-balance-grid" aria-label="Balance de parcelas comparadas">
+              <div><span aria-hidden="true">↑</span><strong>{comparison.balance.improvedPlots}</strong><small>Mejoran</small></div>
+              <div><span aria-hidden="true">↓</span><strong>{comparison.balance.worsenedPlots}</strong><small>Empeoran</small></div>
+              <div><span aria-hidden="true">→</span><strong>{comparison.balance.stablePlots}</strong><small>Estables</small></div>
+            </div>
+          ) : (
+            <p className="section-copy harvest-first-campaign-copy">Cuando cierres una segunda campaña, aquí aparecerá automáticamente la evolución de cada parcela.</p>
+          )}
+        </div>
+
+        {comparison.previousCampaign && (comparison.improvedPlots.length > 0 || comparison.worsenedPlots.length > 0) ? (
+          <div className="harvest-highlights-grid">
+            <article className="card card-body harvest-highlight-card">
+              <div className="harvest-highlight-heading">
+                <span aria-hidden="true">↑</span>
+                <div><strong>Más mejora</strong><small>Kg/ha frente a la anterior</small></div>
+              </div>
+              <ul>
+                {comparison.improvedPlots.slice(0, 3).map((plot) => <PlotHighlight key={plot.id} plot={plot} tone="up" />)}
+                {comparison.improvedPlots.length === 0 ? <li className="harvest-highlight-empty">Sin parcelas al alza.</li> : null}
+              </ul>
+            </article>
+
+            <article className="card card-body harvest-highlight-card">
+              <div className="harvest-highlight-heading">
+                <span aria-hidden="true">↓</span>
+                <div><strong>Más retroceso</strong><small>Kg/ha frente a la anterior</small></div>
+              </div>
+              <ul>
+                {comparison.worsenedPlots.slice(0, 3).map((plot) => <PlotHighlight key={plot.id} plot={plot} tone="down" />)}
+                {comparison.worsenedPlots.length === 0 ? <li className="harvest-highlight-empty">Sin parcelas a la baja.</li> : null}
+              </ul>
+            </article>
+          </div>
+        ) : null}
+      </section>
+      <HarvestHistoryPanel campaignId={campaignId} />
+    </>
   );
 }

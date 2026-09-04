@@ -2,31 +2,75 @@ import { useState } from 'react';
 
 type ShareChannel = 'native' | 'whatsapp' | 'copy';
 
+type GrowthEventName = 'share_started' | 'share_completed';
+
 type GrowthEventDetail = {
-  event: 'share_started';
+  event: GrowthEventName;
   channel: ShareChannel;
   route: string;
 };
 
-function publicSharePayload() {
+const PUBLIC_SHARE_ROUTES = [
+  '/magina/mercado',
+  '/magina/directorio',
+  '/magina/noticias',
+  '/magina/tiempo',
+  '/magina/campo',
+  '/magina',
+] as const;
+
+const SHARE_SOURCE: Record<ShareChannel, string> = {
+  native: 'web_share',
+  whatsapp: 'whatsapp',
+  copy: 'copy_link',
+};
+
+function currentPublicRoute(): string {
+  const pathname = window.location.pathname.replace(/\/$/, '') || '/';
+  const route = PUBLIC_SHARE_ROUTES.find((candidate) => pathname.endsWith(candidate));
+  if (!route) throw new Error('Public sharing is only available on approved public routes.');
+  return route;
+}
+
+function canonicalPublicUrl(): URL {
+  const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href;
+  const url = new URL(canonical || window.location.href, window.location.origin);
+  const route = currentPublicRoute();
+
+  if (!url.pathname.replace(/\/$/, '').endsWith(route)) {
+    throw new Error('Canonical URL does not match the current approved public route.');
+  }
+
+  url.search = '';
+  url.hash = '';
+  return url;
+}
+
+function trackedPublicUrl(channel: ShareChannel): string {
+  const url = canonicalPublicUrl();
+  url.searchParams.set('utm_source', SHARE_SOURCE[channel]);
+  url.searchParams.set('utm_medium', 'share');
+  url.searchParams.set('utm_campaign', 'magina_public_growth');
+  return url.toString();
+}
+
+function publicSharePayload(channel: ShareChannel) {
   const title = document.title || 'Mágina Olivo';
   const description = document.querySelector<HTMLMetaElement>('meta[name="description"]')?.content
     || 'Información útil del olivar y Sierra Mágina.';
-  const url = new URL(window.location.href);
-  url.hash = '';
 
   return {
     title,
     text: description,
-    url: url.toString(),
+    url: trackedPublicUrl(channel),
   };
 }
 
-function emitGrowthEvent(channel: ShareChannel) {
+function emitGrowthEvent(event: GrowthEventName, channel: ShareChannel) {
   const detail: GrowthEventDetail = {
-    event: 'share_started',
+    event,
     channel,
-    route: window.location.pathname,
+    route: currentPublicRoute(),
   };
   window.dispatchEvent(new CustomEvent<GrowthEventDetail>('magina:public-growth-event', { detail }));
 }
@@ -53,15 +97,16 @@ export function PublicShare() {
   const [notice, setNotice] = useState('');
 
   async function nativeShare() {
-    const payload = publicSharePayload();
+    const payload = publicSharePayload('native');
     if (!navigator.share) {
       await copyLink();
       return;
     }
 
-    emitGrowthEvent('native');
+    emitGrowthEvent('share_started', 'native');
     try {
       await navigator.share(payload);
+      emitGrowthEvent('share_completed', 'native');
       setNotice('Enlace preparado para compartir.');
     } catch (reason) {
       if (reason instanceof DOMException && reason.name === 'AbortError') return;
@@ -70,17 +115,18 @@ export function PublicShare() {
   }
 
   function shareWhatsApp() {
-    const payload = publicSharePayload();
-    emitGrowthEvent('whatsapp');
-    const message = `${payload.title}\n${payload.url}`;
+    const payload = publicSharePayload('whatsapp');
+    emitGrowthEvent('share_started', 'whatsapp');
+    const message = `${payload.title}\n${payload.text}\n${payload.url}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
   }
 
   async function copyLink() {
-    const payload = publicSharePayload();
-    emitGrowthEvent('copy');
+    const payload = publicSharePayload('copy');
+    emitGrowthEvent('share_started', 'copy');
     try {
       await copyText(payload.url);
+      emitGrowthEvent('share_completed', 'copy');
       setNotice('Enlace copiado.');
     } catch {
       setNotice('No se ha podido copiar el enlace.');

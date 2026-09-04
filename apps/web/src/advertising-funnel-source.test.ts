@@ -15,7 +15,7 @@ test('public advertising page is routed and explains transparent paid visibility
   assert.match(page, /Patrocinado siempre identificado/);
   assert.match(page, /Precio a consultar/);
   assert.match(page, /consentAccepted: true/);
-  assert.match(page, /no publica ni activa ninguna campaña automáticamente|no se publica automáticamente/i);
+  assert.match(page, /ninguna solicitud se publica automáticamente|activación pública es un paso independiente/i);
 });
 
 test('commercial funnel creates drafts and keeps payments outside execution', async () => {

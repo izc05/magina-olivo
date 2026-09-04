@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { hostname } from 'node:os';
 import { setTimeout as sleep } from 'node:timers/promises';
 import pg from 'pg';
@@ -5,6 +6,7 @@ import { augmentAccountExportWithTasks } from './account-export-tasks.ts';
 import { expireAccountExports, generateAccountExport } from './account-export.ts';
 import { inspectMarketSources } from './market-source.ts';
 import { inspectRaifOlivarSource } from './raif-source.ts';
+import { scanRainAlerts } from './rain-alert-scan.ts';
 
 const { Pool } = pg;
 
@@ -19,6 +21,7 @@ const pollMilliseconds = Number(process.env.WORKER_POLL_MS ?? '5000');
 const retrySeconds = Number(process.env.WORKER_RETRY_SECONDS ?? '5');
 const leaseSeconds = Number(process.env.WORKER_LEASE_SECONDS ?? '120');
 const accountExportTtlHours = Number(process.env.ACCOUNT_EXPORT_TTL_HOURS ?? '24');
+const rainAlertScanMinutes = Number(process.env.RAIN_ALERT_SCAN_MINUTES ?? '30');
 
 if (!Number.isFinite(pollMilliseconds) || pollMilliseconds < 100) {
   throw new Error('WORKER_POLL_MS must be at least 100');
@@ -31,6 +34,9 @@ if (!Number.isFinite(leaseSeconds) || leaseSeconds < 10) {
 }
 if (!Number.isFinite(accountExportTtlHours) || accountExportTtlHours < 1 || accountExportTtlHours > 168) {
   throw new Error('ACCOUNT_EXPORT_TTL_HOURS must be between 1 and 168');
+}
+if (!Number.isFinite(rainAlertScanMinutes) || rainAlertScanMinutes < 5 || rainAlertScanMinutes > 1440) {
+  throw new Error('RAIN_ALERT_SCAN_MINUTES must be between 5 and 1440');
 }
 
 const pool = new Pool({ connectionString: databaseUrl });
@@ -140,6 +146,45 @@ async function claimNextJob(): Promise<JobRow | null> {
   }
 }
 
+async function renewJobLease(jobId: string): Promise<void> {
+  const renewed = await pool.query(
+    `
+      update job_queue
+      set locked_at = now(),
+          updated_at = now()
+      where id = $1
+        and status = 'running'
+        and locked_by = $2
+      returning id
+    `,
+    [jobId, workerId],
+  );
+  if (renewed.rowCount === 0) {
+    throw new Error(`Worker lease lost for job ${jobId}`);
+  }
+}
+
+async function withJobLeaseHeartbeat<T>(jobId: string, task: () => Promise<T>): Promise<T> {
+  const heartbeatMilliseconds = Math.max(1000, Math.min(30_000, Math.floor((leaseSeconds * 1000) / 3)));
+  let heartbeatError: unknown = null;
+
+  await renewJobLease(jobId);
+  const timer = setInterval(() => {
+    void renewJobLease(jobId).catch((error) => {
+      if (heartbeatError == null) heartbeatError = error;
+    });
+  }, heartbeatMilliseconds);
+  timer.unref();
+
+  try {
+    const result = await task();
+    if (heartbeatError != null) throw heartbeatError;
+    return result;
+  } finally {
+    clearInterval(timer);
+  }
+}
+
 async function inspectRaifPublicSource(): Promise<void> {
   try {
     const inspection = await inspectRaifOlivarSource();
@@ -228,6 +273,71 @@ async function inspectMarketPublicSource(): Promise<void> {
   }
 }
 
+async function ensureRainAlertScanScheduled(): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query('begin');
+    await client.query("select pg_advisory_xact_lock(hashtext('magina-weather-rain-scheduler'))");
+
+    const active = await client.query<{ count: string }>(
+      `
+        select count(*)::text as count
+        from job_queue
+        where kind = 'weather.rain.scan'
+          and status in ('queued', 'retry', 'running')
+      `,
+    );
+
+    if (Number(active.rows[0]?.count ?? '0') === 0) {
+      const revived = await client.query(
+        `
+          update job_queue
+          set status = 'queued',
+              attempts = 0,
+              run_after = now(),
+              locked_at = null,
+              locked_by = null,
+              last_error = null,
+              completed_at = null,
+              updated_at = now()
+          where dedupe_key = 'weather.rain.scan:bootstrap'
+            and status in ('succeeded', 'failed')
+          returning id
+        `,
+      );
+
+      if (revived.rowCount === 0) {
+        await client.query(
+          `
+            insert into job_queue (id, kind, payload, dedupe_key, run_after)
+            values ($1, 'weather.rain.scan', '{}'::jsonb, 'weather.rain.scan:bootstrap', now())
+            on conflict (dedupe_key) do nothing
+          `,
+          [randomUUID()],
+        );
+      }
+    }
+
+    await client.query('commit');
+  } catch (error) {
+    await client.query('rollback');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function scheduleNextRainAlertScan(currentJobId: string): Promise<void> {
+  await pool.query(
+    `
+      insert into job_queue (id, kind, payload, dedupe_key, run_after)
+      values ($1, 'weather.rain.scan', '{}'::jsonb, $2, now() + ($3 * interval '1 minute'))
+      on conflict do nothing
+    `,
+    [randomUUID(), `weather.rain.scan:after:${currentJobId}`, rainAlertScanMinutes],
+  );
+}
+
 async function executeJob(job: JobRow): Promise<void> {
   switch (job.kind) {
     case 'spike.noop':
@@ -244,6 +354,15 @@ async function executeJob(job: JobRow): Promise<void> {
     case 'public.market.inspect':
       await inspectMarketPublicSource();
       return;
+    case 'weather.rain.scan': {
+      try {
+        const result = await withJobLeaseHeartbeat(job.id, () => scanRainAlerts(pool));
+        console.log(JSON.stringify({ event: 'rain_alert_scan_completed', ...result }));
+      } finally {
+        await scheduleNextRainAlertScan(job.id);
+      }
+      return;
+    }
     default:
       throw new Error(`Unsupported job kind: ${job.kind}`);
   }
@@ -309,22 +428,42 @@ export async function runWorkerIteration(): Promise<boolean> {
   return true;
 }
 
-async function main(): Promise<void> {
-  try {
-    if (runOnce) {
-      await runWorkerIteration();
-      return;
-    }
+function logLoopFailure(event: string, error: unknown): void {
+  console.warn(JSON.stringify({
+    event,
+    error: error instanceof Error ? error.message : String(error),
+  }));
+}
 
-    while (true) {
+async function main(): Promise<void> {
+  if (runOnce) {
+    try {
+      await runWorkerIteration();
+    } finally {
+      await pool.end();
+    }
+    return;
+  }
+
+  while (true) {
+    try {
+      await ensureRainAlertScanScheduled();
+      break;
+    } catch (error) {
+      logLoopFailure('rain_alert_scheduler_bootstrap_failed', error);
+      await sleep(Math.max(pollMilliseconds, 1000));
+    }
+  }
+
+  while (true) {
+    try {
       const processed = await runWorkerIteration();
       if (!processed) {
         await sleep(pollMilliseconds);
       }
-    }
-  } finally {
-    if (runOnce) {
-      await pool.end();
+    } catch (error) {
+      logLoopFailure('worker_iteration_failed', error);
+      await sleep(Math.max(pollMilliseconds, 1000));
     }
   }
 }

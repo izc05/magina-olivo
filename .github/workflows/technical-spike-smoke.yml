@@ -6,6 +6,7 @@ on:
       - main
       - feat/foundation-v1
       - feat/mvp-core-v1
+      - feat/integration-v2-mvp-v1
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 

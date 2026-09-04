@@ -17,7 +17,6 @@ type CampaignSummary = {
 type Preferences = {
   notifyWeather: boolean;
   notifyPendingYield: boolean;
-  weatherRainProbabilityPercentThreshold: number;
   weatherFrostCThreshold: number;
   weatherWindKmhThreshold: number;
 };
@@ -30,7 +29,6 @@ type Municipality = {
 
 type WeatherDay = {
   date: string;
-  precipitationProbabilityPercent: number | null;
   temperatureMinC: number | null;
   windMaxKmh: number | null;
 };
@@ -40,6 +38,22 @@ type WeatherResponse = {
   forecast: { days: WeatherDay[] };
   freshness: { status: 'fresh' | 'aging' | 'stale' | 'unknown' };
   source: { attribution: string; scopeNote: string };
+};
+
+type RainAlert = {
+  id: string;
+  municipalityName: string;
+  forecastDate: string;
+  precipitationProbabilityPercent: number;
+  thresholdPercent: number;
+  provider: string;
+};
+
+type RainAlertResponse = {
+  enabled: boolean;
+  thresholdPercent: number;
+  horizonDays: number;
+  items: RainAlert[];
 };
 
 type AlertItem = {
@@ -87,14 +101,26 @@ export function PilotAlerts() {
         });
         if (!session.ok) return;
 
-        const [preferenceResult, holdingResult] = await Promise.all([
+        const [preferenceResult, holdingResult, rainAlertResult] = await Promise.all([
           json<Preferences>('/api/v1/account/preferences'),
           json<{ items: Holding[] }>('/api/v1/holdings'),
+          json<RainAlertResponse>('/api/v1/account/rain-alerts').catch(() => null),
         ]);
         if (cancelled) return;
 
         const next: AlertItem[] = [];
         const holding = holdingResult.items[0] ?? null;
+
+        if (rainAlertResult?.enabled) {
+          for (const rain of rainAlertResult.items.slice(0, 2)) {
+            next.push({
+              id: `rain-${rain.id}`,
+              title: `Alarma de lluvia · ${dayLabel(rain.forecastDate)}`,
+              detail: `${rain.municipalityName}: probabilidad ${rain.precipitationProbabilityPercent}% (umbral ${rain.thresholdPercent}%). Seguimiento automático en servidor.`,
+              source: rain.provider,
+            });
+          }
+        }
 
         if (holding) {
           const campaigns = await json<{ items: Campaign[] }>(`/api/v1/holdings/${holding.id}/campaigns`);
@@ -128,12 +154,6 @@ export function PilotAlerts() {
                   const horizon = weather.forecast.days.slice(0, 2);
                   for (const day of horizon) {
                     const triggers: string[] = [];
-                    if (
-                      day.precipitationProbabilityPercent != null
-                      && day.precipitationProbabilityPercent >= preferenceResult.weatherRainProbabilityPercentThreshold
-                    ) {
-                      triggers.push(`lluvia ${day.precipitationProbabilityPercent}%`);
-                    }
                     if (day.temperatureMinC != null && day.temperatureMinC <= preferenceResult.weatherFrostCThreshold) {
                       triggers.push(`mínima ${day.temperatureMinC} °C`);
                     }
@@ -154,7 +174,7 @@ export function PilotAlerts() {
                 }
               }
             } catch {
-              // Weather is contextual and must never block private agricultural data.
+              // Frost and wind are contextual and must never block private agricultural data.
             }
           }
         }

@@ -237,11 +237,11 @@ export function AccountPage() {
 
         <section className="section card card-body">
           <h2 className="section-title account-section-title">Avisos</h2>
-          <p className="section-copy">Los avisos meteorológicos usan la predicción municipal de AEMET y respetan tus umbrales. Son contexto para organizarte, no un diagnóstico de parcela.</p>
+          <p className="section-copy">La alarma de lluvia se revisa automáticamente en el servidor para los próximos 2 días con la predicción municipal de AEMET y tu umbral. Helada y viento siguen apareciendo como avisos meteorológicos complementarios. Son contexto para organizarte, no un diagnóstico de parcela.</p>
 
           <label className="account-toggle">
             <input type="checkbox" checked={preferences.notifyWeather} onChange={(event) => setPreferences((current) => ({ ...current, notifyWeather: event.target.checked }))} />
-            <span><strong>Tiempo</strong><small>Probabilidad de lluvia, helada y viento según tus umbrales.</small></span>
+            <span><strong>Tiempo</strong><small>Alarma automática de lluvia y avisos de helada y viento según tus umbrales.</small></span>
           </label>
           <label className="account-toggle">
             <input type="checkbox" checked={preferences.notifyTasks} onChange={(event) => setPreferences((current) => ({ ...current, notifyTasks: event.target.checked }))} />
@@ -254,7 +254,7 @@ export function AccountPage() {
 
           <div className="account-threshold-grid">
             <div className="field">
-              <label htmlFor="rain-threshold">Probabilidad de lluvia desde (%)</label>
+              <label htmlFor="rain-threshold">Alarma de lluvia desde (%)</label>
               <input id="rain-threshold" type="number" min="0" max="100" step="1" inputMode="numeric" value={preferences.weatherRainProbabilityPercentThreshold} onChange={(event) => setPreferences((current) => ({ ...current, weatherRainProbabilityPercentThreshold: Number(event.target.value) }))} disabled={!preferences.notifyWeather} />
             </div>
             <div className="field">

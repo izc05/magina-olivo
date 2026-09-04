@@ -1,0 +1,44 @@
+{
+  "generatedAt": "2026-09-04T12:20:00.000Z",
+  "sourceLabel": "Jaén Paraíso Interior · Diputación Provincial de Jaén",
+  "sourceUrl": "https://www.jaenparaisointerior.es/es/sierra_magina",
+  "heroImage": "/photos/discover-sierra-magina.webp",
+  "places": [
+    {
+      "id": "sierra-magina-destino",
+      "name": "Sierra Mágina",
+      "municipality": "Comarca de Sierra Mágina",
+      "kind": "Destino",
+      "summary": "Naturaleza, senderismo, patrimonio, gastronomía y turismo activo reunidos en el portal oficial del destino Sierra Mágina.",
+      "url": "https://www.jaenparaisointerior.es/es/sierra_magina",
+      "official": true
+    },
+    {
+      "id": "paraje-canava-jimena",
+      "name": "Paraje de Cánava",
+      "municipality": "Jimena",
+      "kind": "Naturaleza",
+      "summary": "Entorno del Pinar de Cánava y acceso a uno de los espacios naturales más singulares del municipio de Jimena.",
+      "url": "https://www.jaenparaisointerior.es/es/w/paraje-de-canava",
+      "official": true
+    },
+    {
+      "id": "adelfal-cuadros-bedmar",
+      "name": "Adelfal de Cuadros",
+      "municipality": "Bedmar y Garcíez",
+      "kind": "Senderismo",
+      "summary": "Recorrido junto al río Cuadros y su gran masa natural de adelfas, con acceso desde el entorno recreativo de Cuadros.",
+      "url": "https://www.jaenparaisointerior.es/es/w/sendero-adelfal-de-cuadros",
+      "official": true
+    },
+    {
+      "id": "columpio-gigante-torres",
+      "name": "Columpio Gigante de Torres",
+      "municipality": "Torres",
+      "kind": "Mirador",
+      "summary": "Mirador panorámico sobre el valle, los olivares y las cumbres de Sierra Mágina, situado sobre el casco urbano de Torres.",
+      "url": "https://www.jaenparaisointerior.es/es/w/columpio-gigante-de-torres",
+      "official": true
+    }
+  ]
+}

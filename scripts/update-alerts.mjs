@@ -1,7 +1,9 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import { municipalAlertEligible, municipalCategory, municipalSeverity } from './municipal-alert-rules.mjs';
 
 const OUTPUT = new URL('../public/data/alerts.json', import.meta.url);
+const NEWS = new URL('../public/data/news.json', import.meta.url);
 
 const sources = [
   {
@@ -100,7 +102,7 @@ function parseXml(xml, source) {
 }
 
 function textFor(item) {
-  return `${item.title} ${item.excerpt}`.toLocaleLowerCase('es');
+  return `${item.title} ${item.excerpt ?? item.summary ?? ''}`.toLocaleLowerCase('es');
 }
 
 function includesAny(text, terms) {
@@ -146,7 +148,7 @@ function normalizeTitle(title) {
 async function fetchSource(source) {
   const response = await fetch(source.url, {
     headers: {
-      'user-agent': 'MaginaOlivoAlertsBot/1.1 (+https://github.com/izc05/magina-olivo)',
+      'user-agent': 'MaginaOlivoAlertsBot/1.3 (+https://github.com/izc05/magina-olivo)',
       accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml',
     },
     signal: AbortSignal.timeout(15_000),
@@ -155,22 +157,55 @@ async function fetchSource(source) {
   return parseXml(await response.text(), source);
 }
 
+async function loadMunicipalAlerts() {
+  try {
+    const payload = JSON.parse(await readFile(NEWS, 'utf8'));
+    const stories = Array.isArray(payload.stories) ? payload.stories : [];
+    return stories
+      .filter(municipalAlertEligible)
+      .map((story) => ({
+        title: story.title,
+        excerpt: story.excerpt,
+        url: story.url,
+        publishedAt: story.publishedAt,
+        source: story.source,
+        scope: story.municipalityName ?? 'Sierra Mágina',
+        weight: 34,
+        official: true,
+        municipalityId: story.municipalityId,
+        municipalityName: story.municipalityName,
+        municipal: true,
+      }));
+  } catch (error) {
+    console.warn(`No se pudo reutilizar el feed municipal: ${error?.message ?? String(error)}`);
+    return [];
+  }
+}
+
 async function main() {
-  const results = await Promise.allSettled(sources.map(fetchSource));
+  const [results, municipalItems] = await Promise.all([
+    Promise.allSettled(sources.map(fetchSource)),
+    loadMunicipalAlerts(),
+  ]);
   const errors = results
     .map((result, index) => result.status === 'rejected' ? `${sources[index].name}: ${result.reason?.message ?? String(result.reason)}` : null)
     .filter(Boolean);
-  const items = results.flatMap((result) => result.status === 'fulfilled' ? result.value : []);
+  const items = [
+    ...results.flatMap((result) => result.status === 'fulfilled' ? result.value : []),
+    ...municipalItems,
+  ];
   const cutoff = Date.now() - 120 * 24 * 60 * 60 * 1000;
   const deduped = new Map();
 
   for (const item of items) {
     if (new Date(item.publishedAt).getTime() < cutoff) continue;
     const text = textFor(item);
-    if (!includesAny(text, oliveTerms)) continue;
-    if (!includesAny(text, strictAlertTerms)) continue;
+    if (!item.municipal) {
+      if (!includesAny(text, oliveTerms)) continue;
+      if (!includesAny(text, strictAlertTerms)) continue;
+    }
 
-    const score = item.weight + freshnessScore(item.publishedAt) + (item.scope === 'Sierra Mágina' ? 12 : 0);
+    const score = item.weight + freshnessScore(item.publishedAt) + (item.scope === 'Sierra Mágina' || item.municipal ? 12 : 0);
     const ranked = { ...item, score };
     const key = normalizeTitle(item.title).slice(0, 96);
     const previous = deduped.get(key);
@@ -182,8 +217,8 @@ async function main() {
     .slice(0, 18)
     .map((item) => ({
       id: idFor(item),
-      severity: severityFor(item),
-      category: categoryFor(item),
+      severity: item.municipal ? municipalSeverity(item) : severityFor(item),
+      category: item.municipal ? municipalCategory(item) : categoryFor(item),
       scope: item.scope,
       title: item.title,
       summary: item.excerpt || 'Consulta la fuente oficial para ampliar la información.',
@@ -191,6 +226,10 @@ async function main() {
       url: item.url,
       publishedAt: item.publishedAt,
       official: item.official,
+      ...(item.municipalityId ? {
+        municipalityId: item.municipalityId,
+        municipalityName: item.municipalityName,
+      } : {}),
     }));
 
   if (!alerts.length) {
@@ -201,16 +240,20 @@ async function main() {
     return;
   }
 
+  const municipalAlertCount = alerts.filter((alert) => alert.municipalityId).length;
   const payload = {
     generatedAt: new Date().toISOString(),
     sourceCount: sources.length,
     healthySourceCount: sources.length - errors.length,
+    municipalAlertCount,
+    municipalNewsUpstream: true,
     collectorErrors: errors,
     alerts,
   };
 
   await writeFile(OUTPUT, `${JSON.stringify(payload, null, 2)}\n`);
   console.log(`Alertas actualizadas: ${alerts.length}; ${payload.healthySourceCount}/${sources.length} fuentes operativas.`);
+  console.log(`Alertas municipales seleccionadas: ${municipalAlertCount}.`);
   if (errors.length) console.warn(`Fuentes con error: ${errors.join(' | ')}`);
 }
 

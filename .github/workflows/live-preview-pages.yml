@@ -6,6 +6,7 @@ on:
       - feat/visual-v2-foundation
       - feat/real-news-v1
       - feat/cooperatives-alerts-v1
+      - feat/market-real-v1
       - main
   schedule:
     - cron: '17 * * * *'
@@ -41,11 +42,35 @@ jobs:
       - name: Validate real news feed
         run: node scripts/validate-news.mjs
 
+      - name: Validate municipal alert rules
+        run: node scripts/validate-municipal-alert-rules.mjs
+
+      - name: Validate Descubre official places
+        run: node scripts/validate-discover.mjs
+
+      - name: Validate real Magina hub
+        run: node scripts/validate-real-magina-hub.mjs
+
       - name: Refresh official alerts
         run: npm run alerts:sync
 
       - name: Validate official alerts
         run: node scripts/validate-alerts.mjs
+
+      - name: Refresh official market prices
+        run: npm run market:sync
+
+      - name: Validate official market prices
+        run: node scripts/validate-market.mjs
+
+      - name: Refresh cooperative shops
+        run: npm run cooperatives:sync
+
+      - name: Validate cooperative directory
+        run: node scripts/validate-cooperatives.mjs
+
+      - name: Validate cooperative operations
+        run: node scripts/validate-cooperative-operations.mjs
 
       - name: Generate approved photography
         run: npm run photos:sync

@@ -1,15 +1,37 @@
+export type CooperativeProduct = {
+  name: string;
+  type: string;
+  format?: string;
+  storePriceLabel?: string;
+  priceCapturedAt?: string;
+  priceSourceUrl?: string;
+};
+
 export type CooperativeRecord = {
   id: string;
   name: string;
   town: string;
   brand: string;
   dop: boolean;
+  officialWebsite?: string;
+  productSourceUrl?: string;
+  products?: CooperativeProduct[];
+};
+
+export type CooperativeShopSync = {
+  generatedAt: string;
+  sourceCount: number;
+  healthySourceCount: number;
+  verifiedProducts: number;
+  updatedProducts: number;
+  collectorErrors?: string[];
 };
 
 export type CooperativesPayload = {
   generatedAt: string;
   sourceLabel: string;
   sourceUrl: string;
+  shopSync?: CooperativeShopSync;
   cooperatives: CooperativeRecord[];
 };
 

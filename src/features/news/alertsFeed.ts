@@ -11,12 +11,16 @@ export type RealAlert = {
   url: string;
   publishedAt: string;
   official: boolean;
+  municipalityId?: string;
+  municipalityName?: string;
 };
 
 export type AlertsPayload = {
   generatedAt: string;
   sourceCount?: number;
   healthySourceCount?: number;
+  municipalAlertCount?: number;
+  municipalNewsUpstream?: boolean;
   collectorErrors?: string[];
   alerts: RealAlert[];
 };

@@ -1,0 +1,88 @@
+function googleMunicipalFeed(domain, municipality) {
+  const query = encodeURIComponent(`site:${domain} "${municipality}"`);
+  return `https://news.google.com/rss/search?q=${query}&hl=es&gl=ES&ceid=ES:es`;
+}
+
+export const municipalNewsSources = [
+  {
+    name: 'Ayuntamiento de Jódar · Oficial',
+    url: googleMunicipalFeed('jodar.es', 'Jódar'),
+    weight: 31,
+    scope: 'magina',
+    official: true,
+    municipalityId: 'jodar',
+    municipalityName: 'Jódar',
+  },
+  {
+    name: 'Ayuntamiento de Bedmar y Garcíez · Oficial',
+    url: googleMunicipalFeed('bedmargarciez.es', 'Bedmar y Garcíez'),
+    weight: 31,
+    scope: 'magina',
+    official: true,
+    municipalityId: 'bedmar-garciez',
+    municipalityName: 'Bedmar y Garcíez',
+  },
+  {
+    name: 'Ayuntamiento de Albanchez de Mágina · Oficial',
+    url: googleMunicipalFeed('albanchezdemagina.es', 'Albanchez de Mágina'),
+    weight: 32,
+    scope: 'magina',
+    official: true,
+    municipalityId: 'albanchez-magina',
+    municipalityName: 'Albanchez de Mágina',
+  },
+  {
+    name: 'Ayuntamiento de Cárcheles · Oficial',
+    url: googleMunicipalFeed('carcheles.es', 'Cárcheles'),
+    weight: 31,
+    scope: 'magina',
+    official: true,
+    municipalityId: 'carcheles',
+    municipalityName: 'Cárcheles',
+  },
+  {
+    name: 'Ayuntamiento de La Guardia de Jaén · Oficial',
+    url: googleMunicipalFeed('laguardiadejaen.com', 'La Guardia de Jaén'),
+    weight: 30,
+    scope: 'magina',
+    official: true,
+    municipalityId: 'la-guardia-jaen',
+    municipalityName: 'La Guardia de Jaén',
+  },
+  {
+    name: 'Ayuntamiento de Cabra del Santo Cristo · Oficial',
+    url: googleMunicipalFeed('aytocabradelsantocristo.com', 'Cabra del Santo Cristo'),
+    weight: 31,
+    scope: 'magina',
+    official: true,
+    municipalityId: 'cabra-santo-cristo',
+    municipalityName: 'Cabra del Santo Cristo',
+  },
+  {
+    name: 'Ayuntamiento de Bélmez de la Moraleda · Oficial',
+    url: googleMunicipalFeed('belmezdelamoraleda.es', 'Bélmez de la Moraleda'),
+    weight: 30,
+    scope: 'magina',
+    official: true,
+    municipalityId: 'belmez-moraleda',
+    municipalityName: 'Bélmez de la Moraleda',
+  },
+  {
+    name: 'Ayuntamiento de Jimena · Oficial',
+    url: googleMunicipalFeed('jimena.es', 'Jimena Jaén'),
+    weight: 30,
+    scope: 'magina',
+    official: true,
+    municipalityId: 'jimena',
+    municipalityName: 'Jimena',
+  },
+  {
+    name: 'Ayuntamiento de Campillo de Arenas · Oficial',
+    url: googleMunicipalFeed('campillodearenas.es', 'Campillo de Arenas'),
+    weight: 30,
+    scope: 'magina',
+    official: true,
+    municipalityId: 'campillo-arenas',
+    municipalityName: 'Campillo de Arenas',
+  },
+];

@@ -13,6 +13,7 @@ import './styles/market-v25.css';
 import './styles/journal-v26.css';
 import './styles/news-v27.css';
 import './styles/profile-v28.css';
+import './styles/onboarding-tour.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

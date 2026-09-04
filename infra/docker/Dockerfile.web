@@ -14,6 +14,12 @@ COPY apps/web apps/web
 ARG PUBLIC_SITE_URL=https://izc05.github.io/magina-olivo
 ENV PUBLIC_SITE_URL=${PUBLIC_SITE_URL}
 
+# Growth measurement remains disabled unless production explicitly opts in.
+ARG VITE_PUBLIC_GROWTH_MEASUREMENT=disabled
+ARG VITE_PUBLIC_GROWTH_ENDPOINT=
+ENV VITE_PUBLIC_GROWTH_MEASUREMENT=${VITE_PUBLIC_GROWTH_MEASUREMENT}
+ENV VITE_PUBLIC_GROWTH_ENDPOINT=${VITE_PUBLIC_GROWTH_ENDPOINT}
+
 RUN npm run build --workspace @magina/web
 
 FROM nginx:1.30.4-alpine3.24-slim

@@ -109,6 +109,17 @@ async function run() {
     assert(await page.getByText(/Ayuntamiento de .* · Oficial/i).count() >= 1, 'Ayuntamientos: falta la identificación de la fuente municipal.');
     await assertNoOverflow(page, 'Noticias de ayuntamientos');
 
+    // Descubre: permanece en el hub real y muestra lugares verificados de Diputación.
+    await page.locator('.hub-tabs--primary').getByRole('button', { name: 'Descubre', exact: true }).click();
+    const discoverPanel = page.locator('.discover-real');
+    await discoverPanel.waitFor({ state: 'visible', timeout: 10_000 });
+    assert(await page.locator('.discover-real__card').count() === 4, 'Descubre: no aparecen los cuatro lugares verificados.');
+    await page.getByText('Sierra Mágina para descubrir', { exact: true }).waitFor({ state: 'visible' });
+    await page.getByText('Fuente turística verificada', { exact: true }).waitFor({ state: 'visible' });
+    await page.getByText(/Jaén Paraíso Interior · Diputación Provincial de Jaén/i).waitFor({ state: 'visible' });
+    assert(await page.getByText('Oficial', { exact: true }).count() >= 4, 'Descubre: faltan sellos oficiales en los lugares.');
+    await assertNoOverflow(page, 'Descubre');
+
     // Mercado: precios oficiales y gráfico seleccionable.
     await page.locator('.hub-tabs--primary').getByRole('button', { name: 'Mercado', exact: true }).click();
     const marketPanel = page.locator('.market-real');
@@ -135,7 +146,7 @@ async function run() {
     await assertNoOverflow(page, 'Alertas');
 
     await context.close();
-    console.log('✓ Smoke Mágina: tiendas, cooperativa, precios, noticias municipales, Socios/Campaña, mercado y alertas con filtro municipal funcionan en 390×844 y bajo /magina-olivo/.');
+    console.log('✓ Smoke Mágina: tiendas, cooperativa, precios, noticias municipales, Descubre, Socios/Campaña, mercado y alertas con filtro municipal funcionan en 390×844 bajo /magina-olivo/.');
   } finally {
     if (browser) await browser.close();
     await closePreview(previewServer);

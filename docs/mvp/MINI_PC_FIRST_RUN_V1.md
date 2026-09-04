@@ -26,7 +26,7 @@ La rama de integración puede seguir usándose para desarrollo y preview, pero n
 
 ## 1. Primer encendido del Mini-PC
 
-En el repositorio, ejecutar primero el diagnóstico sin secretos:
+En el checkout operativo que contiene esta guía, ejecutar primero el diagnóstico sin secretos:
 
 ```bash
 bash scripts/mini-pc-readiness.sh
@@ -50,6 +50,8 @@ READY FOR CONFIGURATION
 Si aparecen `FAIL`, corregirlos antes de crear el env de staging.
 
 Los `WARN` no siempre bloquean, pero deben revisarse antes del gate correspondiente.
+
+**Importante:** este readiness pertenece a la rama operativa/integración actual. Si el candidato congelado aprobado es anterior a este cambio, el script no existirá dentro de ese checkout. No copiarlo ni añadirlo al candidato congelado: se ejecuta antes del cambio a `detached HEAD` y el preflight formal vuelve a verificar los requisitos críticos después.
 
 ## 2. Preparar el repositorio
 
@@ -75,13 +77,7 @@ git status --short
 
 `git status --short` debe quedar vacío.
 
-Opcionalmente repetir:
-
-```bash
-bash scripts/mini-pc-readiness.sh
-```
-
-Con `STAGING_EXPECTED_SOURCE_SHA` definido, el script avisará si el checkout no coincide con el candidato aprobado.
+No repetir `scripts/mini-pc-readiness.sh` después del `git switch --detach` si el candidato aprobado no contiene ese script. En ese punto la autoridad pasa al preflight formal, que vuelve a comprobar SHA, host, Docker/Compose, env, disco, reloj y almacenamiento.
 
 ## 3. Crear el fichero de staging fuera de Git
 
@@ -91,18 +87,21 @@ Ruta recomendada:
 /etc/magina-olivo/staging.env
 ```
 
-Crear directorio y fichero:
+El mismo usuario que ejecutará Docker y `staging-acceptance.sh` debe poder atravesar el directorio y leer el fichero, manteniendo ambos inaccesibles para grupo/otros. Prepararlo así:
 
 ```bash
-sudo install -d -m 700 /etc/magina-olivo
-sudo cp infra/docker/staging.env.example /etc/magina-olivo/staging.env
-sudo chmod 600 /etc/magina-olivo/staging.env
+OPERATOR_USER="$(id -un)"
+OPERATOR_GROUP="$(id -gn)"
+
+sudo install -d -m 700 -o "$OPERATOR_USER" -g "$OPERATOR_GROUP" /etc/magina-olivo
+sudo install -m 600 -o "$OPERATOR_USER" -g "$OPERATOR_GROUP" \
+  infra/docker/staging.env.example /etc/magina-olivo/staging.env
 ```
 
-Editar únicamente fuera del repositorio:
+Editar como el mismo operador de staging:
 
 ```bash
-sudo nano /etc/magina-olivo/staging.env
+nano /etc/magina-olivo/staging.env
 ```
 
 No copiar valores reales a issues, PR, capturas ni chat.
@@ -252,19 +251,25 @@ El issue #7 solo se cierra cuando los nueve bloques completos estén en PASS sob
 ## 10. Secuencia corta para el día del montaje
 
 ```bash
-# A. Diagnóstico del equipo
+# A. Diagnóstico del equipo, todavía desde la rama operativa que contiene el script
 bash scripts/mini-pc-readiness.sh
 
 # B. Resolver candidato aprobado
 git fetch --all --prune
 export STAGING_EXPECTED_SOURCE_SHA=<sha-aprobado>
 git switch --detach "$STAGING_EXPECTED_SOURCE_SHA"
+test "$(git rev-parse HEAD)" = "$STAGING_EXPECTED_SOURCE_SHA"
 git status --short
 
-# C. Preparar env fuera de Git
+# C. Preparar env fuera de Git para el mismo operador Docker
+OPERATOR_USER="$(id -un)"
+OPERATOR_GROUP="$(id -gn)"
+sudo install -d -m 700 -o "$OPERATOR_USER" -g "$OPERATOR_GROUP" /etc/magina-olivo
+sudo install -m 600 -o "$OPERATOR_USER" -g "$OPERATOR_GROUP" \
+  infra/docker/staging.env.example /etc/magina-olivo/staging.env
 export STAGING_ENV_FILE=/etc/magina-olivo/staging.env
 
-# D. Gate previo
+# D. Gate previo formal
 bash scripts/staging-acceptance.sh preflight
 
 # E. Deploy solo local
@@ -286,6 +291,7 @@ bash scripts/staging-acceptance.sh external
 No seguir si ocurre cualquiera de estas situaciones:
 - checkout distinto del SHA aprobado;
 - working tree sucio;
+- el operador Docker no puede leer `STAGING_ENV_FILE`;
 - env file legible por grupo/otros;
 - `STAGING_BIND` no está en loopback;
 - AEMET o almacenamiento privado no están configurados;

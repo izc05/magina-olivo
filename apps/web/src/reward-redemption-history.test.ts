@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { RedemptionSummary } from './reward-api';
+import type { RedemptionSummary } from './reward-api.ts';
 import {
   bucketRewardRedemptionStatus,
   groupRewardRedemptions,
-} from './reward-redemption-history';
+} from './reward-redemption-history.ts';
 
 function redemption(overrides: Partial<RedemptionSummary> = {}): RedemptionSummary {
   return {

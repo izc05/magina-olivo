@@ -205,9 +205,10 @@ export function LoyaltyOlivePage() {
           </div>
           <div className="loyalty-progress"><span style={{ width: `${rewardProgress}%` }} /></div>
           <p>{available >= AOVE_TARGET
-            ? 'Objetivo alcanzado. El canje se activará cuando abramos el catálogo de recompensas.'
+            ? 'Ya has alcanzado el objetivo de referencia. Comprueba si hay alguna campaña con stock activo.'
             : `Te faltan ${formatOlives(AOVE_TARGET - available)} aceitunas disponibles para llegar al objetivo.`}</p>
-          <small>Vista previa del programa AOVE. El canje real se habilitará en la siguiente fase.</small>
+          <small>El catálogo solo permite canjear campañas con stock real confirmado.</small>
+          <a className="loyalty-primary-link" href="/recompensas">Ver recompensas</a>
         </article>
       </section>
 

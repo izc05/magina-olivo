@@ -26,6 +26,7 @@ import { registerPublicSourceRoutes } from './public-source-routes.ts';
 import { registerPublicWeatherRoutes } from './public-weather-routes.ts';
 import { registerRainAlertRoutes } from './rain-alert-routes.ts';
 import { registerRequestSecurity } from './request-security.ts';
+import { registerRewardRoutes } from './reward-routes.ts';
 import { registerSigpacMapRoutes } from './sigpac-map-routes.ts';
 import { registerTaskRoutes } from './task-routes.ts';
 
@@ -93,6 +94,7 @@ export function buildApp(): FastifyInstance {
   registerActivityRoutes(app);
   registerTaskRoutes(app);
   registerLoyaltyRoutes(app);
+  registerRewardRoutes(app);
 
   return app;
 }

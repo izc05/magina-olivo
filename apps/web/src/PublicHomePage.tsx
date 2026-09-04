@@ -88,8 +88,18 @@ export function PublicHomePage() {
       </section>
 
       <footer className="public-footer">
-        <span>Mágina Olivo</span>
-        <span>Información pública separada de los datos privados de cada usuario.</span>
+        <div className="public-footer-copy">
+          <strong>Mágina Olivo</strong>
+          <span>Información pública separada de los datos privados de cada usuario.</span>
+        </div>
+        <nav className="public-footer-links" aria-label="Información y contacto">
+          <a href="/contacto">Contacto</a>
+          <a href="/aviso-legal">Aviso legal</a>
+          <a href="/privacidad">Privacidad</a>
+          <a href="/cookies">Cookies</a>
+          <a href="/terminos">Términos</a>
+          <a href="/fuentes">Fuentes</a>
+        </nav>
       </footer>
     </main>
   );

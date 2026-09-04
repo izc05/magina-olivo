@@ -12,6 +12,10 @@ export type PlatformAdminAccess = {
   bootstrapSuperadmin: boolean;
 };
 
+export function hasAdminRole(access: PlatformAdminAccess, role: Exclude<PlatformAdminRole, 'superadmin'>): boolean {
+  return access.roles.includes('superadmin') || access.roles.includes(role);
+}
+
 export async function resolvePlatformAdminAccess(
   request: FastifyRequest,
 ): Promise<PlatformAdminAccess | null> {
@@ -53,6 +57,37 @@ async function requireAuthenticatedAdmin(
   return { session, bootstrapSuperadmin: isPlatformAdminEmail(session.user.email) };
 }
 
+export async function requireAnyAdmin(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<PlatformAdminAccess | null> {
+  const authenticated = await requireAuthenticatedAdmin(request, reply);
+  if (!authenticated) return null;
+  const { session, bootstrapSuperadmin } = authenticated;
+
+  if (bootstrapSuperadmin) {
+    return { session, roles: ['superadmin'], bootstrapSuperadmin: true };
+  }
+
+  const result = await getPool().query<{ role: PlatformAdminRole }>(`
+    select role
+    from platform_admin_memberships
+    where user_id = $1 and status = 'active'
+    order by role
+  `, [session.user.id]);
+
+  if (!result.rows.length) {
+    reply.code(403).send(apiError(request, 'ADMIN_REQUIRED', 'Platform administrator access required'));
+    return null;
+  }
+
+  return {
+    session,
+    roles: result.rows.map((row) => row.role),
+    bootstrapSuperadmin: false,
+  };
+}
+
 export async function requireAdminRole(
   request: FastifyRequest,
   reply: FastifyReply,
@@ -85,6 +120,15 @@ export async function requireAdminRole(
     roles: result.rows.map((row) => row.role),
     bootstrapSuperadmin: false,
   };
+}
+
+export async function requireAdminSessionRole(
+  request: FastifyRequest,
+  reply: FastifyReply,
+  requiredRole: Exclude<PlatformAdminRole, 'superadmin'>,
+): Promise<AuthenticatedSession | null> {
+  const access = await requireAdminRole(request, reply, requiredRole);
+  return access?.session ?? null;
 }
 
 export async function requireSuperadmin(

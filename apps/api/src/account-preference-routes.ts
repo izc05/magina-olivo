@@ -8,6 +8,10 @@ type PreferenceBody = {
   notifyWeather: boolean;
   notifyTasks: boolean;
   notifyPendingYield: boolean;
+  notifyFieldAlerts?: boolean;
+  notifyRewards?: boolean;
+  notifyMarket?: boolean;
+  notifyNews?: boolean;
   weatherRainProbabilityPercentThreshold?: number;
   weatherRainMmThreshold?: number;
   weatherFrostCThreshold: number;
@@ -19,6 +23,10 @@ type PreferenceRow = {
   notify_weather: boolean;
   notify_tasks: boolean;
   notify_pending_yield: boolean;
+  notify_field_alerts: boolean;
+  notify_rewards: boolean;
+  notify_market: boolean;
+  notify_news: boolean;
   weather_rain_probability_percent_threshold: string;
   weather_rain_mm_threshold: string;
   weather_frost_c_threshold: string;
@@ -32,6 +40,10 @@ function mapPreference(row: PreferenceRow) {
     notifyWeather: row.notify_weather,
     notifyTasks: row.notify_tasks,
     notifyPendingYield: row.notify_pending_yield,
+    notifyFieldAlerts: row.notify_field_alerts,
+    notifyRewards: row.notify_rewards,
+    notifyMarket: row.notify_market,
+    notifyNews: row.notify_news,
     weatherRainProbabilityPercentThreshold: Number(row.weather_rain_probability_percent_threshold),
     weatherRainMmThreshold: Number(row.weather_rain_mm_threshold),
     weatherFrostCThreshold: Number(row.weather_frost_c_threshold),
@@ -58,6 +70,10 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
           notify_weather,
           notify_tasks,
           notify_pending_yield,
+          notify_field_alerts,
+          notify_rewards,
+          notify_market,
+          notify_news,
           weather_rain_probability_percent_threshold,
           weather_rain_mm_threshold,
           weather_frost_c_threshold,
@@ -93,6 +109,10 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
             notifyWeather: { type: 'boolean' },
             notifyTasks: { type: 'boolean' },
             notifyPendingYield: { type: 'boolean' },
+            notifyFieldAlerts: { type: 'boolean' },
+            notifyRewards: { type: 'boolean' },
+            notifyMarket: { type: 'boolean' },
+            notifyNews: { type: 'boolean' },
             weatherRainProbabilityPercentThreshold: { type: 'number', minimum: 0, maximum: 100 },
             weatherRainMmThreshold: { type: 'number', minimum: 0, maximum: 500 },
             weatherFrostCThreshold: { type: 'number', minimum: -50, maximum: 20 },
@@ -135,10 +155,14 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
               notify_weather = $3,
               notify_tasks = $4,
               notify_pending_yield = $5,
-              weather_rain_probability_percent_threshold = coalesce($6, weather_rain_probability_percent_threshold),
-              weather_rain_mm_threshold = coalesce($7, weather_rain_mm_threshold),
-              weather_frost_c_threshold = $8,
-              weather_wind_kmh_threshold = $9,
+              notify_field_alerts = coalesce($6, notify_field_alerts),
+              notify_rewards = coalesce($7, notify_rewards),
+              notify_market = coalesce($8, notify_market),
+              notify_news = coalesce($9, notify_news),
+              weather_rain_probability_percent_threshold = coalesce($10, weather_rain_probability_percent_threshold),
+              weather_rain_mm_threshold = coalesce($11, weather_rain_mm_threshold),
+              weather_frost_c_threshold = $12,
+              weather_wind_kmh_threshold = $13,
               updated_at = now()
           where user_id = $1
           returning
@@ -146,6 +170,10 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
             notify_weather,
             notify_tasks,
             notify_pending_yield,
+            notify_field_alerts,
+            notify_rewards,
+            notify_market,
+            notify_news,
             weather_rain_probability_percent_threshold,
             weather_rain_mm_threshold,
             weather_frost_c_threshold,
@@ -158,6 +186,10 @@ export function registerAccountPreferenceRoutes(app: FastifyInstance): void {
           request.body.notifyWeather,
           request.body.notifyTasks,
           request.body.notifyPendingYield,
+          request.body.notifyFieldAlerts ?? null,
+          request.body.notifyRewards ?? null,
+          request.body.notifyMarket ?? null,
+          request.body.notifyNews ?? null,
           request.body.weatherRainProbabilityPercentThreshold ?? null,
           request.body.weatherRainMmThreshold ?? null,
           request.body.weatherFrostCThreshold,

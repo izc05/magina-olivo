@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { CatastroBatchReview } from './CatastroBatchReview.tsx';
+import { OfficialMapOverlays } from './OfficialMapOverlays.tsx';
 import {
   buildCatastroSelectorMap,
   DEFAULT_CATASTRO_CENTER,
@@ -22,6 +23,7 @@ type PlotSummary = {
   id: string;
   name: string;
   cadastralReference: string | null;
+  boundaryGeoJson: CatastroGeometry | null;
 };
 
 type CatastroParcel = {
@@ -396,6 +398,8 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
                     })}
                   </svg>
 
+                  <OfficialMapOverlays center={center} zoom={zoom} topLeft={model.topLeft} plots={plots} />
+
                   <div className="catastro-map-first-map-status" aria-live="polite">
                     {zoom < MIN_CATASTRO_ZOOM
                       ? <strong>Acércate para ver parcelas de Catastro.</strong>
@@ -451,7 +455,7 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
                     {selectedItems.length === 1 ? 'Continuar con esta parcela' : `Continuar con ${selectedItems.length} parcelas`}
                   </button>
 
-                  <p className="catastro-map-first-trust">La ortofoto PNOA es ayuda visual. No acredita propiedad, superficie administrativa, variedad ni número de olivos.</p>
+                  <p className="catastro-map-first-trust">La ortofoto PNOA y las capas SIGPAC/Mis parcelas son ayudas visuales. No acreditan propiedad, superficie administrativa, variedad ni número de olivos.</p>
                 </aside>
               </div>
             )}

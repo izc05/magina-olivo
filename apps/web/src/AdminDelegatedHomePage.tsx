@@ -59,6 +59,7 @@ export function AdminDelegatedHomePage({ access }: { access: AdminAccess }) {
           {access.capabilities.finance ? (
             <>
               <DelegatedModule href="/admin/comercial" title="Embudo comercial" detail="Solicitudes públicas, conversión a campaña borrador y seguimiento de métricas" />
+              <DelegatedModule href="/admin/anunciantes" title="Acceso de anunciantes" detail="Vincular cuentas, roles del negocio y revisar cambios de ficha" />
               <DelegatedModule href="/admin/finanzas" title="Finanzas y contratos" detail={summary?.commercial ? `${summary.commercial.billingNeedsAttention} cobros requieren atención` : 'Gestión comercial'} />
             </>
           ) : null}

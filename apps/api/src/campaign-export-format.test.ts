@@ -50,5 +50,8 @@ test('campaign export routes stay private, isolated and registered', async () =>
   assert.match(routes, /Content-Disposition/);
   assert.match(routes, /\/api\/v1\/campaigns\/:campaignId\/export\.json/);
   assert.match(routes, /\/api\/v1\/campaigns\/:campaignId\/export\.csv/);
+  assert.match(routes, /\/api\/v1\/campaigns\/:campaignId\/export\.pdf/);
+  assert.match(routes, /application\/pdf/);
+  assert.match(routes, /buildCampaignHarvestReportPdf\(payload\)/);
   assert.match(app, /registerCampaignExportRoutes\(app\)/);
 });

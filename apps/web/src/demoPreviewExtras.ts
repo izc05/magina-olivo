@@ -167,6 +167,34 @@ async function handleExtra(input: RequestInfo | URL, init?: RequestInit): Promis
   const path = url.pathname;
   const method = methodOf(input, init);
 
+  if (path === '/api/v1/public/market/olive-oil' && method === 'GET') {
+    return json({
+      weeks: [
+        { week: 32, label: 'Semana 32', startDate: '2026-08-03', endDate: '2026-08-09' },
+        { week: 33, label: 'Semana 33', startDate: '2026-08-10', endDate: '2026-08-16' },
+        { week: 34, label: 'Semana 34', startDate: '2026-08-17', endDate: '2026-08-23' },
+        { week: 35, label: 'Semana 35', startDate: '2026-08-24', endDate: '2026-08-30' },
+      ],
+      series: [
+        { key: 'extra', label: 'Virgen extra', values: [3.63, 3.42, 3.48, 3.61] },
+        { key: 'virgin', label: 'Virgen', values: [3.15, 3.28, 3.25, 3.29] },
+        { key: 'lampante', label: 'Lampante', values: [3.01, 3.04, 3.09, 3.14] },
+      ],
+      freshness: { status: 'fresh', ageDays: 5, latestDate: '2026-08-30' },
+      availability: { mode: 'live' },
+      cache: { hit: false, ttlSeconds: 1800 },
+      source: {
+        provider: 'Observatorio de Precios y Mercados · DEMO',
+        sourceUrl: 'https://www.juntadeandalucia.es/agriculturaypesca/observatorio/servlet/FrontController?action=UltimosPrecios&posicion=2291332&producto=33000&subsector=33',
+        checkedAt: '2026-09-04T10:00:00.000Z',
+        position: 'Almazara o Bodega',
+        scope: 'Andalucía · datos de demostración',
+        unit: '€/kg',
+        usageNote: 'Vista demo basada en la estructura oficial. El servidor real vuelve a consultar y validar la fuente antes de publicar.',
+      },
+    });
+  }
+
   if (path === '/api/v1/account/preferences' && method === 'GET') return json(preferences);
   if (path === '/api/v1/account/preferences' && method === 'PUT') {
     const body = await bodyOf(input, init);

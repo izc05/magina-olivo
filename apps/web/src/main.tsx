@@ -15,6 +15,7 @@ import { MaginaWeatherPage } from './MaginaWeatherPage';
 import { NoticeCenter } from './NoticeCenter';
 import { OnboardingPage } from './OnboardingPage';
 import { PilotAlerts } from './PilotAlerts';
+import { ProductTourGate } from './ProductTour';
 import { RegisterPage } from './RegisterPage';
 import { RegistrationEntry } from './RegistrationEntry';
 import { ResetPassword } from './ResetPassword';
@@ -41,6 +42,7 @@ import './offline-v2-integration.css';
 import './auth-onboarding.css';
 import './pilot-alerts.css';
 import './calendar.css';
+import './product-tour.css';
 
 installDemoPreview();
 
@@ -103,13 +105,13 @@ createRoot(root).render(
     ) : path === '/magina/mercado' ? (
       <MaginaMarketPage />
     ) : (
-      <>
+      <ProductTourGate>
         <ConnectivityStatus />
         <NoticeCenter />
         <PilotAlerts />
         <RegistrationEntry />
         <App />
-      </>
+      </ProductTourGate>
     )}
   </StrictMode>,
 );

@@ -1,0 +1,310 @@
+.redemption-history-section {
+  display: grid;
+  gap: 18px;
+}
+
+.redemption-history-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.redemption-history-summary span {
+  min-height: 78px;
+  padding: 14px;
+  border-radius: 17px;
+  background: rgba(255, 253, 248, 0.96);
+  border: 1px solid var(--reward-line);
+  box-shadow: 0 12px 30px rgba(37, 55, 32, 0.06);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+
+.redemption-history-summary b {
+  font-size: 1.4rem;
+  color: var(--reward-ink);
+}
+
+.redemption-history-summary small {
+  color: #74796d;
+  font-size: 0.76rem;
+}
+
+.redemption-history-group {
+  display: grid;
+  gap: 10px;
+}
+
+.redemption-history-group-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: end;
+}
+
+.redemption-history-group-heading h3 {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.22rem;
+  color: var(--reward-ink);
+}
+
+.redemption-history-group-heading p {
+  margin: 4px 0 0;
+  color: #71766b;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.redemption-history-group-heading > span {
+  min-width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(47, 90, 50, 0.09);
+  color: var(--reward-green-dark);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.redemption-history-list {
+  display: grid;
+  gap: 10px;
+}
+
+.redemption-history-card,
+.redemption-history-empty {
+  background: rgba(255, 253, 248, 0.96);
+  border: 1px solid var(--reward-line);
+  box-shadow: 0 14px 34px rgba(37, 55, 32, 0.07);
+}
+
+.redemption-history-card {
+  padding: 16px;
+  border-radius: 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+}
+
+.redemption-history-main {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.redemption-history-title-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.redemption-history-title-row > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.redemption-history-title-row strong {
+  color: var(--reward-ink);
+  font-size: 1rem;
+}
+
+.redemption-history-title-row span:not(.redemption-status-badge) {
+  color: #71766b;
+  font-size: 0.8rem;
+}
+
+.redemption-status-badge {
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.redemption-status-badge--pending {
+  background: #edf2e6;
+  color: #39513c;
+}
+
+.redemption-status-badge--redeemed {
+  background: #e8f2ec;
+  color: #24583a;
+}
+
+.redemption-status-badge--expired,
+.redemption-status-badge--other {
+  background: #f1eee7;
+  color: #736b5d;
+}
+
+.redemption-history-meta {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px 18px;
+}
+
+.redemption-history-meta div {
+  display: grid;
+  gap: 2px;
+}
+
+.redemption-history-meta dt {
+  color: #8a8f83;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 800;
+}
+
+.redemption-history-meta dd {
+  margin: 0;
+  color: #4d574b;
+  font-size: 0.8rem;
+}
+
+.redemption-history-card > button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 13px;
+  background: linear-gradient(180deg, var(--reward-green), var(--reward-green-dark));
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.redemption-history-card > button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.redemption-history-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #777b72;
+  font-size: 0.8rem;
+}
+
+.redemption-receipt {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--reward-line);
+  padding-top: 11px;
+}
+
+.redemption-receipt summary {
+  cursor: pointer;
+  color: var(--reward-green-dark);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.redemption-receipt-body {
+  margin-top: 11px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #f2efe5;
+  display: grid;
+  gap: 10px;
+}
+
+.redemption-receipt-body dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 18px;
+}
+
+.redemption-receipt-body dl div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.redemption-receipt-body dt {
+  color: #858a7f;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 800;
+}
+
+.redemption-receipt-body dd {
+  margin: 0;
+  color: #455044;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.redemption-receipt-body code {
+  color: var(--reward-green-dark);
+  font-size: 0.74rem;
+}
+
+.redemption-receipt-body > small {
+  color: #777d70;
+  line-height: 1.4;
+}
+
+.redemption-history-empty {
+  border-radius: 18px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.redemption-history-empty strong {
+  color: var(--reward-ink);
+}
+
+.redemption-history-empty span {
+  color: #71766b;
+  font-size: 0.84rem;
+}
+
+@media (max-width: 760px) {
+  .redemption-history-summary {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .redemption-history-card {
+    grid-template-columns: 1fr;
+  }
+
+  .redemption-history-title-row {
+    align-items: center;
+  }
+
+  .redemption-history-card > button {
+    width: 100%;
+  }
+
+  .redemption-receipt-body dl {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 430px) {
+  .redemption-history-summary span {
+    padding: 11px 8px;
+    text-align: center;
+  }
+
+  .redemption-history-summary b {
+    font-size: 1.2rem;
+  }
+
+  .redemption-history-title-row {
+    align-items: start;
+  }
+}

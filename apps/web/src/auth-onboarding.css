@@ -6,13 +6,74 @@
   transform: translateX(-50%);
   display: flex;
   align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: .55rem;
+  width: min(calc(100% - 2rem), 46rem);
   padding: .7rem .9rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, .94);
+  border-radius: 1.1rem;
+  background: rgba(255, 255, 255, .96);
   box-shadow: 0 10px 30px rgba(31, 44, 30, .14);
   font-size: .9rem;
-  white-space: nowrap;
+  text-align: center;
+}
+
+.google-auth-button {
+  min-height: 2.7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .65rem;
+  border: 1px solid rgba(31, 44, 30, .18);
+  border-radius: .85rem;
+  padding: .7rem 1rem;
+  background: #fff;
+  color: #1f2c1e;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(31, 44, 30, .08);
+}
+
+.google-auth-button:hover:not(:disabled) {
+  border-color: rgba(31, 44, 30, .34);
+  box-shadow: 0 6px 18px rgba(31, 44, 30, .12);
+}
+
+.google-auth-button:focus-visible {
+  outline: 3px solid rgba(99, 129, 71, .28);
+  outline-offset: 2px;
+}
+
+.google-auth-button:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
+.google-auth-button.compact {
+  min-height: 2.4rem;
+  padding: .55rem .85rem;
+}
+
+.google-auth-mark {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(31, 44, 30, .16);
+  font-weight: 850;
+  line-height: 1;
+}
+
+.registration-entry-separator {
+  opacity: .4;
+}
+
+.registration-entry-error {
+  flex-basis: 100%;
+  color: #8b2f2f;
+  font-size: .82rem;
 }
 
 .auth-flow-card {
@@ -57,10 +118,19 @@
 
 @media (max-width: 520px) {
   .registration-entry {
-    width: calc(100% - 2rem);
-    justify-content: center;
-    white-space: normal;
-    text-align: center;
+    width: calc(100% - 1.25rem);
+    bottom: max(.65rem, env(safe-area-inset-bottom));
+    gap: .45rem;
+    padding: .65rem;
+    border-radius: 1rem;
+  }
+
+  .google-auth-button.compact {
+    width: 100%;
+  }
+
+  .registration-entry-separator {
+    display: none;
   }
 
   .onboarding-shell {

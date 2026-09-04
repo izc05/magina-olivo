@@ -28,6 +28,56 @@ export function registerLoyaltyRoutes(app: FastifyInstance): void {
     return getLoyaltySummary(session.user.id);
   });
 
+  app.post('/api/v1/loyalty/bootstrap', async (request, reply) => {
+    const session = await getAuthenticatedSession(request);
+    if (!session) {
+      return reply.code(401).send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
+    }
+
+    const firstPlot = (
+      await getPool().query<PlotClaimRow>(
+        `select p.id as plot_id, p.holding_id, hm.role
+         from plots p
+         join holding_members hm
+           on hm.holding_id = p.holding_id
+          and hm.user_id = $1
+          and hm.status = 'active'
+         where p.active = true
+           and hm.role in ('owner', 'admin', 'collaborator')
+         order by p.created_at asc, p.id asc
+         limit 1`,
+        [session.user.id],
+      )
+    ).rows[0];
+
+    if (!firstPlot) {
+      return {
+        awarded: false,
+        duplicate: false,
+        olives: 0,
+        reason: 'no_plot',
+        summary: await getLoyaltySummary(session.user.id),
+      };
+    }
+
+    const result = await awardLoyaltyEvent({
+      userId: session.user.id,
+      eventType: 'parcel.first_created',
+      idempotencyKey: `parcel.first_created:${firstPlot.plot_id}`,
+      sourceType: 'plot',
+      sourceId: firstPlot.plot_id,
+      metadata: {
+        holdingId: firstPlot.holding_id,
+        bootstrap: true,
+      },
+    });
+
+    return {
+      ...result,
+      sourcePlotId: firstPlot.plot_id,
+    };
+  });
+
   app.post<{ Body: CollectBody }>(
     '/api/v1/loyalty/collect',
     {

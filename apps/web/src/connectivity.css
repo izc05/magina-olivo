@@ -1,7 +1,7 @@
 .connectivity-banner {
   position: fixed;
   left: 50%;
-  top: 10px;
+  top: max(10px, env(safe-area-inset-top));
   transform: translateX(-50%);
   z-index: 80;
   width: min(calc(100% - 20px), 620px);
@@ -32,6 +32,10 @@
   color: #55291d;
 }
 
+.connectivity-banner > div {
+  min-width: 0;
+}
+
 .connectivity-banner strong,
 .connectivity-banner span {
   display: block;
@@ -44,6 +48,7 @@
 .connectivity-banner span {
   margin-top: 2px;
   font-size: .72rem;
+  line-height: 1.35;
   opacity: .82;
 }
 
@@ -65,10 +70,30 @@
 
 @media (max-width: 520px) {
   .connectivity-banner {
+    top: auto;
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 78px);
+    width: calc(100% - 20px);
     align-items: flex-start;
+    border-radius: 18px;
+  }
+
+  .connectivity-banner span {
+    max-width: 36ch;
   }
 
   .connectivity-banner button {
     min-height: 40px;
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 370px) {
+  .connectivity-banner {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .connectivity-banner button {
+    width: 100%;
   }
 }

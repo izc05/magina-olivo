@@ -58,7 +58,7 @@ function shouldOpenTour() {
 export function ProductTourGate({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(shouldOpenTour);
   const [step, setStep] = useState(0);
-  const slide = slides[step];
+  const slide = slides[step] ?? slides[0];
   const isLast = step === slides.length - 1;
   const logoSrc = `${import.meta.env.BASE_URL}brand/magina-olivo-mark.svg`;
   const progress = useMemo(() => `${step + 1} de ${slides.length}`, [step]);
@@ -73,7 +73,7 @@ export function ProductTourGate({ children }: { children: ReactNode }) {
     setOpen(false);
   }
 
-  if (!open) return <>{children}</>;
+  if (!open || !slide) return <>{children}</>;
 
   return (
     <main className="product-tour" aria-label="Introducción a Mágina Olivo">

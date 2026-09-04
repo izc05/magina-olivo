@@ -5,8 +5,7 @@
     "lib": ["ES2025", "DOM", "DOM.Iterable"],
     "types": ["vite/client", "vite-plugin-pwa/client"],
     "allowImportingTsExtensions": true,
-    "erasableSyntaxOnly": true,
-    "noUncheckedIndexedAccess": false
+    "erasableSyntaxOnly": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"],
   "exclude": ["src/**/*.test.ts"]

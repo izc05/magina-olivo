@@ -313,6 +313,12 @@ function nextId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function routeId(match: RegExpMatchArray): string {
+  const value = match[1];
+  if (!value) throw new Error('Demo route matched without its required identifier');
+  return value;
+}
+
 function campaignSummary(campaignId: string) {
   const campaignDeliveries = campaignId === 'demo-campaign-1' ? deliveries : [];
   const withYield = campaignDeliveries.filter((delivery) => yields.some((item) => item.deliveryId === delivery.id));
@@ -585,7 +591,7 @@ async function handleDemoApi(input: RequestInfo | URL, init?: RequestInit): Prom
   }
 
   const holdingFarms = path.match(/^\/api\/v1\/holdings\/([^/]+)\/farms$/);
-  if (holdingFarms && method === 'GET') return json({ items: holdingFarms[1] === 'demo-holding-1' ? farms : [] });
+  if (holdingFarms && method === 'GET') return json({ items: routeId(holdingFarms) === 'demo-holding-1' ? farms : [] });
   if (holdingFarms && method === 'POST') {
     const body = await bodyOf(input, init);
     const created: DemoFarm = {
@@ -599,12 +605,12 @@ async function handleDemoApi(input: RequestInfo | URL, init?: RequestInit): Prom
   }
 
   const farmPlots = path.match(/^\/api\/v1\/farms\/([^/]+)\/plots$/);
-  if (farmPlots && method === 'GET') return json({ items: plots.filter((item) => item.farmId === farmPlots[1]).map(({ farmId: _farmId, ...item }) => item) });
+  if (farmPlots && method === 'GET') return json({ items: plots.filter((item) => item.farmId === routeId(farmPlots)).map(({ farmId: _farmId, ...item }) => item) });
   if (farmPlots && method === 'POST') {
     const body = await bodyOf(input, init);
     const created: DemoPlot = {
       id: nextId('demo-plot'),
-      farmId: farmPlots[1],
+      farmId: routeId(farmPlots),
       name: String(body.name || 'Nueva parcela demo'),
       areaHa: String(body.areaHa || '0'),
       sigpacReference: body.sigpacReference ? String(body.sigpacReference) : null,
@@ -618,7 +624,7 @@ async function handleDemoApi(input: RequestInfo | URL, init?: RequestInit): Prom
   }
 
   const holdingCampaigns = path.match(/^\/api\/v1\/holdings\/([^/]+)\/campaigns$/);
-  if (holdingCampaigns && method === 'GET') return json({ items: holdingCampaigns[1] === 'demo-holding-1' ? campaigns : [] });
+  if (holdingCampaigns && method === 'GET') return json({ items: routeId(holdingCampaigns) === 'demo-holding-1' ? campaigns : [] });
   if (holdingCampaigns && method === 'POST') {
     const body = await bodyOf(input, init);
     const start = Number(body.seasonStartYear || 2026);
@@ -636,7 +642,7 @@ async function handleDemoApi(input: RequestInfo | URL, init?: RequestInit): Prom
   }
 
   const campaignDeliveries = path.match(/^\/api\/v1\/campaigns\/([^/]+)\/deliveries$/);
-  if (campaignDeliveries && method === 'GET') return json({ items: campaignDeliveries[1] === 'demo-campaign-1' ? deliveries : [] });
+  if (campaignDeliveries && method === 'GET') return json({ items: routeId(campaignDeliveries) === 'demo-campaign-1' ? deliveries : [] });
   if (campaignDeliveries && method === 'POST') {
     const body = await bodyOf(input, init);
     const created: DemoDelivery = {
@@ -657,16 +663,17 @@ async function handleDemoApi(input: RequestInfo | URL, init?: RequestInit): Prom
   }
 
   const campaignSummaryPath = path.match(/^\/api\/v1\/campaigns\/([^/]+)\/summary$/);
-  if (campaignSummaryPath && method === 'GET') return json(campaignSummary(campaignSummaryPath[1]));
+  if (campaignSummaryPath && method === 'GET') return json(campaignSummary(routeId(campaignSummaryPath)));
 
   const deliveryResults = path.match(/^\/api\/v1\/deliveries\/([^/]+)\/results$/);
-  if (deliveryResults && method === 'GET') return json({ items: yields.filter((item) => item.deliveryId === deliveryResults[1]).map(({ deliveryId: _deliveryId, ...item }) => item) });
+  if (deliveryResults && method === 'GET') return json({ items: yields.filter((item) => item.deliveryId === routeId(deliveryResults)).map(({ deliveryId: _deliveryId, ...item }) => item) });
   if (deliveryResults && method === 'POST') {
     const body = await bodyOf(input, init);
     const now = new Date().toISOString();
+    const deliveryId = routeId(deliveryResults);
     const created: DemoYield = {
       id: nextId('demo-yield'),
-      deliveryId: deliveryResults[1],
+      deliveryId,
       resultType: 'fat_yield',
       value: String(body.value || '0'),
       unit: '%',
@@ -677,7 +684,7 @@ async function handleDemoApi(input: RequestInfo | URL, init?: RequestInit): Prom
       createdAt: now,
       updatedAt: now,
     };
-    const existing = yields.findIndex((item) => item.deliveryId === deliveryResults[1]);
+    const existing = yields.findIndex((item) => item.deliveryId === deliveryId);
     if (existing >= 0) yields.splice(existing, 1, created); else yields.push(created);
     const { deliveryId: _deliveryId, ...payload } = created;
     return json(payload, 201);
@@ -685,11 +692,12 @@ async function handleDemoApi(input: RequestInfo | URL, init?: RequestInit): Prom
 
   const holdingActivities = path.match(/^\/api\/v1\/holdings\/([^/]+)\/activities$/);
   if (holdingActivities && method === 'GET') {
+    const holdingId = routeId(holdingActivities);
     const plotId = url.searchParams.get('plotId');
     const campaignId = url.searchParams.get('campaignId');
     const activityType = url.searchParams.get('activityType');
     const limit = Number(url.searchParams.get('limit') || 0);
-    let items = activities.filter((item) => item.holdingId === holdingActivities[1]);
+    let items = activities.filter((item) => item.holdingId === holdingId);
     if (plotId) items = items.filter((item) => item.plotId === plotId);
     if (campaignId) items = items.filter((item) => item.campaignId === campaignId);
     if (activityType) items = items.filter((item) => item.activityType === activityType);
@@ -701,7 +709,7 @@ async function handleDemoApi(input: RequestInfo | URL, init?: RequestInit): Prom
     const occurredAt = String(body.occurredAt || new Date().toISOString());
     const created: DemoActivity = {
       id: nextId('demo-activity'),
-      holdingId: holdingActivities[1],
+      holdingId: routeId(holdingActivities),
       campaignId: body.campaignId ? String(body.campaignId) : null,
       farmId: body.farmId ? String(body.farmId) : null,
       plotId: body.plotId ? String(body.plotId) : null,
@@ -723,7 +731,7 @@ async function handleDemoApi(input: RequestInfo | URL, init?: RequestInit): Prom
   }
 
   const plotTimeline = path.match(/^\/api\/v1\/plots\/([^/]+)\/timeline$/);
-  if (plotTimeline && method === 'GET') return json({ items: timelineForPlot(plotTimeline[1]) });
+  if (plotTimeline && method === 'GET') return json({ items: timelineForPlot(routeId(plotTimeline)) });
 
   if (path === '/api/v1/public/municipalities' && method === 'GET') return json(publicMunicipalities());
   if (path === '/api/v1/public/weather' && method === 'GET') return json(demoWeather(url.searchParams.get('municipality') || 'huelma'));

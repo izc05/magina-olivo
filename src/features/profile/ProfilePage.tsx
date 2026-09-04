@@ -5,6 +5,7 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
+  CircleHelp,
   Download,
   FileText,
   LockKeyhole,
@@ -21,6 +22,7 @@ import '../../styles/profile.css';
 
 type ProfilePageProps = {
   onNavigate: (section: MainSection) => void;
+  onReplayWelcomeTour?: () => void;
 };
 
 type ProfileTab = 'resumen' | 'guardados' | 'documentos' | 'ajustes';
@@ -47,7 +49,7 @@ const documents: PersonalDocument[] = [
   { id: 3, title: 'Factura fertilizante', meta: 'Gastos · Imagen', date: '28 ago 2026', size: '464 KB', origin: 'Suministros Mágina', kind: 'Imagen' },
 ];
 
-export function ProfilePage({ onNavigate }: ProfilePageProps) {
+export function ProfilePage({ onNavigate, onReplayWelcomeTour }: ProfilePageProps) {
   const [tab, setTab] = useState<ProfileTab>('resumen');
   const [technicalOpen, setTechnicalOpen] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState<number | null>(null);
@@ -178,6 +180,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
               <button type="button"><Bell size={19} /><div><strong>Notificaciones</strong><span>Clima, fitosanitarios, mercado y noticias</span></div><ChevronRight size={18} /></button>
               <button type="button"><LockKeyhole size={19} /><div><strong>Seguridad</strong><span>Contraseña y dispositivos</span></div><ChevronRight size={18} /></button>
               <button type="button"><ShieldCheck size={19} /><div><strong>Privacidad y datos</strong><span>Exportación y permisos</span></div><ChevronRight size={18} /></button>
+              {onReplayWelcomeTour && <button type="button" onClick={onReplayWelcomeTour}><CircleHelp size={19} /><div><strong>Ver introducción de nuevo</strong><span>Repasa en cinco pasos todo lo que ofrece Mágina Olivo</span></div><ChevronRight size={18} /></button>}
               <button type="button" onClick={() => setTechnicalOpen(true)}><Settings size={19} /><div><strong>Estados de acceso y sistema</strong><span>Login, onboarding, offline, errores y confirmaciones V2</span></div><ChevronRight size={18} /></button>
             </div>
           </section>

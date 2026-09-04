@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { AccountPage } from './AccountPage';
+import { AdminPage } from './AdminPage';
 import { App } from './App';
 import { CalendarPage } from './CalendarPage';
 import { ConnectivityStatus } from './ConnectivityStatus';
@@ -42,6 +43,7 @@ import './offline-v2-integration.css';
 import './auth-onboarding.css';
 import './pilot-alerts.css';
 import './calendar.css';
+import './admin.css';
 
 installDemoPreview();
 installWeatherDemoPreview();
@@ -88,6 +90,8 @@ createRoot(root).render(
       <RegisterPage />
     ) : path === '/onboarding' ? (
       <OnboardingPage />
+    ) : path === '/admin' ? (
+      <AdminPage />
     ) : path === '/cuenta' ? (
       <AccountPage />
     ) : path === '/calendario' ? (

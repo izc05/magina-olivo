@@ -61,7 +61,7 @@ export function buildHoldingHarvestHistory(
         seasonStartYear: campaign.seasonStartYear,
         seasonEndYear: campaign.seasonEndYear,
         status: campaign.status,
-        deliveriesCount: summary.deliveriesCount,
+        deliveriesCount: summary.deliveryCount,
         totalKilograms: summary.totalKilograms,
         kilogramsPerHectare: base.activeAreaHa > 0 ? summary.totalKilograms / base.activeAreaHa : null,
         kilogramsPerOliveTree: base.activeOliveTreeCount > 0 ? summary.totalKilograms / base.activeOliveTreeCount : null,

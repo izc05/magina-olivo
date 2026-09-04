@@ -3,9 +3,9 @@ import { getCampaignAccess } from './authorization.ts';
 import { getPool } from './db.ts';
 import {
   buildHoldingHarvestComparisonPdf,
-  calculateHoldingHarvestComparison,
   type HoldingHarvestComparisonInput,
 } from './holding-harvest-comparison-format.ts';
+import { buildHoldingHarvestComparisonPayload } from './holding-harvest-comparison-payload.ts';
 import {
   buildHoldingHarvestPdf,
   type HoldingHarvestPlot,
@@ -267,40 +267,6 @@ async function loadComparisonReport(
   };
 }
 
-export function comparisonPayload(report: HoldingHarvestComparisonInput) {
-  const comparison = calculateHoldingHarvestComparison(report);
-  return {
-    currentCampaign: {
-      name: report.current.name,
-      seasonStartYear: report.current.seasonStartYear,
-      seasonEndYear: report.current.seasonEndYear,
-    },
-    previousCampaign: report.previous ? {
-      name: report.previous.name,
-      seasonStartYear: report.previous.seasonStartYear,
-      seasonEndYear: report.previous.seasonEndYear,
-    } : null,
-    base: {
-      activeAreaHa: comparison.activeAreaHa,
-      activeOliveTreeCount: comparison.activeOliveTreeCount,
-    },
-    metrics: {
-      totalKilograms: comparison.totalKilograms,
-      kilogramsPerHectare: comparison.kilogramsPerHectare,
-      kilogramsPerOliveTree: comparison.kilogramsPerOliveTree,
-      weightedYieldPercent: comparison.weightedYieldPercent,
-    },
-    balance: {
-      improvedPlots: comparison.improvedPlots.length,
-      worsenedPlots: comparison.worsenedPlots.length,
-      stablePlots: comparison.stablePlotCount,
-    },
-    improvedPlots: comparison.improvedPlots.slice(0, 5),
-    worsenedPlots: comparison.worsenedPlots.slice(0, 5),
-    plots: comparison.plots,
-  };
-}
-
 export function registerHoldingHarvestReportRoutes(app: FastifyInstance): void {
   app.get<{ Params: Params }>(
     '/api/v1/campaigns/:campaignId/harvest-report.pdf',
@@ -330,7 +296,7 @@ export function registerHoldingHarvestReportRoutes(app: FastifyInstance): void {
       }
 
       reply.header('Cache-Control', 'private, no-store');
-      return reply.send(comparisonPayload(report));
+      return reply.send(buildHoldingHarvestComparisonPayload(report));
     },
   );
 

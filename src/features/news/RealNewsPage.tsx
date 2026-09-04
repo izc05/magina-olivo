@@ -8,7 +8,7 @@ import { AlertsPanel } from './AlertsPanel';
 import { CooperativesPanel } from './CooperativesPanel';
 import { DiscoverPanel } from './DiscoverPanel';
 import { MarketPanel } from './MarketPanel';
-import { NewsPage } from './NewsPage';
+import { MorePanel } from './MorePanel';
 import { formatNewsAge, loadRealNews, type RealNewsStory } from './newsFeed';
 import '../../styles/news-real.css';
 
@@ -91,11 +91,11 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
     onNavigate(section);
   };
 
-  const handleNestedNavigate: AppNavigate = (section, target) => {
-    if (section === 'news') {
-      setMode(target ? target as MaginaTarget : 'actualidad');
-    }
-    onNavigate(section, target);
+  const openMunicipalNews = () => {
+    setQuery('');
+    setScopeFilter('Todos');
+    setSourceFilter('Ayuntamientos');
+    setMode('actualidad');
   };
 
   const primaryTabs = (
@@ -201,8 +201,34 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
     );
   }
 
-  if (mode !== 'actualidad') {
-    return <NewsPage onNavigate={handleNestedNavigate} initialTab={mode} />;
+  if (mode === 'local' || mode === 'community' || mode === 'agenda') {
+    return (
+      <div className="app-shell">
+        <main className="mobile-page">
+          <header className="topbar">
+            <Brand />
+            <div className="topbar-actions">
+              <button className="icon-button" type="button" aria-label="Volver a noticias" onClick={() => setMode('actualidad')}><Newspaper size={19} /></button>
+              <button className="icon-button" type="button" aria-label="Alertas" onClick={() => setMode('alertas')}><Bell size={20} /></button>
+            </div>
+          </header>
+
+          <section className="magina-heading">
+            <span className="eyebrow">Sierra Mágina</span>
+            <h1>Más</h1>
+            <p>Servicios territoriales conectados sólo a información ya verificada; las funciones pendientes se muestran como tales.</p>
+          </section>
+
+          {primaryTabs}
+          <MorePanel
+            onDiscover={() => setMode('discover')}
+            onMunicipalNews={openMunicipalNews}
+            onAlerts={() => setMode('alertas')}
+          />
+        </main>
+        <BottomNav active="news" onNavigate={handleBottomNavigate} />
+      </div>
+    );
   }
 
   const hero = filteredStories[0] ?? null;

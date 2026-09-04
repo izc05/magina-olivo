@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type EntityType = 'cooperative' | 'sat' | 'company' | 'other';
 type VerificationStatus = 'unverified' | 'verified' | 'stale';
@@ -15,6 +15,7 @@ type AdvertisingCategory =
   | 'insurance'
   | 'advisory'
   | 'other';
+type AdvertisingEventType = 'impression' | 'profile_view' | 'phone_click' | 'whatsapp_click' | 'website_click';
 
 type PublicDestination = {
   id: string;
@@ -40,6 +41,10 @@ type PublicDestination = {
     label: string;
     planCode: 'featured' | 'premium' | null;
     priority: number;
+    tracking: {
+      advertiserId: string;
+      sponsorshipId: string;
+    };
   } | null;
 };
 
@@ -106,6 +111,29 @@ function whatsappHref(value: string | null): string | null {
   return normalized ? `https://wa.me/${normalized}` : null;
 }
 
+async function trackSponsoredEvent(item: PublicDestination, eventType: AdvertisingEventType): Promise<void> {
+  const tracking = item.sponsorship?.tracking;
+  if (!tracking || !globalThis.crypto?.randomUUID) return;
+  try {
+    await fetch('/api/v1/public/advertising/events', {
+      method: 'POST',
+      credentials: 'same-origin',
+      keepalive: true,
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({
+        advertiserId: tracking.advertiserId,
+        sponsorshipId: tracking.sponsorshipId,
+        eventType,
+        municipality: item.municipality,
+        placement: 'magina-directory-card',
+        clientEventId: crypto.randomUUID(),
+      }),
+    });
+  } catch {
+    // Metrics must never block directory navigation or contact actions.
+  }
+}
+
 export function MaginaDirectoryPage() {
   const [data, setData] = useState<DirectoryResponse | null>(null);
   const [query, setQuery] = useState('');
@@ -114,6 +142,7 @@ export function MaginaDirectoryPage() {
   const [category, setCategory] = useState<AdvertisingCategory | ''>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const impressedSponsorships = useRef(new Set<string>());
 
   useEffect(() => {
     const controller = new AbortController();
@@ -167,6 +196,15 @@ export function MaginaDirectoryPage() {
     });
   }, [category, data, entityType, municipality, query]);
 
+  useEffect(() => {
+    for (const item of filtered) {
+      const sponsorshipId = item.sponsorship?.tracking.sponsorshipId;
+      if (!sponsorshipId || impressedSponsorships.current.has(sponsorshipId)) continue;
+      impressedSponsorships.current.add(sponsorshipId);
+      void trackSponsoredEvent(item, 'impression');
+    }
+  }, [filtered]);
+
   const globalCheckedAt = formatCheckedAt(data?.source.checkedAt ?? null);
   const sponsoredCount = filtered.filter((item) => item.sponsorship?.sponsored).length;
 
@@ -177,59 +215,25 @@ export function MaginaDirectoryPage() {
           <img src="/brand/magina-olivo-mark.svg" alt="" />
           <span><strong>Mágina Olivo</strong><small>Sierra Mágina · Jaén</small></span>
         </a>
-        <a className="directory-back" href="/">Volver a la aplicación</a>
+        <div className="directory-header-actions"><a className="directory-advertise-link" href="/anunciate">Anuncia tu negocio</a><a className="directory-back" href="/">Volver a la aplicación</a></div>
       </header>
 
       <section className="directory-hero" aria-labelledby="directory-title">
         <p className="eyebrow">Mágina · Empresas y servicios</p>
         <h1 id="directory-title">Servicios para tu olivar</h1>
         <p>Cooperativas, almazaras y empresas agrícolas en un único directorio. Los negocios patrocinados pueden ganar visibilidad, pero nunca sustituyen ni ocultan la información objetiva de Mágina Olivo.</p>
+        <a className="directory-advertise-cta" href="/anunciate">¿Tienes un negocio agrícola? Solicita tu ficha →</a>
       </section>
 
       <section className="directory-filters" aria-label="Filtrar directorio">
-        <div className="field">
-          <label htmlFor="directory-query">Buscar</label>
-          <input id="directory-query" type="search" placeholder="Nombre, servicio o municipio" value={query} onChange={(event) => setQuery(event.target.value)} />
-        </div>
-        <div className="field">
-          <label htmlFor="directory-municipality">Municipio</label>
-          <select id="directory-municipality" value={municipality} onChange={(event) => setMunicipality(event.target.value)}>
-            <option value="">Todos</option>
-            {(data?.municipalities ?? []).map((item) => <option key={item} value={item}>{item}</option>)}
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="directory-type">Entidad</label>
-          <select id="directory-type" value={entityType} onChange={(event) => setEntityType(event.target.value as EntityType | '')}>
-            <option value="">Todas</option>
-            <option value="cooperative">Cooperativa</option>
-            <option value="sat">S.A.T.</option>
-            <option value="company">Empresa / almazara</option>
-          </select>
-        </div>
-        {data?.advertisingEnabled && availableCategories.length > 0 ? (
-          <div className="field">
-            <label htmlFor="directory-category">Servicio</label>
-            <select id="directory-category" value={category} onChange={(event) => setCategory(event.target.value as AdvertisingCategory | '')}>
-              <option value="">Todos</option>
-              {availableCategories.map((item) => <option key={item} value={item}>{categoryLabels[item]}</option>)}
-            </select>
-          </div>
-        ) : null}
+        <div className="field"><label htmlFor="directory-query">Buscar</label><input id="directory-query" type="search" placeholder="Nombre, servicio o municipio" value={query} onChange={(event) => setQuery(event.target.value)} /></div>
+        <div className="field"><label htmlFor="directory-municipality">Municipio</label><select id="directory-municipality" value={municipality} onChange={(event) => setMunicipality(event.target.value)}><option value="">Todos</option>{(data?.municipalities ?? []).map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
+        <div className="field"><label htmlFor="directory-type">Entidad</label><select id="directory-type" value={entityType} onChange={(event) => setEntityType(event.target.value as EntityType | '')}><option value="">Todas</option><option value="cooperative">Cooperativa</option><option value="sat">S.A.T.</option><option value="company">Empresa / almazara</option></select></div>
+        {data?.advertisingEnabled && availableCategories.length > 0 ? <div className="field"><label htmlFor="directory-category">Servicio</label><select id="directory-category" value={category} onChange={(event) => setCategory(event.target.value as AdvertisingCategory | '')}><option value="">Todos</option>{availableCategories.map((item) => <option key={item} value={item}>{categoryLabels[item]}</option>)}</select></div> : null}
       </section>
 
       <section className="directory-results" aria-labelledby="directory-results-title" aria-busy={loading}>
-        <div className="directory-results-heading">
-          <div>
-            <h2 id="directory-results-title">Empresas y entidades</h2>
-            <p>
-              {loading ? 'Cargando directorio…' : `${filtered.length} de ${data?.items.length ?? 0} resultados`}
-              {sponsoredCount > 0 ? ` · ${sponsoredCount} patrocinados` : ''}
-            </p>
-          </div>
-          {globalCheckedAt ? <span className="badge">Fuente revisada {globalCheckedAt}</span> : null}
-        </div>
-
+        <div className="directory-results-heading"><div><h2 id="directory-results-title">Empresas y entidades</h2><p>{loading ? 'Cargando directorio…' : `${filtered.length} de ${data?.items.length ?? 0} resultados`}{sponsoredCount > 0 ? ` · ${sponsoredCount} patrocinados` : ''}</p></div>{globalCheckedAt ? <span className="badge">Fuente revisada {globalCheckedAt}</span> : null}</div>
         {error ? <div className="alert" role="alert">{error}</div> : null}
 
         <div className="directory-grid">
@@ -238,73 +242,32 @@ export function MaginaDirectoryPage() {
             const phone = phoneHref(item.commercial?.phone ?? null);
             const whatsapp = whatsappHref(item.commercial?.whatsappPhone ?? null);
             const sponsored = Boolean(item.sponsorship?.sponsored);
-
             return (
               <article className={`card directory-card${sponsored ? ' directory-card-sponsored' : ''}`} key={item.id}>
-                <div className="directory-card-topline">
-                  <span className={`directory-type ${item.entityType}`}>
-                    {item.commercial?.category ? categoryLabels[item.commercial.category] : entityLabels[item.entityType]}
-                  </span>
-                  {sponsored ? (
-                    <span className="directory-sponsored" aria-label="Contenido patrocinado">
-                      ★ {item.sponsorship?.label ?? 'Patrocinado'}
-                    </span>
-                  ) : (
-                    <span className={`directory-status ${item.verificationStatus}`}>
-                      {verificationLabels[item.verificationStatus]}
-                    </span>
-                  )}
-                </div>
-
+                <div className="directory-card-topline"><span className={`directory-type ${item.entityType}`}>{item.commercial?.category ? categoryLabels[item.commercial.category] : entityLabels[item.entityType]}</span>{sponsored ? <span className="directory-sponsored" aria-label="Contenido patrocinado">★ {item.sponsorship?.label ?? 'Patrocinado'}</span> : <span className={`directory-status ${item.verificationStatus}`}>{verificationLabels[item.verificationStatus]}</span>}</div>
                 <h3>{item.officialName}</h3>
                 {item.brandName ? <p className="directory-brand-name">{item.brandName}</p> : null}
                 <p className="directory-location">{item.municipality ?? 'Municipio pendiente'}{item.province ? ` · ${item.province}` : ''}</p>
-
-                {item.commercial?.description ? (
-                  <p className="directory-description">{item.commercial.description}</p>
-                ) : null}
-
-                {item.commercial && (phone || whatsapp || item.websiteUrl) ? (
-                  <div className="directory-actions" aria-label={`Contactar con ${item.officialName}`}>
-                    {phone ? <a className="directory-action" href={phone}>Llamar</a> : null}
-                    {whatsapp ? <a className="directory-action primary" href={whatsapp} target="_blank" rel="noreferrer noopener">WhatsApp</a> : null}
-                    {item.websiteUrl ? <a className="directory-action" href={item.websiteUrl} target="_blank" rel="noreferrer noopener">Web</a> : null}
-                  </div>
-                ) : null}
-
-                <details className="directory-trust">
-                  <summary>Procedencia de la ficha</summary>
-                  {itemCheckedAt ? <p>Última comprobación: {itemCheckedAt}.</p> : (
-                    <p>Esta ficha no tiene una fecha de comprobación fiable.</p>
-                  )}
-                  {item.verificationStatus === 'stale' ? (
-                    <p>La última comprobación supera el intervalo de revisión. Confirma los datos en la fuente antes de usarlos.</p>
-                  ) : null}
-                  {item.verificationStatus === 'unverified' ? (
-                    <p>La entidad aparece en el directorio, pero Mágina Olivo no la presenta como verificada todavía.</p>
-                  ) : null}
-                  {item.sourceUrl ? <p><a href={item.sourceUrl} target="_blank" rel="noreferrer noopener">Ver fuente pública</a></p> : null}
-                </details>
+                {item.commercial?.description ? <p className="directory-description">{item.commercial.description}</p> : null}
+                {item.commercial && (phone || whatsapp || item.websiteUrl) ? <div className="directory-actions" aria-label={`Contactar con ${item.officialName}`}>
+                  {phone ? <a className="directory-action" href={phone} onClick={() => { if (sponsored) void trackSponsoredEvent(item, 'phone_click'); }}>Llamar</a> : null}
+                  {whatsapp ? <a className="directory-action primary" href={whatsapp} target="_blank" rel="noreferrer noopener" onClick={() => { if (sponsored) void trackSponsoredEvent(item, 'whatsapp_click'); }}>WhatsApp</a> : null}
+                  {item.websiteUrl ? <a className="directory-action" href={item.websiteUrl} target="_blank" rel="noreferrer noopener" onClick={() => { if (sponsored) void trackSponsoredEvent(item, 'website_click'); }}>Web</a> : null}
+                </div> : null}
+                <details className="directory-trust"><summary>Procedencia de la ficha</summary>{itemCheckedAt ? <p>Última comprobación: {itemCheckedAt}.</p> : <p>Esta ficha no tiene una fecha de comprobación fiable.</p>}{item.verificationStatus === 'stale' ? <p>La última comprobación supera el intervalo de revisión. Confirma los datos en la fuente antes de usarlos.</p> : null}{item.verificationStatus === 'unverified' ? <p>La entidad aparece en el directorio, pero Mágina Olivo no la presenta como verificada todavía.</p> : null}{item.sourceUrl ? <p><a href={item.sourceUrl} target="_blank" rel="noreferrer noopener">Ver fuente pública</a></p> : null}</details>
               </article>
             );
           })}
         </div>
-
-        {!loading && !error && filtered.length === 0 ? (
-          <div className="card empty-state"><strong>Sin resultados</strong>Prueba otro nombre, municipio, tipo o servicio.</div>
-        ) : null}
+        {!loading && !error && filtered.length === 0 ? <div className="card empty-state"><strong>Sin resultados</strong>Prueba otro nombre, municipio, tipo o servicio.</div> : null}
       </section>
 
       <footer className="directory-footer">
         <p><strong>Transparencia:</strong> una empresa puede pagar por mayor visibilidad y aparecer como <strong>Patrocinado</strong>. El pago no modifica precios del aceite, meteorología, alertas, noticias ni ningún dato privado de tu explotación.</p>
+        <p><strong>Métricas comerciales:</strong> para patrocinados se cuentan impresiones y acciones sobre sus botones mediante eventos aleatorios de deduplicación. No se guarda IP, usuario, explotación, parcela ni coordenadas precisas para estas métricas.</p>
         <p><strong>Importante:</strong> aparecer en el directorio no significa que la entidad colabore con Mágina Olivo ni que exista integración con su área privada.</p>
-        {data ? (
-          <p>
-            Fuente base: {data.source.label}{data.source.provider ? ` · ${data.source.provider}` : ''}.
-            {' '}La aplicación conserva procedencia y fecha de comprobación; una ficha antigua deja de mostrarse como verificada automáticamente.
-            {data.source.sourceUrl ? <> <a href={data.source.sourceUrl} target="_blank" rel="noreferrer noopener">Consultar fuente pública</a>.</> : null}
-          </p>
-        ) : null}
+        {data ? <p>Fuente base: {data.source.label}{data.source.provider ? ` · ${data.source.provider}` : ''}. La aplicación conserva procedencia y fecha de comprobación; una ficha antigua deja de mostrarse como verificada automáticamente.{data.source.sourceUrl ? <> <a href={data.source.sourceUrl} target="_blank" rel="noreferrer noopener">Consultar fuente pública</a>.</> : null}</p> : null}
+        <p><a href="/anunciate">Solicitar presencia o patrocinio en Mágina Olivo</a></p>
       </footer>
     </main>
   );

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
   buildHoldingHarvestHistory,
@@ -105,9 +106,22 @@ test('holding harvest history preserves weighted yield and missing data semantic
   assert.ok(Math.abs((latest?.weightedYieldPercent ?? 0) - (37200 / 1800)) < 0.0001);
 });
 
-test('holding harvest history returns an empty neutral history when no campaigns exist', () => {
-  const history = buildHoldingHarvestHistory([]);
-  assert.equal(history.activeAreaHa, 0);
-  assert.equal(history.activeOliveTreeCount, 0);
+test('holding harvest history preserves the active holding base when no campaigns exist', () => {
+  const history = buildHoldingHarvestHistory([], plots([], []));
+  assert.equal(history.activeAreaHa, 3);
+  assert.equal(history.activeOliveTreeCount, 150);
   assert.deepEqual(history.items, []);
+});
+
+test('holding harvest history route remains private and scoped to holding membership', async () => {
+  const routes = await readFile(new URL('./holding-harvest-report-routes.ts', import.meta.url), 'utf8');
+
+  assert.match(routes, /getHoldingAccess\(userId, holdingId\)/);
+  assert.match(routes, /\/api\/v1\/holdings\/:holdingId\/harvest-history/);
+  assert.match(routes, /where holding_id = \$1/);
+  assert.match(routes, /status <> 'archived'/);
+  assert.match(routes, /d\.verification_status <> 'archived'/);
+  assert.match(routes, /p\.active = true/);
+  assert.match(routes, /private, no-store/);
+  assert.match(routes, /buildHoldingHarvestHistory\(campaigns, basePlots\)/);
 });

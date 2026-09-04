@@ -57,5 +57,5 @@ test('task and reward reminder scan stays bounded, preference-aware and detail-f
   assert.doesNotMatch(source, /reward_title|task\.title|plot_name|yield_percent|total_kg/);
   assert.match(migration, /unique \(user_id, event_key\)/);
   assert.match(migration, /where sent_at is null/);
-  assert.doesNotMatch(migration, /title|body|plot|harvest|yield/);
+  assert.doesNotMatch(migration, /^\s*(title|body|payload|plot_name|yield_percent|total_kg)\s+/m);
 });

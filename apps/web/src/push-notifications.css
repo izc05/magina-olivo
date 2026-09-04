@@ -1,0 +1,81 @@
+.push-notification-prompt {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 55;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: .85rem;
+  width: min(30rem, calc(100vw - 2rem));
+  padding: 1rem;
+  border: 1px solid rgba(89, 91, 48, .2);
+  border-radius: 1.1rem;
+  background: rgba(255, 252, 242, .98);
+  box-shadow: 0 1rem 2.5rem rgba(54, 55, 32, .16);
+  color: #353523;
+}
+
+.push-notification-prompt--error {
+  display: block;
+  font-size: .9rem;
+}
+
+.push-notification-prompt__icon {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: .8rem;
+  background: rgba(89, 91, 48, .1);
+  font-size: 1.2rem;
+}
+
+.push-notification-prompt__copy {
+  display: grid;
+  gap: .45rem;
+}
+
+.push-notification-prompt__copy strong {
+  font-size: 1rem;
+}
+
+.push-notification-prompt__copy p,
+.push-notification-prompt__copy small {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.push-notification-prompt__copy p {
+  font-size: .9rem;
+}
+
+.push-notification-prompt__copy small {
+  color: #67674d;
+  font-size: .76rem;
+}
+
+.push-notification-prompt__error {
+  color: #8b2f23;
+  font-size: .82rem;
+}
+
+.push-notification-prompt__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+  margin-top: .2rem;
+}
+
+.push-notification-prompt__actions .primary-button,
+.push-notification-prompt__actions .secondary-button {
+  min-height: 2.6rem;
+}
+
+@media (max-width: 720px) {
+  .push-notification-prompt {
+    right: .75rem;
+    bottom: calc(5.3rem + env(safe-area-inset-bottom, 0px));
+    left: .75rem;
+    width: auto;
+  }
+}

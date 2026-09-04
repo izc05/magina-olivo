@@ -14,6 +14,7 @@ import { registerDeliveryUpdateRoutes } from './delivery-update-routes.ts';
 import { registerDocumentRoutes } from './document-routes.ts';
 import { registerFarmRoutes } from './farm-routes.ts';
 import { registerHoldingRoutes } from './holding-routes.ts';
+import { registerPlotAgronomyRoutes } from './plot-agronomy-routes.ts';
 import { registerPlotOliveCountRoutes } from './plot-olive-count-routes.ts';
 import { registerPlotRoutes } from './plot-routes.ts';
 import { registerPlotTimelineRoutes } from './plot-timeline-routes.ts';
@@ -81,6 +82,7 @@ export function buildApp(): FastifyInstance {
   registerFarmRoutes(app);
   registerPlotRoutes(app);
   registerPlotOliveCountRoutes(app);
+  registerPlotAgronomyRoutes(app);
   registerPlotTimelineRoutes(app);
   registerSigpacMapRoutes(app);
   registerCatastroMapRoutes(app);

@@ -172,6 +172,48 @@ export function registerAccountDeletionRoutes(app: FastifyInstance): void {
         return reply.code(200).send({ request: responseFor(existing.rows[0]) });
       }
 
+      // Operational retry exhaustion is resumable. Reuse the same request so
+      // its durable object-cleanup manifest cannot become orphaned by a second
+      // deletion request.
+      const resumable = await client.query<DeletionRow>(
+        `
+          select
+            id, status, requested_at, confirmed_at, completed_at,
+            cancelled_at, failed_at, failure_code
+          from account_deletion_requests
+          where user_id = $1
+            and status = 'failed'
+            and failure_code = 'WORKER_RETRIES_EXHAUSTED'
+          order by requested_at desc, id desc
+          limit 1
+          for update
+        `,
+        [session.user.id],
+      );
+
+      if (resumable.rows[0]) {
+        const resumed = await client.query<DeletionRow>(
+          `
+            update account_deletion_requests
+            set status = 'processing',
+                failed_at = null,
+                failure_code = null,
+                version = version + 1,
+                updated_at = now()
+            where id = $1
+            returning
+              id, status, requested_at, confirmed_at, completed_at,
+              cancelled_at, failed_at, failure_code
+          `,
+          [resumable.rows[0].id],
+        );
+        const row = resumed.rows[0];
+        if (!row) throw new Error('Account deletion request resume returned no row');
+        await ensureDeletionJob(client, row.id);
+        await client.query('commit');
+        return reply.code(202).send({ request: responseFor(row) });
+      }
+
       const id = randomUUID();
       const inserted = await client.query<DeletionRow>(
         `

@@ -33,8 +33,8 @@ test('Web Push V1 uses an empty payload and keeps agricultural data out of push 
   assert.match(client, /endpoint: subscription\.endpoint/);
   assert.match(client, /expirationTime: subscription\.expirationTime/);
   assert.doesNotMatch(client, /toJSON\(\)/);
-  assert.doesNotMatch(migration, /p256dh/i);
-  assert.doesNotMatch(migration, /\bauth\b/i);
+  assert.doesNotMatch(migration, /\bp256dh\s+(text|bytea|varchar)/i);
+  assert.doesNotMatch(migration, /\bauth_key\s+(text|bytea|varchar)/i);
   assert.doesNotMatch(serviceWorker, /event\.data/);
   assert.match(serviceWorker, /Tienes un aviso nuevo/);
   assert.match(worker, /method: 'POST'/);

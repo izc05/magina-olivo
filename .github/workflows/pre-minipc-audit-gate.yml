@@ -1,0 +1,53 @@
+name: Pre-MiniPC audit gate
+
+on:
+  pull_request:
+    branches:
+      - feat/pre-minipc-convergence-v1
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pre-minipc-audit-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Pre-MiniPC Audit Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck workspaces
+        run: npm run typecheck
+
+      - name: Run all workspace tests
+        run: npm test
+
+      - name: Build web app
+        env:
+          VITE_BASE_PATH: /magina-olivo/
+          VITE_DEMO_MODE: "true"
+        run: npm run build --workspace @magina/web
+
+      - name: Validate Mini PC and staging scripts
+        run: |
+          bash -n scripts/mini-pc-readiness.sh
+          bash -n scripts/staging-host-preflight.sh
+          bash -n scripts/staging-release.sh
+          bash -n scripts/staging-backup.sh
+          bash -n scripts/staging-restore-gate.sh

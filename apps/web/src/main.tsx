@@ -5,7 +5,9 @@ import { AccountPage } from './AccountPage';
 import { App } from './App';
 import { CalendarPage } from './CalendarPage';
 import { ConnectivityStatus } from './ConnectivityStatus';
+import { ContactPage } from './ContactPage';
 import { installDemoPreview } from './demoPreview';
+import { LegalPage } from './LegalPage';
 import { MaginaDirectoryPage } from './MaginaDirectoryPage';
 import { MaginaFieldAlertsPage } from './MaginaFieldAlertsPage';
 import { MaginaHubPage } from './MaginaHubPage';
@@ -43,6 +45,7 @@ import './auth-onboarding.css';
 import './pilot-alerts.css';
 import './calendar.css';
 import './public-home.css';
+import './legal-contact.css';
 
 installDemoPreview();
 
@@ -106,6 +109,18 @@ createRoot(root).render(
       <CalendarPage />
     ) : path === '/mi-campo' || path === '/app' ? (
       privateApp
+    ) : path === '/contacto' ? (
+      <ContactPage />
+    ) : path === '/aviso-legal' ? (
+      <LegalPage section="legal" />
+    ) : path === '/privacidad' ? (
+      <LegalPage section="privacy" />
+    ) : path === '/cookies' ? (
+      <LegalPage section="cookies" />
+    ) : path === '/terminos' ? (
+      <LegalPage section="terms" />
+    ) : path === '/fuentes' ? (
+      <LegalPage section="sources" />
     ) : path === '/magina' ? (
       <MaginaHubPage />
     ) : path === '/magina/directorio' ? (

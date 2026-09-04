@@ -6,6 +6,19 @@ import {
 } from './public-directory-trust.ts';
 
 type EntityType = 'cooperative' | 'sat' | 'company' | 'other';
+type AdvertisingCategory =
+  | 'cooperative'
+  | 'oil_mill'
+  | 'machinery'
+  | 'workshop'
+  | 'harvest'
+  | 'nursery'
+  | 'irrigation'
+  | 'pruning'
+  | 'phytosanitary'
+  | 'insurance'
+  | 'advisory'
+  | 'other';
 
 type DestinationQuery = {
   q?: string;
@@ -24,6 +37,16 @@ type DestinationRow = {
   source_url: string | null;
   source_checked_at: Date | null;
   verification_status: 'unverified' | 'verified' | 'stale';
+  advertising_category: AdvertisingCategory | null;
+  advertising_description: string | null;
+  advertising_phone: string | null;
+  advertising_whatsapp_phone: string | null;
+  advertising_logo_url: string | null;
+  advertising_hero_image_url: string | null;
+  sponsored: boolean;
+  sponsorship_label: string | null;
+  sponsorship_plan_code: 'featured' | 'premium' | null;
+  sponsorship_priority: number;
 };
 
 type PublicSourceRow = {
@@ -32,6 +55,10 @@ type PublicSourceRow = {
   source_url: string;
   last_checked_at: Date | null;
 };
+
+function advertisingIsEnabled(): boolean {
+  return process.env.MAGINA_ADVERTISING_ENABLED?.trim().toLowerCase() === 'true';
+}
 
 export function registerPublicDestinationRoutes(app: FastifyInstance): void {
   app.get<{ Querystring: DestinationQuery }>(
@@ -54,38 +81,87 @@ export function registerPublicDestinationRoutes(app: FastifyInstance): void {
     },
     async (request) => {
       const values: unknown[] = [];
-      const filters = ["verification_status <> 'stale'"];
+      const filters = ["c.verification_status <> 'stale'"];
       const q = request.query.q?.trim();
       const municipality = request.query.municipality?.trim();
+      const advertisingEnabled = advertisingIsEnabled();
 
       if (q) {
         values.push(`%${q}%`);
         filters.push(`(
-          official_name ilike $${values.length}
-          or coalesce(brand_name, '') ilike $${values.length}
-          or coalesce(municipality, '') ilike $${values.length}
+          c.official_name ilike $${values.length}
+          or coalesce(c.brand_name, '') ilike $${values.length}
+          or coalesce(c.municipality, '') ilike $${values.length}
         )`);
       }
 
       if (municipality) {
         values.push(municipality);
-        filters.push(`municipality = $${values.length}`);
+        filters.push(`c.municipality = $${values.length}`);
       }
 
       if (request.query.entityType) {
         values.push(request.query.entityType);
-        filters.push(`entity_type = $${values.length}`);
+        filters.push(`c.entity_type = $${values.length}`);
       }
+
+      const commercialSelect = advertisingEnabled
+        ? `
+          ap.category as advertising_category,
+          ap.description as advertising_description,
+          ap.phone as advertising_phone,
+          ap.whatsapp_phone as advertising_whatsapp_phone,
+          ap.logo_url as advertising_logo_url,
+          ap.hero_image_url as advertising_hero_image_url,
+          (s.id is not null) as sponsored,
+          s.public_label as sponsorship_label,
+          case when s.plan_code in ('featured', 'premium') then s.plan_code else null end as sponsorship_plan_code,
+          coalesce(s.priority_override, plan.priority, 0) as sponsorship_priority
+        `
+        : `
+          null::text as advertising_category,
+          null::text as advertising_description,
+          null::text as advertising_phone,
+          null::text as advertising_whatsapp_phone,
+          null::text as advertising_logo_url,
+          null::text as advertising_hero_image_url,
+          false as sponsored,
+          null::text as sponsorship_label,
+          null::text as sponsorship_plan_code,
+          0 as sponsorship_priority
+        `;
+
+      const commercialJoins = advertisingEnabled
+        ? `
+          left join advertiser_profiles ap
+            on ap.destination_id = c.id
+           and ap.status = 'active'
+          left join lateral (
+            select sponsorship.*
+            from sponsorships sponsorship
+            where sponsorship.advertiser_id = ap.id
+              and sponsorship.status = 'active'
+              and (sponsorship.starts_at is null or sponsorship.starts_at <= now())
+              and (sponsorship.ends_at is null or sponsorship.ends_at > now())
+              and sponsorship.plan_code in ('featured', 'premium')
+            order by sponsorship.priority_override desc nulls last, sponsorship.updated_at desc
+            limit 1
+          ) s on true
+          left join advertising_plans plan on plan.code = s.plan_code and plan.active = true
+        `
+        : '';
 
       const [result, municipalities, sourceResult] = await Promise.all([
         getPool().query<DestinationRow>(
           `
             select
-              id, official_name, brand_name, entity_type, municipality, province,
-              website_url, source_url, source_checked_at, verification_status
-            from cooperatives
+              c.id, c.official_name, c.brand_name, c.entity_type, c.municipality, c.province,
+              c.website_url, c.source_url, c.source_checked_at, c.verification_status,
+              ${commercialSelect}
+            from cooperatives c
+            ${commercialJoins}
             where ${filters.join(' and ')}
-            order by municipality nulls last, official_name
+            order by sponsorship_priority desc, c.municipality nulls last, c.official_name
           `,
           values,
         ),
@@ -117,6 +193,7 @@ export function registerPublicDestinationRoutes(app: FastifyInstance): void {
       }, null);
 
       return {
+        advertisingEnabled,
         items: result.rows.map((row) => ({
           id: row.id,
           officialName: row.official_name,
@@ -131,6 +208,20 @@ export function registerPublicDestinationRoutes(app: FastifyInstance): void {
             row.verification_status,
             row.source_checked_at,
           ),
+          commercial: advertisingEnabled && row.advertising_category ? {
+            category: row.advertising_category,
+            description: row.advertising_description,
+            phone: row.advertising_phone,
+            whatsappPhone: row.advertising_whatsapp_phone,
+            logoUrl: normalizePublicHttpsUrl(row.advertising_logo_url),
+            heroImageUrl: normalizePublicHttpsUrl(row.advertising_hero_image_url),
+          } : null,
+          sponsorship: advertisingEnabled && row.sponsored ? {
+            sponsored: true,
+            label: row.sponsorship_label ?? 'Patrocinado',
+            planCode: row.sponsorship_plan_code,
+            priority: row.sponsorship_priority,
+          } : null,
         })),
         municipalities: municipalities.rows.map((row) => row.municipality),
         source: {

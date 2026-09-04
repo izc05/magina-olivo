@@ -1,0 +1,121 @@
+name: Wire Pre-MiniPC Campaign V2
+
+on:
+  push:
+    branches:
+      - feat/pre-minipc-convergence-v1
+    paths:
+      - .github/workflows/pre-minipc-campaign-v2-wire.yml
+
+permissions:
+  contents: write
+
+jobs:
+  wire-campaign-v2:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout convergence branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/pre-minipc-convergence-v1
+
+      - name: Wire CampaignDashboardV2 over real campaign components
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          import re
+
+          app_path = Path('apps/web/src/App.tsx')
+          app = app_path.read_text(encoding='utf-8')
+
+          dashboard_import = "import { CampaignDashboardV2 } from './CampaignDashboardV2';\n"
+          documents_import = "import { CampaignDocuments } from './CampaignDocuments.tsx';\n"
+          if dashboard_import not in app:
+              if documents_import not in app:
+                  raise SystemExit('CampaignDocuments import anchor not found')
+              app = app.replace(documents_import, dashboard_import + documents_import, 1)
+
+          replacement = """function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelectedCampaignId, selectedCampaign, farms, deliveries, summary, busy, runAction, reloadHoldingData, reloadCampaign }: { selectedHolding: Holding | null; campaigns: Campaign[]; selectedCampaignId: string; setSelectedCampaignId: (id: string) => void; selectedCampaign: Campaign | null; farms: Farm[]; deliveries: Delivery[]; summary: CampaignSummary | null; busy: boolean; runAction: ActionRunner; reloadHoldingData: () => Promise<void>; reloadCampaign: () => Promise<void> }) {
+            const createCampaign = selectedHolding && !campaigns.length
+              ? <CreateCampaignCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} />
+              : null;
+
+            const deliveryEntry = selectedCampaign && selectedHolding
+              ? (
+                <DeliveryEntryCard
+                  holdingId={selectedHolding.id}
+                  campaignId={selectedCampaign.id}
+                  farms={farms}
+                  onSaved={reloadCampaign}
+                />
+              )
+              : null;
+
+            const deliveryList = selectedCampaign ? (
+              <section className="section campaign-v2-delivery-list">
+                {deliveries.map((delivery) => (
+                  <article className="card delivery-row" key={delivery.id}>
+                    <div>
+                      <div className="delivery-kilos">{formatKg(delivery.kilograms)}</div>
+                      <div className="delivery-date">{new Date(delivery.deliveredAt).toLocaleDateString('es-ES')} · {delivery.customDestination || 'Cooperativa'}{delivery.ticketNumber ? ` · Ticket ${delivery.ticketNumber}` : ''}</div>
+                    </div>
+                    <div className="delivery-actions">
+                      <YieldForm deliveryId={delivery.id} busy={busy} runAction={runAction} onCreated={reloadCampaign} />
+                      {selectedHolding ? <DeliveryTicketButton holdingId={selectedHolding.id} deliveryId={delivery.id} /> : null}
+                    </div>
+                  </article>
+                ))}
+                {!deliveries.length ? <EmptyState title="Aún no hay entregas">Registra la primera cuando lleves aceituna a la almazara.</EmptyState> : null}
+              </section>
+            ) : null;
+
+            const documents = selectedCampaign && selectedHolding
+              ? <CampaignDocuments holdingId={selectedHolding.id} campaignId={selectedCampaign.id} deliveries={deliveries} />
+              : null;
+
+            return (
+              <CampaignDashboardV2
+                campaigns={campaigns}
+                selectedCampaignId={selectedCampaignId}
+                selectedCampaign={selectedCampaign}
+                summary={summary}
+                onSelectCampaign={setSelectedCampaignId}
+                createCampaign={createCampaign}
+                deliveryEntry={deliveryEntry}
+                deliveries={deliveryList}
+                documents={documents}
+              />
+            );
+          }
+
+          function MoreTab"""
+
+          pattern = r'function CampaignTab\([\s\S]*?\n}\n\nfunction MoreTab'
+          app, count = re.subn(pattern, replacement, app, count=1)
+          if count != 1:
+              raise SystemExit('CampaignTab function block not found')
+          app_path.write_text(app, encoding='utf-8')
+
+          main_path = Path('apps/web/src/main.tsx')
+          main = main_path.read_text(encoding='utf-8')
+          css_import = "import './campaign-dashboard-v2.css';\n"
+          css_anchor = "import './campaign-v2-integration.css';\n"
+          if css_import not in main:
+              if css_anchor not in main:
+                  raise SystemExit('campaign-v2 CSS anchor not found')
+              main = main.replace(css_anchor, css_anchor + css_import, 1)
+          main_path.write_text(main, encoding='utf-8')
+          PY
+
+      - name: Commit campaign wiring
+        run: |
+          git config user.name "IsiVoltPro Mantenimiento"
+          git config user.email "isiciozafracantos@gmail.com"
+          git add apps/web/src/App.tsx apps/web/src/main.tsx
+          if git diff --cached --quiet; then
+            echo "Campaign V2 already wired"
+            exit 0
+          fi
+          git commit -m "feat(convergence): wire Visual V2 campaign to real API data"
+          git push origin HEAD:feat/pre-minipc-convergence-v1

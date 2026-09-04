@@ -6,7 +6,7 @@ import {
   calculateHoldingHarvestComparison,
   type HoldingHarvestComparisonInput,
 } from './holding-harvest-comparison-format.ts';
-import { comparisonPayload } from './holding-harvest-report-routes.ts';
+import { buildHoldingHarvestComparisonPayload } from './holding-harvest-comparison-payload.ts';
 import type { PlotHarvestDelivery } from './plot-harvest-report-format.ts';
 
 function delivery(overrides: Partial<PlotHarvestDelivery> = {}): PlotHarvestDelivery {
@@ -126,7 +126,7 @@ test('holding comparison ranks improvements and regressions by comparable kg per
 });
 
 test('holding comparison JSON payload exposes the same campaign metrics used by the PDF', () => {
-  const payload = comparisonPayload(fixture());
+  const payload = buildHoldingHarvestComparisonPayload(fixture());
 
   assert.equal(payload.currentCampaign.name, 'Campana 2026/27');
   assert.equal(payload.currentCampaign.seasonStartYear, 2026);
@@ -189,7 +189,7 @@ test('holding comparison route remains authenticated and scoped to the same hold
   assert.match(routes, /d\.campaign_id = \$2/);
   assert.match(routes, /d\.verification_status <> 'archived'/);
   assert.match(routes, /\/api\/v1\/campaigns\/:campaignId\/harvest-comparison'/);
-  assert.match(routes, /reply\.send\(comparisonPayload\(report\)\)/);
+  assert.match(routes, /reply\.send\(buildHoldingHarvestComparisonPayload\(report\)\)/);
   assert.match(routes, /\/api\/v1\/campaigns\/:campaignId\/harvest-comparison\.pdf/);
   assert.match(routes, /private, no-store/);
 });

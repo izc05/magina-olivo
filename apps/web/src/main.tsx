@@ -21,6 +21,7 @@ import { ProductTourGate } from './ProductTour';
 import { RegisterPage } from './RegisterPage';
 import { RegistrationEntry } from './RegistrationEntry';
 import { ResetPassword } from './ResetPassword';
+import { installWeatherDemoPreview } from './weatherDemoPreview';
 import './styles.css';
 import './brand.css';
 import './connectivity.css';
@@ -51,6 +52,7 @@ const brandAsset = `${import.meta.env.BASE_URL}brand/magina-olivo-mark.svg`;
 document.documentElement.style.setProperty('--magina-brand-logo', `url("${brandAsset}")`);
 
 installDemoPreview();
+installWeatherDemoPreview();
 installDemoPreviewExtras();
 installDemoDocumentPreview();
 

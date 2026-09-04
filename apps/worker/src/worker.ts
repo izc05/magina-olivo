@@ -6,6 +6,7 @@ import { augmentAccountExportWithTasks } from './account-export-tasks.ts';
 import { expireAccountExports, generateAccountExport } from './account-export.ts';
 import { inspectMarketSources } from './market-source.ts';
 import { inspectRaifOlivarSource } from './raif-source.ts';
+import { captureRadarFrame } from './radar-capture.ts';
 import { scanRainAlerts } from './rain-alert-scan.ts';
 
 const { Pool } = pg;
@@ -22,6 +23,7 @@ const retrySeconds = Number(process.env.WORKER_RETRY_SECONDS ?? '5');
 const leaseSeconds = Number(process.env.WORKER_LEASE_SECONDS ?? '120');
 const accountExportTtlHours = Number(process.env.ACCOUNT_EXPORT_TTL_HOURS ?? '24');
 const rainAlertScanMinutes = Number(process.env.RAIN_ALERT_SCAN_MINUTES ?? '30');
+const radarCaptureMinutes = Number(process.env.WEATHER_RADAR_CAPTURE_MINUTES ?? '10');
 
 if (!Number.isFinite(pollMilliseconds) || pollMilliseconds < 100) {
   throw new Error('WORKER_POLL_MS must be at least 100');
@@ -38,6 +40,14 @@ if (!Number.isFinite(accountExportTtlHours) || accountExportTtlHours < 1 || acco
 if (!Number.isFinite(rainAlertScanMinutes) || rainAlertScanMinutes < 5 || rainAlertScanMinutes > 1440) {
   throw new Error('RAIN_ALERT_SCAN_MINUTES must be between 5 and 1440');
 }
+if (!Number.isFinite(radarCaptureMinutes) || radarCaptureMinutes < 5 || radarCaptureMinutes > 60) {
+  throw new Error('WEATHER_RADAR_CAPTURE_MINUTES must be between 5 and 60');
+}
+
+const rainScheduleReconcileMilliseconds = Math.min(rainAlertScanMinutes * 60_000, 60_000);
+const radarScheduleReconcileMilliseconds = Math.min(radarCaptureMinutes * 60_000, 60_000);
+let nextRainScheduleReconcileAt = 0;
+let nextRadarScheduleReconcileAt = 0;
 
 const pool = new Pool({ connectionString: databaseUrl });
 
@@ -327,6 +337,13 @@ async function ensureRainAlertScanScheduled(): Promise<void> {
   }
 }
 
+async function reconcileRainAlertSchedule(force = false): Promise<void> {
+  const now = Date.now();
+  if (!force && now < nextRainScheduleReconcileAt) return;
+  await ensureRainAlertScanScheduled();
+  nextRainScheduleReconcileAt = now + rainScheduleReconcileMilliseconds;
+}
+
 async function scheduleNextRainAlertScan(currentJobId: string): Promise<void> {
   await pool.query(
     `
@@ -335,6 +352,79 @@ async function scheduleNextRainAlertScan(currentJobId: string): Promise<void> {
       on conflict do nothing
     `,
     [randomUUID(), `weather.rain.scan:after:${currentJobId}`, rainAlertScanMinutes],
+  );
+}
+
+async function ensureRadarCaptureScheduled(): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query('begin');
+    await client.query("select pg_advisory_xact_lock(hashtext('magina-weather-radar-scheduler'))");
+
+    const active = await client.query<{ count: string }>(
+      `
+        select count(*)::text as count
+        from job_queue
+        where kind = 'weather.radar.capture'
+          and status in ('queued', 'retry', 'running')
+      `,
+    );
+
+    if (Number(active.rows[0]?.count ?? '0') === 0) {
+      const revived = await client.query(
+        `
+          update job_queue
+          set status = 'queued',
+              attempts = 0,
+              max_attempts = 1,
+              run_after = now(),
+              locked_at = null,
+              locked_by = null,
+              last_error = null,
+              completed_at = null,
+              updated_at = now()
+          where dedupe_key = 'weather.radar.capture:bootstrap'
+            and status in ('succeeded', 'failed')
+          returning id
+        `,
+      );
+
+      if (revived.rowCount === 0) {
+        await client.query(
+          `
+            insert into job_queue (id, kind, payload, max_attempts, dedupe_key, run_after)
+            values ($1, 'weather.radar.capture', '{}'::jsonb, 1, 'weather.radar.capture:bootstrap', now())
+            on conflict (dedupe_key) do nothing
+          `,
+          [randomUUID()],
+        );
+      }
+    }
+
+    await client.query('commit');
+  } catch (error) {
+    await client.query('rollback');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function reconcileRadarCaptureSchedule(force = false): Promise<void> {
+  const now = Date.now();
+  if (!force && now < nextRadarScheduleReconcileAt) return;
+  await ensureRadarCaptureScheduled();
+  nextRadarScheduleReconcileAt = now + radarScheduleReconcileMilliseconds;
+}
+
+async function scheduleNextRadarCapture(currentJobId: string): Promise<void> {
+  await pool.query(
+    `
+      insert into job_queue (id, kind, payload, max_attempts, dedupe_key, run_after)
+      values ($1, 'weather.radar.capture', '{}'::jsonb, 1, $2, now() + ($3 * interval '1 minute'))
+      on conflict (dedupe_key) do nothing
+    `,
+    [randomUUID(), `weather.radar.capture:after:${currentJobId}`, radarCaptureMinutes],
   );
 }
 
@@ -360,6 +450,15 @@ async function executeJob(job: JobRow): Promise<void> {
         console.log(JSON.stringify({ event: 'rain_alert_scan_completed', ...result }));
       } finally {
         await scheduleNextRainAlertScan(job.id);
+      }
+      return;
+    }
+    case 'weather.radar.capture': {
+      try {
+        const result = await withJobLeaseHeartbeat(job.id, () => captureRadarFrame(pool));
+        console.log(JSON.stringify({ event: 'weather_radar_capture_completed', ...result }));
+      } finally {
+        await scheduleNextRadarCapture(job.id);
       }
       return;
     }
@@ -435,6 +534,44 @@ function logLoopFailure(event: string, error: unknown): void {
   }));
 }
 
+async function bootstrapWeatherSchedules(): Promise<void> {
+  while (true) {
+    let rainReady = true;
+    let radarReady = true;
+
+    try {
+      await reconcileRainAlertSchedule(true);
+    } catch (error) {
+      rainReady = false;
+      logLoopFailure('rain_alert_scheduler_bootstrap_failed', error);
+    }
+
+    try {
+      await reconcileRadarCaptureSchedule(true);
+    } catch (error) {
+      radarReady = false;
+      logLoopFailure('radar_scheduler_bootstrap_failed', error);
+    }
+
+    if (rainReady && radarReady) return;
+    await sleep(Math.max(pollMilliseconds, 1000));
+  }
+}
+
+async function reconcileWeatherSchedules(): Promise<void> {
+  try {
+    await reconcileRainAlertSchedule();
+  } catch (error) {
+    logLoopFailure('rain_alert_scheduler_reconcile_failed', error);
+  }
+
+  try {
+    await reconcileRadarCaptureSchedule();
+  } catch (error) {
+    logLoopFailure('radar_scheduler_reconcile_failed', error);
+  }
+}
+
 async function main(): Promise<void> {
   if (runOnce) {
     try {
@@ -445,19 +582,12 @@ async function main(): Promise<void> {
     return;
   }
 
-  while (true) {
-    try {
-      await ensureRainAlertScanScheduled();
-      break;
-    } catch (error) {
-      logLoopFailure('rain_alert_scheduler_bootstrap_failed', error);
-      await sleep(Math.max(pollMilliseconds, 1000));
-    }
-  }
+  await bootstrapWeatherSchedules();
 
   while (true) {
     try {
       const processed = await runWorkerIteration();
+      await reconcileWeatherSchedules();
       if (!processed) {
         await sleep(pollMilliseconds);
       }

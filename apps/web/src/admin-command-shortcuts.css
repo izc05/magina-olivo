@@ -1,0 +1,52 @@
+.admin-command-shortcuts {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 45;
+  display: flex;
+  gap: 9px;
+  max-width: calc(100vw - 36px);
+}
+
+.admin-command-shortcuts a {
+  min-width: 190px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: 'icon title' 'icon meta';
+  column-gap: 9px;
+  align-items: center;
+  padding: 10px 13px;
+  border-radius: 15px;
+  background: rgba(39, 51, 30, .96);
+  color: #fffdf7;
+  text-decoration: none;
+  box-shadow: 0 13px 32px rgba(29, 38, 20, .22);
+  backdrop-filter: blur(12px);
+}
+
+.admin-command-shortcuts a > span {
+  grid-area: icon;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #c49d55;
+  color: #26301d;
+  font-weight: 900;
+}
+
+.admin-command-shortcuts strong { grid-area: title; font-size: .86rem; }
+.admin-command-shortcuts small { grid-area: meta; color: #cfd6c8; font-size: .71rem; }
+.admin-command-shortcuts a:hover { transform: translateY(-1px); }
+.admin-command-shortcuts a:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+
+@media (max-width: 720px) {
+  .admin-command-shortcuts {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+  }
+  .admin-command-shortcuts a { min-width: 0; flex: 1; }
+  .admin-command-shortcuts small { display: none; }
+}

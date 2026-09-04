@@ -84,8 +84,8 @@ export function CampaignDocuments({
         <p className="section-copy">El PDF resume la cosecha por finca y parcela, con kilos, entregas, destinos y rendimiento ponderado. CSV sirve para hoja de cálculo y JSON conserva la estructura completa.</p>
         <div className="form-actions campaign-export-actions">
           <a className="primary-button campaign-pdf-download" href={`/api/v1/campaigns/${campaignId}/export.pdf`}>Descargar informe PDF</a>
-          <a className="text-button" href={`/api/v1/campaigns/${campaignId}/export.csv`}>CSV</a>
-          <a className="text-button" href={`/api/v1/campaigns/${campaignId}/export.json`}>JSON</a>
+          <a className="text-button" href={`/api/v1/campaigns/${campaignId}/export.csv`}>Descargar CSV</a>
+          <a className="text-button" href={`/api/v1/campaigns/${campaignId}/export.json`}>Descargar JSON</a>
         </div>
         <p className="campaign-export-note">El informe no estima rendimientos que aún estén pendientes.</p>
       </div>

@@ -1,5 +1,5 @@
-import type { RedemptionSummary } from './reward-api';
-import { classifyRewardRedemptionStatus } from './reward-redemption-status';
+import type { RedemptionSummary } from './reward-api.ts';
+import { classifyRewardRedemptionStatus } from './reward-redemption-status.ts';
 
 export type RewardRedemptionHistoryBucket = 'pending' | 'redeemed' | 'expired' | 'other';
 

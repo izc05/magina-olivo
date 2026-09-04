@@ -8,6 +8,10 @@ const migrationSource = readFileSync(
   new URL('../../../db/migrations/0018_public_growth_daily.sql', import.meta.url),
   'utf8',
 );
+const composeSource = readFileSync(
+  new URL('../../../infra/docker/compose.staging.yml', import.meta.url),
+  'utf8',
+);
 
 test('public growth endpoint is disabled by default and same-origin only', () => {
   assert.match(routeSource, /PUBLIC_GROWTH_MEASUREMENT_ENABLED === 'true'/);
@@ -17,6 +21,8 @@ test('public growth endpoint is disabled by default and same-origin only', () =>
   assert.match(routeSource, /if \(fetchSite === 'cross-site'\) return false/);
   assert.match(routeSource, /if \(!origin\) return false/);
   assert.match(routeSource, /trustedOriginSet\.has\(origin\)/);
+  assert.match(composeSource, /PUBLIC_GROWTH_MEASUREMENT_ENABLED: \$\{PUBLIC_GROWTH_MEASUREMENT_ENABLED:-false\}/);
+  assert.doesNotMatch(composeSource, /PUBLIC_GROWTH_MEASUREMENT_ENABLED:\s*(true|enabled)\b/);
 });
 
 test('public growth schema is restricted to public routes and low-cardinality attribution', () => {

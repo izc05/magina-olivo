@@ -17,6 +17,7 @@ test('pending private work is refreshed immediately and retried when connectivit
   assert.match(source, /magina:activity-offline-queued/);
   assert.match(source, /magina:sync-complete/);
   assert.match(source, /aria-atomic="true"/);
+  assert.match(source, /import '\.\/app-state-v2\.css'/);
 });
 
 test('mobile offline and navigation feedback respect small screens and safe areas', async () => {
@@ -31,4 +32,15 @@ test('mobile offline and navigation feedback respect small screens and safe area
   assert.match(coldStartCss, /min-height: 100dvh/);
   assert.match(coldStartCss, /env\(safe-area-inset-top\)/);
   assert.match(coldStartCss, /env\(safe-area-inset-bottom\)/);
+});
+
+test('generic loading, error and empty states use the Visual V2 feedback layer', async () => {
+  const stateCss = await read('./app-state-v2.css');
+
+  assert.match(stateCss, /\.loading-screen::before/);
+  assert.match(stateCss, /var\(--magina-brand-logo\)/);
+  assert.match(stateCss, /\.alert\[role="alert"\]::before/);
+  assert.match(stateCss, /\.empty-state::before/);
+  assert.match(stateCss, /prefers-reduced-motion: reduce/);
+  assert.match(stateCss, /forced-colors: active/);
 });

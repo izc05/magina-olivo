@@ -11,6 +11,7 @@ type PublicGrowthRoute = (typeof PUBLIC_GROWTH_ROUTES)[number];
 export type GrowthConsent = 'unset' | 'denied' | 'granted';
 export type GrowthEventName = 'public_page_view' | 'share_started' | 'share_completed';
 export type GrowthShareChannel = 'native' | 'whatsapp' | 'copy';
+type ReferrerCategory = 'direct' | 'google' | 'bing' | 'social' | 'other';
 
 export type GrowthEventInput = {
   event: GrowthEventName;
@@ -19,7 +20,7 @@ export type GrowthEventInput = {
 };
 
 const CONSENT_KEY = 'magina:growth-consent:v1';
-const pageViewsSent = new Set<string>();
+const pageViewsPendingOrSent = new Set<string>();
 
 export function isGrowthMeasurementEnabled(): boolean {
   return import.meta.env.VITE_PUBLIC_GROWTH_MEASUREMENT === 'enabled';
@@ -52,24 +53,33 @@ function trimAttribution(value: string | null, maxLength = 80): string | undefin
   return cleaned || undefined;
 }
 
+function referrerCategory(): ReferrerCategory {
+  if (!document.referrer) return 'direct';
+
+  try {
+    const referrer = new URL(document.referrer);
+    if (referrer.origin === window.location.origin) return 'direct';
+    const host = referrer.hostname.toLowerCase();
+    if (host === 'google.com' || host.endsWith('.google.com')) return 'google';
+    if (host === 'bing.com' || host.endsWith('.bing.com')) return 'bing';
+    if (
+      host === 'facebook.com' || host.endsWith('.facebook.com') ||
+      host === 'instagram.com' || host.endsWith('.instagram.com') ||
+      host === 't.co' || host === 'x.com' || host.endsWith('.x.com')
+    ) return 'social';
+    return 'other';
+  } catch {
+    return 'other';
+  }
+}
+
 function currentAttribution() {
   const url = new URL(window.location.href);
-  let referrerHost: string | undefined;
-
-  if (document.referrer) {
-    try {
-      const referrer = new URL(document.referrer);
-      if (referrer.origin !== window.location.origin) referrerHost = referrer.hostname.slice(0, 120);
-    } catch {
-      // Ignore malformed referrers.
-    }
-  }
-
   return {
     source: trimAttribution(url.searchParams.get('utm_source')),
     medium: trimAttribution(url.searchParams.get('utm_medium')),
     campaign: trimAttribution(url.searchParams.get('utm_campaign')),
-    referrerHost,
+    referrer: referrerCategory(),
   };
 }
 
@@ -120,9 +130,10 @@ export async function recordPublicPageViewOnce(route: string): Promise<boolean> 
   if (!isPublicGrowthRoute(route)) return false;
   const attribution = currentAttribution();
   const key = `${route}|${attribution.source ?? ''}|${attribution.medium ?? ''}|${attribution.campaign ?? ''}`;
-  if (pageViewsSent.has(key)) return false;
+  if (pageViewsPendingOrSent.has(key)) return false;
 
+  pageViewsPendingOrSent.add(key);
   const sent = await recordGrowthEvent({ event: 'public_page_view', route });
-  if (sent) pageViewsSent.add(key);
+  if (!sent) pageViewsPendingOrSent.delete(key);
   return sent;
 }

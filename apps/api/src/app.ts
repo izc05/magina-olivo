@@ -8,6 +8,7 @@ import { registerCampaignExportRoutes } from './campaign-export-routes.ts';
 import { registerCampaignRoutes } from './campaign-routes.ts';
 import { registerCampaignSummaryRoutes } from './campaign-summary-routes.ts';
 import { registerCatastroMapRoutes } from './catastro-map-routes.ts';
+import { registerContactRoutes } from './contact-routes.ts';
 import { registerDeliveryResultRoutes } from './delivery-result-routes.ts';
 import { registerDeliveryRoutes } from './delivery-routes.ts';
 import { registerDeliveryUpdateRoutes } from './delivery-update-routes.ts';
@@ -68,6 +69,7 @@ export function buildApp(): FastifyInstance {
   registerAuthRoutes(app);
   registerAccountPreferenceRoutes(app);
   registerAccountExportRoutes(app);
+  registerContactRoutes(app);
   registerRainAlertRoutes(app);
   registerPublicDestinationRoutes(app);
   registerPublicMunicipalityRoutes(app);

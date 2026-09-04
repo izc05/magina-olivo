@@ -56,21 +56,10 @@ test('plot point and boundary persistence remain private and server-validated', 
   assert.match(migration, /catastro/);
 });
 
-test('olive count can be declared independently for each private plot', async () => {
-  const panel = await read('./PlotOliveCountPanel.tsx');
+test('olive count remains independently writable for each private plot', async () => {
   const routes = await read('../../api/src/plot-olive-count-routes.ts');
   const app = await read('../../api/src/app.ts');
   const core = await read('../../../db/migrations/0001_business_core.sql');
-
-  assert.match(panel, /Olivos por parcela/);
-  assert.match(panel, /Olivos en esta parcela/);
-  assert.match(panel, /Guardar cantidad de olivos/);
-  assert.match(panel, /Dejar sin informar/);
-  assert.match(panel, /olivos\/ha/);
-  assert.match(panel, /oliveTreeCount: value/);
-  assert.match(panel, /persistOliveCount\(null\)/);
-  assert.match(panel, /parsed < 0/);
-  assert.match(panel, /Number\.isInteger\(parsed\)/);
 
   assert.match(routes, /\/api\/v1\/plots\/:plotId\/olive-count/);
   assert.match(routes, /oliveTreeCount: number \| null/);
@@ -81,6 +70,41 @@ test('olive count can be declared independently for each private plot', async ()
   assert.match(app, /registerPlotOliveCountRoutes/);
   assert.match(core, /olive_tree_count integer/);
   assert.match(core, /olive_tree_count is null or olive_tree_count >= 0/);
+});
+
+test('agronomy profile combines olive count, irrigation and user-declared variety', async () => {
+  const panel = await read('./PlotOliveCountPanel.tsx');
+  const routes = await read('../../api/src/plot-agronomy-routes.ts');
+  const app = await read('../../api/src/app.ts');
+  const migration = await read('../../../db/migrations/0018_plot_agronomy_profile.sql');
+
+  assert.match(panel, /Ficha agrícola por parcela/);
+  assert.match(panel, /Olivos en esta parcela/);
+  assert.match(panel, /Variedad principal o mezcla/);
+  assert.match(panel, /Secano/);
+  assert.match(panel, /Regadío/);
+  assert.match(panel, /Picual/);
+  assert.match(panel, /Mixta/);
+  assert.match(panel, /Guardar ficha agrícola/);
+  assert.match(panel, /Dejar olivos sin informar/);
+  assert.match(panel, /olivos\/ha/);
+  assert.match(panel, /Number\.isInteger\(parsed\)/);
+  assert.match(panel, /\/plots\/agronomy/);
+  assert.match(panel, /\/agronomy`/);
+
+  assert.match(routes, /\/api\/v1\/farms\/:farmId\/plots\/agronomy/);
+  assert.match(routes, /\/api\/v1\/plots\/:plotId\/agronomy/);
+  assert.match(routes, /oliveTreeCount: number \| null/);
+  assert.match(routes, /irrigationType: IrrigationType \| null/);
+  assert.match(routes, /oliveVariety: string \| null/);
+  assert.match(routes, /olive_variety = \$3/);
+  assert.match(routes, /canWrite\(access\.role\)/);
+  assert.match(routes, /version = version \+ 1/);
+  assert.match(app, /registerPlotAgronomyRoutes/);
+
+  assert.match(migration, /add column olive_variety text/);
+  assert.match(migration, /plots_olive_variety_chk/);
+  assert.match(migration, /User-declared olive variety/);
 });
 
 test('official SIGPAC or Catastro provenance is preserved until the user actually edits the perimeter', async () => {

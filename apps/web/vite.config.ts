@@ -34,6 +34,7 @@ export default defineConfig(({ mode }) => {
           ],
         },
         workbox: {
+          importScripts: ['push-sw.js'],
           navigateFallbackDenylist: [/^\/api\//, /^\/health\//],
           runtimeCaching: [
             {

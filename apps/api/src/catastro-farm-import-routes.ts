@@ -1,5 +1,6 @@
+import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
-import { canWrite, getFarmAccess } from './authorization.ts';
+import { canWrite, getHoldingAccess } from './authorization.ts';
 import {
   duplicateRaceValidation,
   insertPreparedCatastroPlots,
@@ -12,15 +13,18 @@ import { getPool } from './db.ts';
 import { apiError } from './http-errors.ts';
 import { getAuthenticatedSession } from './session.ts';
 
-type FarmParams = { farmId: string };
-type BatchImportBody = { parcels: ImportParcelInput[] };
+type HoldingParams = { holdingId: string };
+type CreateFarmAndPlotsBody = {
+  farm: { name: string };
+  parcels: ImportParcelInput[];
+};
 type PgError = Error & { code?: string };
 
 function failureResponse(requestId: string, items: ValidationItem[]) {
   return {
     error: {
-      code: 'CATASTRO_BATCH_NOT_READY',
-      message: 'No se ha creado ninguna parcela. Revisa las referencias indicadas y vuelve a intentarlo.',
+      code: 'CATASTRO_FARM_BATCH_NOT_READY',
+      message: 'No se ha creado la finca ni ninguna parcela. Revisa los avisos y vuelve a intentarlo.',
       requestId,
     },
     created: false,
@@ -62,16 +66,24 @@ const parcelSchema = {
   },
 } as const;
 
-export function registerCatastroBatchImportRoutes(app: FastifyInstance): void {
-  app.post<{ Params: FarmParams; Body: BatchImportBody }>(
-    '/api/v1/farms/:farmId/plots/import-catastro',
+export function registerCatastroFarmImportRoutes(app: FastifyInstance): void {
+  app.post<{ Params: HoldingParams; Body: CreateFarmAndPlotsBody }>(
+    '/api/v1/holdings/:holdingId/farms/import-catastro',
     {
       schema: {
         body: {
           type: 'object',
           additionalProperties: false,
-          required: ['parcels'],
+          required: ['farm', 'parcels'],
           properties: {
+            farm: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['name'],
+              properties: {
+                name: { type: 'string', minLength: 1, maxLength: 120 },
+              },
+            },
             parcels: {
               type: 'array',
               minItems: 1,
@@ -88,12 +100,17 @@ export function registerCatastroBatchImportRoutes(app: FastifyInstance): void {
         return reply.code(401).send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
       }
 
-      const access = await getFarmAccess(session.user.id, request.params.farmId);
+      const access = await getHoldingAccess(session.user.id, request.params.holdingId);
       if (!access) {
-        return reply.code(404).send(apiError(request, 'FARM_NOT_FOUND', 'Farm not found'));
+        return reply.code(404).send(apiError(request, 'HOLDING_NOT_FOUND', 'Holding not found'));
       }
       if (!canWrite(access.role)) {
         return reply.code(403).send(apiError(request, 'WRITE_FORBIDDEN', 'Write access required'));
+      }
+
+      const farmName = request.body.farm.name.trim();
+      if (!farmName) {
+        return reply.code(400).send(apiError(request, 'INVALID_FARM_NAME', 'Farm name is required'));
       }
 
       const batch = await prepareCatastroBatch(
@@ -101,7 +118,7 @@ export function registerCatastroBatchImportRoutes(app: FastifyInstance): void {
         request.body.parcels,
         (error, cadastralReference) => request.log.warn(
           { err: error, cadastralReference },
-          'Catastro batch verification failed',
+          'Catastro farm batch verification failed',
         ),
       );
 
@@ -112,15 +129,39 @@ export function registerCatastroBatchImportRoutes(app: FastifyInstance): void {
       const client = await getPool().connect();
       try {
         await client.query('begin');
+        const farmId = randomUUID();
+        const farmResult = await client.query<{
+          id: string;
+          name: string;
+          created_at: Date;
+          updated_at: Date;
+        }>(
+          `insert into farms (id, holding_id, name)
+           values ($1, $2, $3)
+           returning id, name, created_at, updated_at`,
+          [farmId, access.holdingId, farmName],
+        );
+        const farm = farmResult.rows[0];
+        if (!farm) throw new Error('Farm insert returned no row');
+
         const createdItems = await insertPreparedCatastroPlots(
           client,
           access.holdingId,
-          request.params.farmId,
+          farm.id,
           batch.prepared,
         );
+
         await client.query('commit');
         return reply.code(201).send({
           created: true,
+          farm: {
+            id: farm.id,
+            name: farm.name,
+            description: null,
+            areaHa: null,
+            createdAt: farm.created_at,
+            updatedAt: farm.updated_at,
+          },
           items: createdItems,
           source: {
             provider: 'Dirección General del Catastro',

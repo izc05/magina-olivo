@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { CatastroBatchReview } from './CatastroBatchReview.tsx';
+import { CatastroBatchReview, type CatastroBatchCreated } from './CatastroBatchReview.tsx';
 import { OfficialMapOverlays } from './OfficialMapOverlays.tsx';
 import {
   buildCatastroSelectorMap,
@@ -53,6 +53,13 @@ type DragState = {
   y: number;
 };
 
+export type CatastroMapFirstSelectorProps = {
+  holdingId: string;
+  farmId?: string;
+  allowCreateFarm?: boolean;
+  onCompleted?: (result: CatastroBatchCreated) => Promise<void> | void;
+};
+
 async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set('accept', 'application/json');
@@ -95,7 +102,12 @@ function requestDeviceLocation(): Promise<GeolocationPosition> {
   });
 }
 
-export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
+export function CatastroMapFirstSelector({
+  holdingId,
+  farmId,
+  allowCreateFarm = true,
+  onCompleted,
+}: CatastroMapFirstSelectorProps) {
   const [open, setOpen] = useState(false);
   const [center, setCenter] = useState<MapCenter>(DEFAULT_CATASTRO_CENTER);
   const [zoom, setZoom] = useState(16);
@@ -126,11 +138,19 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
   const focusedItem = focusedReference ? parcelCache[focusedReference] ?? null : null;
 
   async function refreshPlots() {
+    if (!farmId) {
+      setPlots([]);
+      return;
+    }
     const result = await request<{ items: PlotSummary[] }>(`/api/v1/farms/${farmId}/plots`);
     setPlots(result.items);
   }
 
   useEffect(() => {
+    if (!farmId) {
+      setPlots([]);
+      return;
+    }
     let cancelled = false;
     void request<{ items: PlotSummary[] }>(`/api/v1/farms/${farmId}/plots`).then((result) => {
       if (!cancelled) setPlots(result.items);
@@ -251,12 +271,13 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
     }
   }
 
-  async function handleCreated(count: number) {
-    await refreshPlots();
+  async function handleCreated(result: CatastroBatchCreated) {
+    if (farmId && result.farmId === farmId) await refreshPlots();
     setSelectedReferences([]);
     setFocusedReference(null);
     setReviewing(false);
-    setNotice(`${count} parcela${count === 1 ? '' : 's'} creada${count === 1 ? '' : 's'} después de verificar Catastro. Ya puedes completar o editar sus datos desde Mi Campo.`);
+    setNotice(`${result.count} parcela${result.count === 1 ? '' : 's'} creada${result.count === 1 ? '' : 's'} después de verificar Catastro${result.farmName ? ` en ${result.farmName}` : ''}.`);
+    await onCompleted?.(result);
   }
 
   function handleBaseTileError() {
@@ -301,7 +322,9 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
       <div className="card card-body">
         <p className="eyebrow page-eyebrow">Alta rápida de parcelas</p>
         <h2 id="catastro-map-first-entry-title" className="section-title">Busca tus parcelas directamente en el mapa</h2>
-        <p className="section-copy">No necesitas crear una parcela ni escribir coordenadas antes. Localiza la zona, toca las parcelas oficiales que gestionas y continúa con sus datos agrícolas.</p>
+        <p className="section-copy">{farmId
+          ? 'Localiza la zona, toca las parcelas oficiales que gestionas y añádelas a esta finca o crea una finca nueva.'
+          : 'Localiza la zona y toca las parcelas oficiales que gestionas. Después podrás crear la finca y todas sus parcelas en un solo paso.'}</p>
         <button className="primary-button" type="button" onClick={() => setOpen(true)}>Buscar mis parcelas en el mapa</button>
         <p className="plot-editor-help">Seleccionar una parcela expresa tu elección de trabajo; no acredita titularidad ni propiedad.</p>
       </div>
@@ -332,7 +355,15 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
 
             {reviewing ? (
               <div className="catastro-batch-review-pane">
-                <CatastroBatchReview farmId={farmId} parcels={selectedItems} onCreated={handleCreated} onBack={() => setReviewing(false)} />
+                <CatastroBatchReview
+                  holdingId={holdingId}
+                  farmId={farmId}
+                  parcels={selectedItems}
+                  allowNewFarm={allowCreateFarm}
+                  defaultDestination={farmId ? 'existing' : 'new'}
+                  onCreated={handleCreated}
+                  onBack={() => setReviewing(false)}
+                />
               </div>
             ) : (
               <div className="catastro-map-first-layout">

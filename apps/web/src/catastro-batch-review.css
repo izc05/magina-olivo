@@ -107,6 +107,16 @@
   color: #667069;
 }
 
+.catastro-batch-destination {
+  display: grid;
+  gap: 12px;
+  border-color: rgba(23, 107, 67, 0.22);
+}
+
+.catastro-batch-destination > strong {
+  font-size: 1rem;
+}
+
 .catastro-batch-quick-actions {
   display: flex;
   flex-wrap: wrap;
@@ -121,6 +131,13 @@
 .catastro-batch-quick-actions > span {
   font-size: 0.86rem;
   font-weight: 750;
+}
+
+.catastro-batch-quick-actions button.active {
+  border-color: rgba(23, 107, 67, 0.35);
+  background: rgba(23, 107, 67, 0.1);
+  color: #145b39;
+  font-weight: 800;
 }
 
 .catastro-batch-grid {

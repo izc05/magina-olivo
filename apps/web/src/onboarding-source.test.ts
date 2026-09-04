@@ -25,12 +25,17 @@ test('registration is reachable and uses Better Auth sign-up safely', async () =
 
 test('onboarding keeps the grower setup resumable and non-blocking', async () => {
   const main = await read('./main.tsx');
+  const router = await read('./OnboardingRouter.tsx');
   const onboarding = await read('./OnboardingPage.tsx');
 
   assert.match(main, /path === '\/onboarding'/);
-  assert.match(main, /<OnboardingPage \/>/);
-  assert.match(onboarding, /api\.me\(\)/);
-  assert.match(onboarding, /api\.holdings\(\)/);
+  assert.match(main, /<OnboardingRouter \/>/);
+  assert.match(router, /api\.me\(\)/);
+  assert.match(router, /api\.holdings\(\)/);
+  assert.match(router, /api\.farms\(firstHolding\.id\)/);
+  assert.match(router, /CatastroMapFirstSelector/);
+  assert.match(router, /Prefiero crear la finca manualmente/);
+  assert.match(router, /window\.location\.assign\('\/onboarding'\)/);
   assert.match(onboarding, /api\.createHolding/);
   assert.match(onboarding, /api\.createFarm/);
   assert.match(onboarding, /api\.createPlot/);
@@ -38,4 +43,17 @@ test('onboarding keeps the grower setup resumable and non-blocking', async () =>
   assert.match(onboarding, /Lo haré después/);
   assert.match(onboarding, /La cooperativa no es obligatoria/);
   assert.match(onboarding, /Entrar en Mágina Olivo/);
+});
+
+test('first farm can be created from verified Catastro parcels without manual coordinates', async () => {
+  const router = await read('./OnboardingRouter.tsx');
+  const selector = await read('./CatastroMapFirstSelector.tsx');
+  const review = await read('./CatastroBatchReview.tsx');
+
+  assert.match(router, /farmResult\.items\.length \? 'legacy' : 'map-first'/);
+  assert.match(router, /Encuentra tu olivar en el mapa/);
+  assert.match(selector, /farmId\?: string/);
+  assert.match(review, /Crear una finca nueva/);
+  assert.match(review, /\/api\/v1\/holdings\/\$\{holdingId\}\/farms\/import-catastro/);
+  assert.doesNotMatch(router, /latitude|longitude/);
 });

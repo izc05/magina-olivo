@@ -5,6 +5,7 @@ import test from 'node:test';
 const measurementSource = readFileSync(new URL('./growth-measurement.ts', import.meta.url), 'utf8');
 const consentSource = readFileSync(new URL('./GrowthMeasurement.tsx', import.meta.url), 'utf8');
 const mainSource = readFileSync(new URL('./main.tsx', import.meta.url), 'utf8');
+const dockerfileSource = readFileSync(new URL('../../../infra/docker/Dockerfile.web', import.meta.url), 'utf8');
 
 test('growth measurement is explicit opt-in and same-origin only', () => {
   assert.match(measurementSource, /VITE_PUBLIC_GROWTH_MEASUREMENT === 'enabled'/);
@@ -54,4 +55,12 @@ test('consent UI explains scope and is mounted only with public pages', () => {
   assert.equal((mainSource.match(/\{publicMeasurement\}/g) ?? []).length, 6);
   assert.ok(mainSource.indexOf("path === '/cuenta'") < mainSource.indexOf("path === '/magina'"));
   assert.ok(mainSource.indexOf("path === '/calendario'") < mainSource.indexOf("path === '/magina'"));
+});
+
+test('container builds keep growth measurement disabled unless explicitly enabled', () => {
+  assert.match(dockerfileSource, /ARG VITE_PUBLIC_GROWTH_MEASUREMENT=disabled/);
+  assert.match(dockerfileSource, /ARG VITE_PUBLIC_GROWTH_ENDPOINT=/);
+  assert.match(dockerfileSource, /ENV VITE_PUBLIC_GROWTH_MEASUREMENT=\$\{VITE_PUBLIC_GROWTH_MEASUREMENT\}/);
+  assert.match(dockerfileSource, /ENV VITE_PUBLIC_GROWTH_ENDPOINT=\$\{VITE_PUBLIC_GROWTH_ENDPOINT\}/);
+  assert.doesNotMatch(dockerfileSource, /ARG VITE_PUBLIC_GROWTH_MEASUREMENT=enabled/);
 });

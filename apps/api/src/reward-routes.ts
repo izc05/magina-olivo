@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { apiError } from './http-errors.ts';
+import { expireRewardRedemptionsForUser } from './reward-partner-service.ts';
 import {
   listRewardCatalog,
   listUserRedemptions,
@@ -46,6 +47,8 @@ export function registerRewardRoutes(app: FastifyInstance): void {
     if (!session) {
       return reply.code(401).send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
     }
+
+    await expireRewardRedemptionsForUser(session.user.id);
 
     return {
       items: await listUserRedemptions(session.user.id),
@@ -96,6 +99,7 @@ export function registerRewardRoutes(app: FastifyInstance): void {
       }
 
       try {
+        await expireRewardRedemptionsForUser(session.user.id);
         return await reissueRedemptionToken(session.user.id, request.params.redemptionId);
       } catch (error) {
         return sendRewardError(request, reply, error);

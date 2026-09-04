@@ -20,6 +20,7 @@ import { RegisterPage } from './RegisterPage';
 import { RegistrationEntry } from './RegistrationEntry';
 import { ResetPassword } from './ResetPassword';
 import { RewardCatalogPage } from './RewardCatalogPage';
+import { RewardValidatorPage } from './RewardValidatorPage';
 import { installWeatherDemoPreview } from './weatherDemoPreview';
 import './styles.css';
 import './brand.css';
@@ -46,6 +47,7 @@ import './pilot-alerts.css';
 import './calendar.css';
 import './loyalty-olive.css';
 import './reward-catalog.css';
+import './reward-validator.css';
 
 installDemoPreview();
 installWeatherDemoPreview();
@@ -98,6 +100,8 @@ createRoot(root).render(
       <CalendarPage />
     ) : path === '/tu-olivo' ? (
       <LoyaltyOlivePage />
+    ) : path === '/recompensas/validar' ? (
+      <RewardValidatorPage />
     ) : path === '/recompensas' ? (
       <RewardCatalogPage />
     ) : path === '/magina' ? (

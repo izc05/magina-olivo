@@ -96,9 +96,9 @@ test('rejects an oversized RAIF archive before creating a snapshot file', async 
 });
 
 test('RAIF header inspection cannot promote HTTP Last-Modified to authoritative source freshness', async () => {
-  const worker = await readFile(new URL('./worker.ts', import.meta.url), 'utf8');
-  const inspectionBlock = worker.match(/async function inspectRaifPublicSource\(\): Promise<void> \{[\s\S]*?\n\}\n\nasync function inspectMarketPublicSource/)?.[0];
-  assert.ok(inspectionBlock, 'RAIF inspection worker block must exist');
+  const workerRuntime = await readFile(new URL('./worker-core.ts', import.meta.url), 'utf8');
+  const inspectionBlock = workerRuntime.match(/async function inspectRaifPublicSource\(\): Promise<void> \{[\s\S]*?\n\}\n\nasync function inspectMarketPublicSource/)?.[0];
+  assert.ok(inspectionBlock, 'RAIF inspection worker block must exist in the core worker runtime');
   assert.doesNotMatch(inspectionBlock, /source_updated_at/);
   assert.match(inspectionBlock, /remoteLastModified/);
   assert.match(inspectionBlock, /catalog-or-validated-snapshot-only/);

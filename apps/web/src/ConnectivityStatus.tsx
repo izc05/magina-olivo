@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { cachedOwnerUserId } from './api';
 import { listPendingOperations, syncPendingOperations } from './offline/outbox';
+import './app-state-v2.css';
 
 type PendingSummary = {
   total: number;

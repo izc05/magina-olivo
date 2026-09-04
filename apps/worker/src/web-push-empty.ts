@@ -153,7 +153,6 @@ export async function sendEmptyPushToUser(
           authorization: vapid.authorization,
           ttl: '300',
           urgency: 'normal',
-          'content-length': '0',
         },
         signal: AbortSignal.timeout(10_000),
       });

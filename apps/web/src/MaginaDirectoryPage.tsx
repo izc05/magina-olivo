@@ -45,6 +45,10 @@ type PublicDestination = {
 
 type DirectoryResponse = {
   advertisingEnabled: boolean;
+  sponsorshipContext: {
+    municipality: string | null;
+    precision: 'municipality' | 'general';
+  };
   items: PublicDestination[];
   municipalities: string[];
   source: {
@@ -120,7 +124,11 @@ export function MaginaDirectoryPage() {
     setLoading(true);
     setError(null);
 
-    void fetch('/api/v1/public/destinations', {
+    const search = new URLSearchParams();
+    if (municipality) search.set('contextMunicipality', municipality);
+    const endpoint = `/api/v1/public/destinations${search.size > 0 ? `?${search.toString()}` : ''}`;
+
+    void fetch(endpoint, {
       credentials: 'same-origin',
       headers: { accept: 'application/json' },
       signal: controller.signal,
@@ -137,7 +145,7 @@ export function MaginaDirectoryPage() {
     });
 
     return () => controller.abort();
-  }, []);
+  }, [municipality]);
 
   const availableCategories = useMemo(() => {
     return Array.from(new Set((data?.items ?? [])
@@ -217,6 +225,12 @@ export function MaginaDirectoryPage() {
           </div>
         ) : null}
       </section>
+
+      {data?.advertisingEnabled && municipality ? (
+        <p className="directory-sponsorship-context">
+          Los destacados de pago se limitan a campañas contratadas para <strong>{municipality}</strong> o campañas generales. Cambiar de municipio recalcula la prioridad sin compartir coordenadas de parcelas.
+        </p>
+      ) : null}
 
       <section className="directory-results" aria-labelledby="directory-results-title" aria-busy={loading}>
         <div className="directory-results-heading">

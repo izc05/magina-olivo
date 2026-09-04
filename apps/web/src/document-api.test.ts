@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { listCampaignDocuments, privateDocumentContentUrl } from './document-api.ts';
 
@@ -45,4 +46,12 @@ test('lists campaign documents with authenticated same-origin credentials', asyn
 
 test('builds private document content URLs without exposing storage keys', () => {
   assert.equal(privateDocumentContentUrl('doc-123'), '/api/v1/documents/doc-123/content');
+});
+
+test('campaign archive exposes the private harvest PDF next to CSV and JSON', async () => {
+  const source = await readFile(new URL('./CampaignDocuments.tsx', import.meta.url), 'utf8');
+  assert.match(source, /\/api\/v1\/campaigns\/\$\{campaignId\}\/export\.pdf/);
+  assert.match(source, /Descargar informe PDF/);
+  assert.match(source, /rendimiento ponderado/);
+  assert.match(source, /no estima rendimientos/i);
 });

@@ -1,0 +1,63 @@
+name: Normalize Pre-MiniPC Public Headers
+
+on:
+  push:
+    branches:
+      - feat/pre-minipc-convergence-v1
+    paths:
+      - .github/workflows/pre-minipc-public-header-wire.yml
+
+permissions:
+  contents: write
+
+jobs:
+  normalize-public-headers:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout convergence branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/pre-minipc-convergence-v1
+
+      - name: Replace hardcoded public headers
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          targets = {
+              'apps/web/src/MaginaDirectoryPage.tsx': '<PublicHeader />',
+              'apps/web/src/MaginaNewsPage.tsx': '<PublicHeader backHref="/magina" backLabel="Mágina" />',
+              'apps/web/src/MaginaFieldAlertsPage.tsx': '<PublicHeader backHref="/magina" backLabel="Volver a Mágina" />',
+              'apps/web/src/MaginaMarketPage.tsx': '<PublicHeader backHref="/magina" backLabel="Volver a Mágina" />',
+          }
+
+          for filename, replacement in targets.items():
+              path = Path(filename)
+              text = path.read_text(encoding='utf-8')
+              import_line = "import { PublicHeader } from './publicNavigation';\n"
+              if import_line not in text:
+                  first_import_end = text.find('\n') + 1
+                  if first_import_end <= 0:
+                      raise SystemExit(f'No import anchor in {filename}')
+                  text = text[:first_import_end] + import_line + text[first_import_end:]
+
+              pattern = r'      <header className="directory-header">[\s\S]*?      </header>'
+              if replacement not in text:
+                  text, count = re.subn(pattern, f'      {replacement}', text, count=1)
+                  if count != 1:
+                      raise SystemExit(f'Public header block not found in {filename}')
+
+              path.write_text(text, encoding='utf-8')
+
+      - name: Commit normalized headers
+        run: |
+          git config user.name "IsiVoltPro Mantenimiento"
+          git config user.email "isiciozafracantos@gmail.com"
+          git add apps/web/src/MaginaDirectoryPage.tsx apps/web/src/MaginaNewsPage.tsx apps/web/src/MaginaFieldAlertsPage.tsx apps/web/src/MaginaMarketPage.tsx
+          if git diff --cached --quiet; then
+            echo "Public headers already normalized"
+            exit 0
+          fi
+          git commit -m "fix(convergence): make public headers base-aware"
+          git push origin HEAD:feat/pre-minipc-convergence-v1

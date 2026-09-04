@@ -39,6 +39,7 @@ async function apiVoid(url: string, init: RequestInit = {}): Promise<void> {
 
 function supportsWebPush(): boolean {
   return typeof window !== 'undefined'
+    && window.isSecureContext
     && 'serviceWorker' in navigator
     && 'PushManager' in window
     && 'Notification' in window;
@@ -85,15 +86,20 @@ export async function getPushClientState(): Promise<PushClientState> {
 
 export async function enablePushNotifications(): Promise<PushClientState> {
   if (!supportsWebPush()) {
-    throw new Error('Este navegador no admite Web Push.');
+    throw new Error('Este navegador no admite Web Push en este contexto seguro.');
   }
+
+  // Keep the browser permission request before any network await so it remains
+  // directly attached to the user's click gesture on browsers with strict activation rules.
+  const permission = Notification.permission === 'granted'
+    ? 'granted'
+    : await Notification.requestPermission();
 
   const config = await getConfig();
   if (!config.available || !config.publicKey) {
     throw new Error('Web Push no está configurado en este entorno.');
   }
 
-  const permission = await Notification.requestPermission();
   if (permission !== 'granted') {
     return {
       supported: true,

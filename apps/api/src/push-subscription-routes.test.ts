@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { isAllowedPushEndpoint } from './push-subscription-routes.ts';
+import { isAllowedPushEndpoint } from './push-endpoint-policy.ts';
 
 test('push endpoint policy only accepts configured HTTPS host suffixes', () => {
   const previous = process.env.WEB_PUSH_ALLOWED_HOST_SUFFIXES;

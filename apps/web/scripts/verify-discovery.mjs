@@ -10,6 +10,7 @@ const defaultSiteUrl = 'https://izc05.github.io/magina-olivo';
 const siteUrl = (process.env.PUBLIC_SITE_URL || defaultSiteUrl).replace(/\/$/, '');
 const site = new URL(`${siteUrl}/`);
 const basePath = site.pathname.replace(/\/$/, '');
+const indexNowKey = process.env.INDEXNOW_KEY?.trim() ?? '';
 
 const publicCanonicalPaths = [
   '/',
@@ -107,4 +108,14 @@ const llms = await readFile(join(distDir, 'llms.txt'), 'utf8');
 requireIncludes(llms, 'Mercado del aceite', 'llms.txt');
 requireIncludes(llms, 'Los datos privados', 'llms.txt');
 
-console.info(`Discovery build verification passed for ${siteUrl}: public metadata, social cards, private noindex, robots and sitemap are coherent.`);
+if (indexNowKey) {
+  if (!/^[A-Za-z0-9_-]{8,128}$/.test(indexNowKey)) {
+    fail('INDEXNOW_KEY has an invalid format');
+  }
+  const verification = await readFile(join(distDir, `${indexNowKey}.txt`), 'utf8');
+  if (verification !== `${indexNowKey}\n`) {
+    fail('IndexNow verification file content does not match INDEXNOW_KEY exactly');
+  }
+}
+
+console.info(`Discovery build verification passed for ${siteUrl}: public metadata, social cards, private noindex, robots, sitemap and optional IndexNow verification are coherent.`);

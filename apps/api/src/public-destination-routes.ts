@@ -24,6 +24,7 @@ type DestinationQuery = {
   q?: string;
   municipality?: string;
   entityType?: EntityType;
+  contextMunicipality?: string;
 };
 
 type DestinationRow = {
@@ -75,6 +76,7 @@ export function registerPublicDestinationRoutes(app: FastifyInstance): void {
               type: 'string',
               enum: ['cooperative', 'sat', 'company', 'other'],
             },
+            contextMunicipality: { type: 'string', maxLength: 120 },
           },
         },
       },
@@ -84,6 +86,7 @@ export function registerPublicDestinationRoutes(app: FastifyInstance): void {
       const filters = ["c.verification_status <> 'stale'"];
       const q = request.query.q?.trim();
       const municipality = request.query.municipality?.trim();
+      const contextMunicipality = request.query.contextMunicipality?.trim() || null;
       const advertisingEnabled = advertisingIsEnabled();
 
       if (q) {
@@ -103,6 +106,34 @@ export function registerPublicDestinationRoutes(app: FastifyInstance): void {
       if (request.query.entityType) {
         values.push(request.query.entityType);
         filters.push(`c.entity_type = $${values.length}`);
+      }
+
+      let sponsorshipAreaPredicate = `
+        not exists (
+          select 1
+          from sponsorship_municipalities sm_scope
+          where sm_scope.sponsorship_id = sponsorship.id
+        )
+      `;
+
+      if (advertisingEnabled && contextMunicipality) {
+        values.push(contextMunicipality);
+        const contextMunicipalityParameter = `$${values.length}`;
+        sponsorshipAreaPredicate = `
+          (
+            not exists (
+              select 1
+              from sponsorship_municipalities sm_scope
+              where sm_scope.sponsorship_id = sponsorship.id
+            )
+            or exists (
+              select 1
+              from sponsorship_municipalities sm_scope
+              where sm_scope.sponsorship_id = sponsorship.id
+                and lower(sm_scope.municipality) = lower(${contextMunicipalityParameter})
+            )
+          )
+        `;
       }
 
       const commercialSelect = advertisingEnabled
@@ -144,6 +175,7 @@ export function registerPublicDestinationRoutes(app: FastifyInstance): void {
               and (sponsorship.starts_at is null or sponsorship.starts_at <= now())
               and (sponsorship.ends_at is null or sponsorship.ends_at > now())
               and sponsorship.plan_code in ('featured', 'premium')
+              and ${sponsorshipAreaPredicate}
             order by sponsorship.priority_override desc nulls last, sponsorship.updated_at desc
             limit 1
           ) s on true
@@ -194,6 +226,10 @@ export function registerPublicDestinationRoutes(app: FastifyInstance): void {
 
       return {
         advertisingEnabled,
+        sponsorshipContext: {
+          municipality: contextMunicipality,
+          precision: contextMunicipality ? 'municipality' : 'general',
+        },
         items: result.rows.map((row) => ({
           id: row.id,
           officialName: row.official_name,

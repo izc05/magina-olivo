@@ -120,6 +120,24 @@ async function run() {
     assert(await page.getByText('Oficial', { exact: true }).count() >= 4, 'Descubre: faltan sellos oficiales en los lugares.');
     await assertNoOverflow(page, 'Descubre');
 
+    // Más: hub real, sin NewsPage heredado y sin fingir una comunidad activa.
+    await page.locator('.hub-tabs--primary').getByRole('button', { name: 'Más', exact: true }).click();
+    const morePanel = page.locator('.more-real');
+    await morePanel.waitFor({ state: 'visible', timeout: 10_000 });
+    assert(await page.locator('.more-real__card').count() === 4, 'Más: no aparecen los cuatro accesos previstos.');
+    await page.getByText('Comunidad', { exact: true }).waitFor({ state: 'visible' });
+    await page.getByText('Próximamente', { exact: true }).waitFor({ state: 'visible' });
+    await assertNoOverflow(page, 'Más');
+
+    await morePanel.getByRole('button', { name: /Mágina Local/i }).click();
+    await discoverPanel.waitFor({ state: 'visible', timeout: 10_000 });
+    await page.locator('.hub-tabs--primary').getByRole('button', { name: 'Más', exact: true }).click();
+    await morePanel.waitFor({ state: 'visible' });
+    await morePanel.getByRole('button', { name: /Ayuntamientos/i }).click();
+    await municipalHero.waitFor({ state: 'visible', timeout: 10_000 });
+    const activeMunicipal = page.locator('.real-news-filter--active').filter({ hasText: 'Ayuntamientos' });
+    await activeMunicipal.waitFor({ state: 'visible', timeout: 10_000 });
+
     // Mercado: precios oficiales y gráfico seleccionable.
     await page.locator('.hub-tabs--primary').getByRole('button', { name: 'Mercado', exact: true }).click();
     const marketPanel = page.locator('.market-real');
@@ -146,7 +164,7 @@ async function run() {
     await assertNoOverflow(page, 'Alertas');
 
     await context.close();
-    console.log('✓ Smoke Mágina: tiendas, cooperativa, precios, noticias municipales, Descubre, Socios/Campaña, mercado y alertas con filtro municipal funcionan en 390×844 bajo /magina-olivo/.');
+    console.log('✓ Smoke Mágina: hub real sin NewsPage, tiendas, cooperativa, noticias municipales, Descubre, Más, Socios/Campaña, mercado y alertas funcionan en 390×844 bajo /magina-olivo/.');
   } finally {
     if (browser) await browser.close();
     await closePreview(previewServer);

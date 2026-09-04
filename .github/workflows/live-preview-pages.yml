@@ -1,4 +1,5 @@
 name: Mágina Olivo original app review
+# Canonical public Pages publisher: only this Visual V2 branch may deploy the review app.
 
 on:
   push:

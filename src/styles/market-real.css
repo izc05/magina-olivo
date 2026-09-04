@@ -138,7 +138,7 @@
 
 .market-real__stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
   gap: 8px;
 }
 
@@ -320,6 +320,7 @@
 .market-real-chart__line--aove { stroke: #58753d; }
 .market-real-chart__line--virgen { stroke: #c38c18; }
 .market-real-chart__line--lampante { stroke: #547793; }
+.market-real-chart__line--refinado { stroke: #75697f; }
 
 .market-real-chart__point {
   fill: #f7f4e8;
@@ -330,6 +331,7 @@
 .market-real-chart__point--aove { stroke: #58753d; }
 .market-real-chart__point--virgen { stroke: #c38c18; }
 .market-real-chart__point--lampante { stroke: #547793; }
+.market-real-chart__point--refinado { stroke: #75697f; }
 
 .market-real-chart__cursor-line {
   stroke: rgba(40,55,34,.5);
@@ -347,6 +349,7 @@
 .market-real-chart__cursor-point--aove { stroke: #58753d; }
 .market-real-chart__cursor-point--virgen { stroke: #c38c18; }
 .market-real-chart__cursor-point--lampante { stroke: #547793; }
+.market-real-chart__cursor-point--refinado { stroke: #75697f; }
 
 .market-real-chart__scale {
   position: absolute;
@@ -387,7 +390,7 @@
 
 .market-real-chart__cursor-values {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0,1fr));
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
   gap: 7px;
 }
 
@@ -447,6 +450,7 @@
 .market-real-chart__legend-dot--aove { background: #58753d; }
 .market-real-chart__legend-dot--virgen { background: #c38c18; }
 .market-real-chart__legend-dot--lampante { background: #547793; }
+.market-real-chart__legend-dot--refinado { background: #75697f; }
 
 .market-real__differentials {
   margin-top: 12px;
@@ -575,6 +579,6 @@
 
 @media (min-width: 431px) {
   .market-grid--real {
-    grid-template-columns: repeat(3, minmax(0,1fr));
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   }
 }

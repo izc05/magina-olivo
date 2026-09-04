@@ -1,5 +1,5 @@
 export type MarketSeries = {
-  id: 'aove' | 'virgen' | 'lampante';
+  id: 'aove' | 'virgen' | 'lampante' | 'refinado';
   label: string;
   shortLabel: string;
   values: number[];

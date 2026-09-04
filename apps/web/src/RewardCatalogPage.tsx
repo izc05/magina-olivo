@@ -98,9 +98,13 @@ export function RewardCatalogPage() {
 
         const latest = redemptionItems.find((item) => item.id === redemptionId);
         if (latest && classifyRewardRedemptionStatus(latest.status) === 'active') {
-          setActiveCode((current) => current?.redemption.id === redemptionId
-            ? { ...current, redemption: latest }
-            : current);
+          setActiveCode((current) => {
+            if (!current || current.redemption.id !== redemptionId) return current;
+            return {
+              redemption: latest,
+              token: current.token,
+            };
+          });
           return;
         }
 

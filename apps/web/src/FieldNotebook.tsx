@@ -81,6 +81,9 @@ export function FieldNotebook({
   const harvestReportUrl = selectedPlotId && campaignId
     ? `/api/v1/campaigns/${campaignId}/plots/${selectedPlotId}/harvest-report.pdf`
     : null;
+  const holdingHarvestReportUrl = campaignId
+    ? `/api/v1/campaigns/${campaignId}/harvest-report.pdf`
+    : null;
 
   const timelineCounts = useMemo(() => ({
     all: timeline.length,
@@ -234,13 +237,16 @@ export function FieldNotebook({
           </div>
 
           <div className="form-actions">
-            {harvestReportUrl ? (
-              <a className="text-button" href={harvestReportUrl}>Descargar informe de cosecha PDF</a>
+            {campaignId ? (
+              <>
+                {harvestReportUrl ? <a className="text-button" href={harvestReportUrl}>Informe de esta parcela PDF</a> : null}
+                {holdingHarvestReportUrl ? <a className="text-button" href={holdingHarvestReportUrl}>Informe global de campaña PDF</a> : null}
+              </>
             ) : (
-              <button className="text-button" type="button" disabled>Selecciona una campaña para descargar el PDF</button>
+              <button className="text-button" type="button" disabled>Selecciona una campaña para descargar informes</button>
             )}
           </div>
-          <p className="section-copy">Informe privado de la parcela seleccionada con entregas, kilos, destino, tickets y rendimiento de la campaña.</p>
+          <p className="section-copy">Informes privados de cosecha: detalle de la parcela seleccionada o resumen consolidado de toda la explotación para la campaña.</p>
 
           <form className="form-grid notebook-form" onSubmit={submit}>
             <div className="inline-fields">

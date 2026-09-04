@@ -13,6 +13,7 @@ import { registerDeliveryRoutes } from './delivery-routes.ts';
 import { registerDeliveryUpdateRoutes } from './delivery-update-routes.ts';
 import { registerDocumentRoutes } from './document-routes.ts';
 import { registerFarmRoutes } from './farm-routes.ts';
+import { registerHoldingHarvestReportRoutes } from './holding-harvest-report-routes.ts';
 import { registerHoldingRoutes } from './holding-routes.ts';
 import { registerPlotHarvestReportRoutes } from './plot-harvest-report-routes.ts';
 import { registerPlotRoutes } from './plot-routes.ts';
@@ -81,6 +82,7 @@ export function buildApp(): FastifyInstance {
   registerFarmRoutes(app);
   registerPlotRoutes(app);
   registerPlotTimelineRoutes(app);
+  registerHoldingHarvestReportRoutes(app);
   registerPlotHarvestReportRoutes(app);
   registerSigpacMapRoutes(app);
   registerCatastroMapRoutes(app);

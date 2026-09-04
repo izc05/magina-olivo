@@ -11,6 +11,15 @@ function iso(value: Date | string | null): string | null {
   return value instanceof Date ? value.toISOString() : value;
 }
 
+function hasPlotVarietyExport(value: unknown): boolean {
+  if (!Array.isArray(value)) return true;
+  return value.every((plot) => (
+    typeof plot === 'object'
+    && plot !== null
+    && Object.prototype.hasOwnProperty.call(plot, 'oliveVariety')
+  ));
+}
+
 export async function augmentAccountExportWithTasks(
   pool: pg.Pool,
   exportId: string,
@@ -33,32 +42,64 @@ export async function augmentAccountExportWithTasks(
 
     if (row.status === 'ready') {
       const existing = JSON.parse(row.artifact_text) as Record<string, unknown>;
-      if (Array.isArray(existing.tasks)) return;
+      if (Array.isArray(existing.tasks) && hasPlotVarietyExport(existing.plots)) return;
     } else if (row.status !== 'generating') {
       throw new Error('Structured account export artifact is not generating');
     }
 
-    const tasks = await pool.query(
-      `
-        select
-          t.id, t.holding_id, t.campaign_id, t.farm_id, t.plot_id,
-          t.title, t.notes, t.due_date::text as due_date, t.priority,
-          t.reminder_days_before, t.status, t.completed_at, t.version,
-          t.created_at, t.updated_at
-        from tasks t
-        where t.holding_id in (
-          select hm.holding_id
-          from holding_members hm
-          where hm.user_id = $1
-            and hm.role = 'owner'
-            and hm.status = 'active'
-        )
-        order by t.due_date asc, t.created_at asc, t.id asc
-      `,
-      [userId],
-    );
+    const [tasks, plotAgronomy] = await Promise.all([
+      pool.query(
+        `
+          select
+            t.id, t.holding_id, t.campaign_id, t.farm_id, t.plot_id,
+            t.title, t.notes, t.due_date::text as due_date, t.priority,
+            t.reminder_days_before, t.status, t.completed_at, t.version,
+            t.created_at, t.updated_at
+          from tasks t
+          where t.holding_id in (
+            select hm.holding_id
+            from holding_members hm
+            where hm.user_id = $1
+              and hm.role = 'owner'
+              and hm.status = 'active'
+          )
+          order by t.due_date asc, t.created_at asc, t.id asc
+        `,
+        [userId],
+      ),
+      pool.query(
+        `
+          select p.id, p.olive_variety
+          from plots p
+          where p.holding_id in (
+            select hm.holding_id
+            from holding_members hm
+            where hm.user_id = $1
+              and hm.role = 'owner'
+              and hm.status = 'active'
+          )
+          order by p.created_at asc, p.id asc
+        `,
+        [userId],
+      ),
+    ]);
 
     const payload = JSON.parse(row.artifact_text) as Record<string, unknown>;
+    const varietyByPlotId = new Map<string, unknown>(
+      plotAgronomy.rows.map((plot: Record<string, unknown>) => [String(plot.id), plot.olive_variety ?? null]),
+    );
+    if (Array.isArray(payload.plots)) {
+      payload.plots = payload.plots.map((plot) => {
+        if (typeof plot !== 'object' || plot === null) return plot;
+        const record = plot as Record<string, unknown>;
+        const id = String(record.id ?? '');
+        return {
+          ...record,
+          oliveVariety: varietyByPlotId.get(id) ?? null,
+        };
+      });
+    }
+
     payload.tasks = tasks.rows.map((task: Record<string, unknown>) => ({
       id: task.id,
       holdingId: task.holding_id,

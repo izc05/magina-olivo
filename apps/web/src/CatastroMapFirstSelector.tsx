@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { CatastroBatchReview } from './CatastroBatchReview.tsx';
+import { OfficialMapOverlays } from './OfficialMapOverlays.tsx';
 import {
   buildCatastroSelectorMap,
   DEFAULT_CATASTRO_CENTER,
@@ -12,6 +13,7 @@ import {
   panCenter,
   screenPoint,
   viewportBbox,
+  type BaseMapLayer,
   type CatastroGeometry,
   type MapCenter,
 } from './catastro-selector-map.ts';
@@ -21,6 +23,7 @@ type PlotSummary = {
   id: string;
   name: string;
   cadastralReference: string | null;
+  boundaryGeoJson: CatastroGeometry | null;
 };
 
 type CatastroParcel = {
@@ -96,6 +99,7 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
   const [open, setOpen] = useState(false);
   const [center, setCenter] = useState<MapCenter>(DEFAULT_CATASTRO_CENTER);
   const [zoom, setZoom] = useState(16);
+  const [baseLayer, setBaseLayer] = useState<BaseMapLayer>('map');
   const [plots, setPlots] = useState<PlotSummary[]>([]);
   const [items, setItems] = useState<CatastroParcel[]>([]);
   const [parcelCache, setParcelCache] = useState<Record<string, CatastroParcel>>({});
@@ -110,7 +114,7 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
   const [reviewing, setReviewing] = useState(false);
   const drag = useRef<DragState | null>(null);
 
-  const model = useMemo(() => buildCatastroSelectorMap(center, zoom), [center, zoom]);
+  const model = useMemo(() => buildCatastroSelectorMap(center, zoom, baseLayer), [baseLayer, center, zoom]);
   const existingReferences = useMemo(
     () => new Set(plots.flatMap((plot) => plot.cadastralReference ? [plot.cadastralReference.toUpperCase()] : [])),
     [plots],
@@ -255,6 +259,12 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
     setNotice(`${count} parcela${count === 1 ? '' : 's'} creada${count === 1 ? '' : 's'} después de verificar Catastro. Ya puedes completar o editar sus datos desde Mi Campo.`);
   }
 
+  function handleBaseTileError() {
+    if (baseLayer !== 'pnoa') return;
+    setBaseLayer('map');
+    setNotice('La ortofoto PNOA no ha respondido correctamente. Hemos vuelto al mapa sin perder tu selección.');
+  }
+
   function panBy(deltaX: number, deltaY: number) {
     setCenter((current) => panCenter(current, zoom, deltaX, deltaY));
   }
@@ -327,6 +337,11 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
             ) : (
               <div className="catastro-map-first-layout">
                 <div className="catastro-map-first-map-card">
+                  <div className="catastro-map-first-base-toggle" role="group" aria-label="Fondo del mapa">
+                    <button type="button" className={baseLayer === 'map' ? 'active' : ''} aria-pressed={baseLayer === 'map'} onClick={() => { setBaseLayer('map'); setNotice(null); }}>Mapa</button>
+                    <button type="button" className={baseLayer === 'pnoa' ? 'active' : ''} aria-pressed={baseLayer === 'pnoa'} onClick={() => { setBaseLayer('pnoa'); setNotice(null); }}>Ortofoto PNOA</button>
+                  </div>
+
                   <div className="catastro-map-first-toolbar" aria-label="Controles del mapa">
                     <button type="button" onClick={() => setZoom((value) => Math.min(20, value + 1))} disabled={zoom >= 20} aria-label="Acercar">+</button>
                     <button type="button" onClick={() => setZoom((value) => Math.max(13, value - 1))} disabled={zoom <= 13} aria-label="Alejar">−</button>
@@ -338,17 +353,17 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
                   </div>
 
                   <svg
-                    className="catastro-map-first-map"
+                    className={`catastro-map-first-map ${baseLayer === 'pnoa' ? 'orthophoto' : 'street-map'}`}
                     viewBox={`0 0 ${MAP_VIEW_SIZE} ${MAP_VIEW_SIZE}`}
                     role="img"
-                    aria-label="Mapa para seleccionar parcelas catastrales"
+                    aria-label={baseLayer === 'pnoa' ? 'Ortofoto PNOA con parcelas catastrales seleccionables' : 'Mapa para seleccionar parcelas catastrales'}
                     onPointerDown={onPointerDown}
                     onPointerMove={onPointerMove}
                     onPointerUp={onPointerUp}
                     onPointerCancel={onPointerUp}
                   >
                     {model.tiles.map((tile) => (
-                      <image key={tile.key} href={tile.href} x={tile.x} y={tile.y} width="256" height="256" />
+                      <image key={tile.key} href={tile.href} x={tile.x} y={tile.y} width="256" height="256" onError={handleBaseTileError} />
                     ))}
                     {items.flatMap((item) => {
                       const selectedIndex = selectedReferences.indexOf(item.nationalCadastralReference);
@@ -383,13 +398,15 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
                     })}
                   </svg>
 
+                  <OfficialMapOverlays center={center} zoom={zoom} topLeft={model.topLeft} plots={plots} />
+
                   <div className="catastro-map-first-map-status" aria-live="polite">
                     {zoom < MIN_CATASTRO_ZOOM
                       ? <strong>Acércate para ver parcelas de Catastro.</strong>
                       : loading
                         ? <strong>Cargando parcelas oficiales…</strong>
                         : <span>{items.length} parcelas visibles · arrastra el mapa para moverte</span>}
-                    <small>© OpenStreetMap contributors · límites: Dirección General del Catastro</small>
+                    <small>{baseLayer === 'pnoa' ? 'Ortofoto PNOA Máxima Actualidad · IGN/CNIG · límites DGC' : '© OpenStreetMap contributors · límites: Dirección General del Catastro'}</small>
                   </div>
                 </div>
 
@@ -438,7 +455,7 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
                     {selectedItems.length === 1 ? 'Continuar con esta parcela' : `Continuar con ${selectedItems.length} parcelas`}
                   </button>
 
-                  <p className="catastro-map-first-trust">Mágina Olivo no interpreta la selección como prueba de propiedad. Catastro aporta referencia, geometría y superficie; olivos y riego los declararás tú.</p>
+                  <p className="catastro-map-first-trust">La ortofoto PNOA y las capas SIGPAC/Mis parcelas son ayudas visuales. No acreditan propiedad, superficie administrativa, variedad ni número de olivos.</p>
                 </aside>
               </div>
             )}

@@ -1,3 +1,52 @@
+.catastro-map-first-base-toggle {
+  position: absolute;
+  z-index: 4;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+}
+
+.catastro-map-first-base-toggle button {
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  background: transparent;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.catastro-map-first-base-toggle button.active {
+  border-color: rgba(23, 107, 67, 0.3);
+  background: #176b43;
+  color: #fff;
+}
+
+.catastro-map-first-map.orthophoto .catastro-map-first-parcel polygon {
+  fill: rgba(255, 196, 0, 0.08);
+  stroke: #fff4a3;
+  stroke-width: 4;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.8));
+}
+
+.catastro-map-first-map.orthophoto .catastro-map-first-parcel.selected polygon {
+  fill: rgba(22, 163, 74, 0.34);
+  stroke: #effff5;
+  stroke-width: 6;
+}
+
+.catastro-map-first-map.orthophoto .catastro-map-first-parcel.existing polygon {
+  fill: rgba(80, 80, 80, 0.22);
+  stroke: #f4f4f4;
+}
+
 .catastro-map-first-focus-card {
   display: flex;
   align-items: center;
@@ -116,6 +165,16 @@
 }
 
 @media (max-width: 820px) {
+  .catastro-map-first-base-toggle {
+    top: 58px;
+    right: 8px;
+  }
+
+  .catastro-map-first-base-toggle button {
+    min-height: 34px;
+    padding: 0 9px;
+  }
+
   .catastro-batch-review {
     padding: 14px 12px 24px;
   }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { WeatherRainAlertSummary } from './WeatherRainAlertSummary';
 import './weather-radar.css';
 
 type Municipality = {
@@ -319,6 +320,8 @@ export function MaginaWeatherPage() {
           </>
         ) : null}
       </section>
+
+      <WeatherRainAlertSummary />
 
       <section className="weather-radar-section" aria-labelledby="weather-radar-title">
         <div className="weather-results-heading">

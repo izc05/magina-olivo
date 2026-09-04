@@ -18,6 +18,7 @@ import { PilotAlerts } from './PilotAlerts';
 import { RegisterPage } from './RegisterPage';
 import { RegistrationEntry } from './RegistrationEntry';
 import { ResetPassword } from './ResetPassword';
+import { installWeatherDemoPreview } from './weatherDemoPreview';
 import './styles.css';
 import './brand.css';
 import './connectivity.css';
@@ -43,6 +44,7 @@ import './pilot-alerts.css';
 import './calendar.css';
 
 installDemoPreview();
+installWeatherDemoPreview();
 
 registerSW({
   immediate: true,

@@ -81,6 +81,14 @@ const agricultureTerms = [
   'camino', 'caminos', 'agua', 'abastecimiento', 'bando', 'incendio', 'empleo',
 ];
 
+const monthNames = 'enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre';
+const municipalArchiveTitlePatterns = [
+  new RegExp(`^\\d{1,2}\\s+de\\s+(?:${monthNames})\\s+de\\s+20\\d{2}$`, 'i'),
+  new RegExp(`^(?:${monthNames})\\s+\\d{1,2},\\s+20\\d{2}$`, 'i'),
+  /\bpor\s+comunicaci[oó]n\b.*\bnoticias\b/i,
+  /^(?:noticias|actualidad)$/i,
+];
+
 function decodeEntities(value = '') {
   return value
     .replaceAll('&amp;', '&')
@@ -164,6 +172,12 @@ function countTerms(text, terms) {
   return terms.reduce((sum, term) => sum + (text.includes(term) ? 1 : 0), 0);
 }
 
+function municipalTitleIsUseful(item) {
+  if (!item.municipalityId) return true;
+  const title = item.title.trim();
+  return !municipalArchiveTitlePatterns.some((pattern) => pattern.test(title));
+}
+
 function freshnessBonus(publishedAt) {
   const ageMs = Math.max(0, Date.now() - new Date(publishedAt).getTime());
   const hours = ageMs / 3_600_000;
@@ -218,7 +232,7 @@ function normalizeTitle(title) {
 
 async function fetchText(url) {
   const response = await fetch(url, {
-    headers: { 'user-agent': 'MaginaOlivoNewsBot/1.1 (+https://github.com/izc05/magina-olivo)' },
+    headers: { 'user-agent': 'MaginaOlivoNewsBot/1.2 (+https://github.com/izc05/magina-olivo)' },
     signal: AbortSignal.timeout(12_000),
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -246,6 +260,7 @@ async function main() {
 
   const ranked = all
     .filter((item) => new Date(item.publishedAt).getTime() >= cutoff)
+    .filter(municipalTitleIsUseful)
     .map((item) => {
       const { text, relevance, maginaCount, sectorCount } = relevanceFor(item);
       return {

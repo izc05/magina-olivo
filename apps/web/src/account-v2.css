@@ -1,0 +1,272 @@
+/* Mi Cuenta — Visual V2 presentation over real authenticated preferences and portability. */
+
+.account-shell {
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 10% -6%, rgba(201,155,44,.12), transparent 29rem),
+    linear-gradient(180deg, #f7f3e8 0, #f4f0e5 44%, #f2eee3 100%);
+}
+
+.account-shell .account-topbar {
+  min-height: 68px;
+  padding-inline: max(18px, env(safe-area-inset-left));
+  border-bottom-color: rgba(86,111,67,.12);
+  background: rgba(248,244,234,.91);
+  box-shadow: 0 7px 26px rgba(47,59,39,.045);
+}
+
+.account-shell .brand-lockup {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px auto;
+  column-gap: 9px;
+  align-items: center;
+}
+
+.account-shell .brand-lockup::before {
+  content: "";
+  grid-row: 1 / span 2;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--magina-brand-logo) center / contain no-repeat;
+  filter: drop-shadow(0 4px 7px rgba(47,59,39,.12));
+}
+
+.account-shell .brand-title {
+  color: var(--v2-olive-deep, #334329);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.02rem;
+  line-height: 1.05;
+}
+
+.account-shell .brand-kicker {
+  color: #89806e;
+  font-size: .62rem;
+  font-weight: 750;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.account-shell .account-page {
+  width: min(100% - 28px, 820px);
+  padding: 40px 0 calc(74px + env(safe-area-inset-bottom));
+}
+
+.account-page > section:first-child {
+  padding: 4px 2px 22px;
+  border-bottom: 1px solid rgba(86,111,67,.11);
+}
+
+.account-page > section:first-child .page-eyebrow {
+  color: var(--v2-gold, #b88a27);
+  opacity: 1;
+}
+
+.account-page > section:first-child .section-title {
+  max-width: 13ch;
+  color: var(--v2-olive-deep, #334329);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(2.15rem, 7vw, 3.55rem);
+  font-weight: 500;
+  line-height: .98;
+  letter-spacing: -.045em;
+}
+
+.account-page > section:first-child .section-copy {
+  max-width: 61ch;
+  margin-top: 11px;
+  color: #747565;
+  line-height: 1.55;
+}
+
+.account-page > .section.card.card-body {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(17px, 3vw, 23px);
+  border-color: rgba(86,111,67,.13);
+  border-radius: 23px;
+  background: rgba(255,253,248,.93);
+  box-shadow: 0 12px 33px rgba(47,59,39,.045);
+}
+
+.account-page > .section.card.card-body::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: linear-gradient(180deg, rgba(86,111,67,.75), rgba(201,155,44,.62));
+}
+
+.account-page .account-section-title {
+  margin-bottom: 10px;
+  color: var(--v2-olive-deep, #334329);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.35rem, 4vw, 1.7rem);
+  font-weight: 550;
+}
+
+.account-page .list-card-title {
+  color: var(--v2-olive-deep, #334329);
+}
+
+.account-page .list-card-meta,
+.account-page .section-copy {
+  color: #747565;
+  line-height: 1.5;
+}
+
+.account-page .account-field {
+  padding: 12px;
+  border: 1px solid rgba(86,111,67,.12);
+  border-radius: 15px;
+  background: rgba(245,240,228,.48);
+}
+
+.account-page .account-field select,
+.account-page .account-threshold-grid input {
+  border-color: rgba(86,111,67,.15);
+  background: #fffefa;
+}
+
+.account-page .account-toggle {
+  position: relative;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+  min-height: 66px;
+  padding: 13px 4px;
+  border-bottom-color: rgba(86,111,67,.1);
+}
+
+.account-page .account-toggle input {
+  width: 42px;
+  height: 23px;
+  margin: 2px 0 0;
+  accent-color: var(--v2-olive, #566f43);
+}
+
+.account-page .account-toggle strong {
+  color: var(--v2-olive-deep, #334329);
+  font-size: .84rem;
+}
+
+.account-page .account-toggle small {
+  color: #7a7a6d;
+  font-size: .7rem;
+  line-height: 1.4;
+}
+
+.account-page .account-threshold-grid {
+  gap: 9px;
+  margin-top: 15px;
+}
+
+.account-page .account-threshold-grid .field {
+  padding: 10px;
+  border: 1px solid rgba(86,111,67,.11);
+  border-radius: 14px;
+  background: rgba(250,248,240,.75);
+}
+
+.account-page .account-threshold-grid label {
+  color: #747565;
+  font-size: .66rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.account-page .account-privacy-card {
+  background:
+    radial-gradient(circle at 92% 5%, rgba(201,155,44,.11), transparent 34%),
+    rgba(255,253,248,.94) !important;
+}
+
+.account-page .account-export-status {
+  margin-top: 15px;
+  border-color: rgba(86,111,67,.12);
+  border-radius: 16px;
+  background: rgba(245,240,228,.45);
+}
+
+.account-page .account-export-actions {
+  margin-top: 14px;
+}
+
+.account-page .account-download-link {
+  text-decoration: none;
+}
+
+.account-page .account-save-row {
+  z-index: 8;
+  margin-inline: -6px;
+  padding: 10px;
+  border: 1px solid rgba(86,111,67,.13);
+  border-radius: 18px;
+  background: rgba(248,244,234,.91);
+  box-shadow: 0 12px 33px rgba(47,59,39,.09);
+  backdrop-filter: blur(16px);
+}
+
+.account-page .account-save-row .primary-button {
+  min-height: 50px;
+  min-width: 170px;
+  box-shadow: 0 8px 20px rgba(47,59,39,.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-page *,
+  .account-shell .account-topbar {
+    scroll-behavior: auto;
+  }
+}
+
+@media (max-width: 620px) {
+  .account-shell .account-topbar {
+    min-height: 60px;
+    padding: 10px 12px;
+  }
+
+  .account-shell .brand-lockup {
+    grid-template-columns: 29px auto;
+    column-gap: 7px;
+  }
+
+  .account-shell .brand-lockup::before {
+    width: 29px;
+    height: 29px;
+  }
+
+  .account-shell .brand-title {
+    font-size: .9rem;
+  }
+
+  .account-shell .brand-kicker {
+    font-size: .52rem;
+  }
+
+  .account-shell .account-page {
+    width: min(100% - 22px, 760px);
+    padding-top: 28px;
+  }
+
+  .account-page > section:first-child .section-title {
+    font-size: clamp(2rem, 12vw, 2.75rem);
+  }
+
+  .account-page > .section.card.card-body {
+    border-radius: 19px;
+  }
+
+  .account-page .account-save-row .primary-button,
+  .account-page .account-export-actions .secondary-button,
+  .account-page .account-download-link {
+    width: 100%;
+  }
+}
+
+@media (forced-colors: active) {
+  .account-page > .section.card.card-body::before,
+  .account-shell .brand-lockup::before {
+    display: none;
+  }
+}

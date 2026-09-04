@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Pool } from 'pg';
+import { scanAdvertiserNotifications } from './advertiser-notification-scan.ts';
 import { normalizePlace, selectRainTriggers, type RainForecastDay } from './rain-alert-rules.ts';
 
 const AEMET_BASE_URL = 'https://opendata.aemet.es/opendata';
@@ -183,6 +184,11 @@ async function resolveRainAlertsOutsideCurrentSelection(pool: Pool): Promise<voi
 }
 
 export async function scanRainAlerts(pool: Pool): Promise<{ users: number; alerts: number; sourceFailures: number }> {
+  const commercial = await scanAdvertiserNotifications(pool);
+  if (commercial.created || commercial.queuedEmails || commercial.sentEmails || commercial.failedEmails) {
+    console.log(JSON.stringify({ event: 'advertiser_notification_scan_completed', ...commercial }));
+  }
+
   const apiKey = process.env.AEMET_API_KEY?.trim();
   if (!apiKey) throw new Error('AEMET_API_KEY is required for weather.rain.scan');
 

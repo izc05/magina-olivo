@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import './catastro-batch-review.css';
 
 type IrrigationType = 'dryland' | 'irrigated' | 'mixed' | 'unknown';
 type ReviewParcel = {

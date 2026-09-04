@@ -226,6 +226,12 @@ export function MaginaDirectoryPage() {
         ) : null}
       </section>
 
+      <aside className="directory-business-cta" aria-label="Alta de empresas">
+        <strong>¿Tienes una empresa o servicio agrícola?</strong>
+        <span>Solicita tu ficha para aparecer en Mágina Olivo. Las altas y cualquier visibilidad patrocinada requieren revisión previa.</span>
+        <a href="/empresas/solicitud">Solicitar mi ficha</a>
+      </aside>
+
       {data?.advertisingEnabled && municipality ? (
         <p className="directory-sponsorship-context">
           Los destacados de pago se limitan a campañas contratadas para <strong>{municipality}</strong> o campañas generales. Cambiar de municipio recalcula la prioridad sin compartir coordenadas de parcelas.

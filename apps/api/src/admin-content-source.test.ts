@@ -7,9 +7,12 @@ const announcementRoutes = await readFile(new URL('./announcement-routes.ts', im
 const newsRoutes = await readFile(new URL('./public-news-routes.ts', import.meta.url), 'utf8');
 const migration = await readFile(new URL('../../../db/migrations/0023_admin_content_alerts.sql', import.meta.url), 'utf8');
 
-test('admin content routes remain platform-admin protected and audited', () => {
-  assert.match(adminRoutes, /requirePlatformAdmin/);
+test('admin content routes are content-role protected and audited', () => {
+  assert.match(adminRoutes, /requireAdminSessionRole/);
+  assert.match(adminRoutes, /requireAdminSessionRole\(request, reply, 'content'\)/);
+  assert.doesNotMatch(adminRoutes, /requirePlatformAdmin/);
   assert.match(adminRoutes, /recordAdminAudit/);
+  assert.match(adminRoutes, /cache-control', 'private, no-store'/);
   assert.match(adminRoutes, /\/api\/v1\/admin\/content\/news/);
   assert.match(adminRoutes, /\/api\/v1\/admin\/alerts\/overview/);
   assert.match(adminRoutes, /\/api\/v1\/admin\/content\/announcements/);

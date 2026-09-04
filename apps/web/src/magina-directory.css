@@ -78,7 +78,7 @@
 
 .directory-filters {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr));
   gap: 12px;
   padding: 18px;
   background: var(--paper);
@@ -119,6 +119,22 @@
 
 .directory-card {
   padding: 18px;
+  position: relative;
+  overflow: hidden;
+}
+
+.directory-card-sponsored {
+  border-color: rgba(177, 137, 36, .45);
+  box-shadow: 0 14px 34px rgba(55, 70, 36, .08);
+  background: linear-gradient(145deg, var(--paper) 0%, rgba(236, 225, 190, .26) 100%);
+}
+
+.directory-card-sponsored::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: #b18924;
 }
 
 .directory-card-topline {
@@ -130,7 +146,8 @@
 }
 
 .directory-type,
-.directory-status {
+.directory-status,
+.directory-sponsored {
   font-size: .67rem;
   font-weight: 850;
 }
@@ -159,6 +176,17 @@
   color: var(--muted);
 }
 
+.directory-sponsored {
+  display: inline-flex;
+  align-items: center;
+  min-height: 27px;
+  padding: 0 9px;
+  border-radius: 99px;
+  color: #684e09;
+  background: var(--gold-soft);
+  white-space: nowrap;
+}
+
 .directory-card h3 {
   margin: 0;
   color: var(--olive-950);
@@ -173,10 +201,71 @@
   font-size: .82rem;
 }
 
-.directory-location {
-  margin: 14px 0 0;
+.directory-location,
+.directory-description {
   color: var(--muted);
   font-size: .78rem;
+  line-height: 1.5;
+}
+
+.directory-location {
+  margin: 14px 0 0;
+}
+
+.directory-description {
+  margin: 12px 0 0;
+  max-width: 58ch;
+}
+
+.directory-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.directory-action {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  border: 1px solid rgba(72, 94, 52, .28);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--olive-800);
+  background: rgba(255, 255, 255, .72);
+  font-size: .75rem;
+  font-weight: 850;
+}
+
+.directory-action.primary {
+  color: white;
+  background: var(--olive-650);
+  border-color: var(--olive-650);
+}
+
+.directory-action:hover,
+.directory-action:focus-visible {
+  transform: translateY(-1px);
+}
+
+.directory-trust {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: .72rem;
+}
+
+.directory-trust summary {
+  cursor: pointer;
+  color: var(--olive-800);
+  font-weight: 800;
+}
+
+.directory-trust p {
+  margin: 8px 0 0;
 }
 
 .directory-footer {
@@ -190,6 +279,12 @@
 
 .directory-footer p {
   margin: 6px 0;
+}
+
+@media (max-width: 900px) {
+  .directory-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 720px) {
@@ -217,5 +312,17 @@
   .directory-results-heading {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .directory-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .directory-action:hover,
+  .directory-action:focus-visible {
+    transform: none;
   }
 }

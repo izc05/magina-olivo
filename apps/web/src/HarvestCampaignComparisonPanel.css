@@ -1,0 +1,266 @@
+.harvest-comparison-shell {
+  margin-top: 18px;
+}
+
+.harvest-comparison-heading {
+  align-items: flex-start;
+}
+
+.harvest-comparison-heading .badge {
+  flex: 0 0 auto;
+}
+
+.harvest-comparison-title {
+  margin-top: 8px;
+}
+
+.harvest-comparison-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.harvest-comparison-metric {
+  padding: 16px;
+  min-width: 0;
+}
+
+.harvest-metric-topline,
+.harvest-metric-compare,
+.harvest-balance-heading,
+.harvest-highlight-heading,
+.harvest-highlight-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.harvest-metric-topline > span,
+.harvest-balance-heading strong,
+.harvest-highlight-heading strong,
+.harvest-highlight-item strong {
+  color: var(--olive-950);
+  font-weight: 850;
+}
+
+.harvest-comparison-metric > strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--olive-950);
+  font-size: clamp(1.35rem, 5vw, 1.8rem);
+  line-height: 1.05;
+  letter-spacing: -.03em;
+}
+
+.harvest-metric-compare {
+  align-items: flex-end;
+  margin-top: 10px;
+}
+
+.harvest-metric-compare > span,
+.harvest-balance-heading span,
+.harvest-balance-heading small,
+.harvest-highlight-heading small,
+.harvest-highlight-item span {
+  color: var(--muted);
+  font-size: .72rem;
+}
+
+.harvest-trend,
+.harvest-delta {
+  border-radius: 999px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.harvest-trend {
+  padding: 4px 8px;
+  font-size: .68rem;
+}
+
+.harvest-delta {
+  font-size: .72rem;
+}
+
+.harvest-trend.up,
+.harvest-delta.up {
+  color: #315f35;
+  background: #edf5e8;
+}
+
+.harvest-trend.down,
+.harvest-delta.down {
+  color: #8a3b2e;
+  background: #fff0ec;
+}
+
+.harvest-trend.flat,
+.harvest-delta.flat {
+  color: var(--olive-800);
+  background: rgba(92, 122, 70, .1);
+}
+
+.harvest-delta.up,
+.harvest-delta.down,
+.harvest-delta.flat {
+  padding: 4px 7px;
+}
+
+.harvest-balance-card {
+  margin-top: 10px;
+}
+
+.harvest-balance-heading {
+  align-items: flex-start;
+}
+
+.harvest-balance-heading > div,
+.harvest-highlight-heading > div,
+.harvest-highlight-item > div {
+  display: grid;
+  min-width: 0;
+}
+
+.harvest-balance-heading > small {
+  text-align: right;
+}
+
+.harvest-balance-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.harvest-balance-grid > div {
+  display: grid;
+  place-items: center;
+  gap: 3px;
+  min-height: 92px;
+  padding: 12px 8px;
+  border-radius: 16px;
+  background: rgba(92, 122, 70, .06);
+  border: 1px solid var(--line);
+  text-align: center;
+}
+
+.harvest-balance-grid span {
+  color: var(--olive-650);
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.harvest-balance-grid strong {
+  color: var(--olive-950);
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.harvest-balance-grid small {
+  color: var(--muted);
+  font-size: .72rem;
+}
+
+.harvest-first-campaign-copy {
+  margin-top: 14px;
+}
+
+.harvest-highlights-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.harvest-highlight-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0 0;
+}
+
+.harvest-highlight-heading {
+  justify-content: flex-start;
+}
+
+.harvest-highlight-heading > span {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 11px;
+  background: var(--gold-soft);
+  color: var(--olive-950);
+  font-weight: 950;
+}
+
+.harvest-highlight-item {
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.harvest-highlight-item:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.harvest-highlight-item > div {
+  gap: 2px;
+}
+
+.harvest-highlight-item strong,
+.harvest-highlight-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.harvest-highlight-empty {
+  color: var(--muted);
+  font-size: .8rem;
+}
+
+@media (min-width: 720px) {
+  .harvest-comparison-metrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .harvest-highlights-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 430px) {
+  .harvest-comparison-heading {
+    display: grid;
+  }
+
+  .harvest-comparison-heading .badge {
+    justify-self: start;
+  }
+
+  .harvest-comparison-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .harvest-balance-heading {
+    display: grid;
+  }
+
+  .harvest-balance-heading > small {
+    text-align: left;
+  }
+
+  .harvest-balance-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+@media (forced-colors: active) {
+  .harvest-trend,
+  .harvest-delta,
+  .harvest-balance-grid > div,
+  .harvest-highlight-heading > span {
+    border: 1px solid CanvasText;
+  }
+}

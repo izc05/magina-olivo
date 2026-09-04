@@ -5,6 +5,7 @@ import { registerAccountPreferenceRoutes } from './account-preference-routes.ts'
 import { registerActivityRoutes } from './activity-routes.ts';
 import { registerAuthRoutes } from './auth-routes.ts';
 import { registerCampaignExportRoutes } from './campaign-export-routes.ts';
+import { registerCampaignHarvestHistoryAliasRoutes } from './campaign-harvest-history-alias-routes.ts';
 import { registerCampaignRoutes } from './campaign-routes.ts';
 import { registerCampaignSummaryRoutes } from './campaign-summary-routes.ts';
 import { registerCatastroMapRoutes } from './catastro-map-routes.ts';
@@ -13,7 +14,9 @@ import { registerDeliveryRoutes } from './delivery-routes.ts';
 import { registerDeliveryUpdateRoutes } from './delivery-update-routes.ts';
 import { registerDocumentRoutes } from './document-routes.ts';
 import { registerFarmRoutes } from './farm-routes.ts';
+import { registerHoldingHarvestReportRoutes } from './holding-harvest-report-routes.ts';
 import { registerHoldingRoutes } from './holding-routes.ts';
+import { registerPlotHarvestReportRoutes } from './plot-harvest-report-routes.ts';
 import { registerPlotRoutes } from './plot-routes.ts';
 import { registerPlotTimelineRoutes } from './plot-timeline-routes.ts';
 import { registerPublicDestinationRoutes } from './public-destination-routes.ts';
@@ -80,6 +83,9 @@ export function buildApp(): FastifyInstance {
   registerFarmRoutes(app);
   registerPlotRoutes(app);
   registerPlotTimelineRoutes(app);
+  registerHoldingHarvestReportRoutes(app);
+  registerCampaignHarvestHistoryAliasRoutes(app);
+  registerPlotHarvestReportRoutes(app);
   registerSigpacMapRoutes(app);
   registerCatastroMapRoutes(app);
   registerCampaignRoutes(app);

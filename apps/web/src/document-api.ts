@@ -53,6 +53,10 @@ export async function listCampaignDocuments(
 }
 
 export function privateDocumentContentUrl(documentId: string): string {
+  if (import.meta.env.VITE_DEMO_MODE === 'true') {
+    const text = encodeURIComponent(`Mágina Olivo · documento de demostración\n\nDocumento: ${documentId}\n\nEn staging este botón descarga el archivo privado real con autorización server-side.`);
+    return `data:text/plain;charset=utf-8,${text}`;
+  }
   return `/api/v1/documents/${documentId}/content`;
 }
 

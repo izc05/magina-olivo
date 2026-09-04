@@ -1,0 +1,242 @@
+.support-shell,
+.legal-shell {
+  min-height: 100vh;
+  background: #f6f3ea;
+  color: #263229;
+  padding: 0 18px 40px;
+}
+
+.support-header {
+  max-width: 1080px;
+  min-height: 74px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid rgba(47, 91, 55, 0.14);
+}
+
+.support-brand,
+.support-back {
+  color: #2f5b37;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.support-brand {
+  font-size: 1.2rem;
+}
+
+.support-back {
+  font-size: 0.92rem;
+}
+
+.support-hero,
+.legal-hero {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 64px 0 30px;
+}
+
+.support-eyebrow {
+  margin: 0 0 10px;
+  color: #7a6a32;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.support-hero h1,
+.legal-hero h1 {
+  margin: 0;
+  color: #243a29;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(2.35rem, 7vw, 4.2rem);
+  line-height: 1;
+  letter-spacing: -0.025em;
+}
+
+.support-hero > p:last-child,
+.legal-hero > p {
+  margin: 20px 0 0;
+  color: #626c61;
+  line-height: 1.7;
+  font-size: 1.05rem;
+}
+
+.support-grid {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.75fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.support-card,
+.legal-card {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(47, 91, 55, 0.12);
+  border-radius: 24px;
+  box-shadow: 0 16px 38px rgba(52, 67, 49, 0.06);
+}
+
+.support-form {
+  padding: 26px;
+  display: grid;
+  gap: 18px;
+}
+
+.support-form label {
+  display: grid;
+  gap: 8px;
+  font-weight: 750;
+}
+
+.support-form input,
+.support-form select,
+.support-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(47, 91, 55, 0.18);
+  border-radius: 14px;
+  background: #fff;
+  color: #263229;
+  padding: 13px 14px;
+  font: inherit;
+}
+
+.support-form textarea {
+  resize: vertical;
+  min-height: 150px;
+}
+
+.support-form input:focus-visible,
+.support-form select:focus-visible,
+.support-form textarea:focus-visible {
+  outline: 3px solid rgba(74, 118, 78, 0.18);
+  border-color: #4a764e;
+}
+
+.support-privacy-note,
+.support-aside-copy,
+.legal-card p,
+.legal-draft-note {
+  color: #697168;
+  line-height: 1.6;
+}
+
+.support-privacy-note {
+  margin: 0;
+  font-size: 0.87rem;
+}
+
+.support-privacy-note a,
+.support-aside a,
+.legal-nav a {
+  color: #2f5b37;
+}
+
+.support-status {
+  padding: 13px 14px;
+  border-radius: 14px;
+  background: #f1ead2;
+  color: #625427;
+}
+
+.support-submit {
+  min-height: 48px;
+  border: 0;
+  border-radius: 999px;
+  background: #2f5b37;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.support-aside {
+  padding: 24px;
+}
+
+.support-aside h2,
+.legal-card h2 {
+  margin: 0;
+  color: #2a3d2e;
+}
+
+.support-aside a {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 15px 0;
+  border-bottom: 1px solid rgba(47, 91, 55, 0.1);
+  text-decoration: none;
+  font-weight: 750;
+}
+
+.support-aside-copy {
+  margin: 22px 0 0;
+  font-size: 0.9rem;
+}
+
+.legal-draft-note {
+  margin-top: 22px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #f1ead2;
+  border: 1px solid rgba(122, 106, 50, 0.18);
+  font-size: 0.9rem;
+}
+
+.legal-content {
+  max-width: 900px;
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+}
+
+.legal-card {
+  padding: 24px;
+}
+
+.legal-card p {
+  margin: 10px 0 0;
+}
+
+.legal-nav {
+  max-width: 900px;
+  margin: 24px auto 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.legal-nav a {
+  padding: 9px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(47, 91, 55, 0.12);
+  text-decoration: none;
+  font-weight: 750;
+  font-size: 0.88rem;
+}
+
+@media (max-width: 760px) {
+  .support-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .support-hero,
+  .legal-hero {
+    padding-top: 46px;
+  }
+
+  .support-form,
+  .support-aside,
+  .legal-card {
+    padding: 20px;
+  }
+}

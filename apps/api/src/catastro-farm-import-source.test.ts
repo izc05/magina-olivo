@@ -28,8 +28,8 @@ test('farm is created only after every Catastro parcel is ready and inside the s
   const validationPosition = routes.indexOf("batch.validationItems.some");
   const beginPosition = routes.indexOf("client.query('begin')");
   const farmInsertPosition = routes.indexOf('insert into farms');
-  const plotInsertCallPosition = routes.indexOf('insertPreparedCatastroPlots');
-  const commitPosition = routes.indexOf("client.query('commit')");
+  const plotInsertCallPosition = routes.indexOf('insertPreparedCatastroPlots(', farmInsertPosition);
+  const commitPosition = routes.indexOf("client.query('commit')", plotInsertCallPosition);
 
   assert.ok(validationPosition >= 0);
   assert.ok(beginPosition > validationPosition);

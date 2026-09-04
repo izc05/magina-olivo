@@ -90,4 +90,10 @@ La geometría oficial y la ficha agrícola seguirán siendo dominios separados.
 
 ## Portabilidad
 
-`olive_tree_count` ya forma parte de la exportación de cuenta existente. Antes de considerar `olive_variety` listo para integración final, la exportación de portabilidad debe incluir también este nuevo campo y su test correspondiente.
+La exportación estructurada conserva los datos agrícolas de la parcela:
+
+- `oliveTreeCount` desde el exportador base;
+- `irrigationType` desde el exportador base;
+- `oliveVariety` se añade durante la fase de augmentación/finalización del export.
+
+La augmentación vuelve a calcular bytes y SHA-256 antes de marcar el artefacto como `ready`, de modo que la variedad queda incluida en el fichero final descargable.

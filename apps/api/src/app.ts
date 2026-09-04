@@ -3,6 +3,7 @@ import { checkDatabase } from './db.ts';
 import { registerAccountExportRoutes } from './account-export-routes.ts';
 import { registerAccountPreferenceRoutes } from './account-preference-routes.ts';
 import { registerActivityRoutes } from './activity-routes.ts';
+import { registerAdminOperationsRoutes } from './admin-operations-routes.ts';
 import { registerAdminRoutes } from './admin-routes.ts';
 import { registerAuthRoutes } from './auth-routes.ts';
 import { registerCampaignExportRoutes } from './campaign-export-routes.ts';
@@ -71,6 +72,7 @@ export function buildApp(): FastifyInstance {
 
   registerAuthRoutes(app);
   registerAdminRoutes(app);
+  registerAdminOperationsRoutes(app);
   registerAccountPreferenceRoutes(app);
   registerAccountExportRoutes(app);
   registerRainAlertRoutes(app);

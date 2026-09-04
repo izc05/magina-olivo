@@ -135,19 +135,25 @@ export function registerPushSubscriptionRoutes(app: FastifyInstance): void {
           values ($1, $2, $3, $4, $5, true, 0, now())
           on conflict (endpoint)
           do update set
-            user_id = excluded.user_id,
             endpoint_origin = excluded.endpoint_origin,
             expiration_time = excluded.expiration_time,
             enabled = true,
             failure_count = 0,
             last_failure_at = null,
             updated_at = now()
+          where push_subscriptions.user_id = excluded.user_id
           returning endpoint_origin, enabled, expiration_time::text, updated_at
         `,
         [randomUUID(), session.user.id, request.body.endpoint, url.origin, expirationTime],
       );
       const row = result.rows[0];
-      if (!row) throw new Error('Push subscription upsert returned no row');
+      if (!row) {
+        return reply.code(409).send(apiError(
+          request,
+          'PUSH_SUBSCRIPTION_CONFLICT',
+          'Push subscription cannot be registered for this account',
+        ));
+      }
       return reply.code(201).send({
         enabled: row.enabled,
         origin: row.endpoint_origin,

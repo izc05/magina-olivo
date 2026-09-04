@@ -267,7 +267,7 @@ async function loadComparisonReport(
   };
 }
 
-function comparisonPayload(report: HoldingHarvestComparisonInput) {
+export function comparisonPayload(report: HoldingHarvestComparisonInput) {
   const comparison = calculateHoldingHarvestComparison(report);
   return {
     currentCampaign: {

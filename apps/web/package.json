@@ -8,7 +8,7 @@
     "build": "tsc -p tsconfig.json --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --test src/offline/outbox.test.ts src/api-offline.test.ts src/accessibility-source.test.ts src/public-directory-source.test.ts src/public-cache-policy-source.test.ts src/public-municipality-source.test.ts src/public-weather-source.test.ts src/public-magina-hub-source.test.ts src/public-market-source.test.ts src/public-market-page-source.test.ts src/public-news-page-source.test.ts src/document-api.test.ts src/magina-private-hub-source.test.ts src/pilot-core-source.test.ts src/onboarding-source.test.ts src/account-source.test.ts src/pilot-alerts-source.test.ts src/plot-map-source.test.ts src/catastro-map-first.test.ts src/calendar-source.test.ts"
+    "test": "node --test src/offline/outbox.test.ts src/api-offline.test.ts src/accessibility-source.test.ts src/public-directory-source.test.ts src/public-cache-policy-source.test.ts src/public-municipality-source.test.ts src/public-weather-source.test.ts src/public-magina-hub-source.test.ts src/public-market-source.test.ts src/public-market-page-source.test.ts src/public-news-page-source.test.ts src/document-api.test.ts src/magina-private-hub-source.test.ts src/pilot-core-source.test.ts src/onboarding-source.test.ts src/account-source.test.ts src/pilot-alerts-source.test.ts src/plot-map-source.test.ts src/catastro-map-first.test.ts src/plot-sigpac-associations.test.ts src/calendar-source.test.ts"
   },
   "dependencies": {
     "react": "^19.2.7",

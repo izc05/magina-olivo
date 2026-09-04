@@ -16,6 +16,7 @@ import { registerDocumentRoutes } from './document-routes.ts';
 import { registerFarmRoutes } from './farm-routes.ts';
 import { registerHoldingRoutes } from './holding-routes.ts';
 import { registerPlotRoutes } from './plot-routes.ts';
+import { registerPlotSigpacAssociationRoutes } from './plot-sigpac-association-routes.ts';
 import { registerPlotTimelineRoutes } from './plot-timeline-routes.ts';
 import { registerPublicDestinationRoutes } from './public-destination-routes.ts';
 import { registerPublicFieldAlertRoutes } from './public-field-alert-routes.ts';
@@ -81,6 +82,7 @@ export function buildApp(): FastifyInstance {
   registerFarmRoutes(app);
   registerPlotRoutes(app);
   registerPlotTimelineRoutes(app);
+  registerPlotSigpacAssociationRoutes(app);
   registerSigpacMapRoutes(app);
   registerCatastroMapRoutes(app);
   registerCatastroBatchImportRoutes(app);

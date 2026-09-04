@@ -2,6 +2,7 @@ import { chromium } from 'playwright';
 import { preview } from 'vite';
 
 const baseUrl = 'http://127.0.0.1:4174';
+const welcomeTourKey = 'magina-olivo:welcome-tour:v1';
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -29,6 +30,7 @@ async function run() {
       { name: '1366x768', width: 1366, height: 768, expectedPosition: 'static' },
     ]) {
       const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height } });
+      await context.addInitScript((key) => window.localStorage.setItem(key, 'seen'), welcomeTourKey);
       const page = await context.newPage();
       await page.goto(baseUrl, { waitUntil: 'networkidle' });
       const nav = page.locator('nav.bottom-nav');

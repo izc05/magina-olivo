@@ -5,6 +5,7 @@ import {
   buildHoldingHarvestComparisonPdf,
   type HoldingHarvestComparisonInput,
 } from './holding-harvest-comparison-format.ts';
+import { buildHoldingHarvestComparisonPayload } from './holding-harvest-comparison-payload.ts';
 import {
   buildHoldingHarvestPdf,
   type HoldingHarvestPlot,
@@ -280,6 +281,22 @@ export function registerHoldingHarvestReportRoutes(app: FastifyInstance): void {
 
       privatePdf(reply, filename(report.campaign.seasonStartYear, report.campaign.seasonEndYear));
       return reply.send(buildHoldingHarvestPdf(report));
+    },
+  );
+
+  app.get<{ Params: Params }>(
+    '/api/v1/campaigns/:campaignId/harvest-comparison',
+    async (request, reply) => {
+      const session = await getAuthenticatedSession(request);
+      if (!session) return reply.code(401).send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
+
+      const report = await loadComparisonReport(session.user.id, request.params.campaignId);
+      if (!report) {
+        return reply.code(404).send(apiError(request, 'HOLDING_HARVEST_COMPARISON_NOT_FOUND', 'Harvest comparison not found'));
+      }
+
+      reply.header('Cache-Control', 'private, no-store');
+      return reply.send(buildHoldingHarvestComparisonPayload(report));
     },
   );
 

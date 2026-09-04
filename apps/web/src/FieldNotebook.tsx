@@ -8,6 +8,7 @@ import {
   type Plot,
   type PlotTimelineItem,
 } from './api.ts';
+import { HarvestCampaignComparisonPanel } from './HarvestCampaignComparisonPanel.tsx';
 import { PlotMapPanel } from './PlotMapPanel.tsx';
 
 const activityLabels: Record<ActivityType, string> = {
@@ -315,6 +316,8 @@ export function FieldNotebook({
             </div>
           </form>
         </div>
+
+        {campaignId ? <HarvestCampaignComparisonPanel campaignId={campaignId} /> : null}
 
         <div className="notebook-summary-grid" aria-label={`Resumen de ${selectedPlot?.name ?? 'la parcela'}`}>
           <article><span>Labores</span><strong>{timelineCounts.activity}</strong><small>registradas</small></article>

@@ -6,6 +6,7 @@ import {
   calculateHoldingHarvestComparison,
   type HoldingHarvestComparisonInput,
 } from './holding-harvest-comparison-format.ts';
+import { buildHoldingHarvestComparisonPayload } from './holding-harvest-comparison-payload.ts';
 import type { PlotHarvestDelivery } from './plot-harvest-report-format.ts';
 
 function delivery(overrides: Partial<PlotHarvestDelivery> = {}): PlotHarvestDelivery {
@@ -124,6 +125,27 @@ test('holding comparison ranks improvements and regressions by comparable kg per
   assert.equal(comparison.stablePlotCount, 0);
 });
 
+test('holding comparison JSON payload exposes the same campaign metrics used by the PDF', () => {
+  const payload = buildHoldingHarvestComparisonPayload(fixture());
+
+  assert.equal(payload.currentCampaign.name, 'Campana 2026/27');
+  assert.equal(payload.currentCampaign.seasonStartYear, 2026);
+  assert.equal(payload.previousCampaign?.name, 'Campana 2025/26');
+  assert.equal(payload.previousCampaign?.seasonStartYear, 2025);
+  assert.equal(payload.base.activeAreaHa, 4.5);
+  assert.equal(payload.base.activeOliveTreeCount, 250);
+  assert.equal(payload.metrics.totalKilograms.current, 2000);
+  assert.equal(payload.metrics.totalKilograms.previous, 2000);
+  assert.equal(payload.metrics.kilogramsPerOliveTree.current, 8);
+  assert.equal(payload.metrics.kilogramsPerOliveTree.previous, 8);
+  assert.equal(payload.balance.improvedPlots, 1);
+  assert.equal(payload.balance.worsenedPlots, 2);
+  assert.equal(payload.balance.stablePlots, 0);
+  assert.equal(payload.improvedPlots[0]?.name, 'Parcela Norte');
+  assert.equal(payload.worsenedPlots[0]?.name, 'Parcela Sur');
+  assert.equal(payload.plots.length, 3);
+});
+
 test('holding comparison PDF contains current, previous and per-plot comparison sections', () => {
   const pdf = buildHoldingHarvestComparisonPdf(fixture());
   const body = pdf.toString('latin1');
@@ -166,6 +188,8 @@ test('holding comparison route remains authenticated and scoped to the same hold
   assert.match(routes, /status <> 'archived'/);
   assert.match(routes, /d\.campaign_id = \$2/);
   assert.match(routes, /d\.verification_status <> 'archived'/);
+  assert.match(routes, /\/api\/v1\/campaigns\/:campaignId\/harvest-comparison'/);
+  assert.match(routes, /reply\.send\(buildHoldingHarvestComparisonPayload\(report\)\)/);
   assert.match(routes, /\/api\/v1\/campaigns\/:campaignId\/harvest-comparison\.pdf/);
   assert.match(routes, /private, no-store/);
 });

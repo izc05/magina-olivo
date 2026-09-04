@@ -103,14 +103,15 @@ function normalizedPlace(value: string): string {
 }
 
 function findMunicipalitySlug(items: Municipality[], requested: string | null | undefined): string | null {
-  if (!items.length) return null;
-  if (!requested) return items[0].slug;
+  const first = items[0];
+  if (!first) return null;
+  if (!requested) return first.slug;
   const normalizedRequested = normalizedPlace(requested);
   const match = items.find((item) => {
     const candidates = [item.name, ...item.aliases].map(normalizedPlace);
     return candidates.includes(normalizedRequested) || candidates.some((candidate) => normalizedRequested.includes(candidate) || candidate.includes(normalizedRequested));
   });
-  return match?.slug ?? items[0].slug;
+  return match?.slug ?? first.slug;
 }
 
 async function getJson<T>(url: string, signal: AbortSignal): Promise<T | null> {

@@ -48,6 +48,26 @@ type DashboardResponse = {
   latestProfileChange: null | { id: string; status: string; createdAt: string; reviewedAt: string | null; reviewNotes: string | null };
   billingNotice: string;
 };
+type NotificationItem = {
+  id: string;
+  type: string;
+  severity: 'info' | 'action' | 'warning';
+  title: string;
+  body: string;
+  actionUrl: string | null;
+  createdAt: string;
+  readAt: string | null;
+};
+type NotificationResponse = {
+  unreadCount: number;
+  items: NotificationItem[];
+  policy: { commercialOnly: boolean; officialWarning: boolean; agriculturalAlert: boolean };
+};
+type PreferenceResponse = {
+  emailEnabled: boolean;
+  emailTransportConfigured: boolean;
+  note: string;
+};
 
 type LoadState = 'loading' | 'ready' | 'unauthenticated' | 'error';
 
@@ -91,7 +111,10 @@ export function AdvertiserPortalPage() {
   const [access, setAccess] = useState<AccessResponse | null>(null);
   const [selectedId, setSelectedId] = useState('');
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
+  const [notifications, setNotifications] = useState<NotificationResponse | null>(null);
+  const [preferences, setPreferences] = useState<PreferenceResponse | null>(null);
   const [busy, setBusy] = useState(false);
+  const [notificationBusy, setNotificationBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -124,8 +147,27 @@ export function AdvertiserPortalPage() {
     }
   }, []);
 
+  const loadNotifications = useCallback(async (advertiserId: string) => {
+    if (!advertiserId) {
+      setNotifications(null);
+      setPreferences(null);
+      return;
+    }
+    try {
+      const [notificationData, preferenceData] = await Promise.all([
+        requestJson<NotificationResponse>(`/api/v1/advertiser/notifications?advertiserId=${encodeURIComponent(advertiserId)}`),
+        requestJson<PreferenceResponse>(`/api/v1/advertiser/notification-preferences?advertiserId=${encodeURIComponent(advertiserId)}`),
+      ]);
+      setNotifications(notificationData);
+      setPreferences(preferenceData);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'No se han podido cargar los avisos comerciales.');
+    }
+  }, []);
+
   useEffect(() => { void loadAccess(); }, [loadAccess]);
   useEffect(() => { void loadDashboard(selectedId); }, [loadDashboard, selectedId]);
+  useEffect(() => { void loadNotifications(selectedId); }, [loadNotifications, selectedId]);
 
   const selectedMembership = useMemo(() => access?.memberships.find((item) => item.advertiserId === selectedId) ?? null, [access, selectedId]);
 
@@ -154,6 +196,39 @@ export function AdvertiserPortalPage() {
       setError(reason instanceof Error ? reason.message : 'No se ha podido enviar la solicitud de cambio.');
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function markNotificationRead(notificationId: string) {
+    if (!selectedId) return;
+    setNotificationBusy(true);
+    try {
+      await requestJson(`/api/v1/advertiser/notifications/${notificationId}/read`, { method: 'POST' });
+      await loadNotifications(selectedId);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'No se ha podido marcar el aviso como leído.');
+    } finally {
+      setNotificationBusy(false);
+    }
+  }
+
+  async function setEmailNotifications(emailEnabled: boolean) {
+    if (!selectedId) return;
+    setNotificationBusy(true);
+    setError(null);
+    try {
+      await requestJson(`/api/v1/advertiser/notification-preferences?advertiserId=${encodeURIComponent(selectedId)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ emailEnabled }),
+      });
+      await loadNotifications(selectedId);
+      setNotice(emailEnabled
+        ? 'Preferencia de correo comercial activada. Solo se enviará si el transporte de correo está configurado por Mágina Olivo.'
+        : 'Correo comercial desactivado. Seguirás viendo los avisos dentro del Área del Anunciante.');
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'No se ha podido guardar la preferencia de correo.');
+    } finally {
+      setNotificationBusy(false);
     }
   }
 
@@ -188,6 +263,23 @@ export function AdvertiserPortalPage() {
             <PortalKpi value={dashboard.metrics.days30.actions} label="Interacciones · 30 días" />
             <PortalKpi value={dashboard.metrics.days30.whatsappClicks} label="WhatsApp" />
             <PortalKpi value={percent(dashboard.metrics.days30.actionRate)} label="Tasa de acción" />
+          </section>
+
+          <section className="advertiser-notification-section" aria-labelledby="advertiser-notifications-title">
+            <div className="advertiser-section-heading">
+              <div><p className="eyebrow">Seguimiento comercial</p><h2 id="advertiser-notifications-title">Avisos del anunciante {notifications?.unreadCount ? `· ${notifications.unreadCount} sin leer` : ''}</h2><p>Altas, revisiones, vencimientos, renovaciones y cobros. No son alertas agrícolas, meteorológicas ni oficiales.</p></div>
+              <label className="advertiser-email-pref"><input type="checkbox" checked={preferences?.emailEnabled ?? false} onChange={(event) => void setEmailNotifications(event.target.checked)} disabled={notificationBusy} /><span>Recibir también por correo</span></label>
+            </div>
+            <div className="advertiser-notification-list">
+              {(notifications?.items ?? []).slice(0, 8).map((item) => (
+                <article key={item.id} className={`advertiser-notification advertiser-notification-${item.severity}${item.readAt ? ' read' : ' unread'}`}>
+                  <div><span className="advertiser-notification-dot" aria-hidden="true">●</span><div><strong>{item.title}</strong><p>{item.body}</p><small>{date(item.createdAt)} · Mágina Olivo · Aviso comercial</small></div></div>
+                  {!item.readAt ? <button type="button" disabled={notificationBusy} onClick={() => void markNotificationRead(item.id)}>Marcar leído</button> : <span className="advertiser-notification-read">Leído</span>}
+                </article>
+              ))}
+              {!notifications?.items.length ? <div className="advertiser-card advertiser-notification-empty">No tienes avisos comerciales pendientes.</div> : null}
+            </div>
+            <p className="advertiser-privacy">El correo es opcional y está desactivado por defecto. Estado del transporte: <strong>{preferences?.emailTransportConfigured ? 'configurado' : 'no configurado'}</strong>. Los avisos dentro del portal no dependen del correo.</p>
           </section>
 
           <section className="advertiser-grid">

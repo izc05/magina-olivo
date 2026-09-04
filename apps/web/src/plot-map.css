@@ -1,64 +1,120 @@
+/* Parcel map — Visual V2 presentation over the real private map editor. */
+
 .plot-map-shell {
+  position: relative;
   scroll-margin-top: 6rem;
+  margin-top: 28px;
+  padding: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(47, 59, 39, .1);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 100% 0, rgba(201, 155, 44, .09), transparent 31%),
+    linear-gradient(180deg, rgba(255, 253, 248, .88), rgba(249, 246, 237, .78));
+  box-shadow: 0 12px 36px rgba(47, 59, 39, .045);
+}
+
+.plot-map-shell > .section-heading:first-child {
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.plot-map-shell > .section-heading:first-child .page-eyebrow {
+  color: var(--v2-gold, #c99b2c);
+  opacity: 1;
+}
+
+.plot-map-shell > .section-heading:first-child .section-title {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.7rem, 6vw, 2.2rem);
+  line-height: 1.05;
 }
 
 .plot-map-grid {
   display: grid;
-  gap: 1rem;
+  gap: 12px;
 }
 
 .plot-location-card {
   display: grid;
-  gap: 1rem;
+  align-content: start;
+  gap: 14px;
+  padding: 17px;
+  border-radius: 20px;
+  background: rgba(255, 254, 250, .94);
+  box-shadow: 0 7px 24px rgba(47, 59, 39, .04);
 }
 
 .plot-map-counts {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 0.45rem;
+  gap: 6px;
+}
+
+.plot-map-counts .badge {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding-inline: 10px;
+  border: 1px solid rgba(86, 111, 67, .1);
 }
 
 .plot-map-mode-tabs {
-  display: inline-flex;
-  gap: 0.25rem;
-  margin: 0.85rem 0 0.9rem;
-  padding: 0.25rem;
-  border: 1px solid var(--line, #d9ddcf);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.58);
+  width: min(100%, 360px);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  margin: 13px 0 14px;
+  padding: 4px;
+  border: 1px solid rgba(47, 59, 39, .11);
+  border-radius: 15px;
+  background: rgba(245, 240, 228, .72);
 }
 
 .plot-map-mode-tabs button {
-  min-height: 2.5rem;
+  min-height: 42px;
   border: 0;
-  border-radius: 999px;
-  padding: 0.45rem 1rem;
+  border-radius: 11px;
+  padding: 8px 13px;
   background: transparent;
-  color: var(--muted, #66705c);
+  color: #727566;
   font: inherit;
-  font-weight: 700;
+  font-size: .78rem;
+  font-weight: 750;
   cursor: pointer;
+  transition: background .16s ease, color .16s ease, box-shadow .16s ease;
+}
+
+.plot-map-mode-tabs button:hover:not(.active) {
+  background: rgba(86, 111, 67, .06);
+  color: var(--v2-olive-deep, #2f3b27);
 }
 
 .plot-map-mode-tabs button.active {
-  background: var(--text, #26301f);
-  color: #fff;
+  background: var(--v2-olive-deep, #2f3b27);
+  color: #fffdf8;
+  box-shadow: 0 6px 15px rgba(47, 59, 39, .13);
 }
 
 .plot-map-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
 }
 
 .plot-map-meta span {
-  border: 1px solid var(--line, #d9ddcf);
-  border-radius: 999px;
-  padding: 0.35rem 0.65rem;
-  font-size: 0.82rem;
-  color: var(--muted, #66705c);
-  background: rgba(255, 255, 255, 0.55);
+  min-width: 0;
+  min-height: 39px;
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(86, 111, 67, .11);
+  border-radius: 12px;
+  padding: 7px 9px;
+  background: rgba(245, 240, 228, .6);
+  color: #696d5d;
+  font-size: .72rem;
+  line-height: 1.3;
 }
 
 .plot-coordinate-fields input {
@@ -66,106 +122,153 @@
 }
 
 .plot-editor-help {
-  margin: -0.2rem 0 0;
-  color: var(--muted, #66705c);
-  font-size: 0.86rem;
+  position: relative;
+  margin: -1px 0 0;
+  padding-left: 19px;
+  color: #737667;
+  font-size: .78rem;
   line-height: 1.5;
+}
+
+.plot-editor-help::before {
+  content: "i";
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 14px;
+  height: 14px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(201, 155, 44, .18);
+  color: #735817;
+  font-family: Georgia, serif;
+  font-size: .62rem;
+  font-weight: 800;
 }
 
 .plot-boundary-summary {
   display: grid;
-  gap: 0.2rem;
-  padding: 0.9rem;
-  border: 1px solid var(--line, #d9ddcf);
-  border-radius: 0.9rem;
-  background: rgba(244, 246, 238, 0.74);
+  grid-template-columns: auto 1fr;
+  gap: 3px 10px;
+  padding: 13px;
+  border: 1px solid rgba(86, 111, 67, .14);
+  border-radius: 15px;
+  background:
+    linear-gradient(125deg, rgba(86, 111, 67, .11), rgba(201, 155, 44, .06)),
+    rgba(255, 253, 248, .88);
 }
 
 .plot-boundary-summary strong {
-  font-size: 1.05rem;
+  color: var(--v2-olive-deep, #2f3b27);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.18rem;
+  font-weight: 600;
 }
 
 .plot-boundary-summary span {
-  color: var(--text, #26301f);
+  align-self: center;
+  justify-self: end;
+  color: var(--v2-olive-deep, #2f3b27);
+  font-size: .78rem;
+  font-weight: 750;
   font-variant-numeric: tabular-nums;
 }
 
 .plot-boundary-summary small {
-  color: var(--muted, #66705c);
+  grid-column: 1 / -1;
+  color: #727567;
+  font-size: .69rem;
   line-height: 1.4;
 }
 
 .plot-map-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.65rem;
+  gap: 8px;
 }
 
 .plot-map-actions > * {
   flex: 1 1 10rem;
+  min-height: 45px;
+}
+
+.plot-map-actions .primary-button {
+  box-shadow: 0 7px 18px rgba(47, 59, 39, .11);
 }
 
 .plot-clear-location {
   justify-self: start;
+  min-height: 40px;
 }
 
 .plot-map-card {
   position: relative;
   overflow: hidden;
-  min-height: 22rem;
+  min-height: 24rem;
   display: flex;
   flex-direction: column;
-  background: #eef1e8;
+  border-radius: 20px;
+  border-color: rgba(47, 59, 39, .12);
+  background: #e7eadf;
+  box-shadow: 0 10px 30px rgba(47, 59, 39, .08);
 }
 
 .plot-map-toolbar {
   position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
+  top: 11px;
+  right: 11px;
   z-index: 3;
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.28rem;
-  border: 1px solid rgba(38, 48, 31, 0.16);
-  border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 8px 24px rgba(38, 48, 31, 0.12);
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid rgba(47, 59, 39, .15);
+  border-radius: 12px;
+  background: rgba(255, 253, 248, .95);
+  box-shadow: 0 8px 22px rgba(47, 59, 39, .13);
+  backdrop-filter: blur(10px);
 }
 
 .plot-map-toolbar button {
-  min-width: 2.35rem;
-  min-height: 2.35rem;
+  min-width: 38px;
+  min-height: 38px;
   border: 0;
-  border-radius: 0.55rem;
-  background: #f2f4ec;
-  color: var(--text, #26301f);
+  border-radius: 9px;
+  background: rgba(86, 111, 67, .08);
+  color: var(--v2-olive-deep, #2f3b27);
   font: inherit;
-  font-weight: 800;
+  font-size: .92rem;
+  font-weight: 850;
   cursor: pointer;
+}
+
+.plot-map-toolbar button:hover:not(:disabled) {
+  background: rgba(86, 111, 67, .15);
 }
 
 .plot-map-toolbar button:nth-of-type(3) {
   min-width: auto;
-  padding-inline: 0.7rem;
-  font-size: 0.8rem;
+  padding-inline: 10px;
+  font-size: .7rem;
 }
 
 .plot-map-toolbar button:disabled {
-  opacity: 0.45;
+  opacity: .4;
   cursor: default;
 }
 
 .plot-map-toolbar span {
-  padding: 0 0.35rem;
-  color: var(--muted, #66705c);
-  font-size: 0.75rem;
+  padding: 0 5px;
+  color: #707364;
+  font-size: .68rem;
+  font-weight: 700;
 }
 
 .plot-map-editor {
   display: block;
   width: 100%;
-  min-height: 20rem;
+  min-height: 21rem;
   flex: 1;
   aspect-ratio: 1 / 1;
   background: #e8ecdf;
@@ -175,11 +278,12 @@
 
 .plot-map-editor image {
   pointer-events: none;
+  filter: saturate(.78) contrast(.97) sepia(.05);
 }
 
 .plot-boundary-shape {
-  fill: rgba(118, 135, 72, 0.28);
-  stroke: #52632e;
+  fill: rgba(86, 111, 67, .28);
+  stroke: #425832;
   stroke-width: 7;
   stroke-linejoin: round;
   pointer-events: none;
@@ -187,7 +291,7 @@
 
 .plot-boundary-line {
   fill: none;
-  stroke: #52632e;
+  stroke: #425832;
   stroke-width: 7;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -199,14 +303,14 @@
 }
 
 .plot-boundary-vertex circle {
-  fill: #fff;
-  stroke: #52632e;
+  fill: #fffdf8;
+  stroke: #425832;
   stroke-width: 5;
 }
 
 .plot-boundary-vertex text {
   fill: #26301f;
-  stroke: rgba(255, 255, 255, 0.9);
+  stroke: rgba(255, 253, 248, .94);
   stroke-width: 5;
   paint-order: stroke;
   font-size: 27px;
@@ -218,14 +322,14 @@
 }
 
 .plot-location-marker circle:not(.plot-location-marker-ring) {
-  fill: #25301d;
-  stroke: #fff;
+  fill: #c99b2c;
+  stroke: #fffdf8;
   stroke-width: 5;
 }
 
 .plot-location-marker-ring {
-  fill: rgba(255, 255, 255, 0.28);
-  stroke: rgba(38, 48, 31, 0.55);
+  fill: rgba(201, 155, 44, .18);
+  stroke: rgba(86, 111, 67, .72);
   stroke-width: 4;
 }
 
@@ -233,19 +337,30 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 0.9rem 1rem;
-  background: #fff;
+  gap: 13px;
+  padding: 12px 14px;
+  border-top: 1px solid rgba(47, 59, 39, .09);
+  background: rgba(255, 253, 248, .97);
 }
 
 .plot-map-footer > div {
+  min-width: 0;
   display: grid;
-  gap: 0.15rem;
+  gap: 2px;
+}
+
+.plot-map-footer strong {
+  color: var(--v2-olive-deep, #2f3b27);
+  font-size: .86rem;
 }
 
 .plot-map-footer small {
-  color: var(--muted, #66705c);
+  overflow: hidden;
+  color: #75786a;
+  font-size: .68rem;
   font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .plot-map-footer small a {
@@ -253,32 +368,65 @@
 }
 
 .plot-map-footer > a {
+  flex: 0 0 auto;
   white-space: nowrap;
 }
 
 .plot-map-disclaimer {
-  margin: 0.8rem 0 0;
-  color: var(--muted, #66705c);
-  font-size: 0.8rem;
+  position: relative;
+  margin: 13px 0 0;
+  padding: 11px 12px 11px 33px;
+  border: 1px solid rgba(201, 155, 44, .15);
+  border-radius: 13px;
+  background: rgba(239, 225, 184, .18);
+  color: #6e6d60;
+  font-size: .68rem;
   line-height: 1.45;
 }
 
+.plot-map-disclaimer::before {
+  content: "i";
+  position: absolute;
+  left: 11px;
+  top: 11px;
+  width: 15px;
+  height: 15px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--v2-gold-soft, #efe1b8);
+  color: #665018;
+  font-family: Georgia, serif;
+  font-size: .66rem;
+  font-weight: 800;
+}
+
 @media (min-width: 860px) {
+  .plot-map-shell {
+    padding: 24px;
+  }
+
   .plot-map-grid {
-    grid-template-columns: minmax(18rem, 0.82fr) minmax(25rem, 1.3fr);
+    grid-template-columns: minmax(18rem, .78fr) minmax(27rem, 1.35fr);
     align-items: stretch;
   }
 
   .plot-map-card {
-    min-height: 30rem;
+    min-height: 31rem;
   }
 
   .plot-map-editor {
-    min-height: 27rem;
+    min-height: 28rem;
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 620px) {
+  .plot-map-shell {
+    margin-top: 21px;
+    padding: 14px;
+    border-radius: 22px;
+  }
+
   .plot-map-counts {
     justify-content: flex-start;
   }
@@ -287,13 +435,18 @@
     width: 100%;
   }
 
-  .plot-map-mode-tabs button {
-    flex: 1;
+  .plot-map-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .plot-map-card {
+    min-height: 23rem;
+    border-radius: 18px;
   }
 
   .plot-map-toolbar {
-    top: 0.55rem;
-    right: 0.55rem;
+    top: 8px;
+    right: 8px;
   }
 
   .plot-map-footer {
@@ -303,5 +456,37 @@
 
   .plot-map-footer > a {
     align-self: flex-start;
+  }
+}
+
+@media (max-width: 390px) {
+  .plot-map-shell {
+    padding: 12px;
+  }
+
+  .plot-location-card {
+    padding: 14px;
+  }
+
+  .plot-map-toolbar button {
+    min-width: 36px;
+    min-height: 36px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plot-map-mode-tabs button {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .plot-map-editor image {
+    filter: none;
+  }
+
+  .plot-editor-help::before,
+  .plot-map-disclaimer::before {
+    display: none;
   }
 }

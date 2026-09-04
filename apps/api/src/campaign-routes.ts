@@ -13,7 +13,7 @@ type CreateCampaignBody = {
   notes?: string;
 };
 
-function isUniqueViolation(reason: unknown): boolean {
+export function isUniqueViolation(reason: unknown): boolean {
   return typeof reason === 'object'
     && reason !== null
     && 'code' in reason

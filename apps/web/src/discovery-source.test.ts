@@ -46,7 +46,7 @@ test('crawlable public context describes the real information model', () => {
   }
 });
 
-test('local discovery routes and private exclusions remain explicit', () => {
+test('public discovery routes remain explicit', () => {
   for (const publicRoute of [
     '/magina/mercado',
     '/magina/tiempo',
@@ -62,20 +62,43 @@ test('local discovery routes and private exclusions remain explicit', () => {
   ]) {
     assert.ok(generator.includes(publicRoute), `missing public discovery route: ${publicRoute}`);
   }
+});
 
+test('private UI routes publish noindex shells while server endpoints remain crawler-blocked', () => {
   for (const privateRoute of [
-    '/api/',
     '/cuenta',
     '/calendario',
     '/onboarding',
     '/register',
     '/reset-password',
   ]) {
-    assert.ok(generator.includes(privateRoute), `missing private crawler exclusion: ${privateRoute}`);
+    assert.ok(generator.includes(privateRoute), `missing private noindex route: ${privateRoute}`);
   }
+
+  assert.match(generator, /renderPrivateRoute/);
+  assert.match(generator, /noindex,nofollow,noarchive,nosnippet/);
+  assert.match(generator, /data-private-noindex/);
+  assert.match(generator, /crawlerBlockedPaths/);
+  assert.ok(generator.includes('/api/'));
+  assert.ok(generator.includes('/health/'));
 });
 
-test('sitemap is restricted to canonical routes', () => {
+test('social previews are generated per canonical public section', () => {
+  assert.match(generator, /writeSocialCards/);
+  assert.match(generator, /socialCardSvg/);
+  assert.match(generator, /summary_large_image/);
+  assert.match(generator, /og:image/);
+  assert.match(generator, /twitter:image/);
+  assert.match(generator, /image\/svg\+xml/);
+  assert.match(generator, /width=\"1200\"/);
+  assert.match(generator, /height=\"630\"/);
+  assert.match(generator, /hreflang=\"es-ES\"/);
+  assert.match(generator, /hreflang=\"x-default\"/);
+});
+
+test('sitemap is restricted to canonical routes and does not fake lastmod on every build', () => {
   assert.match(generator, /route\.path === route\.canonicalPath/);
-  assert.ok(generator.includes('rel="canonical"'));
+  assert.ok(generator.includes('rel=\"canonical\"'));
+  assert.doesNotMatch(generator, /<lastmod>/);
+  assert.doesNotMatch(generator, /new Date\(\)\.toISOString/);
 });

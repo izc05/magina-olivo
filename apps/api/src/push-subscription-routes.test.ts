@@ -27,6 +27,11 @@ test('push subscription upsert cannot transfer an endpoint between accounts', as
 
   assert.match(source, /on conflict \(endpoint\)/);
   assert.match(source, /where push_subscriptions\.user_id = excluded\.user_id/);
-  assert.doesNotMatch(source, /user_id = excluded\.user_id/);
+
+  const updateClause = source.match(
+    /on conflict \(endpoint\)\s+do update set([\s\S]*?)where push_subscriptions\.user_id = excluded\.user_id/,
+  )?.[1];
+  assert.ok(updateClause, 'expected guarded ON CONFLICT update clause');
+  assert.doesNotMatch(updateClause, /\buser_id\s*=\s*excluded\.user_id/);
   assert.match(source, /PUSH_SUBSCRIPTION_CONFLICT/);
 });

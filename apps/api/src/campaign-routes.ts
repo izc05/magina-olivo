@@ -13,6 +13,13 @@ type CreateCampaignBody = {
   notes?: string;
 };
 
+function isUniqueViolation(reason: unknown): boolean {
+  return typeof reason === 'object'
+    && reason !== null
+    && 'code' in reason
+    && (reason as { code?: unknown }).code === '23505';
+}
+
 export function registerCampaignRoutes(app: FastifyInstance): void {
   app.get<{ Params: HoldingParams }>(
     '/api/v1/holdings/:holdingId/campaigns',
@@ -103,38 +110,61 @@ export function registerCampaignRoutes(app: FastifyInstance): void {
       }
 
       const id = randomUUID();
-      const row = (
-        await getPool().query<{
-          id: string;
-          name: string;
-          season_start_year: number;
-          season_end_year: number;
-          start_date: string | null;
-          status: string;
-          notes: string | null;
-          created_at: Date;
-          updated_at: Date;
-        }>(
-          `
-            insert into campaigns (
-              id, holding_id, name, season_start_year, season_end_year,
-              start_date, status, notes
-            )
-            values ($1, $2, $3, $4, $5, $6, 'active', $7)
-            returning id, name, season_start_year, season_end_year,
-                      start_date, status, notes, created_at, updated_at
-          `,
-          [
-            id,
-            access.holdingId,
-            name,
-            request.body.seasonStartYear,
-            request.body.seasonStartYear + 1,
-            request.body.startDate ?? null,
-            request.body.notes?.trim() || null,
-          ],
-        )
-      ).rows[0];
+      let row: {
+        id: string;
+        name: string;
+        season_start_year: number;
+        season_end_year: number;
+        start_date: string | null;
+        status: string;
+        notes: string | null;
+        created_at: Date;
+        updated_at: Date;
+      } | undefined;
+
+      try {
+        row = (
+          await getPool().query<{
+            id: string;
+            name: string;
+            season_start_year: number;
+            season_end_year: number;
+            start_date: string | null;
+            status: string;
+            notes: string | null;
+            created_at: Date;
+            updated_at: Date;
+          }>(
+            `
+              insert into campaigns (
+                id, holding_id, name, season_start_year, season_end_year,
+                start_date, status, notes
+              )
+              values ($1, $2, $3, $4, $5, $6, 'active', $7)
+              returning id, name, season_start_year, season_end_year,
+                        start_date, status, notes, created_at, updated_at
+            `,
+            [
+              id,
+              access.holdingId,
+              name,
+              request.body.seasonStartYear,
+              request.body.seasonStartYear + 1,
+              request.body.startDate ?? null,
+              request.body.notes?.trim() || null,
+            ],
+          )
+        ).rows[0];
+      } catch (reason) {
+        if (isUniqueViolation(reason)) {
+          return reply.code(409).send(apiError(
+            request,
+            'CAMPAIGN_ALREADY_EXISTS',
+            'A campaign for that season already exists',
+          ));
+        }
+        throw reason;
+      }
 
       if (!row) throw new Error('Campaign insert returned no row');
 

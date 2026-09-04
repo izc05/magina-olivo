@@ -14,6 +14,7 @@ import { MaginaMarketPage } from './MaginaMarketPage';
 import { MaginaNewsPage } from './MaginaNewsPage';
 import { MaginaWeatherPage } from './MaginaWeatherPage';
 import { NoticeCenter } from './NoticeCenter';
+import { NotificationCenterPage } from './NotificationCenterPage';
 import { OnboardingPage } from './OnboardingPage';
 import { PilotAlerts } from './PilotAlerts';
 import { RegisterPage } from './RegisterPage';
@@ -48,6 +49,7 @@ import './calendar.css';
 import './loyalty-olive.css';
 import './reward-catalog.css';
 import './reward-validator.css';
+import './notification-center.css';
 
 installDemoPreview();
 installWeatherDemoPreview();
@@ -96,6 +98,8 @@ createRoot(root).render(
       <OnboardingPage />
     ) : path === '/cuenta' ? (
       <AccountPage />
+    ) : path === '/notificaciones' ? (
+      <NotificationCenterPage />
     ) : path === '/calendario' ? (
       <CalendarPage />
     ) : path === '/tu-olivo' ? (

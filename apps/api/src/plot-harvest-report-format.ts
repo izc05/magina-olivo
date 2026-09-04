@@ -53,6 +53,11 @@ export type PlotHarvestSummary = {
   destinationTotals: Array<{ destination: string; kilograms: number }>;
 };
 
+export type PlotHarvestProductivity = {
+  kilogramsPerHectare: number | null;
+  kilogramsPerOliveTree: number | null;
+};
+
 function numberValue(value: string | null): number | null {
   if (value == null || value.trim() === '') return null;
   const parsed = Number(value);
@@ -95,6 +100,21 @@ export function summarizePlotHarvest(deliveries: PlotHarvestDelivery[]): PlotHar
   };
 }
 
+export function calculatePlotHarvestProductivity(
+  totalKilograms: number,
+  areaHa: string | null,
+  oliveTreeCount: number | null,
+): PlotHarvestProductivity {
+  const parsedAreaHa = numberValue(areaHa);
+  const validAreaHa = parsedAreaHa != null && parsedAreaHa > 0 ? parsedAreaHa : null;
+  const validTreeCount = oliveTreeCount != null && oliveTreeCount > 0 ? oliveTreeCount : null;
+
+  return {
+    kilogramsPerHectare: validAreaHa == null ? null : totalKilograms / validAreaHa,
+    kilogramsPerOliveTree: validTreeCount == null ? null : totalKilograms / validTreeCount,
+  };
+}
+
 function asciiPdfText(value: string | number | null | undefined): string {
   return (value == null ? '' : String(value))
     .normalize('NFD')
@@ -118,6 +138,12 @@ function truncate(value: string, maxLength: number): string {
 
 function formatKg(value: number): string {
   return new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 })
+    .format(value)
+    .replaceAll('.', ' ');
+}
+
+function formatMetric(value: number | null): string {
+  return value == null ? '-' : new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 })
     .format(value)
     .replaceAll('.', ' ');
 }
@@ -168,9 +194,7 @@ function writePdf(pages: string[]): Buffer {
     const pageRef = pageRefs[index];
     const contentRef = contentRefs[index];
     const content = pages[index];
-    if (pageRef == null || contentRef == null || content == null) {
-      throw new Error('Invalid PDF page reference.');
-    }
+    if (pageRef == null || contentRef == null || content == null) throw new Error('Invalid PDF page reference.');
 
     const contentBuffer = Buffer.from(content, 'latin1');
     objects.set(pageRef, Buffer.from(
@@ -254,6 +278,11 @@ function footer(input: PlotHarvestReportInput): string {
 
 export function buildPlotHarvestPdf(input: PlotHarvestReportInput): Buffer {
   const summary = summarizePlotHarvest(input.deliveries);
+  const productivity = calculatePlotHarvestProductivity(
+    summary.totalKilograms,
+    input.plot.areaHa,
+    input.plot.oliveTreeCount,
+  );
   const pages: string[] = [];
   let pageNumber = 1;
   let page = reportHeader(input, pageNumber);
@@ -276,17 +305,19 @@ export function buildPlotHarvestPdf(input: PlotHarvestReportInput): Buffer {
   page += text(42, 608, 8, `Primera entrega: ${formatDate(summary.firstDeliveryAt)}`);
   page += text(255, 608, 8, `Ultima entrega: ${formatDate(summary.lastDeliveryAt)}`);
   page += text(390, 608, 8, `Kg con rendimiento: ${formatKg(summary.yieldCoveredKilograms)}`);
+  page += text(42, 590, 8, `Productividad: ${formatMetric(productivity.kilogramsPerHectare)} kg/ha`, true);
+  page += text(255, 590, 8, `Media por olivo: ${formatMetric(productivity.kilogramsPerOliveTree)} kg/olivo`, true);
 
   const documentTotal = input.documents.reduce((total, item) => total + item.count, 0);
-  page += text(42, 586, 8, `Documentos vinculados: ${documentTotal}`);
+  page += text(42, 572, 8, `Documentos vinculados: ${documentTotal}`);
   if (input.documents.length > 0) {
     const breakdown = input.documents.map((item) => `${item.type}: ${item.count}`).join(' | ');
-    page += text(170, 586, 7, truncate(breakdown, 80));
+    page += text(170, 572, 7, truncate(breakdown, 80));
   }
 
-  page += text(42, 558, 11, 'Entregas registradas', true);
-  page += deliveriesTableHeader(541);
-  let y = 521;
+  page += text(42, 544, 11, 'Entregas registradas', true);
+  page += deliveriesTableHeader(527);
+  let y = 507;
 
   if (input.deliveries.length === 0) {
     page += text(42, y, 9, 'No hay entregas registradas para esta parcela en la campana seleccionada.');

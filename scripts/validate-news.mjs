@@ -5,6 +5,13 @@ const MIN_STORIES = 8;
 const MIN_HEALTHY_SOURCES = 3;
 const MIN_HEALTHY_MUNICIPAL_SOURCES = 5;
 const MIN_MUNICIPAL_STORIES = 1;
+const monthNames = 'enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre';
+const municipalArchiveTitlePatterns = [
+  new RegExp(`^\\d{1,2}\\s+de\\s+(?:${monthNames})\\s+de\\s+20\\d{2}$`, 'i'),
+  new RegExp(`^(?:${monthNames})\\s+\\d{1,2},\\s+20\\d{2}$`, 'i'),
+  /\bpor\s+comunicaci[oó]n\b.*\bnoticias\b/i,
+  /^(?:noticias|actualidad)$/i,
+];
 
 const payload = JSON.parse(await readFile(FEED, 'utf8'));
 const stories = Array.isArray(payload.stories) ? payload.stories : [];
@@ -66,6 +73,9 @@ for (const [index, story] of stories.entries()) {
     if (story.category !== 'Ayuntamientos') errors.push(`${label}: noticia municipal sin categoría Ayuntamientos.`);
     if (story.official !== true) errors.push(`${label}: noticia municipal no marcada como oficial.`);
     if (!String(story.source ?? '').startsWith('Ayuntamiento de ')) errors.push(`${label}: fuente municipal no identificada como Ayuntamiento.`);
+    if (municipalArchiveTitlePatterns.some((pattern) => pattern.test(String(story.title ?? '').trim()))) {
+      errors.push(`${label}: título municipal parece una página de archivo y no una noticia real.`);
+    }
   }
 }
 

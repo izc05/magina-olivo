@@ -4,13 +4,14 @@ on:
   push:
     branches:
       - feat/integration-v2-mvp-v1
+      - feat/pre-minipc-convergence-v1
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: magina-olivo-integration-preview-validation
+  group: magina-olivo-integration-preview-validation-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -42,4 +43,4 @@ jobs:
         run: npm run build --workspace @magina/web
 
       - name: Keep integration preview off public Pages
-        run: echo "Public GitHub Pages is reserved for the original Visual V2 review app."
+        run: echo "Public GitHub Pages remains on Visual V2 until convergence matches the approved interface."

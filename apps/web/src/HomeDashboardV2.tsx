@@ -55,16 +55,15 @@ type RainAlertResponse = {
   }>;
 };
 
-type PublicSourcesResponse = {
-  items: Array<{
-    key: string;
-    provider: string;
+type MarketSummaryResponse = {
+  weeks: Array<{ week: number; label: string; endDate: string | null }>;
+  series: Array<{
+    key: 'extra' | 'virgin' | 'lampante';
     label: string;
-    sourceUpdatedAt?: string | null;
-    lastSuccessAt?: string | null;
-    hasError: boolean;
-    metadata?: Record<string, unknown>;
+    values: Array<number | null>;
   }>;
+  freshness: { status: 'fresh' | 'aging' | 'stale' | 'unknown'; latestDate: string | null };
+  source: { provider: string; position: string; unit: '€/kg' };
 };
 
 type HomeData = {
@@ -72,7 +71,7 @@ type HomeData = {
   news: NewsResponse | null;
   fieldAlerts: FieldAlertResponse | null;
   rainAlerts: RainAlertResponse | null;
-  marketSource: PublicSourcesResponse['items'][number] | null;
+  market: MarketSummaryResponse | null;
 };
 
 function numberLabel(value: string | number | null | undefined, maximumFractionDigits = 1): string {
@@ -88,6 +87,11 @@ function percentLabel(value: string | number | null | undefined): string {
   return Number.isFinite(number)
     ? `${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 }).format(number)} %`
     : '—';
+}
+
+function marketPriceLabel(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return '—';
+  return `${new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)} €/kg`;
 }
 
 function normalizedPlace(value: string): string {
@@ -156,7 +160,7 @@ export function HomeDashboardV2({
   coverage: number;
   onNavigate: (tab: AppTab) => void;
 }) {
-  const [data, setData] = useState<HomeData>({ weather: null, news: null, fieldAlerts: null, rainAlerts: null, marketSource: null });
+  const [data, setData] = useState<HomeData>({ weather: null, news: null, fieldAlerts: null, rainAlerts: null, market: null });
   const [loadingPublic, setLoadingPublic] = useState(true);
 
   useEffect(() => {
@@ -164,22 +168,21 @@ export function HomeDashboardV2({
     setLoadingPublic(true);
 
     void (async () => {
-      const [municipalityData, news, fieldAlerts, rainAlerts, publicSources] = await Promise.all([
+      const [municipalityData, news, fieldAlerts, rainAlerts, market] = await Promise.all([
         getJson<{ items: Municipality[] }>('/api/v1/public/municipalities', controller.signal),
         getJson<NewsResponse>('/api/v1/public/news', controller.signal),
         getJson<FieldAlertResponse>('/api/v1/public/field-alerts', controller.signal),
         getJson<RainAlertResponse>('/api/v1/account/rain-alerts', controller.signal),
-        getJson<PublicSourcesResponse>('/api/v1/public/sources', controller.signal),
+        getJson<MarketSummaryResponse>('/api/v1/public/market/olive-oil', controller.signal),
       ]);
 
       const slug = findMunicipalitySlug(municipalityData?.items ?? [], holding?.municipality);
       const weather = slug
         ? await getJson<WeatherResponse>(`/api/v1/public/weather?municipality=${encodeURIComponent(slug)}`, controller.signal)
         : null;
-      const marketSource = publicSources?.items.find((item) => item.key.includes('market') || item.key.includes('price') || item.label.toLocaleLowerCase('es-ES').includes('aceite')) ?? publicSources?.items[0] ?? null;
 
       if (!controller.signal.aborted) {
-        setData({ weather, news, fieldAlerts, rainAlerts, marketSource });
+        setData({ weather, news, fieldAlerts, rainAlerts, market });
         setLoadingPublic(false);
       }
     })();
@@ -190,6 +193,10 @@ export function HomeDashboardV2({
   const today = data.weather?.forecast.days[0];
   const firstNews = data.news?.items[0];
   const firstRainAlert = data.rainAlerts?.items[0];
+  const extra = data.market?.series.find((item) => item.key === 'extra');
+  const virgin = data.market?.series.find((item) => item.key === 'virgin');
+  const lampante = data.market?.series.find((item) => item.key === 'lampante');
+  const latestMarketWeek = data.market?.weeks.at(-1) ?? null;
   const campaignLabel = campaign
     ? `${campaign.seasonStartYear}/${String(campaign.seasonEndYear).slice(-2)}`
     : 'actual';
@@ -247,14 +254,15 @@ export function HomeDashboardV2({
         </div>
         <a className="home-v2-market-card" href="/magina/mercado">
           <div>
-            <span>{data.marketSource?.provider ?? 'Observatorio de Precios y Mercados'}</span>
-            <strong>{data.marketSource?.hasError ? 'Fuente en revisión' : 'Contexto actualizado'}</strong>
-            <small>{data.marketSource ? `Última comprobación · ${dateShort(data.marketSource.lastSuccessAt ?? data.marketSource.sourceUpdatedAt)}` : 'Sin publicar un precio no verificado'}</small>
+            <span>{data.market?.source.provider ?? 'Observatorio de Precios y Mercados'}</span>
+            <strong>{extra?.values.at(-1) != null ? `Virgen extra · ${marketPriceLabel(extra.values.at(-1))}` : loadingPublic ? 'Actualizando mercado…' : 'Consulta la referencia semanal'}</strong>
+            <small>{data.market ? `${latestMarketWeek?.label ?? 'Última semana'} · ${dateShort(data.market.freshness.latestDate)}` : 'Fuente, fecha y categoría visibles en Mercado'}</small>
           </div>
-          <svg viewBox="0 0 180 70" role="img" aria-label="Acceso a evolución del mercado">
-            <path d="M6 56L34 47L59 50L88 34L114 39L141 22L174 15" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M6 56L34 47L59 50L88 34L114 39L141 22L174 15L174 65L6 65Z" fill="currentColor" opacity=".08" />
-          </svg>
+          <div className="home-v2-market-mini" aria-label="Última referencia por categoría">
+            <span><b>VE</b>{marketPriceLabel(extra?.values.at(-1))}</span>
+            <span><b>V</b>{marketPriceLabel(virgin?.values.at(-1))}</span>
+            <span><b>L</b>{marketPriceLabel(lampante?.values.at(-1))}</span>
+          </div>
         </a>
       </section>
 

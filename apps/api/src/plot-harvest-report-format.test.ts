@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
   buildPlotHarvestPdf,
+  calculatePlotHarvestProductivity,
   summarizePlotHarvest,
   type PlotHarvestDelivery,
   type PlotHarvestReportInput,
@@ -54,6 +55,23 @@ test('plot harvest summary uses kilograms-weighted fat yield', () => {
   ]);
 });
 
+test('plot productivity derives kg per hectare and kg per olive tree only from valid plot data', () => {
+  const productivity = calculatePlotHarvestProductivity(1842, '2.4500', 320);
+  assert.ok(productivity.kilogramsPerHectare != null);
+  assert.ok(productivity.kilogramsPerOliveTree != null);
+  assert.ok(Math.abs(productivity.kilogramsPerHectare - 751.83673469) < 0.0001);
+  assert.ok(Math.abs(productivity.kilogramsPerOliveTree - 5.75625) < 0.0001);
+
+  assert.deepEqual(calculatePlotHarvestProductivity(1842, null, null), {
+    kilogramsPerHectare: null,
+    kilogramsPerOliveTree: null,
+  });
+  assert.deepEqual(calculatePlotHarvestProductivity(1842, '0', 0), {
+    kilogramsPerHectare: null,
+    kilogramsPerOliveTree: null,
+  });
+});
+
 test('plot harvest PDF is a private-report-ready A4 PDF payload', () => {
   const input: PlotHarvestReportInput = {
     generatedAt: '2026-12-01T12:00:00.000Z',
@@ -94,6 +112,10 @@ test('plot harvest PDF is a private-report-ready A4 PDF payload', () => {
   assert.match(body, /Informe de cosecha por parcela/);
   assert.match(body, /Parcela Norte/);
   assert.match(body, /Total entregado:/);
+  assert.match(body, /Productividad:/);
+  assert.match(body, /kg\/ha/);
+  assert.match(body, /Media por olivo:/);
+  assert.match(body, /kg\/olivo/);
   assert.match(body, /Documentos vinculados: 2/);
   assert.match(body, /xref/);
   assert.match(body, /%%EOF/);

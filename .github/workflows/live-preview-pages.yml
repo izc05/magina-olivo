@@ -1,4 +1,4 @@
-name: Mágina Olivo live preview
+name: Mágina Olivo original app review
 
 on:
   push:
@@ -12,15 +12,15 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages-preview-v3
+  group: magina-olivo-original-pages
   cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout original Visual V2 app
+        uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -33,8 +33,13 @@ jobs:
       - name: Generate approved photography
         run: npm run photos:sync
 
-      - name: Build for GitHub Pages
+      - name: Build original app for GitHub Pages
         run: npm run build -- --base=/magina-olivo/
+
+      - name: Prepare Pages review build
+        run: |
+          cp dist/index.html dist/404.html
+          touch dist/.nojekyll
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -46,11 +51,11 @@ jobs:
 
   deploy:
     environment:
-      name: pages-preview
+      name: pages-original-review
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Deploy to GitHub Pages
+      - name: Deploy original Mágina Olivo review app
         id: deployment
         uses: actions/deploy-pages@v4

@@ -14,6 +14,7 @@ test('plot map is wired into Mi Campo and supports point plus boundary editing',
   assert.match(notebook, /import \{ PlotMapPanel \}/);
   assert.match(notebook, /<PlotMapPanel farmId=\{farmId\}/);
   assert.match(panel, /PlotMapEditor/);
+  assert.match(panel, /PlotOliveCountPanel/);
   assert.match(panel, /SigpacRecintoPanel/);
   assert.match(editor, /Mapa de Parcelas/);
   assert.match(editor, /navigator\.geolocation\.getCurrentPosition/);
@@ -53,6 +54,32 @@ test('plot point and boundary persistence remain private and server-validated', 
   assert.match(migration, /manual_gps/);
   assert.match(migration, /sigpac/);
   assert.match(migration, /catastro/);
+});
+
+test('olive count can be declared independently for each private plot', async () => {
+  const panel = await read('./PlotOliveCountPanel.tsx');
+  const routes = await read('../../api/src/plot-olive-count-routes.ts');
+  const app = await read('../../api/src/app.ts');
+  const core = await read('../../../db/migrations/0001_business_core.sql');
+
+  assert.match(panel, /Olivos por parcela/);
+  assert.match(panel, /Olivos en esta parcela/);
+  assert.match(panel, /Guardar cantidad de olivos/);
+  assert.match(panel, /Dejar sin informar/);
+  assert.match(panel, /olivos\/ha/);
+  assert.match(panel, /oliveTreeCount: parsed/);
+  assert.match(panel, /parsed < 0/);
+  assert.match(panel, /Number\.isInteger\(parsed\)/);
+
+  assert.match(routes, /\/api\/v1\/plots\/:plotId\/olive-count/);
+  assert.match(routes, /oliveTreeCount: number \| null/);
+  assert.match(routes, /minimum: 0/);
+  assert.match(routes, /olive_tree_count = \$1/);
+  assert.match(routes, /canWrite\(access\.role\)/);
+  assert.match(routes, /version = version \+ 1/);
+  assert.match(app, /registerPlotOliveCountRoutes/);
+  assert.match(core, /olive_tree_count integer/);
+  assert.match(core, /olive_tree_count is null or olive_tree_count >= 0/);
 });
 
 test('official SIGPAC or Catastro provenance is preserved until the user actually edits the perimeter', async () => {

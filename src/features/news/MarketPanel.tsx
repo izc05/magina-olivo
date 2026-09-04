@@ -52,11 +52,15 @@ function MultiTrendChart({
   series,
   periods,
   activeId,
+  unit,
 }: {
   series: MarketSeries[];
   periods: string[];
   activeId: MarketSeries['id'];
+  unit: string;
 }) {
+  const [cursorIndex, setCursorIndex] = useState<number | null>(() => periods.length ? periods.length - 1 : null);
+
   const scale = useMemo(() => {
     const values = series.flatMap((item) => item.values);
     const rawMin = Math.min(...values);
@@ -74,8 +78,16 @@ function MultiTrendChart({
     return { x, y };
   };
 
+  const updateCursor = (clientX: number, left: number, width: number) => {
+    if (!periods.length || width <= 0) return;
+    const ratio = Math.min(1, Math.max(0, (clientX - left) / width));
+    const index = Math.round(ratio * Math.max(0, periods.length - 1));
+    setCursorIndex(index);
+  };
+
   const topLabel = scale.max.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const bottomLabel = scale.min.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const cursorX = cursorIndex == null ? null : 18 + (cursorIndex / Math.max(1, periods.length - 1)) * 284;
 
   return (
     <div className="market-real-chart market-real-chart--multi">
@@ -83,7 +95,19 @@ function MultiTrendChart({
         <span>{topLabel}</span>
         <span>{bottomLabel}</span>
       </div>
-      <svg viewBox="0 0 320 125" role="img" aria-label={`Comparativa sincronizada de ${series.map((item) => item.shortLabel).join(', ')}`}>
+      <svg
+        viewBox="0 0 320 125"
+        role="img"
+        aria-label={`Comparativa sincronizada de ${series.map((item) => item.shortLabel).join(', ')}`}
+        onPointerMove={(event) => {
+          const rect = event.currentTarget.getBoundingClientRect();
+          updateCursor(event.clientX, rect.left, rect.width);
+        }}
+        onPointerDown={(event) => {
+          const rect = event.currentTarget.getBoundingClientRect();
+          updateCursor(event.clientX, rect.left, rect.width);
+        }}
+      >
         <line x1="18" x2="302" y1="24" y2="24" className="market-real-chart__grid" />
         <line x1="18" x2="302" y1="66" y2="66" className="market-real-chart__grid" />
         <line x1="18" x2="302" y1="108" y2="108" className="market-real-chart__axis" />
@@ -114,12 +138,37 @@ function MultiTrendChart({
                   />
                 );
               })}
+              {cursorIndex != null && item.values[cursorIndex] != null && (() => {
+                const { x, y } = pointFor(item.values[cursorIndex], cursorIndex, item.values.length);
+                return <circle cx={x} cy={y} r="4.8" className={`market-real-chart__cursor-point market-real-chart__cursor-point--${item.id}`} />;
+              })()}
             </g>
           );
         })}
+
+        {cursorX != null && <line x1={cursorX} x2={cursorX} y1="20" y2="110" className="market-real-chart__cursor-line" />}
       </svg>
 
       <div className="market-real-chart__labels"><span>{periods[0]}</span><span>{periods.at(-1)}</span></div>
+
+      {cursorIndex != null && periods[cursorIndex] && (
+        <div className="market-real-chart__cursor-card" role="status" aria-live="polite">
+          <strong>{periods[cursorIndex]}</strong>
+          <div className="market-real-chart__cursor-values">
+            {series.map((item) => {
+              const value = item.values[cursorIndex];
+              return (
+                <span key={item.id}>
+                  <i className={`market-real-chart__legend-dot market-real-chart__legend-dot--${item.id}`} />
+                  <b>{item.shortLabel}</b>
+                  <em>{value == null ? '—' : formatPrice(value, unit)}</em>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="market-real-chart__legend" aria-label="Leyenda de categorías">
         {series.map((item) => (
           <span key={item.id} className={item.id === activeId ? 'market-real-chart__legend-item market-real-chart__legend-item--active' : 'market-real-chart__legend-item'}>
@@ -203,8 +252,8 @@ export function MarketPanel({ onBack }: Props) {
               </div>
               <span className="market-real__chart-unit">{payload.unit}</span>
             </div>
-            <p className="market-real__chart-note">Las categorías comparten el mismo eje de precios para que la distancia entre AOVE, Virgen y Lampante sea comparable de forma real.</p>
-            <MultiTrendChart series={payload.series} periods={payload.periods} activeId={selectedId} />
+            <p className="market-real__chart-note">Desliza o toca la gráfica para comparar AOVE, Virgen y Lampante en la misma semana.</p>
+            <MultiTrendChart series={payload.series} periods={payload.periods} activeId={selectedId} unit={payload.unit} />
           </article>
 
           {differentials.length > 0 && (

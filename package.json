@@ -10,6 +10,8 @@
     "news:sync": "node scripts/update-news.mjs",
     "alerts:sync": "node scripts/update-alerts.mjs",
     "market:sync": "node scripts/update-market.mjs",
+    "market:mapa:discover": "node scripts/discover-mapa-market-source.mjs",
+    "test:market-mapa": "node --test scripts/discover-mapa-market-source.test.mjs",
     "cooperatives:sync": "node scripts/update-cooperatives.mjs",
     "photos:sync": "node scripts/fetch-approved-photos.mjs",
     "test:responsive": "node scripts/responsive-smoke.mjs"

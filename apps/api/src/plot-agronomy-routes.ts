@@ -4,6 +4,7 @@ import { getPool } from './db.ts';
 import { apiError } from './http-errors.ts';
 import { getAuthenticatedSession } from './session.ts';
 
+type FarmParams = { farmId: string };
 type PlotParams = { plotId: string };
 type IrrigationType = 'dryland' | 'irrigated' | 'mixed' | 'unknown';
 type UpdateAgronomyBody = {
@@ -17,8 +18,9 @@ type PlotAccessRow = {
   holding_id: string;
 };
 
-type UpdatedPlotRow = {
+type AgronomyRow = {
   id: string;
+  name: string;
   olive_tree_count: number | null;
   irrigation_type: IrrigationType | null;
   olive_variety: string | null;
@@ -26,7 +28,44 @@ type UpdatedPlotRow = {
   boundary_area_ha: string | null;
 };
 
+function serializeAgronomy(row: AgronomyRow) {
+  return {
+    id: row.id,
+    name: row.name,
+    oliveTreeCount: row.olive_tree_count,
+    irrigationType: row.irrigation_type,
+    oliveVariety: row.olive_variety,
+    areaHa: row.area_ha,
+    boundaryAreaHa: row.boundary_area_ha,
+  };
+}
+
 export function registerPlotAgronomyRoutes(app: FastifyInstance): void {
+  app.get<{ Params: FarmParams }>(
+    '/api/v1/farms/:farmId/plots/agronomy',
+    async (request, reply) => {
+      const session = await getAuthenticatedSession(request);
+      if (!session) {
+        return reply.code(401).send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
+      }
+
+      const access = await getFarmAccess(session.user.id, request.params.farmId);
+      if (!access) {
+        return reply.code(404).send(apiError(request, 'FARM_NOT_FOUND', 'Farm not found'));
+      }
+
+      const result = await getPool().query<AgronomyRow>(
+        `select id, name, olive_tree_count, irrigation_type, olive_variety, area_ha, boundary_area_ha
+         from plots
+         where farm_id = $1 and holding_id = $2 and active = true
+         order by created_at asc, id asc`,
+        [request.params.farmId, access.holdingId],
+      );
+
+      return { items: result.rows.map(serializeAgronomy) };
+    },
+  );
+
   app.patch<{ Params: PlotParams; Body: UpdateAgronomyBody }>(
     '/api/v1/plots/:plotId/agronomy',
     {
@@ -82,7 +121,7 @@ export function registerPlotAgronomyRoutes(app: FastifyInstance): void {
       }
 
       const variety = request.body.oliveVariety?.trim() || null;
-      const updated = await getPool().query<UpdatedPlotRow>(
+      const updated = await getPool().query<AgronomyRow>(
         `update plots
          set olive_tree_count = $1,
              irrigation_type = $2,
@@ -90,7 +129,7 @@ export function registerPlotAgronomyRoutes(app: FastifyInstance): void {
              version = version + 1,
              updated_at = now()
          where id = $4 and holding_id = $5 and active = true
-         returning id, olive_tree_count, irrigation_type, olive_variety, area_ha, boundary_area_ha`,
+         returning id, name, olive_tree_count, irrigation_type, olive_variety, area_ha, boundary_area_ha`,
         [
           request.body.oliveTreeCount,
           request.body.irrigationType,
@@ -104,14 +143,7 @@ export function registerPlotAgronomyRoutes(app: FastifyInstance): void {
         return reply.code(404).send(apiError(request, 'PLOT_NOT_FOUND', 'Plot not found'));
       }
 
-      return {
-        id: row.id,
-        oliveTreeCount: row.olive_tree_count,
-        irrigationType: row.irrigation_type,
-        oliveVariety: row.olive_variety,
-        areaHa: row.area_ha,
-        boundaryAreaHa: row.boundary_area_ha,
-      };
+      return serializeAgronomy(row);
     },
   );
 }

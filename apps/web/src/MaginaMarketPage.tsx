@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { PublicHeader } from './publicNavigation';
 
 type MarketMetadata = {
   currentness?: string;
@@ -57,13 +58,7 @@ export function MaginaMarketPage() {
 
   return (
     <main className="market-shell" id="main-content">
-      <header className="directory-header">
-        <a className="directory-brand" href="/magina" aria-label="Volver a Mágina">
-          <img src="/brand/magina-olivo-mark.svg" alt="" />
-          <span><strong>Mágina Olivo</strong><small>Mercado del aceite</small></span>
-        </a>
-        <a className="directory-back" href="/magina">Volver a Mágina</a>
-      </header>
+      <PublicHeader backHref="/magina" backLabel="Volver a Mágina" />
 
       <section className="market-hero" aria-labelledby="market-title">
         <p className="eyebrow">Mágina · Aceite y mercado</p>

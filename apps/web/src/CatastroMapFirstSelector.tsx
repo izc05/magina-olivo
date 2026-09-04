@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
+import { CatastroBatchReview } from './CatastroBatchReview.tsx';
 import {
   buildCatastroSelectorMap,
   DEFAULT_CATASTRO_CENTER,
@@ -120,6 +121,11 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
   );
   const focusedItem = focusedReference ? parcelCache[focusedReference] ?? null : null;
 
+  async function refreshPlots() {
+    const result = await request<{ items: PlotSummary[] }>(`/api/v1/farms/${farmId}/plots`);
+    setPlots(result.items);
+  }
+
   useEffect(() => {
     let cancelled = false;
     void request<{ items: PlotSummary[] }>(`/api/v1/farms/${farmId}/plots`).then((result) => {
@@ -133,15 +139,18 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
   useEffect(() => {
     if (!open) return;
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') {
+        if (reviewing) setReviewing(false);
+        else setOpen(false);
+      }
     }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [open]);
+  }, [open, reviewing]);
 
   useEffect(() => {
-    if (!open || zoom < MIN_CATASTRO_ZOOM) {
-      setItems([]);
+    if (!open || reviewing || zoom < MIN_CATASTRO_ZOOM) {
+      if (zoom < MIN_CATASTRO_ZOOM) setItems([]);
       setLoading(false);
       return;
     }
@@ -180,7 +189,7 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [center, open, zoom]);
+  }, [center, open, reviewing, zoom]);
 
   function toggleSelection(item: CatastroParcel) {
     const reference = item.nationalCadastralReference;
@@ -238,6 +247,14 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
     }
   }
 
+  async function handleCreated(count: number) {
+    await refreshPlots();
+    setSelectedReferences([]);
+    setFocusedReference(null);
+    setReviewing(false);
+    setNotice(`${count} parcela${count === 1 ? '' : 's'} creada${count === 1 ? '' : 's'} después de verificar Catastro. Ya puedes completar o editar sus datos desde Mi Campo.`);
+  }
+
   function panBy(deltaX: number, deltaY: number) {
     setCenter((current) => panCenter(current, zoom, deltaX, deltaY));
   }
@@ -284,143 +301,147 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
           <div className="catastro-map-first-shell">
             <header className="catastro-map-first-header">
               <div>
-                <p className="eyebrow">Catastro · selector visual</p>
-                <h2 id="catastro-map-first-title">Selecciona parcelas</h2>
+                <p className="eyebrow">Catastro · alta visual</p>
+                <h2 id="catastro-map-first-title">{reviewing ? 'Completa tus parcelas' : 'Selecciona parcelas'}</h2>
               </div>
-              <button className="ghost-button" type="button" onClick={() => setOpen(false)} aria-label="Cerrar selector">Cerrar</button>
+              <button className="ghost-button" type="button" onClick={() => reviewing ? setReviewing(false) : setOpen(false)} aria-label={reviewing ? 'Volver al mapa' : 'Cerrar selector'}>
+                {reviewing ? 'Volver al mapa' : 'Cerrar'}
+              </button>
             </header>
 
-            <div className="catastro-map-first-searchbar">
-              <label className="field">
-                <span>Referencia catastral</span>
-                <input value={referenceInput} onChange={(event) => setReferenceInput(event.target.value)} placeholder="14, 18 o 20 caracteres" autoComplete="off" />
-              </label>
-              <button className="ghost-button" type="button" onClick={() => void searchByReference()} disabled={loading}>Buscar referencia</button>
-              <button className="ghost-button" type="button" onClick={() => void locateMe()} disabled={locating}>{locating ? 'Buscando GPS…' : 'Mi ubicación'}</button>
-            </div>
-
-            <div className="catastro-map-first-layout">
-              <div className="catastro-map-first-map-card">
-                <div className="catastro-map-first-toolbar" aria-label="Controles del mapa">
-                  <button type="button" onClick={() => setZoom((value) => Math.min(20, value + 1))} disabled={zoom >= 20} aria-label="Acercar">+</button>
-                  <button type="button" onClick={() => setZoom((value) => Math.max(13, value - 1))} disabled={zoom <= 13} aria-label="Alejar">−</button>
-                  <button type="button" onClick={() => panBy(120, 0)} aria-label="Mover mapa al oeste">←</button>
-                  <button type="button" onClick={() => panBy(0, 120)} aria-label="Mover mapa al norte">↑</button>
-                  <button type="button" onClick={() => panBy(0, -120)} aria-label="Mover mapa al sur">↓</button>
-                  <button type="button" onClick={() => panBy(-120, 0)} aria-label="Mover mapa al este">→</button>
-                  <span>z{zoom}</span>
-                </div>
-
-                <svg
-                  className="catastro-map-first-map"
-                  viewBox={`0 0 ${MAP_VIEW_SIZE} ${MAP_VIEW_SIZE}`}
-                  role="img"
-                  aria-label="Mapa para seleccionar parcelas catastrales"
-                  onPointerDown={onPointerDown}
-                  onPointerMove={onPointerMove}
-                  onPointerUp={onPointerUp}
-                  onPointerCancel={onPointerUp}
-                >
-                  {model.tiles.map((tile) => (
-                    <image key={tile.key} href={tile.href} x={tile.x} y={tile.y} width="256" height="256" />
-                  ))}
-                  {items.flatMap((item) => {
-                    const selectedIndex = selectedReferences.indexOf(item.nationalCadastralReference);
-                    const isSelected = selectedIndex >= 0;
-                    const alreadyAdded = existingReferences.has(item.nationalCadastralReference);
-                    const focused = focusedReference === item.nationalCadastralReference;
-                    const rings = exteriorRings(item.geometry);
-                    const centerPoint = geometryCenter(item.geometry);
-                    const marker = centerPoint ? screenPoint([centerPoint.longitude, centerPoint.latitude], zoom, model.topLeft) : null;
-                    return [
-                      <g
-                        key={item.id}
-                        className={`catastro-map-first-parcel${isSelected ? ' selected' : ''}${alreadyAdded ? ' existing' : ''}${focused ? ' focused' : ''}`}
-                        role="button"
-                        tabIndex={0}
-                        aria-pressed={isSelected}
-                        aria-label={`${item.label ? `Parcela ${item.label}` : 'Parcela'} ${item.nationalCadastralReference}${alreadyAdded ? ', ya añadida' : ''}`}
-                        onPointerDown={(event) => event.stopPropagation()}
-                        onClick={() => toggleSelection(item)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            toggleSelection(item);
-                          }
-                        }}
-                      >
-                        {rings.map((ring, index) => <polygon key={index} points={polygonPoints(ring)} />)}
-                        {isSelected && marker ? <text x={marker.x} y={marker.y}>{selectedIndex + 1}</text> : null}
-                        {alreadyAdded && marker ? <text className="catastro-map-first-existing-label" x={marker.x} y={marker.y + 28}>Añadida</text> : null}
-                      </g>,
-                    ];
-                  })}
-                </svg>
-
-                <div className="catastro-map-first-map-status" aria-live="polite">
-                  {zoom < MIN_CATASTRO_ZOOM
-                    ? <strong>Acércate para ver parcelas de Catastro.</strong>
-                    : loading
-                      ? <strong>Cargando parcelas oficiales…</strong>
-                      : <span>{items.length} parcelas visibles · arrastra el mapa para moverte</span>}
-                  <small>© OpenStreetMap contributors · límites: Dirección General del Catastro</small>
-                </div>
+            {!reviewing ? (
+              <div className="catastro-map-first-searchbar">
+                <label className="field">
+                  <span>Referencia catastral</span>
+                  <input value={referenceInput} onChange={(event) => setReferenceInput(event.target.value)} placeholder="14, 18 o 20 caracteres" autoComplete="off" />
+                </label>
+                <button className="ghost-button" type="button" onClick={() => void searchByReference()} disabled={loading}>Buscar referencia</button>
+                <button className="ghost-button" type="button" onClick={() => void locateMe()} disabled={locating}>{locating ? 'Buscando GPS…' : 'Mi ubicación'}</button>
               </div>
+            ) : null}
 
-              <aside className="catastro-map-first-sheet" aria-label="Parcelas seleccionadas">
-                <div className="catastro-map-first-sheet-heading">
-                  <div>
-                    <strong>{selectedItems.length} seleccionada{selectedItems.length === 1 ? '' : 's'}</strong>
-                    <small>{source ? `Catastro · consulta ${new Intl.DateTimeFormat('es-ES', { timeStyle: 'short' }).format(new Date(source.checkedAt))}` : 'Fuente oficial pendiente'}</small>
+            {reviewing ? (
+              <div className="catastro-batch-review-pane">
+                <CatastroBatchReview farmId={farmId} parcels={selectedItems} onCreated={handleCreated} onBack={() => setReviewing(false)} />
+              </div>
+            ) : (
+              <div className="catastro-map-first-layout">
+                <div className="catastro-map-first-map-card">
+                  <div className="catastro-map-first-toolbar" aria-label="Controles del mapa">
+                    <button type="button" onClick={() => setZoom((value) => Math.min(20, value + 1))} disabled={zoom >= 20} aria-label="Acercar">+</button>
+                    <button type="button" onClick={() => setZoom((value) => Math.max(13, value - 1))} disabled={zoom <= 13} aria-label="Alejar">−</button>
+                    <button type="button" onClick={() => panBy(120, 0)} aria-label="Mover mapa al oeste">←</button>
+                    <button type="button" onClick={() => panBy(0, 120)} aria-label="Mover mapa al norte">↑</button>
+                    <button type="button" onClick={() => panBy(0, -120)} aria-label="Mover mapa al sur">↓</button>
+                    <button type="button" onClick={() => panBy(-120, 0)} aria-label="Mover mapa al este">→</button>
+                    <span>z{zoom}</span>
                   </div>
-                  {selectedItems.length ? <button className="text-button" type="button" onClick={() => { setSelectedReferences([]); setReviewing(false); }}>Limpiar</button> : null}
+
+                  <svg
+                    className="catastro-map-first-map"
+                    viewBox={`0 0 ${MAP_VIEW_SIZE} ${MAP_VIEW_SIZE}`}
+                    role="img"
+                    aria-label="Mapa para seleccionar parcelas catastrales"
+                    onPointerDown={onPointerDown}
+                    onPointerMove={onPointerMove}
+                    onPointerUp={onPointerUp}
+                    onPointerCancel={onPointerUp}
+                  >
+                    {model.tiles.map((tile) => (
+                      <image key={tile.key} href={tile.href} x={tile.x} y={tile.y} width="256" height="256" />
+                    ))}
+                    {items.flatMap((item) => {
+                      const selectedIndex = selectedReferences.indexOf(item.nationalCadastralReference);
+                      const isSelected = selectedIndex >= 0;
+                      const alreadyAdded = existingReferences.has(item.nationalCadastralReference);
+                      const focused = focusedReference === item.nationalCadastralReference;
+                      const rings = exteriorRings(item.geometry);
+                      const centerPoint = geometryCenter(item.geometry);
+                      const marker = centerPoint ? screenPoint([centerPoint.longitude, centerPoint.latitude], zoom, model.topLeft) : null;
+                      return [
+                        <g
+                          key={item.id}
+                          className={`catastro-map-first-parcel${isSelected ? ' selected' : ''}${alreadyAdded ? ' existing' : ''}${focused ? ' focused' : ''}`}
+                          role="button"
+                          tabIndex={0}
+                          aria-pressed={isSelected}
+                          aria-label={`${item.label ? `Parcela ${item.label}` : 'Parcela'} ${item.nationalCadastralReference}${alreadyAdded ? ', ya añadida' : ''}`}
+                          onPointerDown={(event) => event.stopPropagation()}
+                          onClick={() => toggleSelection(item)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              toggleSelection(item);
+                            }
+                          }}
+                        >
+                          {rings.map((ring, index) => <polygon key={index} points={polygonPoints(ring)} />)}
+                          {isSelected && marker ? <text x={marker.x} y={marker.y}>{selectedIndex + 1}</text> : null}
+                          {alreadyAdded && marker ? <text className="catastro-map-first-existing-label" x={marker.x} y={marker.y + 28}>Añadida</text> : null}
+                        </g>,
+                      ];
+                    })}
+                  </svg>
+
+                  <div className="catastro-map-first-map-status" aria-live="polite">
+                    {zoom < MIN_CATASTRO_ZOOM
+                      ? <strong>Acércate para ver parcelas de Catastro.</strong>
+                      : loading
+                        ? <strong>Cargando parcelas oficiales…</strong>
+                        : <span>{items.length} parcelas visibles · arrastra el mapa para moverte</span>}
+                    <small>© OpenStreetMap contributors · límites: Dirección General del Catastro</small>
+                  </div>
                 </div>
 
-                {focusedItem ? (
-                  <article className="catastro-map-first-focus-card">
+                <aside className="catastro-map-first-sheet" aria-label="Parcelas seleccionadas">
+                  <div className="catastro-map-first-sheet-heading">
                     <div>
-                      <strong>{focusedItem.label ? `Parcela ${focusedItem.label}` : focusedItem.nationalCadastralReference}</strong>
-                      <small>{focusedItem.nationalCadastralReference} · {formatArea(focusedItem.areaM2)}</small>
+                      <strong>{selectedItems.length} seleccionada{selectedItems.length === 1 ? '' : 's'}</strong>
+                      <small>{source ? `Catastro · consulta ${new Intl.DateTimeFormat('es-ES', { timeStyle: 'short' }).format(new Date(source.checkedAt))}` : 'Fuente oficial pendiente'}</small>
                     </div>
-                    {existingReferences.has(focusedItem.nationalCadastralReference)
-                      ? <span className="badge">Ya añadida</span>
-                      : selectedReferences.includes(focusedItem.nationalCadastralReference)
-                        ? <span className="badge gold">Seleccionada</span>
-                        : <button className="ghost-button" type="button" onClick={() => toggleSelection(focusedItem)}>Seleccionar</button>}
-                  </article>
-                ) : null}
-
-                {selectedItems.length ? (
-                  <div className="catastro-map-first-selection-list">
-                    {selectedItems.map((item, index) => (
-                      <article className="catastro-map-first-selection" key={item.nationalCadastralReference}>
-                        <span className="catastro-map-first-number">{index + 1}</span>
-                        <div>
-                          <strong>{item.label ? `Parcela ${item.label}` : item.nationalCadastralReference}</strong>
-                          <small>{item.nationalCadastralReference}</small>
-                          <small>{formatArea(item.areaM2)} · {isSimpleImportablePolygon(item.geometry) ? 'importable' : 'geometría compleja'}</small>
-                        </div>
-                        <button className="text-button" type="button" onClick={() => toggleSelection(item)}>Quitar</button>
-                      </article>
-                    ))}
+                    {selectedItems.length ? <button className="text-button" type="button" onClick={() => setSelectedReferences([])}>Limpiar</button> : null}
                   </div>
-                ) : (
-                  <div className="empty-state">Toca una parcela en el mapa. Puedes seleccionar varias antes de continuar.</div>
-                )}
 
-                {reviewing && selectedItems.length ? (
-                  <div className="alert success" role="status">
-                    Has seleccionado {selectedItems.length} parcela{selectedItems.length === 1 ? '' : 's'} oficial{selectedItems.length === 1 ? '' : 'es'} de Catastro. La creación se hará en el siguiente paso, revalidando cada referencia en el servidor.
-                  </div>
-                ) : null}
+                  {focusedItem ? (
+                    <article className="catastro-map-first-focus-card">
+                      <div>
+                        <strong>{focusedItem.label ? `Parcela ${focusedItem.label}` : focusedItem.nationalCadastralReference}</strong>
+                        <small>{focusedItem.nationalCadastralReference} · {formatArea(focusedItem.areaM2)}</small>
+                      </div>
+                      {existingReferences.has(focusedItem.nationalCadastralReference)
+                        ? <span className="badge">Ya añadida</span>
+                        : selectedReferences.includes(focusedItem.nationalCadastralReference)
+                          ? <span className="badge gold">Seleccionada</span>
+                          : <button className="ghost-button" type="button" onClick={() => toggleSelection(focusedItem)}>Seleccionar</button>}
+                    </article>
+                  ) : null}
 
-                <button className="primary-button catastro-map-first-cta" type="button" disabled={!selectedItems.length} onClick={() => setReviewing(true)}>
-                  {selectedItems.length === 1 ? 'Revisar esta parcela' : `Revisar ${selectedItems.length} parcelas`}
-                </button>
+                  {selectedItems.length ? (
+                    <div className="catastro-map-first-selection-list">
+                      {selectedItems.map((item, index) => (
+                        <article className="catastro-map-first-selection" key={item.nationalCadastralReference}>
+                          <span className="catastro-map-first-number">{index + 1}</span>
+                          <div>
+                            <strong>{item.label ? `Parcela ${item.label}` : item.nationalCadastralReference}</strong>
+                            <small>{item.nationalCadastralReference}</small>
+                            <small>{formatArea(item.areaM2)} · {isSimpleImportablePolygon(item.geometry) ? 'importable' : 'geometría compleja'}</small>
+                          </div>
+                          <button className="text-button" type="button" onClick={() => toggleSelection(item)}>Quitar</button>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="empty-state">Toca una parcela en el mapa. Puedes seleccionar varias antes de continuar.</div>
+                  )}
 
-                <p className="catastro-map-first-trust">Mágina Olivo no interpreta la selección como prueba de propiedad. Catastro aporta referencia, geometría y superficie; olivos, variedad y riego los declararás tú.</p>
-              </aside>
-            </div>
+                  <button className="primary-button catastro-map-first-cta" type="button" disabled={!selectedItems.length} onClick={() => setReviewing(true)}>
+                    {selectedItems.length === 1 ? 'Continuar con esta parcela' : `Continuar con ${selectedItems.length} parcelas`}
+                  </button>
+
+                  <p className="catastro-map-first-trust">Mágina Olivo no interpreta la selección como prueba de propiedad. Catastro aporta referencia, geometría y superficie; olivos y riego los declararás tú.</p>
+                </aside>
+              </div>
+            )}
 
             {error ? <div className="alert catastro-map-first-feedback" role="alert">{error}</div> : null}
             {notice ? <div className="alert success catastro-map-first-feedback" role="status">{notice}</div> : null}

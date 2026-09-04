@@ -63,11 +63,31 @@ test('selector is wired into Mi Campo and preserves explicit user selection sema
   assert.match(selector, /14, 18 o 20 caracteres/);
   assert.match(selector, /Mi ubicación/);
   assert.match(selector, /aria-pressed=\{isSelected\}/);
-  assert.match(selector, /Revisar esta parcela/);
+  assert.match(selector, /Continuar con esta parcela/);
   assert.match(selector, /no interpreta la selección como prueba de propiedad/);
-  assert.doesNotMatch(selector, /fetch\([^\n]+import-catastro/);
 
   assert.match(routes, /\/api\/v1\/maps\/catastro\/parcelas\/by-reference\/:reference/);
   assert.match(routes, /fetchCatastroParcelByReference\(reference\)/);
   assert.match(routes, /cache-control', 'private, max-age=300/);
+});
+
+test('batch review keeps olive count individual per parcel and confirms through the server', async () => {
+  const selector = await read('./CatastroMapFirstSelector.tsx');
+  const review = await read('./CatastroBatchReview.tsx');
+  const routes = await read('../../api/src/catastro-batch-import-routes.ts');
+
+  assert.match(selector, /CatastroBatchReview/);
+  assert.match(review, /Olivos en esta parcela/);
+  assert.match(review, /oliveTreeCount: draft\.oliveTreeCount/);
+  assert.match(review, /Aplicar riego a todas/);
+  assert.doesNotMatch(review, /Aplicar olivos a todas/);
+  assert.match(review, /\/api\/v1\/farms\/\$\{farmId\}\/plots\/import-catastro/);
+  assert.match(review, /El lote es todo-o-nada/);
+  assert.match(review, /Los olivos y el riego son datos privados declarados por ti/);
+
+  assert.match(routes, /oliveTreeCount\?: number \| null/);
+  assert.match(routes, /fetchCatastroParcelByReference\(reference\)/);
+  assert.match(routes, /validationItems\.some/);
+  assert.match(routes, /await client\.query\('begin'\)/);
+  assert.match(routes, /await client\.query\('commit'\)/);
 });

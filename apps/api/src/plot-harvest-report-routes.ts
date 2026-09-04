@@ -34,6 +34,13 @@ type PlotCampaignRow = {
   campaign_status: string;
 };
 
+type PreviousCampaignRow = {
+  id: string;
+  name: string;
+  season_start_year: number;
+  season_end_year: number;
+};
+
 type PlotDeliveryRow = {
   id: string;
   delivered_at: Date;
@@ -73,6 +80,62 @@ function privatePdfHeaders(reply: FastifyReply, filename: string): void {
   reply.type('application/pdf');
 }
 
+function mapDeliveryRows(rows: PlotDeliveryRow[]): PlotHarvestDelivery[] {
+  return rows.map((row) => ({
+    id: row.id,
+    deliveredAt: row.delivered_at.toISOString(),
+    kilograms: row.kilograms,
+    destination: row.cooperative_name ?? row.custom_destination ?? 'Sin destino',
+    ticketNumber: row.ticket_number,
+    variety: row.variety,
+    yieldPercent: row.yield_percent,
+    verificationStatus: row.verification_status,
+    notes: row.notes,
+  }));
+}
+
+async function loadPlotDeliveries(
+  holdingId: string,
+  campaignId: string,
+  plotId: string,
+): Promise<PlotHarvestDelivery[]> {
+  const db = getPool();
+  const result = await db.query<PlotDeliveryRow>(
+    `
+      select
+        d.id,
+        d.delivered_at,
+        d.kilograms,
+        coop.official_name as cooperative_name,
+        d.custom_destination,
+        d.ticket_number,
+        d.variety,
+        current_result.value as yield_percent,
+        d.verification_status,
+        d.notes
+      from deliveries d
+      left join cooperatives coop on coop.id = d.cooperative_id
+      left join lateral (
+        select r.value
+        from delivery_results r
+        where r.holding_id = d.holding_id
+          and r.delivery_id = d.id
+          and r.result_type = 'fat_yield'
+          and r.status = 'current'
+        limit 1
+      ) current_result on true
+      where d.holding_id = $1
+        and d.campaign_id = $2
+        and d.plot_id = $3
+        and d.verification_status <> 'archived'
+      order by d.delivered_at asc, d.id asc
+    `,
+    [holdingId, campaignId, plotId],
+  );
+
+  return mapDeliveryRows(result.rows);
+}
+
 async function loadPlotHarvestReport(
   userId: string,
   campaignId: string,
@@ -89,7 +152,7 @@ async function loadPlotHarvestReport(
 
   const holdingId = campaignAccess.holdingId;
   const db = getPool();
-  const [metadataResult, deliveryResult, documentResult] = await Promise.all([
+  const [metadataResult, deliveries, documentResult] = await Promise.all([
     db.query<PlotCampaignRow>(
       `
         select
@@ -127,38 +190,7 @@ async function loadPlotHarvestReport(
       `,
       [holdingId, campaignId, plotId],
     ),
-    db.query<PlotDeliveryRow>(
-      `
-        select
-          d.id,
-          d.delivered_at,
-          d.kilograms,
-          coop.official_name as cooperative_name,
-          d.custom_destination,
-          d.ticket_number,
-          d.variety,
-          current_result.value as yield_percent,
-          d.verification_status,
-          d.notes
-        from deliveries d
-        left join cooperatives coop on coop.id = d.cooperative_id
-        left join lateral (
-          select r.value
-          from delivery_results r
-          where r.holding_id = d.holding_id
-            and r.delivery_id = d.id
-            and r.result_type = 'fat_yield'
-            and r.status = 'current'
-          limit 1
-        ) current_result on true
-        where d.holding_id = $1
-          and d.campaign_id = $2
-          and d.plot_id = $3
-          and d.verification_status <> 'archived'
-        order by d.delivered_at asc, d.id asc
-      `,
-      [holdingId, campaignId, plotId],
-    ),
+    loadPlotDeliveries(holdingId, campaignId, plotId),
     db.query<DocumentCountRow>(
       `
         select doc.document_type, count(distinct doc.id)::int as document_count
@@ -207,17 +239,27 @@ async function loadPlotHarvestReport(
   const metadata = metadataResult.rows[0];
   if (!metadata) return null;
 
-  const deliveries: PlotHarvestDelivery[] = deliveryResult.rows.map((row) => ({
-    id: row.id,
-    deliveredAt: row.delivered_at.toISOString(),
-    kilograms: row.kilograms,
-    destination: row.cooperative_name ?? row.custom_destination ?? 'Sin destino',
-    ticketNumber: row.ticket_number,
-    variety: row.variety,
-    yieldPercent: row.yield_percent,
-    verificationStatus: row.verification_status,
-    notes: row.notes,
-  }));
+  const previousCampaignResult = await db.query<PreviousCampaignRow>(
+    `
+      select c.id, c.name, c.season_start_year, c.season_end_year
+      from campaigns c
+      where c.holding_id = $1
+        and c.id <> $2
+        and c.status <> 'archived'
+        and (
+          c.season_start_year < $3
+          or (c.season_start_year = $3 and c.season_end_year < $4)
+        )
+      order by c.season_start_year desc, c.season_end_year desc
+      limit 1
+    `,
+    [holdingId, campaignId, metadata.season_start_year, metadata.season_end_year],
+  );
+
+  const previousCampaignRow = previousCampaignResult.rows[0] ?? null;
+  const previousDeliveries = previousCampaignRow
+    ? await loadPlotDeliveries(holdingId, previousCampaignRow.id, plotId)
+    : [];
 
   const documents: PlotHarvestDocumentCount[] = documentResult.rows.map((row) => ({
     type: row.document_type,
@@ -250,6 +292,14 @@ async function loadPlotHarvestReport(
       endDate: metadata.end_date,
       status: metadata.campaign_status,
     },
+    previousCampaign: previousCampaignRow && previousDeliveries.length > 0
+      ? {
+          name: previousCampaignRow.name,
+          seasonStartYear: previousCampaignRow.season_start_year,
+          seasonEndYear: previousCampaignRow.season_end_year,
+          deliveries: previousDeliveries,
+        }
+      : null,
     deliveries,
     documents,
   };

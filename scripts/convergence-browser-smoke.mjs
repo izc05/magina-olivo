@@ -22,11 +22,31 @@ page.on('response', (response) => {
 });
 
 async function assertFitsViewport(label) {
-  const dimensions = await page.evaluate(() => ({
-    viewport: window.innerWidth,
-    document: document.documentElement.scrollWidth,
-    body: document.body.scrollWidth,
-  }));
+  const dimensions = await page.evaluate(() => {
+    const viewport = window.innerWidth;
+    const overflowers = [...document.querySelectorAll('body *')]
+      .map((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          tag: element.tagName.toLowerCase(),
+          id: element.id || '',
+          className: typeof element.className === 'string' ? element.className : '',
+          left: Math.round(rect.left),
+          right: Math.round(rect.right),
+          width: Math.round(rect.width),
+        };
+      })
+      .filter((item) => item.width > 0 && (item.left < -1 || item.right > viewport + 1))
+      .sort((a, b) => b.right - a.right)
+      .slice(0, 12);
+
+    return {
+      viewport,
+      document: document.documentElement.scrollWidth,
+      body: document.body.scrollWidth,
+      overflowers,
+    };
+  });
   assert.ok(
     Math.max(dimensions.document, dimensions.body) <= dimensions.viewport + 1,
     `${label}: horizontal overflow ${JSON.stringify(dimensions)}`,

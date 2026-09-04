@@ -193,7 +193,7 @@ export function RewardRedemptionHistory({ redemptions, workingRewardId, onReissu
   const total = redemptions.length;
 
   return (
-    <section className="rewards-section redemption-history-section">
+    <section id="mis-canjes" className="rewards-section redemption-history-section">
       <div className="rewards-section-heading">
         <div>
           <span className="rewards-kicker">Mis canjes</span>

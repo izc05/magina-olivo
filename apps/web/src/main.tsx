@@ -2,14 +2,11 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { AccountPage } from './AccountPage';
-import { AdminCommandCenterPage } from './AdminCommandCenterPage';
-import { AdminCommandShortcuts } from './AdminCommandShortcuts';
 import { AdminContentPage } from './AdminContentPage';
 import { AdminFinancePage } from './AdminFinancePage';
-import { AdminOperationsPage } from './AdminOperationsPage';
 import { AdminPage } from './AdminPage';
+import { AdminRoleEntry } from './AdminRoleEntry';
 import { AdminRolesPage } from './AdminRolesPage';
-import { AdminSupportSystemPage } from './AdminSupportSystemPage';
 import { App } from './App';
 import { CalendarPage } from './CalendarPage';
 import { ConnectivityStatus } from './ConnectivityStatus';
@@ -58,6 +55,7 @@ import './admin-operations.css';
 import './admin-content.css';
 import './admin-finance-roles.css';
 import './admin-command-shortcuts.css';
+import './admin-delegated.css';
 import './platform-announcements.css';
 import './support-legal-system.css';
 
@@ -109,11 +107,11 @@ createRoot(root).render(
       ) : path === '/onboarding' ? (
         <OnboardingPage />
       ) : path === '/admin/soporte' ? (
-        <AdminSupportSystemPage />
+        <AdminRoleEntry kind="support" />
       ) : path === '/admin/contenido' ? (
         <AdminContentPage />
       ) : path === '/admin/operaciones' ? (
-        <AdminOperationsPage />
+        <AdminRoleEntry kind="operations" />
       ) : path === '/admin/finanzas' ? (
         <AdminFinancePage />
       ) : path === '/admin/roles' ? (
@@ -124,10 +122,7 @@ createRoot(root).render(
           <a className="admin-ops-entry" href="/admin">← Centro de mando</a>
         </>
       ) : path === '/admin' ? (
-        <>
-          <AdminCommandCenterPage />
-          <AdminCommandShortcuts />
-        </>
+        <AdminRoleEntry kind="home" />
       ) : path === '/contacto' ? (
         <ContactPage />
       ) : path === '/legal/privacidad' ? (

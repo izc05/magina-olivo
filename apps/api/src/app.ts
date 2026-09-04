@@ -4,6 +4,7 @@ import { registerAccountExportRoutes } from './account-export-routes.ts';
 import { registerAccountPreferenceRoutes } from './account-preference-routes.ts';
 import { registerActivityRoutes } from './activity-routes.ts';
 import { registerAdvertisingAdminRoutes } from './advertising-admin-routes.ts';
+import { registerAdvertisingEventRoutes } from './advertising-event-routes.ts';
 import { registerAdvertiserApplicationRoutes } from './advertiser-application-routes.ts';
 import { registerAuthRoutes } from './auth-routes.ts';
 import { registerCampaignExportRoutes } from './campaign-export-routes.ts';
@@ -74,6 +75,7 @@ export function buildApp(): FastifyInstance {
   registerAccountPreferenceRoutes(app);
   registerAccountExportRoutes(app);
   registerAdvertisingAdminRoutes(app);
+  registerAdvertisingEventRoutes(app);
   registerAdvertiserApplicationRoutes(app);
   registerRainAlertRoutes(app);
   registerPublicDestinationRoutes(app);

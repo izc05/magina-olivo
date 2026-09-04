@@ -14,6 +14,7 @@ import { registerDeliveryUpdateRoutes } from './delivery-update-routes.ts';
 import { registerDocumentRoutes } from './document-routes.ts';
 import { registerFarmRoutes } from './farm-routes.ts';
 import { registerHoldingRoutes } from './holding-routes.ts';
+import { registerLoyaltyRoutes } from './loyalty-routes.ts';
 import { registerPlotRoutes } from './plot-routes.ts';
 import { registerPlotTimelineRoutes } from './plot-timeline-routes.ts';
 import { registerPublicDestinationRoutes } from './public-destination-routes.ts';
@@ -91,6 +92,7 @@ export function buildApp(): FastifyInstance {
   registerDocumentRoutes(app);
   registerActivityRoutes(app);
   registerTaskRoutes(app);
+  registerLoyaltyRoutes(app);
 
   return app;
 }

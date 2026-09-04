@@ -1,0 +1,95 @@
+.reward-local-qr {
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+.reward-local-qr svg {
+  width: min(240px, 100%);
+  aspect-ratio: 1;
+  display: block;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(23, 50, 31, 0.1);
+}
+
+.reward-local-qr-bg {
+  fill: #fffdf8;
+}
+
+.reward-local-qr-modules {
+  fill: #17321f;
+}
+
+.reward-local-qr figcaption {
+  color: #687061;
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.reward-token-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 253, 248, 0.72);
+  border: 1px solid rgba(47, 90, 50, 0.14);
+}
+
+.reward-token-hint small {
+  color: #687061;
+}
+
+.reward-token-hint code {
+  padding: 0;
+  background: transparent;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.reward-manual-toggle {
+  min-height: 42px;
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(47, 90, 50, 0.22);
+  background: #fffdf8;
+  color: #1f4327;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.reward-manual-toggle:focus-visible {
+  outline: 3px solid rgba(184, 141, 53, 0.35);
+  outline-offset: 2px;
+}
+
+.reward-manual-code {
+  display: grid;
+  gap: 6px;
+}
+
+.reward-manual-code code {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  padding: 11px;
+  border-radius: 10px;
+  background: #fffdf8;
+  color: #213a25;
+  font-size: 0.76rem;
+}
+
+.reward-manual-code small,
+.reward-token-security-note {
+  color: #687061;
+  line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+  .reward-local-qr svg {
+    width: min(280px, 88vw);
+  }
+}

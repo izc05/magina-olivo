@@ -6,6 +6,7 @@ import {
   type RedemptionSummary,
   type RewardCatalogItem,
 } from './reward-api';
+import { RewardPickupCodePanel } from './RewardPickupCodePanel';
 
 type ActiveCode = {
   redemption: RedemptionSummary;
@@ -113,7 +114,7 @@ export function RewardCatalogPage() {
     try {
       const result = await rewardApi.reissueToken(redemption.id);
       setActiveCode({ redemption: result.redemption, token: result.qrToken });
-      setNotice('Se ha generado un nuevo código de recogida y el anterior ha quedado invalidado.');
+      setNotice('Se ha generado un nuevo QR de recogida y el anterior ha quedado invalidado.');
       await refresh();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'No se ha podido regenerar el código.');
@@ -167,15 +168,14 @@ export function RewardCatalogPage() {
             <p>
               {activeCode.redemption.pickupPoint
                 ? `Recoge en ${activeCode.redemption.pickupPoint.name} · ${activeCode.redemption.pickupPoint.address}.`
-                : 'Conserva este código hasta completar la entrega.'}
+                : 'Conserva este QR hasta completar la entrega.'}
             </p>
             <small>Válido hasta {formatDate(activeCode.redemption.expiresAt)}.</small>
           </div>
-          <div className="rewards-token-box">
-            <span>Código de recogida</span>
-            <code>{activeCode.token}</code>
-            <small>Este token es de un solo uso y será el contenido seguro del QR de recogida.</small>
-          </div>
+          <RewardPickupCodePanel
+            token={activeCode.token}
+            tokenHint={activeCode.redemption.tokenHint}
+          />
         </section>
       ) : null}
 
@@ -278,7 +278,7 @@ export function RewardCatalogPage() {
                   <small>Caduca: {formatDate(redemption.expiresAt)}</small>
                 </div>
                 <button type="button" onClick={() => void reissue(redemption)} disabled={workingRewardId === redemption.rewardId}>
-                  Mostrar nuevo código
+                  Mostrar QR nuevo
                 </button>
               </article>
             ))}

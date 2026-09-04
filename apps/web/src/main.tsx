@@ -5,6 +5,7 @@ import { AccountPage } from './AccountPage';
 import { App } from './App';
 import { CalendarPage } from './CalendarPage';
 import { ConnectivityStatus } from './ConnectivityStatus';
+import { installDemoPreview } from './demoPreview';
 import { MaginaDirectoryPage } from './MaginaDirectoryPage';
 import { MaginaFieldAlertsPage } from './MaginaFieldAlertsPage';
 import { MaginaHubPage } from './MaginaHubPage';
@@ -40,6 +41,8 @@ import './offline-v2-integration.css';
 import './auth-onboarding.css';
 import './pilot-alerts.css';
 import './calendar.css';
+
+installDemoPreview();
 
 registerSW({
   immediate: true,

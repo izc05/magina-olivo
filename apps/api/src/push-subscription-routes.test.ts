@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { isAllowedPushEndpoint } from './push-subscription-routes.ts';
 
@@ -19,4 +20,13 @@ test('push endpoint policy only accepts configured HTTPS host suffixes', () => {
     if (previous == null) delete process.env.WEB_PUSH_ALLOWED_HOST_SUFFIXES;
     else process.env.WEB_PUSH_ALLOWED_HOST_SUFFIXES = previous;
   }
+});
+
+test('push subscription upsert cannot transfer an endpoint between accounts', async () => {
+  const source = await readFile(new URL('./push-subscription-routes.ts', import.meta.url), 'utf8');
+
+  assert.match(source, /on conflict \(endpoint\)/);
+  assert.match(source, /where push_subscriptions\.user_id = excluded\.user_id/);
+  assert.doesNotMatch(source, /user_id = excluded\.user_id/);
+  assert.match(source, /PUSH_SUBSCRIPTION_CONFLICT/);
 });

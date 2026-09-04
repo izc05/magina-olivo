@@ -6,6 +6,7 @@ import { App } from './App';
 import { CalendarPage } from './CalendarPage';
 import { ConnectivityStatus } from './ConnectivityStatus';
 import { installDemoPreview } from './demoPreview';
+import { installDemoPreviewExtras } from './demoPreviewExtras';
 import { MaginaDirectoryPage } from './MaginaDirectoryPage';
 import { MaginaFieldAlertsPage } from './MaginaFieldAlertsPage';
 import { MaginaHubPage } from './MaginaHubPage';
@@ -48,6 +49,7 @@ const brandAsset = `${import.meta.env.BASE_URL}brand/magina-olivo-mark.svg`;
 document.documentElement.style.setProperty('--magina-brand-logo', `url("${brandAsset}")`);
 
 installDemoPreview();
+installDemoPreviewExtras();
 
 registerSW({
   immediate: true,

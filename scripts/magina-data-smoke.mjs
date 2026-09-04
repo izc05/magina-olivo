@@ -96,8 +96,20 @@ async function run() {
     assert(await page.getByRole('link', { name: /Fuente oficial de contacto/i }).count() === 1, 'Cooperativas: falta la fuente oficial de contacto en Socios.');
     await assertNoOverflow(page, 'Ficha de cooperativa completa');
 
-    // Mercado: precios oficiales y gráfico seleccionable.
+    // Noticias municipales: filtro propio, municipio y trazabilidad oficial.
     await nav.getByRole('button', { name: 'Mágina', exact: true }).click();
+    await page.locator('.hub-tabs--primary').waitFor({ state: 'visible' });
+    const municipalFilter = page.getByRole('button', { name: 'Ayuntamientos', exact: true });
+    await municipalFilter.waitFor({ state: 'visible', timeout: 10_000 });
+    await municipalFilter.click();
+    const municipalHero = page.locator('.real-news-hero');
+    await municipalHero.waitFor({ state: 'visible', timeout: 10_000 });
+    await page.getByText('Ayuntamientos', { exact: true }).first().waitFor({ state: 'visible' });
+    assert(await page.getByText('Oficial', { exact: true }).count() >= 1, 'Ayuntamientos: la noticia municipal no muestra trazabilidad oficial.');
+    assert(await page.getByText(/Ayuntamiento de .* · Oficial/i).count() >= 1, 'Ayuntamientos: falta la identificación de la fuente municipal.');
+    await assertNoOverflow(page, 'Noticias de ayuntamientos');
+
+    // Mercado: precios oficiales y gráfico seleccionable.
     await page.locator('.hub-tabs--primary').getByRole('button', { name: 'Mercado', exact: true }).click();
     const marketPanel = page.locator('.market-real');
     await marketPanel.waitFor({ state: 'visible' });
@@ -121,7 +133,7 @@ async function run() {
     await assertNoOverflow(page, 'Alertas');
 
     await context.close();
-    console.log('✓ Smoke Mágina: tiendas, cooperativa, precios, noticias, Socios/Campaña, mercado y alertas funcionan en 390×844 y bajo /magina-olivo/.');
+    console.log('✓ Smoke Mágina: tiendas, cooperativa, precios, noticias municipales, Socios/Campaña, mercado y alertas funcionan en 390×844 y bajo /magina-olivo/.');
   } finally {
     if (browser) await browser.close();
     await closePreview(previewServer);

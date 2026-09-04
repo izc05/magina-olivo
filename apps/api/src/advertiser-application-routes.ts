@@ -213,69 +213,86 @@ export function registerAdvertiserApplicationRoutes(app: FastifyInstance): void 
         }
       }
 
-      const duplicate = await db.query<{ id: string }>(
-        `
-          select id
-          from advertiser_applications
-          where lower(contact_email) = lower($1)
-            and lower(business_name) = lower($2)
-            and status = 'pending'
-          limit 1
-        `,
-        [session.user.email, businessName],
-      );
-      if (duplicate.rows[0]) {
-        return reply.code(409).send(apiError(
-          request,
-          'ADVERTISING_APPLICATION_ALREADY_PENDING',
-          'A pending application already exists for this business and account',
-        ));
+      const client = await db.connect();
+      try {
+        await client.query('begin');
+        await client.query(
+          `select pg_advisory_xact_lock(hashtext(lower($1))::bigint)`,
+          [session.user.email],
+        );
+
+        const duplicate = await client.query<{ id: string }>(
+          `
+            select id
+            from advertiser_applications
+            where lower(contact_email) = lower($1)
+              and lower(business_name) = lower($2)
+              and status = 'pending'
+            limit 1
+          `,
+          [session.user.email, businessName],
+        );
+        if (duplicate.rows[0]) {
+          await client.query('rollback');
+          return reply.code(409).send(apiError(
+            request,
+            'ADVERTISING_APPLICATION_ALREADY_PENDING',
+            'A pending application already exists for this business and account',
+          ));
+        }
+
+        const pendingCount = await client.query<{ total: string }>(
+          `
+            select count(*)::text as total
+            from advertiser_applications
+            where lower(contact_email) = lower($1)
+              and status = 'pending'
+          `,
+          [session.user.email],
+        );
+        if (Number(pendingCount.rows[0]?.total ?? 0) >= 3) {
+          await client.query('rollback');
+          return reply.code(429).send(apiError(
+            request,
+            'TOO_MANY_PENDING_ADVERTISING_APPLICATIONS',
+            'This account already has the maximum number of pending business applications',
+          ));
+        }
+
+        const result = await client.query<ApplicationRow>(
+          `
+            insert into advertiser_applications (
+              id, destination_id, business_name, category, municipality,
+              contact_name, contact_email, contact_phone, requested_plan_code, description
+            )
+            values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            returning
+              id, business_name, category, municipality, contact_name, contact_email,
+              contact_phone, requested_plan_code, description, status, review_notes,
+              created_at, reviewed_at
+          `,
+          [
+            randomUUID(),
+            destinationId,
+            businessName,
+            request.body.category,
+            municipality,
+            contactName,
+            session.user.email,
+            contactPhone,
+            requestedPlanCode,
+            description,
+          ],
+        );
+
+        await client.query('commit');
+        return reply.code(201).send({ application: serializeApplication(result.rows[0]!) });
+      } catch (error) {
+        await client.query('rollback').catch(() => undefined);
+        throw error;
+      } finally {
+        client.release();
       }
-
-      const pendingCount = await db.query<{ total: string }>(
-        `
-          select count(*)::text as total
-          from advertiser_applications
-          where lower(contact_email) = lower($1)
-            and status = 'pending'
-        `,
-        [session.user.email],
-      );
-      if (Number(pendingCount.rows[0]?.total ?? 0) >= 3) {
-        return reply.code(429).send(apiError(
-          request,
-          'TOO_MANY_PENDING_ADVERTISING_APPLICATIONS',
-          'This account already has the maximum number of pending business applications',
-        ));
-      }
-
-      const result = await db.query<ApplicationRow>(
-        `
-          insert into advertiser_applications (
-            id, destination_id, business_name, category, municipality,
-            contact_name, contact_email, contact_phone, requested_plan_code, description
-          )
-          values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-          returning
-            id, business_name, category, municipality, contact_name, contact_email,
-            contact_phone, requested_plan_code, description, status, review_notes,
-            created_at, reviewed_at
-        `,
-        [
-          randomUUID(),
-          destinationId,
-          businessName,
-          request.body.category,
-          municipality,
-          contactName,
-          session.user.email,
-          contactPhone,
-          requestedPlanCode,
-          description,
-        ],
-      );
-
-      return reply.code(201).send({ application: serializeApplication(result.rows[0]!) });
     },
   );
 }

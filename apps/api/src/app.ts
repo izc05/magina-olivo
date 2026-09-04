@@ -9,6 +9,7 @@ import { registerAdminDelegatedRoutes } from './admin-delegated-routes.ts';
 import { registerAdminFinanceRoutes } from './admin-finance-routes.ts';
 import { registerAdminOperationsRoutes } from './admin-operations-routes.ts';
 import { registerAdminRoutes } from './admin-routes.ts';
+import { registerAdvertisingFunnelRoutes } from './advertising-funnel-routes.ts';
 import { registerAnnouncementRoutes } from './announcement-routes.ts';
 import { registerAuthRoutes } from './auth-routes.ts';
 import { registerCampaignExportRoutes } from './campaign-export-routes.ts';
@@ -83,6 +84,7 @@ export function buildApp(): FastifyInstance {
   registerAdminFinanceRoutes(app);
   registerAdminOperationsRoutes(app);
   registerAdminContentRoutes(app);
+  registerAdvertisingFunnelRoutes(app);
   registerSupportLegalSystemRoutes(app);
   registerAccountPreferenceRoutes(app);
   registerAccountExportRoutes(app);

@@ -1,24 +1,25 @@
-name: Mágina Olivo integration preview validation
+name: Mágina Olivo convergence preview
 
 on:
   push:
     branches:
-      - feat/integration-v2-mvp-v1
       - feat/pre-minipc-convergence-v1
   workflow_dispatch:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 concurrency:
-  group: magina-olivo-integration-preview-validation-${{ github.ref }}
+  group: magina-olivo-convergence-pages
   cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout convergence branch
         uses: actions/checkout@v6
 
       - name: Setup Node
@@ -36,11 +37,30 @@ jobs:
       - name: Run unit tests
         run: npm test
 
-      - name: Build integration preview
+      - name: Build isolated demo preview
         env:
           VITE_BASE_PATH: /magina-olivo/
           VITE_DEMO_MODE: "true"
         run: npm run build --workspace @magina/web
 
-      - name: Keep integration preview off public Pages
-        run: echo "Public GitHub Pages remains on Visual V2 until convergence matches the approved interface."
+      - name: Prepare SPA fallback
+        run: cp apps/web/dist/index.html apps/web/dist/404.html
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: apps/web/dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy convergence demo
+        id: deployment
+        uses: actions/deploy-pages@v4

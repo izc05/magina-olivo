@@ -45,6 +45,9 @@ jobs:
       - name: Validate municipal alert rules
         run: node scripts/validate-municipal-alert-rules.mjs
 
+      - name: Validate Descubre official places
+        run: node scripts/validate-discover.mjs
+
       - name: Refresh official alerts
         run: npm run alerts:sync
 

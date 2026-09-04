@@ -226,6 +226,35 @@
   font-size: 0.85rem;
 }
 
+.public-footer-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.public-footer-copy strong {
+  color: #2f5b37;
+}
+
+.public-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px 14px;
+}
+
+.public-footer-links a {
+  color: #5f685d;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.public-footer-links a:hover,
+.public-footer-links a:focus-visible {
+  color: #2f5b37;
+  text-decoration: underline;
+}
+
 @media (max-width: 980px) {
   .public-card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -273,5 +302,9 @@
 
   .public-footer {
     flex-direction: column;
+  }
+
+  .public-footer-links {
+    justify-content: flex-start;
   }
 }

@@ -67,7 +67,8 @@ test('olive count can be declared independently for each private plot', async ()
   assert.match(panel, /Guardar cantidad de olivos/);
   assert.match(panel, /Dejar sin informar/);
   assert.match(panel, /olivos\/ha/);
-  assert.match(panel, /oliveTreeCount: parsed/);
+  assert.match(panel, /oliveTreeCount: value/);
+  assert.match(panel, /persistOliveCount\(null\)/);
   assert.match(panel, /parsed < 0/);
   assert.match(panel, /Number\.isInteger\(parsed\)/);
 

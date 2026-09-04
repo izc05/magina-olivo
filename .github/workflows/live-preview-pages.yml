@@ -48,6 +48,9 @@ jobs:
       - name: Validate Descubre official places
         run: node scripts/validate-discover.mjs
 
+      - name: Validate real Magina hub
+        run: node scripts/validate-real-magina-hub.mjs
+
       - name: Refresh official alerts
         run: npm run alerts:sync
 

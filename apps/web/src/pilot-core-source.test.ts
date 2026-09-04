@@ -34,8 +34,12 @@ test('pilot core keeps the complete grower journey wired end to end', async () =
   assert.match(deliveryEntry, /Rendimiento \$\{formatYield\(yieldPercent\)\}/);
   assert.match(deliveryEntry, /magina:yield-saved/);
 
-  assert.match(campaignDocuments, /\/api\/v1\/campaigns\/\$\{campaignId\}\/export\.csv/);
-  assert.match(campaignDocuments, /\/api\/v1\/campaigns\/\$\{campaignId\}\/export\.json/);
+  assert.match(campaignDocuments, /fetch\(`\/api\/v1\/campaigns\/\$\{campaignId\}\/export\.\$\{format\}`/);
+  assert.match(campaignDocuments, /type ExportFormat = 'pdf' \| 'csv' \| 'json'/);
+  assert.match(campaignDocuments, /runExport\('pdf'\)/);
+  assert.match(campaignDocuments, /runExport\('csv'\)/);
+  assert.match(campaignDocuments, /runExport\('json'\)/);
+  assert.match(campaignDocuments, /Descargar informe PDF/);
   assert.match(campaignDocuments, /Descargar CSV/);
   assert.match(campaignDocuments, /Descargar JSON/);
 

@@ -43,6 +43,8 @@ type DestinationRow = {
   advertising_whatsapp_phone: string | null;
   advertising_logo_url: string | null;
   advertising_hero_image_url: string | null;
+  advertiser_id: string | null;
+  sponsorship_id: string | null;
   sponsored: boolean;
   sponsorship_label: string | null;
   sponsorship_plan_code: 'featured' | 'premium' | null;
@@ -113,6 +115,8 @@ export function registerPublicDestinationRoutes(app: FastifyInstance): void {
           ap.whatsapp_phone as advertising_whatsapp_phone,
           ap.logo_url as advertising_logo_url,
           ap.hero_image_url as advertising_hero_image_url,
+          ap.id as advertiser_id,
+          s.id as sponsorship_id,
           (s.id is not null) as sponsored,
           s.public_label as sponsorship_label,
           case when s.plan_code in ('featured', 'premium') then s.plan_code else null end as sponsorship_plan_code,
@@ -125,6 +129,8 @@ export function registerPublicDestinationRoutes(app: FastifyInstance): void {
           null::text as advertising_whatsapp_phone,
           null::text as advertising_logo_url,
           null::text as advertising_hero_image_url,
+          null::uuid as advertiser_id,
+          null::uuid as sponsorship_id,
           false as sponsored,
           null::text as sponsorship_label,
           null::text as sponsorship_plan_code,
@@ -216,11 +222,15 @@ export function registerPublicDestinationRoutes(app: FastifyInstance): void {
             logoUrl: normalizePublicHttpsUrl(row.advertising_logo_url),
             heroImageUrl: normalizePublicHttpsUrl(row.advertising_hero_image_url),
           } : null,
-          sponsorship: advertisingEnabled && row.sponsored ? {
+          sponsorship: advertisingEnabled && row.sponsored && row.advertiser_id && row.sponsorship_id ? {
             sponsored: true,
             label: row.sponsorship_label ?? 'Patrocinado',
             planCode: row.sponsorship_plan_code,
             priority: row.sponsorship_priority,
+            tracking: {
+              advertiserId: row.advertiser_id,
+              sponsorshipId: row.sponsorship_id,
+            },
           } : null,
         })),
         municipalities: municipalities.rows.map((row) => row.municipality),

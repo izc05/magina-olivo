@@ -1,4 +1,5 @@
 import type { Holding, User } from './api';
+import './more-dashboard-v2.css';
 
 export function MoreDashboardV2({
   user,

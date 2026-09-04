@@ -33,26 +33,6 @@ function deliveryLine(document: UploadedDocument): string {
   return [date, kilograms, destination].filter(Boolean).join(' · ');
 }
 
-function campaignExportUrl(campaignId: string, format: 'csv' | 'json'): string {
-  if (import.meta.env.VITE_DEMO_MODE !== 'true') return `/api/v1/campaigns/${campaignId}/export.${format}`;
-
-  if (format === 'csv') {
-    const csv = 'fecha,kilos,destino,rendimiento\n24/11/2026,3280,Cooperativa de Huelma,21.8%\n02/12/2026,4120,Cooperativa de Huelma,22.35%\n';
-    return `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
-  }
-
-  const payload = JSON.stringify({
-    demo: true,
-    campaignId,
-    campaign: 'Campaña 2026/27',
-    deliveries: [
-      { date: '2026-11-24', kilograms: 3280, destination: 'Cooperativa de Huelma', yieldPercent: 21.8 },
-      { date: '2026-12-02', kilograms: 4120, destination: 'Cooperativa de Huelma', yieldPercent: 22.35 },
-    ],
-  }, null, 2);
-  return `data:application/json;charset=utf-8,${encodeURIComponent(payload)}`;
-}
-
 export function CampaignDocuments({
   holdingId,
   campaignId,
@@ -103,8 +83,8 @@ export function CampaignDocuments({
         <h3 id="campaign-export-title" className="section-title form-card-title">Exportar campaña</h3>
         <p className="section-copy">Descarga tus entregas, destinos, fincas, parcelas y rendimientos. CSV sirve para hoja de cálculo; JSON conserva la estructura completa.</p>
         <div className="form-actions">
-          <a className="text-button" download={`campana-${campaignId}.csv`} href={campaignExportUrl(campaignId, 'csv')}>Descargar CSV</a>
-          <a className="text-button" download={`campana-${campaignId}.json`} href={campaignExportUrl(campaignId, 'json')}>Descargar JSON</a>
+          <a className="text-button" href={`/api/v1/campaigns/${campaignId}/export.csv`}>Descargar CSV</a>
+          <a className="text-button" href={`/api/v1/campaigns/${campaignId}/export.json`}>Descargar JSON</a>
         </div>
       </div>
 
@@ -122,7 +102,7 @@ export function CampaignDocuments({
               <p>{deliveryLine(document)}</p>
               <small>{formatBytes(document.sizeBytes)} · {new Date(document.createdAt).toLocaleDateString('es-ES')}</small>
             </div>
-            <a className="campaign-document-download" download={document.filename} href={privateDocumentContentUrl(document.id)}>Descargar</a>
+            <a className="campaign-document-download" href={privateDocumentContentUrl(document.id)}>Descargar</a>
           </article>
         ))}
 

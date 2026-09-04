@@ -45,6 +45,15 @@ export function MaginaPrivateHub() {
         <p className="section-copy">Información pública útil para el olivar, separada de tus fincas, campañas y documentos privados.</p>
       </section>
 
+      <section className="section">
+        <a className="card magina-private-card" href="/tu-olivo" style={{ display: 'block' }}>
+          <span className="badge gold">Mis Aceitunas 🫒</span>
+          <h2>Tu Olivo</h2>
+          <p>Recoge las aceitunas que ganas usando Mágina Olivo y avanza hacia futuras recompensas de AOVE.</p>
+          <strong>Varear mi olivo →</strong>
+        </a>
+      </section>
+
       <section className="section magina-private-grid" aria-label="Información pública de Sierra Mágina">
         {publicServices.map((service) => (
           <a className="card magina-private-card" href={service.href} key={service.href}>

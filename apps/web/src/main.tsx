@@ -6,6 +6,7 @@ import { App } from './App';
 import { CalendarPage } from './CalendarPage';
 import { ConnectivityStatus } from './ConnectivityStatus';
 import { installDemoPreview } from './demoPreview';
+import { LoyaltyOlivePage } from './LoyaltyOlivePage';
 import { MaginaDirectoryPage } from './MaginaDirectoryPage';
 import { MaginaFieldAlertsPage } from './MaginaFieldAlertsPage';
 import { MaginaHubPage } from './MaginaHubPage';
@@ -42,6 +43,7 @@ import './offline-v2-integration.css';
 import './auth-onboarding.css';
 import './pilot-alerts.css';
 import './calendar.css';
+import './loyalty-olive.css';
 
 installDemoPreview();
 installWeatherDemoPreview();
@@ -92,6 +94,8 @@ createRoot(root).render(
       <AccountPage />
     ) : path === '/calendario' ? (
       <CalendarPage />
+    ) : path === '/tu-olivo' ? (
+      <LoyaltyOlivePage />
     ) : path === '/magina' ? (
       <MaginaHubPage />
     ) : path === '/magina/directorio' ? (

@@ -15,6 +15,7 @@ import {
 import { CampaignDocuments } from './CampaignDocuments.tsx';
 import { DeliveryEntryCard, DeliveryTicketButton } from './DeliveryEntryCard.tsx';
 import { FieldNotebook } from './FieldNotebook.tsx';
+import { HomeDashboardV2 } from './HomeDashboardV2';
 import { MaginaPrivateHub } from './MaginaPrivateHub.tsx';
 import { OfflineColdStart } from './OfflineColdStart.tsx';
 import { listPendingOperations } from './offline/outbox.ts';
@@ -297,7 +298,7 @@ export function App() {
           </select>
         ) : null}
 
-        {tab === 'home' ? <HomeTab holding={selectedHolding} campaign={selectedCampaign} summary={summary} coverage={coverage} onNavigate={setTab} /> : null}
+        {tab === 'home' ? <HomeDashboardV2 holding={selectedHolding} campaign={selectedCampaign} summary={summary} coverage={coverage} onNavigate={setTab} /> : null}
         {tab === 'field' ? (
           <FieldTab
             holdings={holdings}

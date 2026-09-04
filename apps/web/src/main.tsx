@@ -45,6 +45,7 @@ import './auth-onboarding.css';
 import './pilot-alerts.css';
 import './calendar.css';
 import './product-tour.css';
+import './home-dashboard-v2.css';
 
 const brandAsset = `${import.meta.env.BASE_URL}brand/magina-olivo-mark.svg`;
 document.documentElement.style.setProperty('--magina-brand-logo', `url("${brandAsset}")`);

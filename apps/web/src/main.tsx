@@ -17,6 +17,7 @@ import { NoticeCenter } from './NoticeCenter';
 import { NotificationCenterPage } from './NotificationCenterPage';
 import { OnboardingPage } from './OnboardingPage';
 import { PilotAlerts } from './PilotAlerts';
+import { PushNotificationPrompt } from './PushNotificationPrompt';
 import { RegisterPage } from './RegisterPage';
 import { RegistrationEntry } from './RegistrationEntry';
 import { ResetPassword } from './ResetPassword';
@@ -50,6 +51,7 @@ import './loyalty-olive.css';
 import './reward-catalog.css';
 import './reward-validator.css';
 import './notification-center.css';
+import './push-notifications.css';
 
 installDemoPreview();
 installWeatherDemoPreview();
@@ -99,7 +101,10 @@ createRoot(root).render(
     ) : path === '/cuenta' ? (
       <AccountPage />
     ) : path === '/notificaciones' ? (
-      <NotificationCenterPage />
+      <>
+        <PushNotificationPrompt />
+        <NotificationCenterPage />
+      </>
     ) : path === '/calendario' ? (
       <CalendarPage />
     ) : path === '/tu-olivo' ? (

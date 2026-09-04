@@ -17,7 +17,10 @@ test('advertising events are disabled with advertising and accept no user or pre
   assert.ok(eventBody.length > 0, 'AdvertisingEventBody contract must be discoverable');
   assert.match(eventBody, /destinationId/);
   assert.match(eventBody, /contextMunicipality/);
-  assert.doesNotMatch(eventBody, /user|holding|plot|latitude|longitude|coordinates|ip/i);
+  assert.doesNotMatch(
+    eventBody,
+    /\b(?:userId|holdingId|plotId|latitude|longitude|coordinates|ipAddress|ip)\b/i,
+  );
   assert.match(routes, /additionalProperties: false/);
 });
 

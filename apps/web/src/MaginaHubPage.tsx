@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { appHref, PublicHeader } from './publicNavigation';
 
 type PublicSource = {
   key: string;
@@ -38,13 +39,7 @@ export function MaginaHubPage() {
 
   return (
     <main className="magina-hub-shell" id="main-content">
-      <header className="directory-header">
-        <a className="directory-brand" href="/" aria-label="Volver a Mágina Olivo">
-          <img src="/brand/magina-olivo-mark.svg" alt="" />
-          <span><strong>Mágina Olivo</strong><small>Sierra Mágina · Jaén</small></span>
-        </a>
-        <a className="directory-back" href="/">Mi Mágina Olivo</a>
-      </header>
+      <PublicHeader backLabel="Mi Mágina Olivo" />
 
       <section className="magina-hub-hero" aria-labelledby="magina-hub-title">
         <p className="eyebrow">Mágina</p>
@@ -53,35 +48,35 @@ export function MaginaHubPage() {
       </section>
 
       <section className="magina-hub-grid" aria-label="Servicios públicos de Mágina">
-        <a className="card magina-hub-card ready" href="/magina/tiempo">
+        <a className="card magina-hub-card ready" href={appHref('/magina/tiempo')}>
           <span className="badge gold">Disponible</span>
           <h2>Tiempo</h2>
           <p>Predicción oficial AEMET por municipio, con lluvia, temperatura y viento.</p>
           <strong>Ver predicción →</strong>
         </a>
 
-        <a className="card magina-hub-card ready" href="/magina/directorio">
+        <a className="card magina-hub-card ready" href={appHref('/magina/directorio')}>
           <span className="badge gold">23 entidades</span>
           <h2>Cooperativas y almazaras</h2>
           <p>Directorio público por municipio y tipo jurídico, con procedencia y fecha de revisión.</p>
           <strong>Abrir directorio →</strong>
         </a>
 
-        <a className="card magina-hub-card ready" href="/magina/campo">
+        <a className="card magina-hub-card ready" href={appHref('/magina/campo')}>
           <span className="badge gold">RAIF</span>
           <h2>Campo y alertas</h2>
           <p>Estado de la fuente fitosanitaria del olivar, fecha de actualización y accesos oficiales de Jaén.</p>
           <strong>Ver estado fitosanitario →</strong>
         </a>
 
-        <a className="card magina-hub-card ready" href="/magina/noticias">
+        <a className="card magina-hub-card ready" href={appHref('/magina/noticias')}>
           <span className="badge gold">Fuente oficial</span>
           <h2>Noticias</h2>
           <p>Actualidad verificada del olivar y el sector, con fecha visible y enlace al artículo original.</p>
           <strong>Ver noticias →</strong>
         </a>
 
-        <a className="card magina-hub-card ready" href="/magina/mercado">
+        <a className="card magina-hub-card ready" href={appHref('/magina/mercado')}>
           <span className="badge gold">Fuente oficial</span>
           <h2>Aceite y mercado</h2>
           <p>Publicaciones del Observatorio con fecha visible y control de frescura antes de mostrar precios estructurados.</p>

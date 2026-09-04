@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { AccountPage } from './AccountPage';
+import { AdminCommandCenterPage } from './AdminCommandCenterPage';
 import { AdminContentPage } from './AdminContentPage';
 import { AdminOperationsPage } from './AdminOperationsPage';
 import { AdminPage } from './AdminPage';
@@ -108,13 +109,13 @@ createRoot(root).render(
         <AdminContentPage />
       ) : path === '/admin/operaciones' ? (
         <AdminOperationsPage />
-      ) : path === '/admin' ? (
+      ) : path === '/admin/publicidad' ? (
         <>
           <AdminPage />
-          <a className="admin-support-entry" href="/admin/soporte">Soporte · Legal · Sistema</a>
-          <a className="admin-content-entry" href="/admin/contenido">Noticias · Alertas · Avisos</a>
-          <a className="admin-ops-entry" href="/admin/operaciones">Usuarios · Directorio · Fuentes · Auditoría</a>
+          <a className="admin-ops-entry" href="/admin">← Centro de mando</a>
         </>
+      ) : path === '/admin' ? (
+        <AdminCommandCenterPage />
       ) : path === '/contacto' ? (
         <ContactPage />
       ) : path === '/legal/privacidad' ? (

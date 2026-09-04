@@ -60,6 +60,7 @@ export function AdminDelegatedHomePage({ access }: { access: AdminAccess }) {
             <>
               <DelegatedModule href="/admin/comercial" title="Embudo comercial" detail="Solicitudes públicas, conversión a campaña borrador y seguimiento de métricas" />
               <DelegatedModule href="/admin/anunciantes" title="Acceso de anunciantes" detail="Vincular cuentas, roles del negocio y revisar cambios de ficha" />
+              <DelegatedModule href="/admin/estadisticas" title="Estadísticas comerciales" detail="Benchmark agregado Destacado vs Premium y rendimiento de planes" />
               <DelegatedModule href="/admin/finanzas" title="Finanzas y contratos" detail={summary?.commercial ? `${summary.commercial.billingNeedsAttention} cobros requieren atención` : 'Gestión comercial'} />
             </>
           ) : null}

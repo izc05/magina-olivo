@@ -1,8 +1,16 @@
 /* Mi Campo Visual V2 composition over real API-backed data. */
 
 .field-dashboard-v2 {
+  width: 100%;
+  min-width: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
+}
+
+.field-dashboard-v2 > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .field-v2-hero {

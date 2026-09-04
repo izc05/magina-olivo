@@ -5,6 +5,17 @@ export type RewardPartnerContext = {
   pickupPoints: Array<{ id: string; name: string; address: string }>;
 };
 
+export type RewardTokenInspection = {
+  status: 'valid' | 'expired' | 'redeemed' | 'revoked' | 'inactive';
+  redemptionId: string;
+  rewardCode: string;
+  rewardTitle: string;
+  partnerName: string | null;
+  pickupPoint: { id: string; name: string; address: string } | null;
+  olivesCost: number;
+  expiresAt: string;
+};
+
 export type RewardValidationResult = {
   outcome: 'redeemed' | 'expired';
   redemptionId: string;
@@ -60,6 +71,12 @@ export const rewardPartnerApi = {
     const result = await request<{ partners: RewardPartnerContext[] }>('/api/v1/rewards/partner/context');
     return result.partners;
   },
+
+  inspect: (token: string) =>
+    request<RewardTokenInspection>('/api/v1/rewards/partner/inspect', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    }),
 
   validate: (token: string) =>
     request<RewardValidationResult>('/api/v1/rewards/partner/validate', {

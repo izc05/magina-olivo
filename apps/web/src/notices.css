@@ -24,6 +24,16 @@
   color: #2e3a22;
 }
 
+.toast-notice.warning {
+  background: #fff4cf;
+  color: #2e3a22;
+}
+
+.toast-notice.info {
+  background: #f2eee4;
+  color: #2e3a22;
+}
+
 .toast-notice strong,
 .toast-notice span {
   grid-column: 1;

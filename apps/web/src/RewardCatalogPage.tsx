@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { loyaltyApi, type LoyaltySummary } from './loyalty-api';
+import { NoticeCenter } from './NoticeCenter';
 import {
   rewardApi,
   RewardApiError,
@@ -8,15 +9,19 @@ import {
 } from './reward-api';
 import { RewardPickupCodePanel } from './RewardPickupCodePanel';
 import { RewardRedemptionHistory } from './RewardRedemptionHistory';
+import { RewardRedemptionNotifications } from './RewardRedemptionNotifications';
 import {
   classifyRewardRedemptionStatus,
   rewardRedemptionStatusNotice,
 } from './reward-redemption-status';
+import './reward-redemption-notifications.css';
 
 type ActiveCode = {
   redemption: RedemptionSummary;
   token: string;
 };
+
+type AppNoticeKind = 'success' | 'warning' | 'info';
 
 const REDEMPTION_STATUS_POLL_MS = 20_000;
 
@@ -30,6 +35,12 @@ function formatDate(value: string): string {
     month: 'short',
     year: 'numeric',
   }).format(new Date(value));
+}
+
+function emitAppNotice(kind: AppNoticeKind, title: string, detail: string) {
+  window.dispatchEvent(new CustomEvent('magina:notice', {
+    detail: { kind, title, detail },
+  }));
 }
 
 export function RewardCatalogPage() {
@@ -110,9 +121,23 @@ export function RewardCatalogPage() {
         }
 
         setActiveCode((current) => current?.redemption.id === redemptionId ? null : current);
-        setNotice(latest
+        const statusNotice = latest
           ? rewardRedemptionStatusNotice(latest.status)
-          : rewardRedemptionStatusNotice('missing'));
+          : rewardRedemptionStatusNotice('missing');
+        setNotice(statusNotice);
+
+        if (latest?.status === 'redeemed') {
+          emitAppNotice('success', 'Recogida confirmada', `${latest.rewardTitle} ya figura como entregada.`);
+        } else if (latest?.status === 'expired') {
+          emitAppNotice(
+            'info',
+            'Aceitunas devueltas al saldo',
+            `${formatOlives(latest.olivesCost)} 🫒 han vuelto a tu saldo tras caducar el canje.`,
+          );
+        } else {
+          emitAppNotice('info', 'Canje actualizado', statusNotice);
+        }
+
         void refresh().catch(() => undefined);
       } catch {
         // Background sync is best-effort: never invalidate a still-valid QR on network errors.
@@ -163,6 +188,7 @@ export function RewardCatalogPage() {
 
       setActiveCode({ redemption, token });
       setNotice(`Reserva confirmada: ${reward.title}.`);
+      emitAppNotice('success', 'Canje reservado', `${reward.title} ya está reservado para ti.`);
       await refresh();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'No se ha podido completar el canje.');
@@ -178,6 +204,7 @@ export function RewardCatalogPage() {
       const result = await rewardApi.reissueToken(redemption.id);
       setActiveCode({ redemption: result.redemption, token: result.qrToken });
       setNotice('Se ha generado un nuevo QR de recogida y el anterior ha quedado invalidado.');
+      emitAppNotice('info', 'QR renovado', 'El nuevo código ya está activo y el anterior ha quedado invalidado.');
       await refresh();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'No se ha podido regenerar el código.');
@@ -205,6 +232,8 @@ export function RewardCatalogPage() {
 
   return (
     <main className="rewards-page">
+      <NoticeCenter />
+
       <header className="rewards-topbar">
         <a href="/tu-olivo" className="rewards-back" aria-label="Volver a Tu Olivo">←</a>
         <div>
@@ -222,6 +251,8 @@ export function RewardCatalogPage() {
 
       {notice ? <p className="rewards-notice" role="status">{notice}</p> : null}
       {error ? <p className="rewards-error" role="alert">{error}</p> : null}
+
+      <RewardRedemptionNotifications redemptions={redemptions} />
 
       {activeCode ? (
         <section className="rewards-code-card" aria-live="polite">

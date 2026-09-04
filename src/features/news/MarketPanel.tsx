@@ -15,6 +15,18 @@ type MarketDifferential = {
   value: number;
 };
 
+type MarketSeriesStats = {
+  id: MarketSeries['id'];
+  label: string;
+  shortLabel: string;
+  min: number;
+  max: number;
+  average: number;
+  change: number;
+  trend: 'up' | 'down' | 'flat';
+  trendLabel: 'Alcista' | 'Bajista' | 'Estable';
+};
+
 function formatPrice(value: number | null, unit: string) {
   if (value == null) return '—';
   return `${value.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}`;
@@ -45,6 +57,33 @@ function buildDifferentials(series: MarketSeries[]): MarketDifferential[] {
     const right = byId.get(rightId);
     if (left == null || right == null) return [];
     return [{ key: `${leftId}-${rightId}`, label, value: left - right }];
+  });
+}
+
+function buildSeriesStats(series: MarketSeries[]): MarketSeriesStats[] {
+  return series.flatMap((item) => {
+    const values = item.values.filter((value) => Number.isFinite(value));
+    if (!values.length) return [];
+
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+    const change = values[values.length - 1] - values[0];
+    const stableThreshold = Math.max(0.02, average * 0.005);
+    const trend = Math.abs(change) <= stableThreshold ? 'flat' : change > 0 ? 'up' : 'down';
+    const trendLabel = trend === 'up' ? 'Alcista' : trend === 'down' ? 'Bajista' : 'Estable';
+
+    return [{
+      id: item.id,
+      label: item.label,
+      shortLabel: item.shortLabel,
+      min,
+      max,
+      average,
+      change,
+      trend,
+      trendLabel,
+    }];
   });
 }
 
@@ -200,6 +239,7 @@ export function MarketPanel({ onBack }: Props) {
   useEffect(() => { void refresh(); }, []);
 
   const differentials = useMemo(() => payload ? buildDifferentials(payload.series) : [], [payload]);
+  const seriesStats = useMemo(() => payload ? buildSeriesStats(payload.series) : [], [payload]);
 
   return (
     <section className="section-block hub-panel hub-panel--flush market-real section-block--last">
@@ -243,6 +283,38 @@ export function MarketPanel({ onBack }: Props) {
               );
             })}
           </div>
+
+          {seriesStats.length > 0 && (
+            <article className="market-real__stats" aria-labelledby="market-stats-title">
+              <div className="market-real__stats-head">
+                <div>
+                  <span className="eyebrow">Ventana disponible</span>
+                  <strong id="market-stats-title">Resumen de 8 semanas</strong>
+                </div>
+                <LineChart size={18} aria-hidden="true" />
+              </div>
+              <div className="market-real__stats-grid">
+                {seriesStats.map((item) => (
+                  <section key={item.id} className={`market-real__stat-card market-real__stat-card--${item.id}`}>
+                    <div className="market-real__stat-title">
+                      <i className={`market-real-chart__legend-dot market-real-chart__legend-dot--${item.id}`} />
+                      <strong>{item.shortLabel}</strong>
+                      <span className={`market-real__stat-trend market-real__stat-trend--${item.trend}`}>{item.trendLabel}</span>
+                    </div>
+                    <dl>
+                      <div><dt>Máximo</dt><dd>{formatPrice(item.max, payload.unit)}</dd></div>
+                      <div><dt>Mínimo</dt><dd>{formatPrice(item.min, payload.unit)}</dd></div>
+                      <div><dt>Media</dt><dd>{formatPrice(item.average, payload.unit)}</dd></div>
+                    </dl>
+                    <small className={`market-real__stat-change market-real__stat-change--${item.trend}`}>
+                      {formatDifferential(item.change, payload.unit)} desde la primera semana
+                    </small>
+                  </section>
+                ))}
+              </div>
+              <p className="market-real__stats-note">La tendencia compara la primera y la última observación de la ventana completa; pequeños movimientos se consideran estables.</p>
+            </article>
+          )}
 
           <article className="market-chart-card market-chart-card--real">
             <div className="market-real__chart-head">

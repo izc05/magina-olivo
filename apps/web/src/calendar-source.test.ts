@@ -33,3 +33,16 @@ test('calendar keeps agricultural scope, overdue visibility and write restrictio
   assert.doesNotMatch(calendar, /pushManager|Notification\.requestPermission/);
   assert.doesNotMatch(calendar, /Google Calendar|Outlook/);
 });
+
+test('calendar presentation follows Visual V2 and remains mobile/accessibility aware', async () => {
+  const styles = await read('./calendar.css');
+
+  assert.match(styles, /Visual V2/);
+  assert.match(styles, /--magina-brand-logo/);
+  assert.match(styles, /--v2-olive-deep/);
+  assert.match(styles, /--v2-gold/);
+  assert.match(styles, /prefers-reduced-motion:\s*reduce/);
+  assert.match(styles, /forced-colors:\s*active/);
+  assert.match(styles, /env\(safe-area-inset-bottom\)/);
+  assert.match(styles, /@media \(max-width: 560px\)/);
+});

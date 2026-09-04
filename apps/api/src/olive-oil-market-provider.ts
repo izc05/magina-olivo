@@ -63,8 +63,13 @@ function cellText(value: string): string {
 function rowsFromHtml(html: string): string[][] {
   const rows: string[][] = [];
   for (const row of html.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)) {
-    const cells = [...row[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)]
-      .map((cell) => cellText(cell[1]));
+    const rowHtml = row[1];
+    if (rowHtml == null) continue;
+    const cells: string[] = [];
+    for (const cell of rowHtml.matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)) {
+      const cellHtml = cell[1];
+      if (cellHtml != null) cells.push(cellText(cellHtml));
+    }
     if (cells.length > 0) rows.push(cells);
   }
   return rows;
@@ -93,10 +98,14 @@ function isoSpanishDate(value: string | undefined): string | null {
   if (!value) return null;
   const match = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
   if (!match) return null;
-  const day = Number(match[1]);
-  const month = Number(match[2]);
-  const shortYear = Number(match[3]);
-  const year = match[3].length === 2 ? 2000 + shortYear : shortYear;
+  const dayText = match[1];
+  const monthText = match[2];
+  const yearText = match[3];
+  if (!dayText || !monthText || !yearText) return null;
+  const day = Number(dayText);
+  const month = Number(monthText);
+  const shortYear = Number(yearText);
+  const year = yearText.length === 2 ? 2000 + shortYear : shortYear;
   const date = new Date(Date.UTC(year, month - 1, day));
   if (
     date.getUTCFullYear() !== year
@@ -108,9 +117,14 @@ function isoSpanishDate(value: string | undefined): string | null {
 
 function parseWeek(value: string): OliveOilMarketWeek | null {
   const weekMatch = value.match(/Semana\s+(\d{1,2})/i);
-  if (!weekMatch) return null;
-  const dates = [...value.matchAll(/(\d{1,2}\/\d{1,2}\/\d{2,4})/g)].map((match) => match[1]);
-  const week = Number(weekMatch[1]);
+  const weekText = weekMatch?.[1];
+  if (!weekText) return null;
+  const dates: string[] = [];
+  for (const dateMatch of value.matchAll(/(\d{1,2}\/\d{1,2}\/\d{2,4})/g)) {
+    const dateText = dateMatch[1];
+    if (dateText) dates.push(dateText);
+  }
+  const week = Number(weekText);
   return {
     week,
     label: `Semana ${week}`,
@@ -145,10 +159,15 @@ export function parseOliveOilMarketHtml(html: string, sourceUrl = DEFAULT_OLIVE_
   for (const row of rows) {
     const categoryIndex = row.findIndex((cell) => categoryForCell(cell) !== null);
     if (categoryIndex < 0) continue;
-    const key = categoryForCell(row[categoryIndex]);
+    const categoryCell = row[categoryIndex];
+    if (categoryCell == null) continue;
+    const key = categoryForCell(categoryCell);
     if (!key) continue;
 
-    const parsed = row.slice(categoryIndex + 1).map(parsePrice).filter((value) => value !== null);
+    const parsed = row
+      .slice(categoryIndex + 1)
+      .map(parsePrice)
+      .filter((value): value is number => value !== null);
     if (parsed.length < header.length) continue;
     values.set(key, parsed.slice(-header.length));
   }

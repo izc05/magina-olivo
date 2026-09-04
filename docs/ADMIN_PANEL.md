@@ -24,6 +24,8 @@ Reglas:
 - los endpoints `/api/v1/admin/*` vuelven a comprobar sesión y autorización en backend;
 - las respuestas administrativas usan `private, no-store`.
 
+La normalización de la allowlist se mantiene en una política pura independiente del runtime de Better Auth para poder probarla sin abrir conexiones de base de datos.
+
 ## Alcance funcional V1
 
 ### Cuadro de mando

@@ -6,14 +6,17 @@ async function read(relativePath: string): Promise<string> {
   return readFile(new URL(relativePath, import.meta.url), 'utf8');
 }
 
-test('advertiser applications fail closed and derive email from session', async () => {
+test('advertiser applications fail closed and derive input email from session', async () => {
   const routes = await read('./advertiser-application-routes.ts');
   const env = await read('../../../.env.example');
+  const applicationBody = routes.match(/type ApplicationBody = \{([\s\S]*?)\n\};/)?.[1] ?? '';
 
   assert.match(env, /MAGINA_ADVERTISING_APPLICATIONS_ENABLED=false/);
   assert.match(routes, /ADVERTISING_APPLICATIONS_DISABLED/);
   assert.match(routes, /session\.user\.email/);
-  assert.doesNotMatch(routes, /contactEmail\s*:/);
+  assert.ok(applicationBody.length > 0, 'ApplicationBody source contract must be discoverable');
+  assert.doesNotMatch(applicationBody, /contactEmail/);
+  assert.match(routes, /contact_email[\s\S]*session\.user\.email/);
 });
 
 test('advertiser application submission serializes concurrent requests and caps pending work', async () => {

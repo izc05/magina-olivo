@@ -57,7 +57,10 @@ export function AdminDelegatedHomePage({ access }: { access: AdminAccess }) {
         </div>
         <div className="delegated-module-grid">
           {access.capabilities.finance ? (
-            <DelegatedModule href="/admin/finanzas" title="Finanzas y contratos" detail={summary?.commercial ? `${summary.commercial.billingNeedsAttention} cobros requieren atención` : 'Gestión comercial'} />
+            <>
+              <DelegatedModule href="/admin/comercial" title="Embudo comercial" detail="Solicitudes públicas, conversión a campaña borrador y seguimiento de métricas" />
+              <DelegatedModule href="/admin/finanzas" title="Finanzas y contratos" detail={summary?.commercial ? `${summary.commercial.billingNeedsAttention} cobros requieren atención` : 'Gestión comercial'} />
+            </>
           ) : null}
           {access.capabilities.content ? (
             <DelegatedModule href="/admin/contenido" title="Noticias y avisos" detail={summary?.content ? `${summary.content.activeAnnouncements} avisos activos · ${summary.content.featuredNews} noticias destacadas` : 'Gestión editorial'} />

@@ -4,8 +4,10 @@ import { registerSW } from 'virtual:pwa-register';
 import { AccountPage } from './AccountPage';
 import { AdminCommandCenterPage } from './AdminCommandCenterPage';
 import { AdminContentPage } from './AdminContentPage';
+import { AdminFinancePage } from './AdminFinancePage';
 import { AdminOperationsPage } from './AdminOperationsPage';
 import { AdminPage } from './AdminPage';
+import { AdminRolesPage } from './AdminRolesPage';
 import { AdminSupportSystemPage } from './AdminSupportSystemPage';
 import { App } from './App';
 import { CalendarPage } from './CalendarPage';
@@ -53,6 +55,7 @@ import './calendar.css';
 import './admin.css';
 import './admin-operations.css';
 import './admin-content.css';
+import './admin-finance-roles.css';
 import './platform-announcements.css';
 import './support-legal-system.css';
 
@@ -109,6 +112,10 @@ createRoot(root).render(
         <AdminContentPage />
       ) : path === '/admin/operaciones' ? (
         <AdminOperationsPage />
+      ) : path === '/admin/finanzas' ? (
+        <AdminFinancePage />
+      ) : path === '/admin/roles' ? (
+        <AdminRolesPage />
       ) : path === '/admin/publicidad' ? (
         <>
           <AdminPage />

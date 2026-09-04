@@ -22,6 +22,8 @@ export function AlertsPanel({ onBack }: Props) {
   const [generatedAt, setGeneratedAt] = useState('');
   const [sourceCount, setSourceCount] = useState(0);
   const [healthySourceCount, setHealthySourceCount] = useState(0);
+  const [municipalAlertCount, setMunicipalAlertCount] = useState(0);
+  const [municipalNewsUpstream, setMunicipalNewsUpstream] = useState(false);
   const [scope, setScope] = useState('Todos');
 
   const refresh = async () => {
@@ -32,6 +34,8 @@ export function AlertsPanel({ onBack }: Props) {
       setGeneratedAt(payload.generatedAt);
       setSourceCount(payload.sourceCount ?? 0);
       setHealthySourceCount(payload.healthySourceCount ?? payload.sourceCount ?? 0);
+      setMunicipalAlertCount(payload.municipalAlertCount ?? 0);
+      setMunicipalNewsUpstream(payload.municipalNewsUpstream === true);
       setState('ready');
     } catch {
       setState('error');
@@ -56,6 +60,17 @@ export function AlertsPanel({ onBack }: Props) {
       </div>
       <p className="alerts-real__intro">Avisos y recomendaciones del olivar con fuente y fecha visibles. No generamos una alerta técnica si no existe información trazable.</p>
 
+      {state === 'ready' && municipalNewsUpstream && (
+        <div className="alerts-real__municipal-note">
+          <CheckCircle2 size={17} />
+          <div>
+            <strong>Filtro municipal activo</strong>
+            <span>{municipalAlertCount === 0 ? '0 avisos municipales operativos ahora.' : `${municipalAlertCount} ${municipalAlertCount === 1 ? 'aviso municipal operativo' : 'avisos municipales operativos'} ahora.`}</span>
+            <small>Fiestas, cultura y agenda permanecen en Noticias y no se convierten en alertas.</small>
+          </div>
+        </div>
+      )}
+
       {state === 'ready' && scopes.length > 0 && (
         <div className="alerts-real__filters">
           {['Todos', ...scopes].map((item) => (
@@ -73,7 +88,7 @@ export function AlertsPanel({ onBack }: Props) {
             <a key={alert.id} className={`alerts-real__card alerts-real__card--${alert.severity}`} href={alert.url} target="_blank" rel="noreferrer">
               <div className="alerts-real__icon"><AlertIcon severity={alert.severity} /></div>
               <div className="alerts-real__copy">
-                <div className="alerts-real__meta"><span>{alert.category}</span><span>{alert.scope}</span>{alert.official && <span>Oficial</span>}</div>
+                <div className="alerts-real__meta"><span>{alert.category}</span><span>{alert.scope}</span>{alert.municipalityId && <span>Ayuntamiento</span>}{alert.official && <span>Oficial</span>}</div>
                 <strong>{alert.title}</strong>
                 <p>{alert.summary}</p>
                 <small>{alert.source} · {formatNewsAge(alert.publishedAt)}</small>

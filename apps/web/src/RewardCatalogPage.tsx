@@ -7,11 +7,17 @@ import {
   type RewardCatalogItem,
 } from './reward-api';
 import { RewardPickupCodePanel } from './RewardPickupCodePanel';
+import {
+  classifyRewardRedemptionStatus,
+  rewardRedemptionStatusNotice,
+} from './reward-redemption-status';
 
 type ActiveCode = {
   redemption: RedemptionSummary;
   token: string;
 };
+
+const REDEMPTION_STATUS_POLL_MS = 20_000;
 
 function formatOlives(value: number): string {
   return new Intl.NumberFormat('es-ES').format(Math.max(0, Math.round(value)));
@@ -74,9 +80,69 @@ export function RewardCatalogPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const redemptionId = activeCode?.redemption.id;
+    if (!redemptionId) return;
+
+    let disposed = false;
+    let inFlight = false;
+
+    async function syncActiveRedemption() {
+      if (disposed || inFlight || document.visibilityState === 'hidden') return;
+      inFlight = true;
+
+      try {
+        const redemptionItems = await rewardApi.myRedemptions();
+        if (disposed) return;
+        setRedemptions(redemptionItems);
+
+        const latest = redemptionItems.find((item) => item.id === redemptionId);
+        if (latest && classifyRewardRedemptionStatus(latest.status) === 'active') {
+          setActiveCode((current) => {
+            if (!current || current.redemption.id !== redemptionId) return current;
+            return {
+              redemption: latest,
+              token: current.token,
+            };
+          });
+          return;
+        }
+
+        setActiveCode((current) => current?.redemption.id === redemptionId ? null : current);
+        setNotice(latest
+          ? rewardRedemptionStatusNotice(latest.status)
+          : rewardRedemptionStatusNotice('missing'));
+        void refresh().catch(() => undefined);
+      } catch {
+        // Background sync is best-effort: never invalidate a still-valid QR on network errors.
+      } finally {
+        inFlight = false;
+      }
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') void syncActiveRedemption();
+    }
+
+    function handleFocus() {
+      void syncActiveRedemption();
+    }
+
+    const intervalId = window.setInterval(() => void syncActiveRedemption(), REDEMPTION_STATUS_POLL_MS);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      disposed = true;
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [activeCode?.redemption.id]);
+
   const availableOlives = summary?.availableBalance ?? 0;
   const activeRedemptions = useMemo(
-    () => redemptions.filter((item) => ['reserved', 'issued'].includes(item.status)),
+    () => redemptions.filter((item) => classifyRewardRedemptionStatus(item.status) === 'active'),
     [redemptions],
   );
 

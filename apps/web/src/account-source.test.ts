@@ -60,4 +60,21 @@ test('Mi Cuenta uses the Visual V2 layer without changing private behavior', asy
   assert.match(styles, /forced-colors:\s*active/);
 });
 
+test('Mi Magina personal hub points to the real account, calendar and public Magina surfaces', async () => {
+  const app = await read('./App.tsx');
+  const more = await read('./MoreDashboardV2.tsx');
+  const styles = await read('./more-dashboard-v2.css');
+
+  assert.match(app, /import \{ MoreDashboardV2 \} from '\.\/MoreDashboardV2'/);
+  assert.match(app, /<MoreDashboardV2 user=\{user\} holding=\{holding\}/);
+  assert.match(more, /href="\/cuenta"/);
+  assert.match(more, /href="\/calendario"/);
+  assert.match(more, /href="\/magina"/);
+  assert.match(more, /Tu explotación sigue siendo tuya/);
+  assert.match(more, /cambios offline pendientes/);
+  assert.match(styles, /Visual V2 authenticated personal hub/);
+  assert.match(styles, /prefers-reduced-motion:\s*reduce/);
+  assert.match(styles, /forced-colors:\s*active/);
+});
+
 // Keep this source gate in the CI-triggering slice so portability changes always re-run both repository gates.

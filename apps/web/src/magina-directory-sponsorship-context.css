@@ -1,0 +1,14 @@
+.directory-sponsorship-context {
+  margin: 12px 0 0;
+  padding: 11px 14px;
+  border: 1px solid rgba(82, 121, 54, .2);
+  border-radius: 10px;
+  background: rgba(82, 121, 54, .065);
+  color: #53604c;
+  font-size: .7rem;
+  line-height: 1.5;
+}
+
+.directory-sponsorship-context strong {
+  color: var(--olive-800);
+}

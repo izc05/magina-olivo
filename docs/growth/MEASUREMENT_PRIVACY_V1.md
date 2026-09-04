@@ -8,7 +8,7 @@ This document defines the activation contract for Growth V1. Technical preparati
 
 ## Default state
 
-Growth measurement is OFF by default.
+Growth measurement is OFF by default on both sides.
 
 Frontend build requirements:
 
@@ -18,7 +18,15 @@ Frontend build requirements:
 - Requests use `credentials: omit`.
 - No third-party analytics SDK is required for Growth V1.
 
-Activation requires an explicit production build with both the measurement flag and the approved first-party endpoint configured.
+API/runtime requirements:
+
+- `PUBLIC_GROWTH_MEASUREMENT_ENABLED=false` by default in Compose.
+- The endpoint returns disabled/not found unless the server flag is explicitly set to `true`.
+- The endpoint requires a trusted `Origin` and rejects `Sec-Fetch-Site: cross-site`.
+- The request body limit is 2 KiB and the JSON schema rejects unknown fields.
+- Abuse protection uses only an expiring in-memory IP bucket; IP addresses are not persisted in the Growth dataset.
+
+Activation therefore requires an explicit production build of the frontend plus an explicit API runtime opt-in. Enabling only one side does not start collection.
 
 ## Public surfaces allowed
 
@@ -40,7 +48,7 @@ Before consent, no Growth V1 network event is sent.
 The public consent panel offers two choices:
 
 - **Solo necesario** → no Growth V1 events.
-- **Permitir medición anónima** → enables the approved public events.
+- **Permitir medición anónima** → enables the approved public events when the deployment has also enabled both Growth flags.
 
 The choice may be stored locally only to remember the preference. The consent value must never be used as an advertising identifier or cross-device identifier.
 
@@ -96,40 +104,42 @@ The Growth V1 client or endpoint must never persist or intentionally add:
 - advertising IDs;
 - query-string values other than the approved sanitized UTM fields.
 
-## First-party endpoint contract
+## First-party endpoint implementation
 
-Planned endpoint:
+Prepared endpoint:
 
 `POST /api/public/growth/events`
 
-The endpoint must:
+Current implementation:
 
-1. accept only the event, route, optional channel and approved attribution enums/strings;
-2. reject unknown fields rather than silently storing them;
-3. reject non-public routes;
-4. use strict body-size limits;
-5. use abuse/rate protection without creating a persistent visitor identifier;
-6. return no user profile or tracking token;
-7. never set a cookie;
-8. never echo submitted attribution back into HTML;
-9. keep its request body out of application logs;
-10. avoid retaining source IP or full user-agent in the Growth dataset.
+1. accepts only event, approved public route, optional share channel and approved attribution values;
+2. uses `additionalProperties: false` so unknown fields are rejected;
+3. rejects non-public routes through the schema;
+4. limits bodies to 2 KiB;
+5. requires a trusted same-origin browser request;
+6. applies an in-memory 60-events/minute IP bucket that expires and is never written to Growth storage;
+7. returns no user profile or tracking token and sets no Growth cookie;
+8. aggregates directly with an SQL upsert rather than inserting visitor-level events;
+9. keeps exact IP, user-agent, session and account identifiers out of the Growth table;
+10. remains disabled unless `PUBLIC_GROWTH_MEASUREMENT_ENABLED=true`.
 
 If infrastructure logging cannot meet the approved privacy posture, Growth measurement remains disabled.
 
 ## Storage model
 
-Preferred model: aggregate as early as practical.
+Migration `db/migrations/0018_public_growth_daily.sql` creates only the aggregate table `public_growth_daily`.
 
 Daily aggregate dimensions:
 
-- UTC/local reporting date;
+- Sierra Mágina reporting date using `Europe/Madrid`;
 - event;
 - approved public route;
 - optional share channel;
 - sanitized UTM source/medium/campaign;
 - coarse referrer category;
 - count.
+
+The unique primary key is the complete aggregate dimension set. Repeated events increment `event_count` with `ON CONFLICT`; there is no raw-event table, visitor ID, account ID, IP column or session column.
 
 Do not build a visitor-level event history for Growth V1.
 
@@ -175,7 +185,7 @@ Do not enable remote measurement until all are true:
 - final public domain and `PUBLIC_SITE_URL` are fixed;
 - privacy/legal text reflects the measurement actually used;
 - consent behavior is reviewed on mobile and desktop;
-- first-party endpoint contract is implemented and tested;
+- first-party endpoint and migration are validated by the project gates on an approved SHA;
 - server/proxy logging behavior is reviewed;
 - abuse/rate controls are tested;
 - a deletion/retention policy for aggregate metrics is documented;

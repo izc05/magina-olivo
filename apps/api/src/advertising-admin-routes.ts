@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { getPool } from './db.ts';
 import { apiError } from './http-errors.ts';
@@ -11,6 +12,25 @@ type ApplicationDecisionBody = {
 
 type ApplicationParams = {
   applicationId: string;
+};
+
+type SponsorshipParams = {
+  sponsorshipId: string;
+};
+
+type SponsorshipCreateBody = {
+  advertiserId: string;
+  planCode: 'featured' | 'premium';
+  status: 'draft' | 'pending' | 'active';
+  startsAt?: string | null;
+  endsAt?: string | null;
+  municipalities?: string[];
+  publicLabel?: string;
+  priorityOverride?: number | null;
+};
+
+type SponsorshipStatusBody = {
+  status: 'active' | 'paused' | 'cancelled';
 };
 
 type MetricRow = {
@@ -48,6 +68,7 @@ type AdvertiserRow = {
   starts_at: Date | null;
   ends_at: Date | null;
   public_label: string | null;
+  sponsorship_municipalities: string[] | null;
 };
 
 type PlanRow = {
@@ -78,6 +99,10 @@ async function requirePlatformAdmin(
   }
 
   return session;
+}
+
+function normalizedMunicipalities(values: string[] | undefined): string[] {
+  return [...new Set((values ?? []).map((value) => value.trim()).filter(Boolean))];
 }
 
 export function registerAdvertisingAdminRoutes(app: FastifyInstance): void {
@@ -141,7 +166,12 @@ export function registerAdvertisingAdminRoutes(app: FastifyInstance): void {
             s.status as sponsorship_status,
             s.starts_at,
             s.ends_at,
-            s.public_label
+            s.public_label,
+            case when s.id is null then null else coalesce((
+              select array_agg(sm.municipality order by sm.municipality)
+              from sponsorship_municipalities sm
+              where sm.sponsorship_id = s.id
+            ), array[]::text[]) end as sponsorship_municipalities
           from advertiser_profiles ap
           join cooperatives c on c.id = ap.destination_id
           left join lateral (
@@ -226,6 +256,7 @@ export function registerAdvertisingAdminRoutes(app: FastifyInstance): void {
           startsAt: row.starts_at,
           endsAt: row.ends_at,
           label: row.public_label,
+          municipalities: row.sponsorship_municipalities ?? [],
         } : null,
       })),
       plans: plansResult.rows.map((row) => ({
@@ -311,6 +342,196 @@ export function registerAdvertisingAdminRoutes(app: FastifyInstance): void {
           businessName: row.business_name,
           status: row.status,
           reviewedAt: row.reviewed_at,
+        },
+      };
+    },
+  );
+
+  app.post<{ Body: SponsorshipCreateBody }>(
+    '/api/v1/admin/advertising/sponsorships',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['advertiserId', 'planCode', 'status'],
+          properties: {
+            advertiserId: { type: 'string', format: 'uuid' },
+            planCode: { type: 'string', enum: ['featured', 'premium'] },
+            status: { type: 'string', enum: ['draft', 'pending', 'active'] },
+            startsAt: { anyOf: [{ type: 'string', format: 'date-time' }, { type: 'null' }] },
+            endsAt: { anyOf: [{ type: 'string', format: 'date-time' }, { type: 'null' }] },
+            municipalities: {
+              type: 'array',
+              maxItems: 30,
+              uniqueItems: true,
+              items: { type: 'string', minLength: 1, maxLength: 120 },
+            },
+            publicLabel: { type: 'string', minLength: 1, maxLength: 40 },
+            priorityOverride: { anyOf: [{ type: 'integer', minimum: 0, maximum: 10000 }, { type: 'null' }] },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const session = await requirePlatformAdmin(request, reply);
+      if (!session) return;
+
+      const db = getPool();
+      const municipalities = normalizedMunicipalities(request.body.municipalities);
+      const startsAt = request.body.startsAt ?? null;
+      const endsAt = request.body.endsAt ?? null;
+      if (startsAt && endsAt && new Date(endsAt).getTime() <= new Date(startsAt).getTime()) {
+        return reply.code(400).send(apiError(request, 'INVALID_SPONSORSHIP_WINDOW', 'End date must be after start date'));
+      }
+
+      const client = await db.connect();
+      try {
+        await client.query('begin');
+        const advertiser = await client.query<{ id: string }>(
+          `select id from advertiser_profiles where id = $1 and status = 'active' limit 1`,
+          [request.body.advertiserId],
+        );
+        if (!advertiser.rows[0]) {
+          await client.query('rollback');
+          return reply.code(400).send(apiError(request, 'ADVERTISER_NOT_ACTIVE', 'Advertiser must be active before creating a sponsorship'));
+        }
+
+        const existing = await client.query<{ id: string }>(
+          `
+            select id
+            from sponsorships
+            where advertiser_id = $1
+              and status in ('draft', 'pending', 'active')
+            limit 1
+          `,
+          [request.body.advertiserId],
+        );
+        if (existing.rows[0]) {
+          await client.query('rollback');
+          return reply.code(409).send(apiError(request, 'SPONSORSHIP_ALREADY_OPEN', 'Pause or cancel the existing sponsorship before creating another'));
+        }
+
+        const plan = await client.query<{ code: string }>(
+          `select code from advertising_plans where code = $1 and active = true limit 1`,
+          [request.body.planCode],
+        );
+        if (!plan.rows[0]) {
+          await client.query('rollback');
+          return reply.code(400).send(apiError(request, 'ADVERTISING_PLAN_UNAVAILABLE', 'Advertising plan is not available'));
+        }
+
+        const sponsorshipId = randomUUID();
+        await client.query(
+          `
+            insert into sponsorships (
+              id, advertiser_id, plan_code, status, starts_at, ends_at,
+              priority_override, public_label, internal_notes
+            )
+            values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          `,
+          [
+            sponsorshipId,
+            request.body.advertiserId,
+            request.body.planCode,
+            request.body.status,
+            startsAt,
+            endsAt,
+            request.body.priorityOverride ?? null,
+            request.body.publicLabel?.trim() || 'Patrocinado',
+            `Creado desde panel admin por ${session.user.id}`,
+          ],
+        );
+
+        for (const municipality of municipalities) {
+          await client.query(
+            `insert into sponsorship_municipalities (sponsorship_id, municipality) values ($1, $2)`,
+            [sponsorshipId, municipality],
+          );
+        }
+
+        await client.query('commit');
+        return reply.code(201).send({
+          sponsorship: {
+            id: sponsorshipId,
+            advertiserId: request.body.advertiserId,
+            planCode: request.body.planCode,
+            status: request.body.status,
+            startsAt,
+            endsAt,
+            municipalities,
+          },
+        });
+      } catch (error) {
+        try {
+          await client.query('rollback');
+        } catch {
+          // Preserve the original failure.
+        }
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+  );
+
+  app.patch<{ Params: SponsorshipParams; Body: SponsorshipStatusBody }>(
+    '/api/v1/admin/advertising/sponsorships/:sponsorshipId/status',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['sponsorshipId'],
+          properties: {
+            sponsorshipId: { type: 'string', format: 'uuid' },
+          },
+        },
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['status'],
+          properties: {
+            status: { type: 'string', enum: ['active', 'paused', 'cancelled'] },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const session = await requirePlatformAdmin(request, reply);
+      if (!session) return;
+
+      const result = await getPool().query<{
+        id: string;
+        advertiser_id: string;
+        status: string;
+        updated_at: Date;
+      }>(
+        `
+          update sponsorships
+          set status = $2, updated_at = now(), internal_notes = concat_ws(E'\n', internal_notes, $3)
+          where id = $1
+            and status <> 'expired'
+          returning id, advertiser_id, status, updated_at
+        `,
+        [
+          request.params.sponsorshipId,
+          request.body.status,
+          `Estado cambiado a ${request.body.status} desde panel admin por ${session.user.id}`,
+        ],
+      );
+
+      const row = result.rows[0];
+      if (!row) {
+        return reply.code(404).send(apiError(request, 'SPONSORSHIP_NOT_FOUND', 'Sponsorship does not exist or is expired'));
+      }
+
+      return {
+        sponsorship: {
+          id: row.id,
+          advertiserId: row.advertiser_id,
+          status: row.status,
+          updatedAt: row.updated_at,
         },
       };
     },

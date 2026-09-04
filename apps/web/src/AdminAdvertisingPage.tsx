@@ -45,6 +45,7 @@ type Dashboard = {
       startsAt: string | null;
       endsAt: string | null;
       label: string | null;
+      municipalities: string[];
     } | null;
   }>;
   plans: Array<{
@@ -86,12 +87,28 @@ function formatDate(value: string | null): string {
   }).format(parsed);
 }
 
+function toIsoOrNull(value: string): string | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+}
+
 export function AdminAdvertisingPage() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
+  const [campaignFormOpen, setCampaignFormOpen] = useState(false);
+  const [campaignSaving, setCampaignSaving] = useState(false);
+  const [campaignAdvertiserId, setCampaignAdvertiserId] = useState('');
+  const [campaignPlan, setCampaignPlan] = useState<'featured' | 'premium'>('featured');
+  const [campaignStatus, setCampaignStatus] = useState<'draft' | 'pending' | 'active'>('active');
+  const [campaignStartsAt, setCampaignStartsAt] = useState('');
+  const [campaignEndsAt, setCampaignEndsAt] = useState('');
+  const [campaignMunicipalities, setCampaignMunicipalities] = useState('');
+  const [campaignLabel, setCampaignLabel] = useState('Patrocinado');
+  const [changingSponsorshipId, setChangingSponsorshipId] = useState<string | null>(null);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
@@ -107,6 +124,7 @@ export function AdminAdvertisingPage() {
       const result = await response.json() as Dashboard;
       setDashboard(result);
       setSelectedApplicationId((current) => current ?? result.applications[0]?.id ?? null);
+      setCampaignAdvertiserId((current) => current || result.advertisers.find((item) => item.profileStatus === 'active' && !item.sponsorship)?.id || '');
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'No se ha podido cargar el panel.');
     } finally {
@@ -123,6 +141,10 @@ export function AdminAdvertisingPage() {
       ?? dashboard?.applications[0]
       ?? null;
   }, [dashboard, selectedApplicationId]);
+
+  const campaignEligibleAdvertisers = useMemo(() => {
+    return (dashboard?.advertisers ?? []).filter((advertiser) => advertiser.profileStatus === 'active' && !advertiser.sponsorship);
+  }, [dashboard]);
 
   async function reviewApplication(status: 'approved' | 'rejected') {
     if (!selectedApplication) return;
@@ -145,6 +167,71 @@ export function AdminAdvertisingPage() {
       setError(reason instanceof Error ? reason.message : 'No se ha podido revisar la solicitud.');
     } finally {
       setReviewingId(null);
+    }
+  }
+
+  async function createCampaign() {
+    if (!campaignAdvertiserId) {
+      setError('Selecciona una empresa activa sin campaña abierta.');
+      return;
+    }
+    setCampaignSaving(true);
+    setError(null);
+    try {
+      const municipalities = [...new Set(campaignMunicipalities.split(',').map((item) => item.trim()).filter(Boolean))];
+      const response = await fetch('/api/v1/admin/advertising/sponsorships', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          advertiserId: campaignAdvertiserId,
+          planCode: campaignPlan,
+          status: campaignStatus,
+          startsAt: toIsoOrNull(campaignStartsAt),
+          endsAt: toIsoOrNull(campaignEndsAt),
+          municipalities,
+          publicLabel: campaignLabel.trim() || 'Patrocinado',
+        }),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null) as { error?: { message?: string } } | null;
+        throw new Error(payload?.error?.message ?? `No se ha podido crear la campaña (HTTP ${response.status}).`);
+      }
+      setCampaignFormOpen(false);
+      setCampaignStartsAt('');
+      setCampaignEndsAt('');
+      setCampaignMunicipalities('');
+      setCampaignLabel('Patrocinado');
+      await loadDashboard();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'No se ha podido crear la campaña.');
+    } finally {
+      setCampaignSaving(false);
+    }
+  }
+
+  async function changeSponsorshipStatus(sponsorshipId: string, status: 'active' | 'paused' | 'cancelled') {
+    setChangingSponsorshipId(sponsorshipId);
+    setError(null);
+    try {
+      const response = await fetch(`/api/v1/admin/advertising/sponsorships/${sponsorshipId}/status`, {
+        method: 'PATCH',
+        credentials: 'same-origin',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      });
+      if (!response.ok) throw new Error(`No se ha podido cambiar la campaña (HTTP ${response.status}).`);
+      await loadDashboard();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'No se ha podido cambiar la campaña.');
+    } finally {
+      setChangingSponsorshipId(null);
     }
   }
 
@@ -183,9 +270,12 @@ export function AdminAdvertisingPage() {
             <h1>Publicidad y empresas</h1>
             <p>Gestiona empresas, patrocinios, solicitudes y rendimiento sin mezclar publicidad con los datos objetivos del agricultor.</p>
           </div>
-          <div className={`advertising-mode ${dashboard?.advertisingEnabled ? 'enabled' : 'disabled'}`}>
-            <span>{dashboard?.advertisingEnabled ? 'Publicidad activa' : 'Publicidad desactivada'}</span>
-            <small>{dashboard?.advertisingEnabled ? 'Visible para usuarios' : 'Modo seguro de piloto'}</small>
+          <div className="advertising-header-actions">
+            <button type="button" className="new-campaign-button" onClick={() => setCampaignFormOpen((value) => !value)}>+ Nueva campaña</button>
+            <div className={`advertising-mode ${dashboard?.advertisingEnabled ? 'enabled' : 'disabled'}`}>
+              <span>{dashboard?.advertisingEnabled ? 'Publicidad activa' : 'Publicidad desactivada'}</span>
+              <small>{dashboard?.advertisingEnabled ? 'Visible para usuarios' : 'Modo seguro de piloto'}</small>
+            </div>
           </div>
         </header>
 
@@ -194,6 +284,27 @@ export function AdminAdvertisingPage() {
 
         {dashboard ? (
           <>
+            {campaignFormOpen ? (
+              <section className="advertising-campaign-form" aria-labelledby="new-campaign-title">
+                <div className="advertising-admin-card-heading">
+                  <div><p className="eyebrow">Patrocinio</p><h2 id="new-campaign-title">Nueva campaña</h2></div>
+                  <button type="button" className="campaign-close" onClick={() => setCampaignFormOpen(false)} aria-label="Cerrar formulario">×</button>
+                </div>
+                {campaignEligibleAdvertisers.length > 0 ? (
+                  <div className="campaign-fields">
+                    <label><span>Empresa</span><select value={campaignAdvertiserId} onChange={(event) => setCampaignAdvertiserId(event.target.value)}>{campaignEligibleAdvertisers.map((advertiser) => <option key={advertiser.id} value={advertiser.id}>{advertiser.brandName ?? advertiser.officialName}</option>)}</select></label>
+                    <label><span>Plan</span><select value={campaignPlan} onChange={(event) => setCampaignPlan(event.target.value as 'featured' | 'premium')}><option value="featured">Destacado</option><option value="premium">Premium</option></select></label>
+                    <label><span>Estado inicial</span><select value={campaignStatus} onChange={(event) => setCampaignStatus(event.target.value as 'draft' | 'pending' | 'active')}><option value="active">Activa</option><option value="pending">Pendiente</option><option value="draft">Borrador</option></select></label>
+                    <label><span>Inicio</span><input type="datetime-local" value={campaignStartsAt} onChange={(event) => setCampaignStartsAt(event.target.value)} /></label>
+                    <label><span>Fin</span><input type="datetime-local" value={campaignEndsAt} onChange={(event) => setCampaignEndsAt(event.target.value)} /></label>
+                    <label className="campaign-wide"><span>Municipios</span><input type="text" placeholder="Mancha Real, Pegalajar, Cambil" value={campaignMunicipalities} onChange={(event) => setCampaignMunicipalities(event.target.value)} /><small>Separados por comas. Vacío = sin limitación municipal específica.</small></label>
+                    <label><span>Etiqueta pública</span><input type="text" maxLength={40} value={campaignLabel} onChange={(event) => setCampaignLabel(event.target.value)} /></label>
+                    <div className="campaign-submit"><button type="button" disabled={campaignSaving} onClick={() => void createCampaign()}>{campaignSaving ? 'Guardando…' : 'Crear campaña'}</button></div>
+                  </div>
+                ) : <div className="advertising-empty">No hay empresas activas disponibles sin una campaña abierta. Activa un perfil o pausa/cancela su campaña actual antes de crear otra.</div>}
+              </section>
+            ) : null}
+
             <section className="advertising-kpis" aria-label="Resumen comercial">
               <article><span>Empresas activas</span><strong>{formatNumber(dashboard.counts.activeAdvertisers)}</strong><small>Perfiles comerciales aprobados</small></article>
               <article><span>Patrocinios activos</span><strong>{formatNumber(dashboard.counts.activeSponsorships)}</strong><small>Dentro de su ventana vigente</small></article>
@@ -209,7 +320,7 @@ export function AdminAdvertisingPage() {
                 </div>
                 <div className="advertising-table-wrap">
                   <table>
-                    <thead><tr><th>Empresa</th><th>Categoría</th><th>Municipio</th><th>Plan</th><th>Estado</th><th>Vencimiento</th></tr></thead>
+                    <thead><tr><th>Empresa</th><th>Categoría</th><th>Municipio</th><th>Plan</th><th>Campaña</th><th>Zona</th><th>Vencimiento</th><th>Acciones</th></tr></thead>
                     <tbody>
                       {dashboard.advertisers.map((advertiser) => (
                         <tr key={advertiser.id}>
@@ -217,8 +328,17 @@ export function AdminAdvertisingPage() {
                           <td>{categoryLabels[advertiser.category] ?? advertiser.category}</td>
                           <td>{advertiser.municipality ?? '—'}</td>
                           <td><span className={`plan-pill ${advertiser.sponsorship?.planCode ?? 'free'}`}>{advertiser.sponsorship?.planCode === 'premium' ? 'Premium' : advertiser.sponsorship?.planCode === 'featured' ? 'Destacado' : 'Gratis'}</span></td>
-                          <td><span className={`status-dot ${advertiser.profileStatus}`}>{advertiser.profileStatus}</span></td>
+                          <td><span className={`status-dot ${advertiser.sponsorship?.status ?? advertiser.profileStatus}`}>{advertiser.sponsorship?.status ?? advertiser.profileStatus}</span></td>
+                          <td>{advertiser.sponsorship?.municipalities.length ? advertiser.sponsorship.municipalities.join(', ') : 'General'}</td>
                           <td>{formatDate(advertiser.sponsorship?.endsAt ?? null)}</td>
+                          <td>
+                            {advertiser.sponsorship ? (
+                              <div className="campaign-row-actions">
+                                {advertiser.sponsorship.status === 'active' ? <button type="button" disabled={changingSponsorshipId === advertiser.sponsorship.id} onClick={() => void changeSponsorshipStatus(advertiser.sponsorship!.id, 'paused')}>Pausar</button> : <button type="button" disabled={changingSponsorshipId === advertiser.sponsorship.id} onClick={() => void changeSponsorshipStatus(advertiser.sponsorship!.id, 'active')}>Activar</button>}
+                                <button type="button" className="danger" disabled={changingSponsorshipId === advertiser.sponsorship.id} onClick={() => void changeSponsorshipStatus(advertiser.sponsorship!.id, 'cancelled')}>Cancelar</button>
+                              </div>
+                            ) : <span className="no-campaign">Sin campaña</span>}
+                          </td>
                         </tr>
                       ))}
                     </tbody>

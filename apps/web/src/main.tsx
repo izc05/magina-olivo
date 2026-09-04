@@ -44,6 +44,7 @@ import './auth-onboarding.css';
 import './pilot-alerts.css';
 import './calendar.css';
 import './admin-advertising.css';
+import './admin-advertising-campaigns.css';
 
 installDemoPreview();
 installWeatherDemoPreview();

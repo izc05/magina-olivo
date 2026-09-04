@@ -5,6 +5,7 @@ import { AccountPage } from './AccountPage';
 import { App } from './App';
 import { CalendarPage } from './CalendarPage';
 import { ConnectivityStatus } from './ConnectivityStatus';
+import { GrowthMeasurement } from './GrowthMeasurement';
 import { MaginaDirectoryPage } from './MaginaDirectoryPage';
 import { MaginaFieldAlertsPage } from './MaginaFieldAlertsPage';
 import { MaginaHubPage } from './MaginaHubPage';
@@ -42,6 +43,7 @@ import './auth-onboarding.css';
 import './pilot-alerts.css';
 import './calendar.css';
 import './public-share.css';
+import './growth-consent.css';
 
 registerSW({
   immediate: true,
@@ -78,6 +80,7 @@ if (basePath) {
 }
 
 const publicShare = <PublicShare />;
+const publicMeasurement = <GrowthMeasurement route={path} />;
 
 createRoot(root).render(
   <StrictMode>
@@ -92,17 +95,17 @@ createRoot(root).render(
     ) : path === '/calendario' ? (
       <CalendarPage />
     ) : path === '/magina' ? (
-      <><MaginaHubPage />{publicShare}</>
+      <><MaginaHubPage />{publicShare}{publicMeasurement}</>
     ) : path === '/magina/directorio' ? (
-      <><MaginaDirectoryPage />{publicShare}</>
+      <><MaginaDirectoryPage />{publicShare}{publicMeasurement}</>
     ) : path === '/magina/tiempo' ? (
-      <><MaginaWeatherPage />{publicShare}</>
+      <><MaginaWeatherPage />{publicShare}{publicMeasurement}</>
     ) : path === '/magina/campo' ? (
-      <><MaginaFieldAlertsPage />{publicShare}</>
+      <><MaginaFieldAlertsPage />{publicShare}{publicMeasurement}</>
     ) : path === '/magina/noticias' ? (
-      <><MaginaNewsPage />{publicShare}</>
+      <><MaginaNewsPage />{publicShare}{publicMeasurement}</>
     ) : path === '/magina/mercado' ? (
-      <><MaginaMarketPage />{publicShare}</>
+      <><MaginaMarketPage />{publicShare}{publicMeasurement}</>
     ) : (
       <>
         <ConnectivityStatus />

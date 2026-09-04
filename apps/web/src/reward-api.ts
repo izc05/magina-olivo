@@ -44,7 +44,7 @@ export type RedeemResult = {
 
 export class RewardApiError extends Error {
   readonly status: number;
-  readonly code?: string;
+  readonly code: string | undefined;
 
   constructor(message: string, status: number, code?: string) {
     super(message);

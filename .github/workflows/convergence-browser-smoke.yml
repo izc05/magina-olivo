@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - feat/pre-minipc-convergence-v1
-      - fix/pre-minipc-browser-smoke-v1
+      - fix/pre-minipc-audit-browser-v1
   pull_request:
     branches:
       - feat/pre-minipc-convergence-v1
@@ -51,7 +51,9 @@ jobs:
           npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.62.1
           npx playwright install --with-deps chromium
 
-      - name: Start preview server
+      - name: Start preview server with Pages base
+        env:
+          VITE_BASE_PATH: /magina-olivo/
         run: |
           npm run preview --workspace @magina/web -- --host 127.0.0.1 --port 4173 > /tmp/magina-preview.log 2>&1 &
           echo $! > /tmp/magina-preview.pid

@@ -33,6 +33,7 @@ export function RegistrationEntry() {
   if (state === 'signed_in') {
     return (
       <aside className="registration-entry" aria-label="Accesos personales">
+        <a className="text-button" href="/notificaciones">Avisos</a>
         <a className="text-button" href="/calendario">Calendario</a>
         <a className="account-entry" href="/cuenta" aria-label="Abrir Mi Cuenta">Mi cuenta</a>
       </aside>

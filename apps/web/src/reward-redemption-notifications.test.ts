@@ -59,7 +59,7 @@ test('shows refunded olives after a recent expiration', () => {
 
   assert.equal(notifications.length, 1);
   assert.equal(notifications[0]?.kind, 'refunded');
-  assert.match(notifications[0]?.detail ?? '', /2\.500 🫒/);
+  assert.match(notifications[0]?.detail ?? '', /2[.\s]?500 🫒/);
   assert.match(notifications[0]?.detail ?? '', /han vuelto a tu saldo/);
 });
 

@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { AccountPage } from './AccountPage';
+import { AdminOperationsPage } from './AdminOperationsPage';
 import { AdminPage } from './AdminPage';
 import { App } from './App';
 import { CalendarPage } from './CalendarPage';
@@ -44,6 +45,7 @@ import './auth-onboarding.css';
 import './pilot-alerts.css';
 import './calendar.css';
 import './admin.css';
+import './admin-operations.css';
 
 installDemoPreview();
 installWeatherDemoPreview();
@@ -90,8 +92,13 @@ createRoot(root).render(
       <RegisterPage />
     ) : path === '/onboarding' ? (
       <OnboardingPage />
+    ) : path === '/admin/operaciones' ? (
+      <AdminOperationsPage />
     ) : path === '/admin' ? (
-      <AdminPage />
+      <>
+        <AdminPage />
+        <a className="admin-ops-entry" href="/admin/operaciones">Usuarios · Directorio · Fuentes · Auditoría</a>
+      </>
     ) : path === '/cuenta' ? (
       <AccountPage />
     ) : path === '/calendario' ? (

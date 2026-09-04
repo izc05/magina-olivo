@@ -1,0 +1,252 @@
+.product-tour {
+  min-height: 100dvh;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: max(18px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 18px;
+  background: radial-gradient(circle at 82% 8%, rgba(212, 160, 23, .12), transparent 28%), linear-gradient(180deg, #fbf9f2 0%, #f4f1e6 100%);
+  color: #20261b;
+}
+
+.product-tour__header,
+.product-tour__footer,
+.product-tour__actions,
+.product-tour__brand,
+.product-tour__dots {
+  display: flex;
+  align-items: center;
+}
+
+.product-tour__header {
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.product-tour__brand {
+  gap: 11px;
+  min-width: 0;
+}
+
+.product-tour__brand img {
+  width: 44px;
+  height: 52px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.product-tour__brand div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.product-tour__brand strong {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.28rem;
+  line-height: 1;
+}
+
+.product-tour__brand span {
+  color: #72786c;
+  font-size: .76rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.product-tour__skip,
+.product-tour__back {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: #596151;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.product-tour__body {
+  display: grid;
+  align-content: center;
+  gap: 24px;
+}
+
+.product-tour__art {
+  position: relative;
+  min-height: 260px;
+  border-radius: 30px;
+  overflow: hidden;
+  box-shadow: 0 20px 55px rgba(46, 58, 34, .13);
+  border: 1px solid rgba(46, 58, 34, .08);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.product-tour__art--olive { background: linear-gradient(155deg, #e9eadc, #cfd8c4 52%, #a8b798); }
+.product-tour__art--field { background: linear-gradient(145deg, #f2ede0, #ded5bd); }
+.product-tour__art--weather { background: linear-gradient(145deg, #dcebf1, #eef0e3); }
+.product-tour__art--market { background: linear-gradient(145deg, #f2ead6, #e4d8b7); }
+.product-tour__art--magina { background: linear-gradient(145deg, #e7e3d2, #c8d0b7); }
+
+.product-tour__art svg {
+  width: min(100%, 430px);
+  height: auto;
+  filter: drop-shadow(0 14px 24px rgba(46, 58, 34, .08));
+}
+
+.product-tour__art-label {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(250, 248, 241, .86);
+  backdrop-filter: blur(10px);
+  color: #4e5845;
+  font-size: .75rem;
+  font-weight: 900;
+}
+
+.product-tour__copy {
+  display: grid;
+  gap: 10px;
+}
+
+.product-tour__eyebrow {
+  color: #5c7a46;
+  font-size: .78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+}
+
+.product-tour__copy h1 {
+  margin: 0;
+  max-width: 620px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(2.1rem, 8vw, 3.2rem);
+  line-height: .98;
+  letter-spacing: -.035em;
+}
+
+.product-tour__copy > p {
+  margin: 4px 0 0;
+  color: #646b5e;
+  font-size: 1rem;
+  line-height: 1.58;
+}
+
+.product-tour__bullets {
+  display: grid;
+  gap: 8px;
+  margin-top: 5px;
+}
+
+.product-tour__bullets span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #3d4737;
+  font-size: .92rem;
+  font-weight: 700;
+}
+
+.product-tour__bullets i {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(92, 122, 70, .13);
+  color: #4f7040;
+  font-style: normal;
+  flex: 0 0 auto;
+}
+
+.product-tour__footer {
+  display: grid;
+  gap: 14px;
+}
+
+.product-tour__dots {
+  justify-content: center;
+  gap: 7px;
+}
+
+.product-tour__dots button {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(46, 58, 34, .2);
+  cursor: pointer;
+  transition: width .18s ease, background .18s ease;
+}
+
+.product-tour__dots button.active {
+  width: 28px;
+  background: #d4a017;
+}
+
+.product-tour__actions {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.product-tour__next {
+  min-height: 52px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 17px;
+  background: #2e3a22;
+  color: #fff;
+  font: inherit;
+  font-weight: 900;
+  box-shadow: 0 12px 25px rgba(46, 58, 34, .16);
+  cursor: pointer;
+}
+
+.product-tour__back {
+  padding: 0 8px;
+}
+
+.tour-card { fill: rgba(250, 248, 241, .9); stroke: rgba(46, 58, 34, .11); stroke-width: 2; }
+.tour-fill-soft { fill: #bdc8ac; }
+.tour-fill { fill: #7f9871; }
+.tour-line { fill: none; stroke: rgba(250,248,241,.85); stroke-width: 4; stroke-linecap: round; }
+.tour-branch { fill: none; stroke: #405334; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
+.tour-leaf { fill: #5c7a46; }
+.tour-oil { fill: #d4a017; }
+.tour-plot-a { fill: #a8ba91; stroke: #faf8f1; stroke-width: 4; }
+.tour-plot-b { fill: #c3cda9; stroke: #faf8f1; stroke-width: 4; }
+.tour-plot-c { fill: #d6c99f; stroke: #faf8f1; stroke-width: 4; }
+.tour-plot-d { fill: #93aa82; stroke: #faf8f1; stroke-width: 4; }
+.tour-pin { fill: rgba(46, 58, 34, .15); }
+.tour-pin-shape { fill: #2e3a22; }
+.tour-sun { fill: #e0ad26; }
+.tour-cloud { fill: #faf8f1; stroke: rgba(73, 104, 120, .22); stroke-width: 2; }
+.tour-rain { fill: none; stroke: #5c8297; stroke-width: 7; stroke-linecap: round; }
+.tour-rays { fill: none; stroke: #d4a017; stroke-width: 6; stroke-linecap: round; }
+.tour-chart-line { fill: none; stroke: #5c7a46; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
+.tour-chart-area { fill: rgba(92, 122, 70, .15); }
+.tour-drop { fill: #d4a017; }
+.tour-mountain { fill: #8d9983; }
+.tour-house { fill: #f6f1e4; stroke: rgba(46,58,34,.12); stroke-width: 2; }
+.tour-roof { fill: #a46c47; }
+
+@media (min-width: 760px) {
+  .product-tour { padding-inline: 34px; }
+  .product-tour__art { min-height: 330px; }
+  .product-tour__body { gap: 30px; }
+}
+
+@media (max-height: 720px) {
+  .product-tour { gap: 10px; padding-top: 12px; }
+  .product-tour__art { min-height: 205px; }
+  .product-tour__copy h1 { font-size: 2rem; }
+  .product-tour__copy > p { font-size: .91rem; line-height: 1.42; }
+  .product-tour__bullets { display: none; }
+}

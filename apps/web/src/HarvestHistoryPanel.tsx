@@ -45,13 +45,7 @@ function metricLabel(value: number | null, metric: MetricDefinition): string {
   return `${formatNumber(value, metric.digits)} ${metric.unit}`;
 }
 
-export function HarvestHistoryPanel({
-  holdingId,
-  selectedCampaignId,
-}: {
-  holdingId: string;
-  selectedCampaignId: string;
-}) {
+export function HarvestHistoryPanel({ campaignId }: { campaignId: string }) {
   const [history, setHistory] = useState<HarvestHistory | null>(null);
   const [metricKey, setMetricKey] = useState<MetricKey>('kilogramsPerHectare');
   const [loading, setLoading] = useState(false);
@@ -59,11 +53,14 @@ export function HarvestHistoryPanel({
 
   useEffect(() => {
     let cancelled = false;
-    if (!holdingId) return () => { cancelled = true; };
+    if (!campaignId) {
+      setHistory(null);
+      return () => { cancelled = true; };
+    }
 
     setLoading(true);
     setError(null);
-    void getHarvestHistory(holdingId)
+    void getHarvestHistory(campaignId)
       .then((result) => {
         if (!cancelled) setHistory(result);
       })
@@ -75,7 +72,7 @@ export function HarvestHistoryPanel({
       });
 
     return () => { cancelled = true; };
-  }, [holdingId]);
+  }, [campaignId]);
 
   const metric = metrics.find((item) => item.key === metricKey) ?? metrics[1]!;
 
@@ -162,7 +159,7 @@ export function HarvestHistoryPanel({
                   const percentage = value != null && chart.maxValue > 0
                     ? Math.max(4, (value / chart.maxValue) * 100)
                     : 0;
-                  const selected = item.campaignId === selectedCampaignId;
+                  const selected = item.campaignId === campaignId;
                   return (
                     <article
                       key={item.campaignId}

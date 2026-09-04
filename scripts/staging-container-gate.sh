@@ -73,7 +73,8 @@ done
 
 grep -q '"status":"ready"' /tmp/magina-staging-ready.json
 curl --fail --silent http://127.0.0.1:18088/ >/tmp/magina-staging-index.html
-grep -q '<div id="root"></div>' /tmp/magina-staging-index.html
+grep -q '<div id="root">' /tmp/magina-staging-index.html
+grep -q 'data-discovery-fallback="true"' /tmp/magina-staging-index.html
 
 API_PORTS="$(docker compose -f "$COMPOSE_FILE" port api 3001 2>/dev/null || true)"
 POSTGRES_PORTS="$(docker compose -f "$COMPOSE_FILE" port postgres 5432 2>/dev/null || true)"

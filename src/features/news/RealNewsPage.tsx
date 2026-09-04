@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Bell, CheckCircle2, ChevronRight, ExternalLink, Newspaper, RefreshCw, Search, TriangleAlert } from 'lucide-react';
+import { Bell, CheckCircle2, ChevronRight, ExternalLink, Landmark, Newspaper, RefreshCw, Search, TriangleAlert } from 'lucide-react';
 import type { AppNavigate, MaginaTarget } from '../../app/navigation';
 import type { MainSection } from '../../components/BottomNav';
 import { BottomNav } from '../../components/BottomNav';
@@ -17,6 +17,7 @@ type Props = {
 };
 
 type FeedState = 'loading' | 'ready' | 'error';
+type SourceFilter = 'Todos' | 'Ayuntamientos' | 'Cooperativas';
 
 export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
   const [mode, setMode] = useState<MaginaTarget>(initialTab);
@@ -24,10 +25,14 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
   const [generatedAt, setGeneratedAt] = useState<string>('');
   const [sourceCount, setSourceCount] = useState(0);
   const [healthySourceCount, setHealthySourceCount] = useState(0);
+  const [municipalSourceCount, setMunicipalSourceCount] = useState(0);
+  const [healthyMunicipalSourceCount, setHealthyMunicipalSourceCount] = useState(0);
+  const [municipalStoryCount, setMunicipalStoryCount] = useState(0);
   const [collectorErrors, setCollectorErrors] = useState<string[]>([]);
   const [state, setState] = useState<FeedState>('loading');
   const [query, setQuery] = useState('');
   const [scopeFilter, setScopeFilter] = useState('Todos');
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('Todos');
 
   const refresh = async () => {
     setState('loading');
@@ -37,6 +42,9 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
       setGeneratedAt(payload.generatedAt);
       setSourceCount(payload.sourceCount ?? 0);
       setHealthySourceCount(payload.healthySourceCount ?? payload.sourceCount ?? 0);
+      setMunicipalSourceCount(payload.municipalSourceCount ?? 0);
+      setHealthyMunicipalSourceCount(payload.healthyMunicipalSourceCount ?? 0);
+      setMunicipalStoryCount(payload.municipalStoryCount ?? payload.stories.filter((story) => story.municipalityId).length);
       setCollectorErrors(payload.collectorErrors ?? []);
       setState('ready');
     } catch {
@@ -53,19 +61,29 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
     return preferred.filter((scope) => stories.some((story) => story.scope === scope));
   }, [stories]);
 
+  const availableSourceFilters = useMemo<SourceFilter[]>(() => {
+    const filters: SourceFilter[] = ['Todos'];
+    if (stories.some((story) => story.municipalityId)) filters.push('Ayuntamientos');
+    if (stories.some((story) => story.cooperativeId)) filters.push('Cooperativas');
+    return filters;
+  }, [stories]);
+
   const filteredStories = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase('es');
 
     return stories.filter((story) => {
       const matchesScope = scopeFilter === 'Todos' || story.scope === scopeFilter;
-      if (!matchesScope) return false;
+      const matchesSource = sourceFilter === 'Todos'
+        || (sourceFilter === 'Ayuntamientos' && Boolean(story.municipalityId))
+        || (sourceFilter === 'Cooperativas' && Boolean(story.cooperativeId));
+      if (!matchesScope || !matchesSource) return false;
       if (!needle) return true;
 
-      return `${story.title} ${story.excerpt} ${story.source} ${story.category} ${story.scope ?? ''}`
+      return `${story.title} ${story.excerpt} ${story.source} ${story.category} ${story.scope ?? ''} ${story.municipalityName ?? ''}`
         .toLocaleLowerCase('es')
         .includes(needle);
     });
-  }, [query, scopeFilter, stories]);
+  }, [query, scopeFilter, sourceFilter, stories]);
 
   const handleBottomNavigate = (section: MainSection) => {
     if (section === 'news') setMode('actualidad');
@@ -181,7 +199,7 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
         <section className="magina-heading">
           <span className="eyebrow">Sierra Mágina</span>
           <h1>Mágina al día</h1>
-          <p>Primero Mágina y Jaén; después la actualidad del olivar y el aceite que realmente te afecta.</p>
+          <p>Noticias del territorio, ayuntamientos, cooperativas, olivar y fuentes oficiales que realmente te afectan.</p>
         </section>
 
         {primaryTabs}
@@ -191,7 +209,7 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Buscar olivar, ayudas, Mágina..."
+            placeholder="Buscar pueblo, olivar, ayudas, Mágina..."
             aria-label="Buscar noticias"
           />
         </section>
@@ -211,10 +229,26 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
           </div>
         )}
 
+        {state === 'ready' && availableSourceFilters.length > 1 && (
+          <div className="real-news-filters" aria-label="Filtrar noticias por tipo de fuente">
+            {availableSourceFilters.map((filter) => (
+              <button
+                key={filter}
+                type="button"
+                className={sourceFilter === filter ? 'real-news-filter real-news-filter--active' : 'real-news-filter'}
+                onClick={() => setSourceFilter(filter)}
+              >
+                {filter === 'Ayuntamientos' && <Landmark size={14} aria-hidden="true" />}
+                {filter}
+              </button>
+            ))}
+          </div>
+        )}
+
         {state === 'loading' && (
           <section className="real-news-status">
             <RefreshCw size={22} className="real-news-spin" />
-            <div><strong>Actualizando noticias</strong><span>Consultando fuentes locales, oficiales y del sector.</span></div>
+            <div><strong>Actualizando noticias</strong><span>Consultando ayuntamientos, cooperativas, fuentes locales, oficiales y del sector.</span></div>
           </section>
         )}
 
@@ -229,12 +263,13 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
         {state === 'ready' && hero && (
           <>
             <a className="news-hero-card real-news-hero" href={hero.url} target="_blank" rel="noreferrer">
-              <div className="news-hero-card__image"><Newspaper size={38} /></div>
+              <div className="news-hero-card__image">{hero.municipalityId ? <Landmark size={38} /> : <Newspaper size={38} />}</div>
               <div className="news-hero-card__overlay" />
               <div className="news-hero-card__copy">
                 <div className="real-news-badges">
                   <span>{hero.category}</span>
-                  {hero.scope && <span className="real-news-scope">{hero.scope}</span>}
+                  {hero.municipalityName && <span className="real-news-scope">{hero.municipalityName}</span>}
+                  {!hero.municipalityName && hero.scope && <span className="real-news-scope">{hero.scope}</span>}
                   {hero.official && <span className="real-news-official">Oficial</span>}
                 </div>
                 <h2>{hero.title}</h2>
@@ -251,11 +286,12 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
               <div className="story-list">
                 {rest.map((story) => (
                   <a key={story.id} className="story-row real-news-row" href={story.url} target="_blank" rel="noreferrer">
-                    <div className="story-row__image"><Newspaper size={22} /></div>
+                    <div className="story-row__image">{story.municipalityId ? <Landmark size={22} /> : <Newspaper size={22} />}</div>
                     <div className="story-row__copy">
                       <div className="real-news-row-meta">
                         <span>{story.category}</span>
-                        {story.scope && <span className="real-news-scope real-news-scope--small">{story.scope}</span>}
+                        {story.municipalityName && <span className="real-news-scope real-news-scope--small">{story.municipalityName}</span>}
+                        {!story.municipalityName && story.scope && <span className="real-news-scope real-news-scope--small">{story.scope}</span>}
                         {story.official && <span className="real-news-official real-news-official--small">Oficial</span>}
                       </div>
                       <strong>{story.title}</strong>
@@ -276,6 +312,9 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
                     ? `${healthySourceCount}/${sourceCount} fuentes respondieron correctamente. Cada titular abre la publicación original.`
                     : 'Cada titular abre la publicación original. Mágina Olivo no copia el artículo completo.'}
                 </span>
+                {municipalSourceCount > 0 && (
+                  <small>Ayuntamientos: {healthyMunicipalSourceCount}/{municipalSourceCount} fuentes · {municipalStoryCount} noticias municipales seleccionadas.</small>
+                )}
                 {generatedAt && <small>Última actualización: {new Date(generatedAt).toLocaleString('es-ES')}</small>}
               </div>
               <ExternalLink size={16} />
@@ -286,7 +325,7 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
         {state === 'ready' && !hero && (
           <section className="real-news-status">
             <Newspaper size={22} />
-            <div><strong>Sin resultados</strong><span>Prueba con otra búsqueda o cambia el ámbito.</span></div>
+            <div><strong>Sin resultados</strong><span>Prueba con otra búsqueda o cambia el ámbito/tipo de fuente.</span></div>
           </section>
         )}
       </main>

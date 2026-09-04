@@ -19,11 +19,22 @@ type CatastroQuery = {
   maxLat?: string | number;
 };
 
+type ReferenceParams = { reference: string };
 type PlotParams = { plotId: string };
 type ImportCatastroBody = { cadastralReference: string };
 
 function toNumber(value: string | number | undefined): number {
   return typeof value === 'number' ? value : Number(value);
+}
+
+function sourceMetadata() {
+  return {
+    provider: 'Dirección General del Catastro',
+    dataset: 'INSPIRE Cadastral Parcel (CP)',
+    service: 'WFS',
+    status: 'continuously-updated',
+    checkedAt: new Date().toISOString(),
+  };
 }
 
 function simplePolygon(geometry: { type: 'Polygon' | 'MultiPolygon'; coordinates: number[][][] | number[][][][] }): GeoJsonPolygon | null {
@@ -56,19 +67,34 @@ export function registerCatastroMapRoutes(app: FastifyInstance): void {
       try {
         const items = await fetchCatastroParcels(bbox);
         reply.header('cache-control', 'private, max-age=300');
-        return {
-          items,
-          source: {
-            provider: 'Dirección General del Catastro',
-            dataset: 'INSPIRE Cadastral Parcel (CP)',
-            service: 'WFS',
-            status: 'continuously-updated',
-            checkedAt: new Date().toISOString(),
-          },
-        };
+        return { items, source: sourceMetadata() };
       } catch (error) {
         request.log.warn({ err: error }, 'Catastro INSPIRE parcel query failed');
         return reply.code(502).send(apiError(request, 'CATASTRO_UNAVAILABLE', 'Catastro no está disponible temporalmente'));
+      }
+    },
+  );
+
+  app.get<{ Params: ReferenceParams }>(
+    '/api/v1/maps/catastro/parcelas/by-reference/:reference',
+    async (request, reply) => {
+      const session = await getAuthenticatedSession(request);
+      if (!session) {
+        return reply.code(401).send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
+      }
+
+      const reference = request.params.reference.trim().toUpperCase();
+      if (!validateCadastralReference(reference)) {
+        return reply.code(400).send(apiError(request, 'INVALID_CADASTRAL_REFERENCE', 'La referencia catastral debe tener 14 caracteres alfanuméricos'));
+      }
+
+      try {
+        const item = await fetchCatastroParcelByReference(reference);
+        reply.header('cache-control', 'private, max-age=300');
+        return { item, source: sourceMetadata() };
+      } catch (error) {
+        request.log.warn({ err: error, cadastralReference: reference }, 'Catastro stored query failed');
+        return reply.code(502).send(apiError(request, 'CATASTRO_UNAVAILABLE', 'No se ha podido consultar esa referencia en Catastro'));
       }
     },
   );

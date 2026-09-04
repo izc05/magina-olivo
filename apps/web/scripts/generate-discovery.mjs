@@ -134,6 +134,11 @@ function absoluteUrl(path) {
   return `${siteUrl}${path}`;
 }
 
+function localHref(path) {
+  if (path === '/') return `${basePath || ''}/`;
+  return `${basePath}${path}`;
+}
+
 function escapeHtml(value) {
   return value
     .replaceAll('&', '&amp;')
@@ -191,27 +196,53 @@ function discoveryHead(route) {
       };
 
   const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': [website, primary] });
+  const aliasBootstrap = route.path === route.canonicalPath
+    ? null
+    : `<script>window.history.replaceState(null, '', ${JSON.stringify(localHref(route.canonicalPath))});</script>`;
 
   return [
     `<link rel="canonical" href="${escapeHtml(canonical)}" />`,
     '<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />',
     '<meta property="og:locale" content="es_ES" />',
     '<meta property="og:type" content="website" />',
-    `<meta property="og:site_name" content="Mágina Olivo" />`,
+    '<meta property="og:site_name" content="Mágina Olivo" />',
     `<meta property="og:title" content="${escapeHtml(route.title)}" />`,
     `<meta property="og:description" content="${escapeHtml(route.description)}" />`,
-    `<meta property="og:url" content="${escapeHtml(pageUrl)}" />`,
+    `<meta property="og:url" content="${escapeHtml(canonical)}" />`,
     '<meta name="twitter:card" content="summary" />',
     `<meta name="twitter:title" content="${escapeHtml(route.title)}" />`,
     `<meta name="twitter:description" content="${escapeHtml(route.description)}" />`,
     `<script type="application/ld+json">${jsonLd.replaceAll('</script>', '<\\/script>')}</script>`,
-  ].join('\n    ');
+    aliasBootstrap,
+  ].filter(Boolean).join('\n    ');
+}
+
+function crawlableFallback(route) {
+  const canonicalHref = localHref(route.canonicalPath);
+  const publicLinks = [
+    ['/magina/mercado', 'Mercado del aceite'],
+    ['/magina/tiempo', 'Tiempo'],
+    ['/magina/campo', 'Campo y alertas'],
+    ['/magina/noticias', 'Noticias'],
+    ['/magina/directorio', 'Cooperativas y almazaras'],
+  ];
+
+  const links = publicLinks
+    .map(([path, label]) => `<li><a href="${escapeHtml(localHref(path))}">${escapeHtml(label)}</a></li>`)
+    .join('');
+
+  const canonicalNote = route.path === route.canonicalPath
+    ? ''
+    : `<p><a href="${escapeHtml(canonicalHref)}">Abrir la sección principal en Mágina Olivo</a>.</p>`;
+
+  return `<main data-discovery-fallback="true"><h1>${escapeHtml(route.title)}</h1><p>${escapeHtml(route.description)}</p>${canonicalNote}<nav aria-label="Información pública de Mágina Olivo"><ul>${links}</ul></nav></main>`;
 }
 
 async function renderRoute(baseHtml, route) {
   let html = replaceTitle(baseHtml, route.title);
   html = replaceMeta(html, 'description', route.description);
   html = html.replace('</head>', `    ${discoveryHead(route)}\n  </head>`);
+  html = html.replace('<div id="root"></div>', `<div id="root">${crawlableFallback(route)}</div>`);
 
   const target = route.path === '/'
     ? indexPath
@@ -223,7 +254,8 @@ async function renderRoute(baseHtml, route) {
 
 function sitemapXml() {
   const now = new Date().toISOString();
-  const entries = routes.map((route) => `  <url>\n    <loc>${escapeHtml(absoluteUrl(route.path))}</loc>\n    <lastmod>${now}</lastmod>\n    <changefreq>${route.changefreq}</changefreq>\n    <priority>${route.priority}</priority>\n  </url>`).join('\n');
+  const canonicalRoutes = routes.filter((route) => route.path === route.canonicalPath);
+  const entries = canonicalRoutes.map((route) => `  <url>\n    <loc>${escapeHtml(absoluteUrl(route.path))}</loc>\n    <lastmod>${now}</lastmod>\n    <changefreq>${route.changefreq}</changefreq>\n    <priority>${route.priority}</priority>\n  </url>`).join('\n');
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</urlset>\n`;
 }
 

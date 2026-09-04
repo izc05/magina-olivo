@@ -125,6 +125,8 @@ async function run() {
     await page.getByRole('button', { name: 'Alertas', exact: true }).click();
     const alertsPanel = page.locator('.alerts-real');
     await alertsPanel.waitFor({ state: 'visible' });
+    await page.getByText('Filtro municipal activo', { exact: true }).waitFor({ state: 'visible', timeout: 10_000 });
+    await page.getByText(/Fiestas, cultura y agenda permanecen en Noticias/i).waitFor({ state: 'visible' });
     const firstAlert = page.locator('.alerts-real__card').first();
     await firstAlert.waitFor({ state: 'visible', timeout: 10_000 });
     assert(await page.locator('.alerts-real__card').count() >= 1, 'Alertas: el feed oficial no muestra avisos.');
@@ -133,7 +135,7 @@ async function run() {
     await assertNoOverflow(page, 'Alertas');
 
     await context.close();
-    console.log('✓ Smoke Mágina: tiendas, cooperativa, precios, noticias municipales, Socios/Campaña, mercado y alertas funcionan en 390×844 y bajo /magina-olivo/.');
+    console.log('✓ Smoke Mágina: tiendas, cooperativa, precios, noticias municipales, Socios/Campaña, mercado y alertas con filtro municipal funcionan en 390×844 y bajo /magina-olivo/.');
   } finally {
     if (browser) await browser.close();
     await closePreview(previewServer);

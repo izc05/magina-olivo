@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { AccountPage } from './AccountPage';
+import { AdminContentPage } from './AdminContentPage';
 import { AdminOperationsPage } from './AdminOperationsPage';
 import { AdminPage } from './AdminPage';
 import { App } from './App';
@@ -17,6 +18,7 @@ import { MaginaWeatherPage } from './MaginaWeatherPage';
 import { NoticeCenter } from './NoticeCenter';
 import { OnboardingPage } from './OnboardingPage';
 import { PilotAlerts } from './PilotAlerts';
+import { PlatformAnnouncements } from './PlatformAnnouncements';
 import { RegisterPage } from './RegisterPage';
 import { RegistrationEntry } from './RegistrationEntry';
 import { ResetPassword } from './ResetPassword';
@@ -46,6 +48,8 @@ import './pilot-alerts.css';
 import './calendar.css';
 import './admin.css';
 import './admin-operations.css';
+import './admin-content.css';
+import './platform-announcements.css';
 
 installDemoPreview();
 installWeatherDemoPreview();
@@ -86,43 +90,49 @@ if (basePath) {
 
 createRoot(root).render(
   <StrictMode>
-    {path === '/reset-password' ? (
-      <ResetPassword />
-    ) : path === '/register' ? (
-      <RegisterPage />
-    ) : path === '/onboarding' ? (
-      <OnboardingPage />
-    ) : path === '/admin/operaciones' ? (
-      <AdminOperationsPage />
-    ) : path === '/admin' ? (
-      <>
-        <AdminPage />
-        <a className="admin-ops-entry" href="/admin/operaciones">Usuarios · Directorio · Fuentes · Auditoría</a>
-      </>
-    ) : path === '/cuenta' ? (
-      <AccountPage />
-    ) : path === '/calendario' ? (
-      <CalendarPage />
-    ) : path === '/magina' ? (
-      <MaginaHubPage />
-    ) : path === '/magina/directorio' ? (
-      <MaginaDirectoryPage />
-    ) : path === '/magina/tiempo' ? (
-      <MaginaWeatherPage />
-    ) : path === '/magina/campo' ? (
-      <MaginaFieldAlertsPage />
-    ) : path === '/magina/noticias' ? (
-      <MaginaNewsPage />
-    ) : path === '/magina/mercado' ? (
-      <MaginaMarketPage />
-    ) : (
-      <>
-        <ConnectivityStatus />
-        <NoticeCenter />
-        <PilotAlerts />
-        <RegistrationEntry />
-        <App />
-      </>
-    )}
+    <>
+      {!path.startsWith('/admin') ? <PlatformAnnouncements /> : null}
+      {path === '/reset-password' ? (
+        <ResetPassword />
+      ) : path === '/register' ? (
+        <RegisterPage />
+      ) : path === '/onboarding' ? (
+        <OnboardingPage />
+      ) : path === '/admin/contenido' ? (
+        <AdminContentPage />
+      ) : path === '/admin/operaciones' ? (
+        <AdminOperationsPage />
+      ) : path === '/admin' ? (
+        <>
+          <AdminPage />
+          <a className="admin-content-entry" href="/admin/contenido">Noticias · Alertas · Avisos</a>
+          <a className="admin-ops-entry" href="/admin/operaciones">Usuarios · Directorio · Fuentes · Auditoría</a>
+        </>
+      ) : path === '/cuenta' ? (
+        <AccountPage />
+      ) : path === '/calendario' ? (
+        <CalendarPage />
+      ) : path === '/magina' ? (
+        <MaginaHubPage />
+      ) : path === '/magina/directorio' ? (
+        <MaginaDirectoryPage />
+      ) : path === '/magina/tiempo' ? (
+        <MaginaWeatherPage />
+      ) : path === '/magina/campo' ? (
+        <MaginaFieldAlertsPage />
+      ) : path === '/magina/noticias' ? (
+        <MaginaNewsPage />
+      ) : path === '/magina/mercado' ? (
+        <MaginaMarketPage />
+      ) : (
+        <>
+          <ConnectivityStatus />
+          <NoticeCenter />
+          <PilotAlerts />
+          <RegistrationEntry />
+          <App />
+        </>
+      )}
+    </>
   </StrictMode>,
 );

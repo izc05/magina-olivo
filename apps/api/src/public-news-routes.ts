@@ -22,6 +22,7 @@ type PublicNewsItemRow = {
   source_url: string;
   published_at: Date;
   topic: string | null;
+  featured: boolean;
 };
 
 export function registerPublicNewsRoutes(app: FastifyInstance): void {
@@ -48,12 +49,12 @@ export function registerPublicNewsRoutes(app: FastifyInstance): void {
 
     const itemResult = await getPool().query<PublicNewsItemRow>(
       `
-        select id, external_id, title, source_url, published_at, topic
+        select id, external_id, title, source_url, published_at, topic, featured
         from public_news_items
         where source_key = $1
           and active = true
           and published_at >= now() - interval '45 days'
-        order by published_at desc, external_id desc
+        order by featured desc, published_at desc, external_id desc
         limit 12
       `,
       [source.source_key],
@@ -69,6 +70,7 @@ export function registerPublicNewsRoutes(app: FastifyInstance): void {
         publishedAt: row.published_at,
         topic: row.topic,
         sourceUrl,
+        featured: row.featured,
         freshness: classifyNewsFreshness(row.published_at),
       }];
     });

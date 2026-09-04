@@ -22,9 +22,7 @@ export type PlotHarvestReportInput = {
     municipality: string | null;
     province: string | null;
   };
-  farm: {
-    name: string;
-  };
+  farm: { name: string };
   plot: {
     name: string;
     areaHa: string | null;
@@ -70,10 +68,7 @@ export function summarizePlotHarvest(deliveries: PlotHarvestDelivery[]): PlotHar
   for (const delivery of deliveries) {
     const kilograms = Math.max(0, numberValue(delivery.kilograms) ?? 0);
     totalKilograms += kilograms;
-    destinationMap.set(
-      delivery.destination,
-      (destinationMap.get(delivery.destination) ?? 0) + kilograms,
-    );
+    destinationMap.set(delivery.destination, (destinationMap.get(delivery.destination) ?? 0) + kilograms);
 
     const yieldPercent = numberValue(delivery.yieldPercent);
     if (yieldPercent != null && yieldPercent >= 0) {
@@ -82,7 +77,7 @@ export function summarizePlotHarvest(deliveries: PlotHarvestDelivery[]): PlotHar
     }
   }
 
-  const sortedDates = deliveries
+  const dates = deliveries
     .map((delivery) => delivery.deliveredAt)
     .filter(Boolean)
     .sort((a, b) => a.localeCompare(b));
@@ -90,12 +85,10 @@ export function summarizePlotHarvest(deliveries: PlotHarvestDelivery[]): PlotHar
   return {
     deliveryCount: deliveries.length,
     totalKilograms,
-    weightedYieldPercent: yieldCoveredKilograms > 0
-      ? weightedYieldSum / yieldCoveredKilograms
-      : null,
+    weightedYieldPercent: yieldCoveredKilograms > 0 ? weightedYieldSum / yieldCoveredKilograms : null,
     yieldCoveredKilograms,
-    firstDeliveryAt: sortedDates[0] ?? null,
-    lastDeliveryAt: sortedDates.at(-1) ?? null,
+    firstDeliveryAt: dates[0] ?? null,
+    lastDeliveryAt: dates.at(-1) ?? null,
     destinationTotals: [...destinationMap.entries()]
       .map(([destination, kilograms]) => ({ destination, kilograms }))
       .sort((a, b) => b.kilograms - a.kilograms || a.destination.localeCompare(b.destination, 'es')),
@@ -103,8 +96,7 @@ export function summarizePlotHarvest(deliveries: PlotHarvestDelivery[]): PlotHar
 }
 
 function asciiPdfText(value: string | number | null | undefined): string {
-  const raw = value == null ? '' : String(value);
-  return raw
+  return (value == null ? '' : String(value))
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[–—]/g, '-')
@@ -121,14 +113,13 @@ function pdfLiteral(value: string | number | null | undefined): string {
 }
 
 function truncate(value: string, maxLength: number): string {
-  if (value.length <= maxLength) return value;
-  return `${value.slice(0, Math.max(0, maxLength - 3))}...`;
+  return value.length <= maxLength ? value : `${value.slice(0, Math.max(0, maxLength - 3))}...`;
 }
 
 function formatKg(value: number): string {
-  return new Intl.NumberFormat('es-ES', {
-    maximumFractionDigits: 1,
-  }).format(value).replaceAll('.', ' ');
+  return new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 })
+    .format(value)
+    .replaceAll('.', ' ');
 }
 
 function formatPercent(value: number | null): string {
@@ -159,45 +150,50 @@ function gray(value: number): string {
 }
 
 function writePdf(pages: string[]): Buffer {
-  const objects: Buffer[] = [];
-  const pageRefs: number[] = [];
-  const contentRefs: number[] = [];
+  if (pages.length === 0) throw new Error('A PDF report requires at least one page.');
 
-  let nextObject = 5;
-  for (let index = 0; index < pages.length; index += 1) {
-    pageRefs.push(nextObject++);
-    contentRefs.push(nextObject++);
-  }
+  const objects = new Map<number, Buffer>();
+  const pageRefs = Array.from({ length: pages.length }, (_, index) => 5 + index * 2);
+  const contentRefs = pageRefs.map((pageRef) => pageRef + 1);
 
-  objects[1] = Buffer.from('<< /Type /Catalog /Pages 2 0 R >>', 'latin1');
-  objects[2] = Buffer.from(
+  objects.set(1, Buffer.from('<< /Type /Catalog /Pages 2 0 R >>', 'latin1'));
+  objects.set(2, Buffer.from(
     `<< /Type /Pages /Count ${pages.length} /Kids [${pageRefs.map((ref) => `${ref} 0 R`).join(' ')}] >>`,
     'latin1',
-  );
-  objects[3] = Buffer.from('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>', 'latin1');
-  objects[4] = Buffer.from('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>', 'latin1');
+  ));
+  objects.set(3, Buffer.from('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>', 'latin1'));
+  objects.set(4, Buffer.from('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>', 'latin1'));
 
-  pages.forEach((content, index) => {
+  for (let index = 0; index < pages.length; index += 1) {
+    const pageRef = pageRefs[index];
+    const contentRef = contentRefs[index];
+    const content = pages[index];
+    if (pageRef == null || contentRef == null || content == null) {
+      throw new Error('Invalid PDF page reference.');
+    }
+
     const contentBuffer = Buffer.from(content, 'latin1');
-    objects[pageRefs[index]] = Buffer.from(
-      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentRefs[index]} 0 R >>`,
+    objects.set(pageRef, Buffer.from(
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentRef} 0 R >>`,
       'latin1',
-    );
-    objects[contentRefs[index]] = Buffer.concat([
+    ));
+    objects.set(contentRef, Buffer.concat([
       Buffer.from(`<< /Length ${contentBuffer.length} >>\nstream\n`, 'latin1'),
       contentBuffer,
       Buffer.from('\nendstream', 'latin1'),
-    ]);
-  });
+    ]));
+  }
 
-  const parts: Buffer[] = [Buffer.from('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n', 'latin1')];
-  const offsets = new Array(objects.length).fill(0);
-  let length = parts[0].length;
+  const header = Buffer.from('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n', 'latin1');
+  const parts: Buffer[] = [header];
+  const offsets = new Map<number, number>();
+  let length = header.length;
+  const maxObjectNumber = 4 + pages.length * 2;
 
-  for (let objectNumber = 1; objectNumber < objects.length; objectNumber += 1) {
-    const body = objects[objectNumber];
-    if (!body) continue;
-    offsets[objectNumber] = length;
+  for (let objectNumber = 1; objectNumber <= maxObjectNumber; objectNumber += 1) {
+    const body = objects.get(objectNumber);
+    if (!body) throw new Error(`Missing PDF object ${objectNumber}.`);
+    offsets.set(objectNumber, length);
     const objectBuffer = Buffer.concat([
       Buffer.from(`${objectNumber} 0 obj\n`, 'latin1'),
       body,
@@ -208,13 +204,15 @@ function writePdf(pages: string[]): Buffer {
   }
 
   const xrefOffset = length;
-  const xrefLines = [`xref`, `0 ${objects.length}`, '0000000000 65535 f '];
-  for (let objectNumber = 1; objectNumber < objects.length; objectNumber += 1) {
-    xrefLines.push(`${String(offsets[objectNumber]).padStart(10, '0')} 00000 n `);
+  const xrefLines = ['xref', `0 ${maxObjectNumber + 1}`, '0000000000 65535 f '];
+  for (let objectNumber = 1; objectNumber <= maxObjectNumber; objectNumber += 1) {
+    const offset = offsets.get(objectNumber);
+    if (offset == null) throw new Error(`Missing PDF offset ${objectNumber}.`);
+    xrefLines.push(`${String(offset).padStart(10, '0')} 00000 n `);
   }
   xrefLines.push(
     'trailer',
-    `<< /Size ${objects.length} /Root 1 0 R >>`,
+    `<< /Size ${maxObjectNumber + 1} /Root 1 0 R >>`,
     'startxref',
     String(xrefOffset),
     '%%EOF',
@@ -247,10 +245,18 @@ function deliveriesTableHeader(y: number): string {
   return output;
 }
 
+function footer(input: PlotHarvestReportInput): string {
+  let output = line(42, 59, 553, 59, 0.4);
+  output += text(42, 42, 6.5, `Generado por Magina Olivo: ${formatDate(input.generatedAt)}`);
+  output += text(318, 42, 6.5, 'Documento informativo basado en los datos registrados en la aplicacion.');
+  return output;
+}
+
 export function buildPlotHarvestPdf(input: PlotHarvestReportInput): Buffer {
   const summary = summarizePlotHarvest(input.deliveries);
   const pages: string[] = [];
-  let page = reportHeader(input, 1);
+  let pageNumber = 1;
+  let page = reportHeader(input, pageNumber);
 
   page += text(42, 748, 10, input.holding.name, true);
   const location = [input.holding.municipality, input.holding.province].filter(Boolean).join(', ');
@@ -274,16 +280,13 @@ export function buildPlotHarvestPdf(input: PlotHarvestReportInput): Buffer {
   const documentTotal = input.documents.reduce((total, item) => total + item.count, 0);
   page += text(42, 586, 8, `Documentos vinculados: ${documentTotal}`);
   if (input.documents.length > 0) {
-    const documentBreakdown = input.documents
-      .map((item) => `${item.type}: ${item.count}`)
-      .join(' | ');
-    page += text(170, 586, 7, truncate(documentBreakdown, 80));
+    const breakdown = input.documents.map((item) => `${item.type}: ${item.count}`).join(' | ');
+    page += text(170, 586, 7, truncate(breakdown, 80));
   }
 
   page += text(42, 558, 11, 'Entregas registradas', true);
   page += deliveriesTableHeader(541);
   let y = 521;
-  let pageNumber = 1;
 
   if (input.deliveries.length === 0) {
     page += text(42, y, 9, 'No hay entregas registradas para esta parcela en la campana seleccionada.');
@@ -291,7 +294,8 @@ export function buildPlotHarvestPdf(input: PlotHarvestReportInput): Buffer {
 
   for (const delivery of input.deliveries) {
     const rowHeight = delivery.notes ? 28 : 18;
-    if (y - rowHeight < 72) {
+    if (y - rowHeight < 82) {
+      page += footer(input);
       pages.push(page);
       pageNumber += 1;
       page = reportHeader(input, pageNumber);
@@ -300,22 +304,21 @@ export function buildPlotHarvestPdf(input: PlotHarvestReportInput): Buffer {
       y = 705;
     }
 
+    const yieldPercent = numberValue(delivery.yieldPercent);
     page += gray(0.18);
     page += text(42, y, 7.5, formatDate(delivery.deliveredAt));
     page += text(100, y, 7.5, formatKg(numberValue(delivery.kilograms) ?? 0));
     page += text(154, y, 7.5, truncate(delivery.destination, 31));
     page += text(330, y, 7.5, truncate(delivery.ticketNumber ?? '-', 11));
     page += text(395, y, 7.5, truncate(delivery.variety ?? '-', 15));
-    page += text(492, y, 7.5, delivery.yieldPercent ? `${Number(delivery.yieldPercent).toFixed(2)} %` : '-');
-    if (delivery.notes) {
-      page += text(154, y - 11, 6.5, `Obs.: ${truncate(delivery.notes, 62)}`);
-    }
+    page += text(492, y, 7.5, yieldPercent == null ? '-' : `${yieldPercent.toFixed(2)} %`);
+    if (delivery.notes) page += text(154, y - 11, 6.5, `Obs.: ${truncate(delivery.notes, 62)}`);
     page += line(42, y - rowHeight + 6, 553, y - rowHeight + 6, 0.2);
     y -= rowHeight;
   }
 
   const destinationStartY = y - 12;
-  if (summary.destinationTotals.length > 0 && destinationStartY > 120) {
+  if (summary.destinationTotals.length > 0 && destinationStartY > 135) {
     page += text(42, destinationStartY, 10, 'Totales por destino', true);
     let destinationY = destinationStartY - 17;
     for (const item of summary.destinationTotals.slice(0, 8)) {
@@ -325,11 +328,7 @@ export function buildPlotHarvestPdf(input: PlotHarvestReportInput): Buffer {
     }
   }
 
-  const footerY = 42;
-  page += line(42, footerY + 17, 553, footerY + 17, 0.4);
-  page += text(42, footerY, 6.5, `Generado por Magina Olivo: ${formatDate(input.generatedAt)}`);
-  page += text(330, footerY, 6.5, 'Documento informativo basado en los datos registrados en la aplicacion.');
+  page += footer(input);
   pages.push(page);
-
   return writePdf(pages);
 }

@@ -6,6 +6,7 @@ import { BottomNav } from '../../components/BottomNav';
 import { Brand } from '../../components/Brand';
 import { AlertsPanel } from './AlertsPanel';
 import { CooperativesPanel } from './CooperativesPanel';
+import { DiscoverPanel } from './DiscoverPanel';
 import { MarketPanel } from './MarketPanel';
 import { NewsPage } from './NewsPage';
 import { formatNewsAge, loadRealNews, type RealNewsStory } from './newsFeed';
@@ -168,6 +169,32 @@ export function RealNewsPage({ onNavigate, initialTab = 'actualidad' }: Props) {
 
           {primaryTabs}
           <MarketPanel onBack={() => setMode('actualidad')} />
+        </main>
+        <BottomNav active="news" onNavigate={handleBottomNavigate} />
+      </div>
+    );
+  }
+
+  if (mode === 'discover') {
+    return (
+      <div className="app-shell">
+        <main className="mobile-page">
+          <header className="topbar">
+            <Brand />
+            <div className="topbar-actions">
+              <button className="icon-button" type="button" aria-label="Volver a noticias" onClick={() => setMode('actualidad')}><Newspaper size={19} /></button>
+              <button className="icon-button" type="button" aria-label="Alertas" onClick={() => setMode('alertas')}><Bell size={20} /></button>
+            </div>
+          </header>
+
+          <section className="magina-heading">
+            <span className="eyebrow">Sierra Mágina</span>
+            <h1>Descubre</h1>
+            <p>Naturaleza, pueblos y patrimonio con fichas oficiales para explorar el territorio sin mezclar contenido de demostración.</p>
+          </section>
+
+          {primaryTabs}
+          <DiscoverPanel />
         </main>
         <BottomNav active="news" onNavigate={handleBottomNavigate} />
       </div>

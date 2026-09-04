@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { AccountDeletionPanel } from './AccountDeletionPanel';
 
 type User = { id: string; name?: string | null; email: string };
 type Destination = {
@@ -55,7 +56,7 @@ async function jsonRequest<T>(url: string, init: RequestInit = {}): Promise<T> {
       const body = (await response.json()) as { error?: { message?: string } };
       message = body.error?.message ?? message;
     } catch {
-      // Keep the generic HTTP status for non-JSON errors.
+      // Keep generic status for non-JSON errors.
     }
     throw new Error(message);
   }
@@ -134,7 +135,7 @@ export function AccountPage() {
           if (!cancelled) setExports(result.items);
         })
         .catch(() => {
-          // Keep the last known state; a transient polling failure is not destructive.
+          // Keep last known state on transient polling failures.
         });
     }, 2000);
     return () => {
@@ -178,7 +179,9 @@ export function AccountPage() {
         method: 'POST',
       });
       setExports((current) => [result.export, ...current.filter((item) => item.id !== result.export.id)]);
-      setNotice(result.export.status === 'ready' ? 'Ya tienes una copia preparada y vigente.' : 'Copia solicitada. Puedes seguir usando la aplicación mientras se prepara.');
+      setNotice(result.export.status === 'ready'
+        ? 'Ya tienes una copia preparada y vigente.'
+        : 'Copia solicitada. Puedes seguir usando la aplicación mientras se prepara.');
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'No se ha podido solicitar la copia de tus datos.');
     } finally {
@@ -191,7 +194,7 @@ export function AccountPage() {
   return (
     <main className="account-shell">
       <header className="account-topbar">
-        <a className="text-button" href="/">← Volver</a>
+        <a className="text-button" href="/mi-campo">← Volver a Mi Campo</a>
         <div className="brand-lockup">
           <span className="brand-title">Mágina Olivo</span>
           <span className="brand-kicker">Mi Cuenta</span>
@@ -202,7 +205,7 @@ export function AccountPage() {
         <section>
           <p className="eyebrow page-eyebrow">Mi Cuenta</p>
           <h1 className="section-title">Preferencias y privacidad</h1>
-          <p className="section-copy">Configura lo que quieres ver y recibir sin mezclar estas preferencias con los datos privados de tu explotación.</p>
+          <p className="section-copy">Controla tus preferencias, descarga tus datos y gestiona la privacidad de tu cuenta desde un único lugar.</p>
         </section>
 
         {error ? <div className="alert section" role="alert">{error}</div> : null}
@@ -216,7 +219,7 @@ export function AccountPage() {
 
         <section className="section card card-body">
           <h2 className="section-title account-section-title">Cooperativa / almazara habitual</h2>
-          <p className="section-copy">Sirve como preferencia de uso. Seleccionarla no comparte tus entregas ni tus documentos con esa entidad.</p>
+          <p className="section-copy">Es una preferencia de uso. Elegirla no comparte tus entregas, parcelas ni documentos con esa entidad.</p>
           <div className="field account-field">
             <label htmlFor="preferred-cooperative">Entidad habitual</label>
             <select
@@ -237,15 +240,15 @@ export function AccountPage() {
 
         <section className="section card card-body">
           <h2 className="section-title account-section-title">Avisos</h2>
-          <p className="section-copy">La alarma de lluvia se revisa automáticamente en el servidor para los próximos 2 días con la predicción municipal de AEMET y tu umbral. Helada y viento siguen apareciendo como avisos meteorológicos complementarios. Son contexto para organizarte, no un diagnóstico de parcela.</p>
+          <p className="section-copy">Configura qué avisos quieres usar. La alarma de lluvia emplea la predicción municipal disponible y tus umbrales; no sustituye un diagnóstico de parcela.</p>
 
           <label className="account-toggle">
             <input type="checkbox" checked={preferences.notifyWeather} onChange={(event) => setPreferences((current) => ({ ...current, notifyWeather: event.target.checked }))} />
-            <span><strong>Tiempo</strong><small>Alarma automática de lluvia y avisos de helada y viento según tus umbrales.</small></span>
+            <span><strong>Tiempo</strong><small>Lluvia, helada y viento según tus umbrales.</small></span>
           </label>
           <label className="account-toggle">
             <input type="checkbox" checked={preferences.notifyTasks} onChange={(event) => setPreferences((current) => ({ ...current, notifyTasks: event.target.checked }))} />
-            <span><strong>Tareas</strong><small>Preferencia guardada para cuando el calendario esté activo.</small></span>
+            <span><strong>Tareas</strong><small>Recordatorios y calendario agrícola personal.</small></span>
           </label>
           <label className="account-toggle">
             <input type="checkbox" checked={preferences.notifyPendingYield} onChange={(event) => setPreferences((current) => ({ ...current, notifyPendingYield: event.target.checked }))} />
@@ -270,8 +273,8 @@ export function AccountPage() {
 
         <section className="section card card-body account-privacy-card">
           <h2 className="section-title account-section-title">Copia de tus datos</h2>
-          <p className="section-copy">Puedes preparar una copia estructurada y versionada de tu perfil, preferencias y de las explotaciones donde eres propietario: fincas, parcelas, campañas, entregas, rendimientos, labores e índice de documentos.</p>
-          <p className="section-copy"><strong>Importante:</strong> esta fase no incluye todavía los archivos binarios originales dentro de un ZIP. El índice sí conserva nombre, tipo, tamaño y hash cuando existe; los documentos siguen disponibles mediante descarga privada.</p>
+          <p className="section-copy">Prepara una copia estructurada y versionada de tu perfil, preferencias y explotaciones donde eres propietario: fincas, parcelas, campañas, entregas, rendimientos, labores e índice de documentos.</p>
+          <p className="section-copy"><strong>Importante:</strong> la exportación actual incluye el índice de documentos, pero no empaqueta todavía sus archivos binarios originales dentro de un ZIP.</p>
 
           {latestExport ? (
             <div className="card list-card account-export-status">
@@ -284,7 +287,9 @@ export function AccountPage() {
                 {latestExport.expiresAt && latestExport.status === 'ready' ? <p className="list-card-meta">Disponible hasta {new Date(latestExport.expiresAt).toLocaleString('es-ES')}.</p> : null}
                 {latestExport.error ? <p className="list-card-meta">No se pudo preparar la copia. Puedes volver a solicitarla.</p> : null}
               </div>
-              {latestExport.downloadUrl ? <a className="secondary-button account-download-link" href={latestExport.downloadUrl}>Descargar JSON</a> : <span className="badge">{exportStatusLabel(latestExport.status)}</span>}
+              {latestExport.downloadUrl
+                ? <a className="secondary-button account-download-link" href={latestExport.downloadUrl}>Descargar JSON</a>
+                : <span className="badge">{exportStatusLabel(latestExport.status)}</span>}
             </div>
           ) : null}
 
@@ -293,9 +298,9 @@ export function AccountPage() {
               {exportBusy ? 'Solicitando…' : latestExport?.status === 'ready' ? 'Usar copia vigente' : 'Preparar copia de mis datos'}
             </button>
           </div>
-
-          <p className="section-copy"><strong>Baja de cuenta:</strong> sigue separada de la exportación. No mostraremos una acción destructiva hasta implementar reautenticación, ownership, revocación de sesiones y política de retención completa.</p>
         </section>
+
+        {user?.email ? <AccountDeletionPanel email={user.email} /> : null}
 
         <div className="section form-actions account-save-row">
           <button className="primary-button" type="button" onClick={() => void save()} disabled={busy}>{busy ? 'Guardando…' : 'Guardar preferencias'}</button>

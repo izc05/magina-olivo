@@ -32,12 +32,18 @@ test('only approved public routes can be measured', () => {
   }
 });
 
-test('measurement payload contains no private account or farm identifiers', () => {
+test('measurement payload contains no private identifiers or exact referrer host', () => {
   assert.match(measurementSource, /event: input\.event/);
   assert.match(measurementSource, /route: input\.route/);
   assert.match(measurementSource, /source: trimAttribution/);
-  assert.match(measurementSource, /referrerHost/);
-  assert.doesNotMatch(measurementSource, /userId|email|farmId|plotId|campaignId|documentId|sessionId|deviceId/i);
+  assert.match(measurementSource, /referrer: referrerCategory\(\)/);
+  assert.match(measurementSource, /'direct' \| 'google' \| 'bing' \| 'social' \| 'other'/);
+  assert.doesNotMatch(measurementSource, /referrerHost|userId|email|farmId|plotId|campaignId|documentId|sessionId|deviceId/i);
+});
+
+test('page views are deduplicated before the async request resolves', () => {
+  assert.match(measurementSource, /pageViewsPendingOrSent\.add\(key\)/);
+  assert.match(measurementSource, /if \(!sent\) pageViewsPendingOrSent\.delete\(key\)/);
 });
 
 test('consent UI explains scope and is mounted only with public pages', () => {

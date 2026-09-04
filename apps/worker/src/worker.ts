@@ -146,6 +146,45 @@ async function claimNextJob(): Promise<JobRow | null> {
   }
 }
 
+async function renewJobLease(jobId: string): Promise<void> {
+  const renewed = await pool.query(
+    `
+      update job_queue
+      set locked_at = now(),
+          updated_at = now()
+      where id = $1
+        and status = 'running'
+        and locked_by = $2
+      returning id
+    `,
+    [jobId, workerId],
+  );
+  if (renewed.rowCount === 0) {
+    throw new Error(`Worker lease lost for job ${jobId}`);
+  }
+}
+
+async function withJobLeaseHeartbeat<T>(jobId: string, task: () => Promise<T>): Promise<T> {
+  const heartbeatMilliseconds = Math.max(1000, Math.min(30_000, Math.floor((leaseSeconds * 1000) / 3)));
+  let heartbeatError: unknown = null;
+
+  await renewJobLease(jobId);
+  const timer = setInterval(() => {
+    void renewJobLease(jobId).catch((error) => {
+      if (heartbeatError == null) heartbeatError = error;
+    });
+  }, heartbeatMilliseconds);
+  timer.unref();
+
+  try {
+    const result = await task();
+    if (heartbeatError != null) throw heartbeatError;
+    return result;
+  } finally {
+    clearInterval(timer);
+  }
+}
+
 async function inspectRaifPublicSource(): Promise<void> {
   try {
     const inspection = await inspectRaifOlivarSource();
@@ -317,7 +356,7 @@ async function executeJob(job: JobRow): Promise<void> {
       return;
     case 'weather.rain.scan': {
       try {
-        const result = await scanRainAlerts(pool);
+        const result = await withJobLeaseHeartbeat(job.id, () => scanRainAlerts(pool));
         console.log(JSON.stringify({ event: 'rain_alert_scan_completed', ...result }));
       } finally {
         await scheduleNextRainAlertScan(job.id);

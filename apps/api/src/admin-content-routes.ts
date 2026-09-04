@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { getPool } from './db.ts';
 import { apiError } from './http-errors.ts';
-import { requirePlatformAdmin } from './admin-access.ts';
+import { requireAdminSessionRole } from './admin-role-access.ts';
 import { recordAdminAudit } from './admin-audit.ts';
 
 type NewsPatchBody = {
@@ -40,7 +40,7 @@ function validateWindow(startsAt?: string | null, endsAt?: string | null): boole
 
 export function registerAdminContentRoutes(app: FastifyInstance): void {
   app.get('/api/v1/admin/content/news', async (request, reply) => {
-    const session = await requirePlatformAdmin(request, reply);
+    const session = await requireAdminSessionRole(request, reply, 'content');
     if (!session) return;
 
     const result = await getPool().query<{
@@ -102,7 +102,7 @@ export function registerAdminContentRoutes(app: FastifyInstance): void {
       },
     },
     async (request, reply) => {
-      const session = await requirePlatformAdmin(request, reply);
+      const session = await requireAdminSessionRole(request, reply, 'content');
       if (!session) return;
 
       const current = await getPool().query<{ title: string }>(
@@ -146,7 +146,7 @@ export function registerAdminContentRoutes(app: FastifyInstance): void {
   );
 
   app.get('/api/v1/admin/alerts/overview', async (request, reply) => {
-    const session = await requirePlatformAdmin(request, reply);
+    const session = await requireAdminSessionRole(request, reply, 'content');
     if (!session) return;
 
     const [summary, municipalities] = await Promise.all([
@@ -199,7 +199,7 @@ export function registerAdminContentRoutes(app: FastifyInstance): void {
   });
 
   app.get('/api/v1/admin/content/announcements', async (request, reply) => {
-    const session = await requirePlatformAdmin(request, reply);
+    const session = await requireAdminSessionRole(request, reply, 'content');
     if (!session) return;
 
     const result = await getPool().query<{
@@ -251,7 +251,7 @@ export function registerAdminContentRoutes(app: FastifyInstance): void {
       },
     },
     async (request, reply) => {
-      const session = await requirePlatformAdmin(request, reply);
+      const session = await requireAdminSessionRole(request, reply, 'content');
       if (!session) return;
       if (!validateWindow(request.body.startsAt, request.body.endsAt)) {
         return reply.code(400).send(apiError(request, 'INVALID_ANNOUNCEMENT_WINDOW', 'End date must be after start date'));
@@ -305,7 +305,7 @@ export function registerAdminContentRoutes(app: FastifyInstance): void {
       },
     },
     async (request, reply) => {
-      const session = await requirePlatformAdmin(request, reply);
+      const session = await requireAdminSessionRole(request, reply, 'content');
       if (!session) return;
 
       const current = await getPool().query<{

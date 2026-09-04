@@ -20,8 +20,9 @@ jobs:
           ref: feat/pre-minipc-convergence-v1
 
       - name: Wire FieldDashboardV2 over real field components
-        shell: python
+        shell: bash
         run: |
+          python <<'PY'
           from pathlib import Path
           import re
 
@@ -42,26 +43,26 @@ jobs:
                   raise SystemExit('FieldTab call anchor not found')
               app = app.replace(field_call_anchor, field_call_anchor + navigate_line, 1)
 
-          replacement = '''function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarmId, plots, busy, setSelectedFarmId, onNavigate, runAction, reloadHoldings, reloadHoldingData, reloadPlots }: { holdings: Holding[]; selectedHolding: Holding | null; farms: Farm[]; selectedFarm: Farm | null; selectedFarmId: string; plots: Plot[]; busy: boolean; setSelectedFarmId: (id: string) => void; onNavigate: (tab: 'campaign') => void; runAction: ActionRunner; reloadHoldings: () => Promise<void>; reloadHoldingData: () => Promise<void>; reloadPlots: () => Promise<void> }) {
-  return (
-    <FieldDashboardV2
-      holdings={holdings}
-      selectedHolding={selectedHolding}
-      farms={farms}
-      selectedFarm={selectedFarm}
-      selectedFarmId={selectedFarmId}
-      plots={plots}
-      setSelectedFarmId={setSelectedFarmId}
-      onNavigate={onNavigate}
-      createHolding={holdings.length === 0 ? <CreateHoldingCard busy={busy} runAction={runAction} onCreated={reloadHoldings} /> : null}
-      createFarm={selectedHolding ? <CreateFarmCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} /> : null}
-      createPlot={selectedFarm ? <CreatePlotCard farmId={selectedFarm.id} busy={busy} runAction={runAction} onCreated={reloadPlots} /> : null}
-      notebook={selectedFarm && selectedHolding ? <FieldNotebook holdingId={selectedHolding.id} farmId={selectedFarm.id} plots={plots} /> : null}
-    />
-  );
-}
+          replacement = """function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarmId, plots, busy, setSelectedFarmId, onNavigate, runAction, reloadHoldings, reloadHoldingData, reloadPlots }: { holdings: Holding[]; selectedHolding: Holding | null; farms: Farm[]; selectedFarm: Farm | null; selectedFarmId: string; plots: Plot[]; busy: boolean; setSelectedFarmId: (id: string) => void; onNavigate: (tab: 'campaign') => void; runAction: ActionRunner; reloadHoldings: () => Promise<void>; reloadHoldingData: () => Promise<void>; reloadPlots: () => Promise<void> }) {
+            return (
+              <FieldDashboardV2
+                holdings={holdings}
+                selectedHolding={selectedHolding}
+                farms={farms}
+                selectedFarm={selectedFarm}
+                selectedFarmId={selectedFarmId}
+                plots={plots}
+                setSelectedFarmId={setSelectedFarmId}
+                onNavigate={onNavigate}
+                createHolding={holdings.length === 0 ? <CreateHoldingCard busy={busy} runAction={runAction} onCreated={reloadHoldings} /> : null}
+                createFarm={selectedHolding ? <CreateFarmCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} /> : null}
+                createPlot={selectedFarm ? <CreatePlotCard farmId={selectedFarm.id} busy={busy} runAction={runAction} onCreated={reloadPlots} /> : null}
+                notebook={selectedFarm && selectedHolding ? <FieldNotebook holdingId={selectedHolding.id} farmId={selectedFarm.id} plots={plots} /> : null}
+              />
+            );
+          }
 
-function CampaignTab'''
+          function CampaignTab"""
 
           pattern = r'function FieldTab\([\s\S]*?\n}\n\nfunction CampaignTab'
           app, count = re.subn(pattern, replacement, app, count=1)
@@ -78,6 +79,7 @@ function CampaignTab'''
                   raise SystemExit('field-v2 CSS anchor not found')
               main = main.replace(css_anchor, css_anchor + css_import, 1)
           main_path.write_text(main, encoding='utf-8')
+          PY
 
       - name: Commit field wiring
         run: |

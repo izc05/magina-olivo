@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
+import type { PoolClient } from 'pg';
 import { getPool } from './db.ts';
 import { apiError } from './http-errors.ts';
 import { getAuthenticatedSession } from './session.ts';
@@ -43,14 +44,11 @@ function recentSessionLimitMs(): number {
   return minutes * 60_000;
 }
 
-async function ensureDeletionJob(
-  client: Awaited<ReturnType<ReturnType<typeof getPool>['connect']>>,
-  requestId: string,
-): Promise<void> {
+async function ensureDeletionJob(client: PoolClient, requestId: string): Promise<void> {
   await client.query(
     `
-      insert into account_deletion_jobs (request_id, status, run_after)
-      values ($1, 'queued', now())
+      insert into account_deletion_jobs (request_id, status, max_attempts, run_after)
+      values ($1, 'queued', 25, now())
       on conflict (request_id) do update
       set status = case
             when account_deletion_jobs.status = 'failed' then 'queued'
@@ -60,6 +58,7 @@ async function ensureDeletionJob(
             when account_deletion_jobs.status = 'failed' then 0
             else account_deletion_jobs.attempts
           end,
+          max_attempts = greatest(account_deletion_jobs.max_attempts, 25),
           run_after = case
             when account_deletion_jobs.status = 'failed' then now()
             else account_deletion_jobs.run_after

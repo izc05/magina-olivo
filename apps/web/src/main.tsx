@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { AccountPage } from './AccountPage';
+import { AdminAdvertiserAccessPage } from './AdminAdvertiserAccessPage';
 import { AdminAdvertisingFunnelPage } from './AdminAdvertisingFunnelPage';
 import { AdminContentPage } from './AdminContentPage';
 import { AdminFinancePage } from './AdminFinancePage';
@@ -9,6 +10,7 @@ import { AdminPage } from './AdminPage';
 import { AdminRoleEntry } from './AdminRoleEntry';
 import { AdminRolesPage } from './AdminRolesPage';
 import { AdvertisePage } from './AdvertisePage';
+import { AdvertiserPortalPage } from './AdvertiserPortalPage';
 import { App } from './App';
 import { CalendarPage } from './CalendarPage';
 import { ConnectivityStatus } from './ConnectivityStatus';
@@ -59,7 +61,9 @@ import './admin-finance-roles.css';
 import './admin-command-shortcuts.css';
 import './admin-delegated.css';
 import './admin-advertising-funnel.css';
+import './admin-advertiser-access.css';
 import './advertise.css';
+import './advertiser-portal.css';
 import './platform-announcements.css';
 import './support-legal-system.css';
 
@@ -120,6 +124,8 @@ createRoot(root).render(
         <AdminFinancePage />
       ) : path === '/admin/comercial' ? (
         <AdminAdvertisingFunnelPage />
+      ) : path === '/admin/anunciantes' ? (
+        <AdminAdvertiserAccessPage />
       ) : path === '/admin/roles' ? (
         <AdminRolesPage />
       ) : path === '/admin/publicidad' ? (
@@ -131,6 +137,8 @@ createRoot(root).render(
         <AdminRoleEntry kind="home" />
       ) : path === '/anunciate' ? (
         <AdvertisePage />
+      ) : path === '/anunciante' ? (
+        <AdvertiserPortalPage />
       ) : path === '/contacto' ? (
         <ContactPage />
       ) : path === '/legal/privacidad' ? (

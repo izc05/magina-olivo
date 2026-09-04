@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { AccountPage } from './AccountPage';
 import { AdminAdvertiserAccessPage } from './AdminAdvertiserAccessPage';
+import { AdminAdvertisingAnalyticsPage } from './AdminAdvertisingAnalyticsPage';
 import { AdminAdvertisingFunnelPage } from './AdminAdvertisingFunnelPage';
 import { AdminContentPage } from './AdminContentPage';
 import { AdminFinancePage } from './AdminFinancePage';
@@ -10,6 +11,7 @@ import { AdminPage } from './AdminPage';
 import { AdminRoleEntry } from './AdminRoleEntry';
 import { AdminRolesPage } from './AdminRolesPage';
 import { AdvertisePage } from './AdvertisePage';
+import { AdvertiserAnalyticsPage } from './AdvertiserAnalyticsPage';
 import { AdvertiserPortalPage } from './AdvertiserPortalPage';
 import { App } from './App';
 import { CalendarPage } from './CalendarPage';
@@ -64,6 +66,7 @@ import './admin-advertising-funnel.css';
 import './admin-advertiser-access.css';
 import './advertise.css';
 import './advertiser-portal.css';
+import './advertiser-analytics.css';
 import './platform-announcements.css';
 import './support-legal-system.css';
 
@@ -124,6 +127,8 @@ createRoot(root).render(
         <AdminFinancePage />
       ) : path === '/admin/comercial' ? (
         <AdminAdvertisingFunnelPage />
+      ) : path === '/admin/estadisticas' ? (
+        <AdminAdvertisingAnalyticsPage />
       ) : path === '/admin/anunciantes' ? (
         <AdminAdvertiserAccessPage />
       ) : path === '/admin/roles' ? (
@@ -137,8 +142,10 @@ createRoot(root).render(
         <AdminRoleEntry kind="home" />
       ) : path === '/anunciate' ? (
         <AdvertisePage />
+      ) : path === '/anunciante/estadisticas' ? (
+        <AdvertiserAnalyticsPage />
       ) : path === '/anunciante' ? (
-        <AdvertiserPortalPage />
+        <><AdvertiserPortalPage /><a className="admin-ops-entry" href="/anunciante/estadisticas">Estadísticas detalladas →</a></>
       ) : path === '/contacto' ? (
         <ContactPage />
       ) : path === '/legal/privacidad' ? (

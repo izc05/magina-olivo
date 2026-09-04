@@ -15,6 +15,7 @@ import { MaginaWeatherPage } from './MaginaWeatherPage';
 import { NoticeCenter } from './NoticeCenter';
 import { OnboardingPage } from './OnboardingPage';
 import { PilotAlerts } from './PilotAlerts';
+import { PublicHomePage } from './PublicHomePage';
 import { RegisterPage } from './RegisterPage';
 import { RegistrationEntry } from './RegistrationEntry';
 import { ResetPassword } from './ResetPassword';
@@ -41,6 +42,7 @@ import './offline-v2-integration.css';
 import './auth-onboarding.css';
 import './pilot-alerts.css';
 import './calendar.css';
+import './public-home.css';
 
 installDemoPreview();
 
@@ -78,9 +80,21 @@ if (basePath) {
   });
 }
 
+const privateApp = (
+  <>
+    <ConnectivityStatus />
+    <NoticeCenter />
+    <PilotAlerts />
+    <RegistrationEntry />
+    <App />
+  </>
+);
+
 createRoot(root).render(
   <StrictMode>
-    {path === '/reset-password' ? (
+    {path === '/' ? (
+      <PublicHomePage />
+    ) : path === '/reset-password' ? (
       <ResetPassword />
     ) : path === '/register' ? (
       <RegisterPage />
@@ -90,6 +104,8 @@ createRoot(root).render(
       <AccountPage />
     ) : path === '/calendario' ? (
       <CalendarPage />
+    ) : path === '/mi-campo' || path === '/app' ? (
+      privateApp
     ) : path === '/magina' ? (
       <MaginaHubPage />
     ) : path === '/magina/directorio' ? (
@@ -103,13 +119,7 @@ createRoot(root).render(
     ) : path === '/magina/mercado' ? (
       <MaginaMarketPage />
     ) : (
-      <>
-        <ConnectivityStatus />
-        <NoticeCenter />
-        <PilotAlerts />
-        <RegistrationEntry />
-        <App />
-      </>
+      <PublicHomePage />
     )}
   </StrictMode>,
 );

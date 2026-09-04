@@ -64,7 +64,9 @@ function positiveNumber(value: string | null): number | null {
 
 function metric(current: number | null, previous: number | null): MetricComparison {
   const absoluteChange = current == null || previous == null ? null : current - previous;
-  const percentChange = absoluteChange == null || previous === 0 ? null : (absoluteChange / previous) * 100;
+  const percentChange = absoluteChange == null || previous == null || previous === 0
+    ? null
+    : (absoluteChange / previous) * 100;
   return { current, previous, absoluteChange, percentChange };
 }
 

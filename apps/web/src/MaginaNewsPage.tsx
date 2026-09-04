@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { PublicHeader } from './publicNavigation';
 
 type NewsFreshness = {
@@ -60,9 +60,15 @@ export function MaginaNewsPage() {
   const [data, setData] = useState<PublicNewsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [query, setQuery] = useState('');
+  const [topic, setTopic] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
+    setLoading(true);
+    setError(false);
+
     void fetch('/api/v1/public/news', {
       headers: { accept: 'application/json' },
       signal: controller.signal,
@@ -75,10 +81,26 @@ export function MaginaNewsPage() {
     }).catch((reason) => {
       if (reason instanceof DOMException && reason.name === 'AbortError') return;
       setError(true);
-    }).finally(() => setLoading(false));
+    }).finally(() => {
+      if (!controller.signal.aborted) setLoading(false);
+    });
 
     return () => controller.abort();
-  }, []);
+  }, [reloadKey]);
+
+  const topics = useMemo(() => {
+    const unique = new Set((data?.items ?? []).map((item) => item.topic).filter((value): value is string => Boolean(value)));
+    return [...unique].sort((a, b) => topicLabel(a).localeCompare(topicLabel(b), 'es'));
+  }, [data]);
+
+  const filtered = useMemo(() => {
+    const normalized = query.trim().toLocaleLowerCase('es-ES');
+    return (data?.items ?? []).filter((item) => {
+      if (topic && item.topic !== topic) return false;
+      if (!normalized) return true;
+      return `${item.title} ${topicLabel(item.topic)}`.toLocaleLowerCase('es-ES').includes(normalized);
+    });
+  }, [data, query, topic]);
 
   return (
     <main className="magina-hub-shell" id="main-content">
@@ -91,7 +113,12 @@ export function MaginaNewsPage() {
       </section>
 
       {loading ? <div className="alert" role="status">Consultando noticias verificadas…</div> : null}
-      {error ? <div className="alert" role="alert">No se han podido cargar ahora las noticias verificadas.</div> : null}
+      {error ? (
+        <div className="news-error alert" role="alert">
+          <span>No se han podido cargar ahora las noticias verificadas.</span>
+          <button className="text-button" type="button" onClick={() => setReloadKey((value) => value + 1)}>Reintentar</button>
+        </div>
+      ) : null}
 
       {data ? (
         <section className="magina-source-section" aria-labelledby="verified-news-title">
@@ -103,10 +130,29 @@ export function MaginaNewsPage() {
             <span className="badge">{data.source.provider}</span>
           </div>
 
+          <div className="news-filters" aria-label="Filtrar noticias">
+            <label className="field">
+              <span>Buscar</span>
+              <input type="search" value={query} placeholder="Aceite, PAC, exportaciones…" onChange={(event) => setQuery(event.target.value)} />
+            </label>
+            <label className="field">
+              <span>Tema</span>
+              <select value={topic} onChange={(event) => setTopic(event.target.value)}>
+                <option value="">Todos los temas</option>
+                {topics.map((value) => <option key={value} value={value}>{topicLabel(value)}</option>)}
+              </select>
+            </label>
+          </div>
+
+          <div className="news-results-summary" role="status">
+            {filtered.length} de {data.items.length} noticias
+            {(query || topic) && filtered.length !== data.items.length ? <button type="button" onClick={() => { setQuery(''); setTopic(''); }}>Limpiar filtros</button> : null}
+          </div>
+
           <div className="magina-source-list">
-            {data.items.length === 0 ? (
-              <div className="alert" role="status">No hay noticias recientes verificadas dentro de la ventana de publicación.</div>
-            ) : data.items.map((item) => (
+            {filtered.length === 0 ? (
+              <div className="card empty-state"><strong>Sin noticias para este filtro</strong>Prueba otro término o vuelve a mostrar todos los temas.</div>
+            ) : filtered.map((item) => (
               <article className="card magina-source-row" key={item.id}>
                 <div>
                   <p className="eyebrow page-eyebrow">{topicLabel(item.topic)}</p>

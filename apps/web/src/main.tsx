@@ -45,6 +45,7 @@ import './campaign-documents.css';
 import './magina-private-hub.css';
 import './offline-v2-integration.css';
 import './auth-onboarding.css';
+import './account-v2.css';
 import './pilot-alerts.css';
 import './calendar.css';
 import './product-tour.css';

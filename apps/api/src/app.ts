@@ -8,6 +8,7 @@ import { registerCampaignExportRoutes } from './campaign-export-routes.ts';
 import { registerCampaignRoutes } from './campaign-routes.ts';
 import { registerCampaignSummaryRoutes } from './campaign-summary-routes.ts';
 import { registerCatastroBatchImportRoutes } from './catastro-batch-import-routes.ts';
+import { registerCatastroFarmImportRoutes } from './catastro-farm-import-routes.ts';
 import { registerCatastroMapRoutes } from './catastro-map-routes.ts';
 import { registerDeliveryResultRoutes } from './delivery-result-routes.ts';
 import { registerDeliveryRoutes } from './delivery-routes.ts';
@@ -41,7 +42,7 @@ export function buildApp(): FastifyInstance {
   app.get('/health/ready', async (_request, reply) => { try { await checkDatabase(); return { status:'ready', database:'ok' }; } catch(error){ app.log.error({err:error},'readiness check failed'); return reply.code(503).send({status:'not_ready',database:'unavailable'}); } });
   registerAuthRoutes(app); registerAccountPreferenceRoutes(app); registerAccountExportRoutes(app); registerRainAlertRoutes(app);
   registerPublicDestinationRoutes(app); registerPublicMunicipalityRoutes(app); registerPublicSourceRoutes(app); registerPublicWeatherRoutes(app); registerPublicRadarRoutes(app); registerPublicFieldAlertRoutes(app); registerPublicNewsRoutes(app);
-  registerHoldingRoutes(app); registerFarmRoutes(app); registerPlotRoutes(app); registerPlotAgronomyRoutes(app); registerPlotTimelineRoutes(app); registerPlotSigpacAssociationRoutes(app); registerSigpacMapRoutes(app); registerCatastroMapRoutes(app); registerCatastroBatchImportRoutes(app);
+  registerHoldingRoutes(app); registerFarmRoutes(app); registerPlotRoutes(app); registerPlotAgronomyRoutes(app); registerPlotTimelineRoutes(app); registerPlotSigpacAssociationRoutes(app); registerSigpacMapRoutes(app); registerCatastroMapRoutes(app); registerCatastroBatchImportRoutes(app); registerCatastroFarmImportRoutes(app);
   registerCampaignRoutes(app); registerCampaignExportRoutes(app); registerDeliveryRoutes(app); registerDeliveryUpdateRoutes(app); registerDeliveryResultRoutes(app); registerCampaignSummaryRoutes(app); registerDocumentRoutes(app); registerActivityRoutes(app); registerTaskRoutes(app);
   return app;
 }

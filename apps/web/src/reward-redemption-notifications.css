@@ -1,0 +1,129 @@
+.reward-alerts {
+  display: grid;
+  gap: 14px;
+  margin: 18px 0 22px;
+}
+
+.reward-alerts-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.reward-alerts-heading h2 {
+  margin: 3px 0 0;
+  font-size: clamp(1.2rem, 4vw, 1.55rem);
+}
+
+.reward-alerts-heading > span {
+  min-width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(61, 90, 42, .08);
+  font-weight: 800;
+}
+
+.reward-alerts-list {
+  display: grid;
+  gap: 10px;
+}
+
+.reward-alert {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: start;
+  padding: 14px;
+  border: 1px solid rgba(46, 58, 34, .13);
+  border-radius: 18px;
+  background: #fffef9;
+  box-shadow: 0 10px 26px rgba(46, 58, 34, .07);
+}
+
+.reward-alert--warning {
+  background: #fff8dd;
+  border-color: rgba(163, 125, 33, .25);
+}
+
+.reward-alert--success {
+  background: #f1f7eb;
+  border-color: rgba(67, 108, 50, .2);
+}
+
+.reward-alert--info {
+  background: #f6f2e8;
+}
+
+.reward-alert-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: rgba(46, 58, 34, .08);
+  font-weight: 900;
+}
+
+.reward-alert-copy {
+  min-width: 0;
+}
+
+.reward-alert-copy strong,
+.reward-alert-copy p,
+.reward-alert-copy small,
+.reward-alert-copy a {
+  display: block;
+}
+
+.reward-alert-copy strong {
+  font-size: .96rem;
+}
+
+.reward-alert-copy p {
+  margin: 4px 0 7px;
+  color: rgba(46, 58, 34, .82);
+  line-height: 1.42;
+}
+
+.reward-alert-copy small {
+  color: rgba(46, 58, 34, .62);
+}
+
+.reward-alert-copy a {
+  width: fit-content;
+  margin-top: 8px;
+  font-weight: 800;
+  color: #355628;
+}
+
+.reward-alert-dismiss {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(46, 58, 34, .07);
+  color: inherit;
+  font-size: 1.15rem;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .reward-alert {
+    grid-template-columns: auto 1fr;
+  }
+
+  .reward-alert-dismiss {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .reward-alert-copy {
+    grid-column: 1 / -1;
+  }
+}

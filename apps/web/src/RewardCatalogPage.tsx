@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { loyaltyApi, type LoyaltySummary } from './loyalty-api';
 import {
   rewardApi,
@@ -7,6 +7,7 @@ import {
   type RewardCatalogItem,
 } from './reward-api';
 import { RewardPickupCodePanel } from './RewardPickupCodePanel';
+import { RewardRedemptionHistory } from './RewardRedemptionHistory';
 import {
   classifyRewardRedemptionStatus,
   rewardRedemptionStatusNotice,
@@ -141,10 +142,6 @@ export function RewardCatalogPage() {
   }, [activeCode?.redemption.id]);
 
   const availableOlives = summary?.availableBalance ?? 0;
-  const activeRedemptions = useMemo(
-    () => redemptions.filter((item) => classifyRewardRedemptionStatus(item.status) === 'active'),
-    [redemptions],
-  );
 
   async function redeem(reward: RewardCatalogItem) {
     if (workingRewardId) return;
@@ -327,30 +324,11 @@ export function RewardCatalogPage() {
         )}
       </section>
 
-      {activeRedemptions.length > 0 ? (
-        <section className="rewards-section">
-          <div className="rewards-section-heading">
-            <div>
-              <span className="rewards-kicker">Mis canjes</span>
-              <h2>Pendientes de recoger</h2>
-            </div>
-          </div>
-          <div className="redemption-list">
-            {activeRedemptions.map((redemption) => (
-              <article key={redemption.id}>
-                <div>
-                  <strong>{redemption.rewardTitle}</strong>
-                  <span>{redemption.partnerName ?? 'Mágina Olivo'}</span>
-                  <small>Caduca: {formatDate(redemption.expiresAt)}</small>
-                </div>
-                <button type="button" onClick={() => void reissue(redemption)} disabled={workingRewardId === redemption.rewardId}>
-                  Mostrar QR nuevo
-                </button>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
+      <RewardRedemptionHistory
+        redemptions={redemptions}
+        workingRewardId={workingRewardId}
+        onReissue={(redemption) => void reissue(redemption)}
+      />
     </main>
   );
 }

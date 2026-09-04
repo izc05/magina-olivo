@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { isUniqueViolation } from './campaign-routes.ts';
+import { isUniqueViolation } from './database-errors.ts';
 
 test('campaign duplicate classifier only accepts PostgreSQL unique violations', () => {
   assert.equal(isUniqueViolation({ code: '23505' }), true);

@@ -23,18 +23,22 @@ test('Visual V2 home is the real authenticated landing surface', async () => {
   assert.match(home, /\/api\/v1\/public\/news/);
   assert.match(home, /\/api\/v1\/public\/field-alerts/);
   assert.match(home, /\/api\/v1\/account\/rain-alerts/);
-  assert.match(home, /\/api\/v1\/public\/sources/);
+  assert.match(home, /\/api\/v1\/public\/market\/olive-oil/);
+  assert.match(home, /item\.key === 'extra'/);
+  assert.match(home, /item\.key === 'virgin'/);
+  assert.match(home, /item\.key === 'lampante'/);
   assert.match(home, /summary\?\.pendingResultCount/);
   assert.match(home, /summary\?\.totalKilograms/);
   assert.match(home, /summary\?\.weightedYieldPercent/);
 
   assert.match(styles, /\.home-v2-weather/);
   assert.match(styles, /\.home-v2-market-card/);
+  assert.match(styles, /\.home-v2-market-mini/);
   assert.match(styles, /\.home-v2-alert-card/);
   assert.match(styles, /@media \(max-width: 520px\)/);
 });
 
-test('Home keeps the approved product hierarchy without inventing private data', async () => {
+test('Home keeps the approved product hierarchy without inventing private or market data', async () => {
   const home = await read('./HomeDashboardV2.tsx');
 
   assert.match(home, /HOY EN TU CAMPO/);
@@ -44,4 +48,5 @@ test('Home keeps the approved product hierarchy without inventing private data',
   assert.match(home, /Campaña \{campaignLabel\}/);
   assert.doesNotMatch(home, /localStorage/);
   assert.doesNotMatch(home, /Math\.random/);
+  assert.doesNotMatch(home, /\b\d+[,.]\d+\s*€\/kg\b/);
 });

@@ -22,7 +22,7 @@ type MunicipalityRow = {
 };
 
 type AemetEnvelope = {
-  estado?: number;
+  estado?: number | string;
   descripcion?: string;
   datos?: string;
 };
@@ -87,7 +87,7 @@ async function fetchJson<T>(url: string, headers: Record<string, string> = {}): 
 async function fetchAemetForecast(aemetCode: string, apiKey: string): Promise<ForecastSnapshot> {
   const endpoint = `${AEMET_BASE_URL}/api/prediccion/especifica/municipio/diaria/${encodeURIComponent(aemetCode)}`;
   const envelope = await fetchJson<AemetEnvelope>(endpoint, { api_key: apiKey });
-  if (envelope.estado && envelope.estado !== 200) {
+  if (envelope.estado != null && String(envelope.estado) !== '200') {
     throw new Error(`AEMET metadata response ${envelope.estado}: ${envelope.descripcion ?? 'unknown error'}`);
   }
   if (!envelope.datos) throw new Error('AEMET response did not provide a data URL');
@@ -112,6 +112,20 @@ async function fetchAemetForecast(aemetCode: string, apiKey: string): Promise<Fo
   return { elaboratedAt: safeIso(municipality.elaborado), days };
 }
 
+async function resolveExpiredRainAlerts(pool: Pool): Promise<void> {
+  await pool.query(
+    `
+      update weather_alert_events
+      set status = 'resolved',
+          resolved_at = coalesce(resolved_at, now()),
+          updated_at = now()
+      where kind = 'rain'
+        and status = 'active'
+        and forecast_date < current_date
+    `,
+  );
+}
+
 async function resolveActiveRainAlerts(pool: Pool, userId: string, holdingId: string): Promise<void> {
   await pool.query(
     `
@@ -123,7 +137,6 @@ async function resolveActiveRainAlerts(pool: Pool, userId: string, holdingId: st
         and holding_id = $2
         and kind = 'rain'
         and status = 'active'
-        and forecast_date >= current_date
     `,
     [userId, holdingId],
   );
@@ -136,6 +149,8 @@ async function resolveRainAlertsOutsideCurrentSelection(pool: Pool): Promise<voi
         select
           hm.user_id,
           h.id as holding_id,
+          h.municipality,
+          coalesce(up.notify_weather, true) as notify_weather,
           row_number() over (partition by hm.user_id order by h.created_at asc, h.id asc) as position
         from holding_members hm
         join holdings h
@@ -143,13 +158,13 @@ async function resolveRainAlertsOutsideCurrentSelection(pool: Pool): Promise<voi
          and h.active = true
         left join user_preferences up on up.user_id = hm.user_id
         where hm.status = 'active'
-          and coalesce(up.notify_weather, true) = true
-          and h.municipality is not null
-          and length(trim(h.municipality)) > 0
       ), selected as (
         select user_id, holding_id
         from ranked
         where position = 1
+          and notify_weather = true
+          and municipality is not null
+          and length(trim(municipality)) > 0
       )
       update weather_alert_events e
       set status = 'resolved',
@@ -171,6 +186,9 @@ export async function scanRainAlerts(pool: Pool): Promise<{ users: number; alert
   const apiKey = process.env.AEMET_API_KEY?.trim();
   if (!apiKey) throw new Error('AEMET_API_KEY is required for weather.rain.scan');
 
+  await resolveExpiredRainAlerts(pool);
+  await resolveRainAlertsOutsideCurrentSelection(pool);
+
   const candidateResult = await pool.query<CandidateRow>(
     `
       with ranked as (
@@ -179,6 +197,7 @@ export async function scanRainAlerts(pool: Pool): Promise<{ users: number; alert
           coalesce(up.weather_rain_probability_percent_threshold, 60)::text as threshold_percent,
           h.id as holding_id,
           h.municipality,
+          coalesce(up.notify_weather, true) as notify_weather,
           row_number() over (partition by hm.user_id order by h.created_at asc, h.id asc) as position
         from holding_members hm
         join holdings h
@@ -186,18 +205,16 @@ export async function scanRainAlerts(pool: Pool): Promise<{ users: number; alert
          and h.active = true
         left join user_preferences up on up.user_id = hm.user_id
         where hm.status = 'active'
-          and coalesce(up.notify_weather, true) = true
-          and h.municipality is not null
-          and length(trim(h.municipality)) > 0
       )
       select user_id, threshold_percent, holding_id, municipality
       from ranked
       where position = 1
+        and notify_weather = true
+        and municipality is not null
+        and length(trim(municipality)) > 0
       order by user_id
     `,
   );
-
-  await resolveRainAlertsOutsideCurrentSelection(pool);
 
   const municipalityResult = await pool.query<MunicipalityRow>(
     `

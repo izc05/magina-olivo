@@ -78,14 +78,16 @@ export function CampaignDocuments({
         <span className="badge gold">{documents.length}</span>
       </div>
 
-      <div className="card card-body" aria-labelledby="campaign-export-title">
+      <div className="card card-body campaign-export-card" aria-labelledby="campaign-export-title">
         <p className="eyebrow page-eyebrow">Tus datos</p>
-        <h3 id="campaign-export-title" className="section-title form-card-title">Exportar campaña</h3>
-        <p className="section-copy">Descarga tus entregas, destinos, fincas, parcelas y rendimientos. CSV sirve para hoja de cálculo; JSON conserva la estructura completa.</p>
-        <div className="form-actions">
-          <a className="text-button" href={`/api/v1/campaigns/${campaignId}/export.csv`}>Descargar CSV</a>
-          <a className="text-button" href={`/api/v1/campaigns/${campaignId}/export.json`}>Descargar JSON</a>
+        <h3 id="campaign-export-title" className="section-title form-card-title">Informe y exportación</h3>
+        <p className="section-copy">El PDF resume la cosecha por finca y parcela, con kilos, entregas, destinos y rendimiento ponderado. CSV sirve para hoja de cálculo y JSON conserva la estructura completa.</p>
+        <div className="form-actions campaign-export-actions">
+          <a className="primary-button campaign-pdf-download" href={`/api/v1/campaigns/${campaignId}/export.pdf`}>Descargar informe PDF</a>
+          <a className="text-button" href={`/api/v1/campaigns/${campaignId}/export.csv`}>CSV</a>
+          <a className="text-button" href={`/api/v1/campaigns/${campaignId}/export.json`}>JSON</a>
         </div>
+        <p className="campaign-export-note">El informe no estima rendimientos que aún estén pendientes.</p>
       </div>
 
       {error ? <div className="alert" role="alert">{error}</div> : null}

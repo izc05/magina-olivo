@@ -1,5 +1,6 @@
 import type { RedemptionSummary } from './reward-api';
 import { groupRewardRedemptions } from './reward-redemption-history';
+import './reward-redemption-history.css';
 
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat('es-ES', {

@@ -135,6 +135,12 @@ function nextId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function routeId(match: RegExpMatchArray): string {
+  const value = match[1];
+  if (!value) throw new Error('Demo route matched without its required identifier');
+  return value;
+}
+
 function exportPayload() {
   const requestedAt = new Date().toISOString();
   const data = encodeURIComponent(JSON.stringify({
@@ -246,8 +252,9 @@ async function handleExtra(input: RequestInfo | URL, init?: RequestInit): Promis
 
   const taskCollection = path.match(/^\/api\/v1\/holdings\/([^/]+)\/tasks$/);
   if (taskCollection && method === 'GET') {
+    const holdingId = routeId(taskCollection);
     const status = url.searchParams.get('status') ?? 'pending';
-    const items = tasks.filter((task) => task.holdingId === taskCollection[1] && (status === 'all' || task.status === status));
+    const items = tasks.filter((task) => task.holdingId === holdingId && (status === 'all' || task.status === status));
     return json({ items });
   }
   if (taskCollection && method === 'POST') {
@@ -255,7 +262,7 @@ async function handleExtra(input: RequestInfo | URL, init?: RequestInit): Promis
     const dueDate = String(body.dueDate || '2026-09-04');
     const created: DemoTask = {
       id: nextId('demo-task'),
-      holdingId: taskCollection[1],
+      holdingId: routeId(taskCollection),
       campaignId: null,
       campaignName: null,
       farmId: null,
@@ -278,7 +285,8 @@ async function handleExtra(input: RequestInfo | URL, init?: RequestInit): Promis
 
   const completeTask = path.match(/^\/api\/v1\/tasks\/([^/]+)\/complete$/);
   if (completeTask && method === 'POST') {
-    const task = tasks.find((item) => item.id === completeTask[1]);
+    const taskId = routeId(completeTask);
+    const task = tasks.find((item) => item.id === taskId);
     if (!task) return json({ error: { message: 'Tarea demo no encontrada' } }, 404);
     task.status = 'completed';
     task.completedAt = new Date().toISOString();

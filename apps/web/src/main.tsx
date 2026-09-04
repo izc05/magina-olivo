@@ -5,10 +5,13 @@ import { AccountPage } from './AccountPage';
 import { AdminContentPage } from './AdminContentPage';
 import { AdminOperationsPage } from './AdminOperationsPage';
 import { AdminPage } from './AdminPage';
+import { AdminSupportSystemPage } from './AdminSupportSystemPage';
 import { App } from './App';
 import { CalendarPage } from './CalendarPage';
 import { ConnectivityStatus } from './ConnectivityStatus';
+import { ContactPage } from './ContactPage';
 import { installDemoPreview } from './demoPreview';
+import { LegalPage } from './LegalPage';
 import { MaginaDirectoryPage } from './MaginaDirectoryPage';
 import { MaginaFieldAlertsPage } from './MaginaFieldAlertsPage';
 import { MaginaHubPage } from './MaginaHubPage';
@@ -50,6 +53,7 @@ import './admin.css';
 import './admin-operations.css';
 import './admin-content.css';
 import './platform-announcements.css';
+import './support-legal-system.css';
 
 installDemoPreview();
 installWeatherDemoPreview();
@@ -98,6 +102,8 @@ createRoot(root).render(
         <RegisterPage />
       ) : path === '/onboarding' ? (
         <OnboardingPage />
+      ) : path === '/admin/soporte' ? (
+        <AdminSupportSystemPage />
       ) : path === '/admin/contenido' ? (
         <AdminContentPage />
       ) : path === '/admin/operaciones' ? (
@@ -105,9 +111,18 @@ createRoot(root).render(
       ) : path === '/admin' ? (
         <>
           <AdminPage />
+          <a className="admin-support-entry" href="/admin/soporte">Soporte · Legal · Sistema</a>
           <a className="admin-content-entry" href="/admin/contenido">Noticias · Alertas · Avisos</a>
           <a className="admin-ops-entry" href="/admin/operaciones">Usuarios · Directorio · Fuentes · Auditoría</a>
         </>
+      ) : path === '/contacto' ? (
+        <ContactPage />
+      ) : path === '/legal/privacidad' ? (
+        <LegalPage documentKey="privacy" />
+      ) : path === '/legal/cookies' ? (
+        <LegalPage documentKey="cookies" />
+      ) : path === '/legal/terminos' ? (
+        <LegalPage documentKey="terms" />
       ) : path === '/cuenta' ? (
         <AccountPage />
       ) : path === '/calendario' ? (

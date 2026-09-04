@@ -33,6 +33,7 @@ import { registerPublicWeatherRoutes } from './public-weather-routes.ts';
 import { registerRainAlertRoutes } from './rain-alert-routes.ts';
 import { registerRequestSecurity } from './request-security.ts';
 import { registerSigpacMapRoutes } from './sigpac-map-routes.ts';
+import { registerSupportLegalSystemRoutes } from './support-legal-system-routes.ts';
 import { registerTaskRoutes } from './task-routes.ts';
 
 export function buildApp(): FastifyInstance {
@@ -76,6 +77,7 @@ export function buildApp(): FastifyInstance {
   registerAdminRoutes(app);
   registerAdminOperationsRoutes(app);
   registerAdminContentRoutes(app);
+  registerSupportLegalSystemRoutes(app);
   registerAccountPreferenceRoutes(app);
   registerAccountExportRoutes(app);
   registerRainAlertRoutes(app);

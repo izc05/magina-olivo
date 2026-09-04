@@ -118,6 +118,7 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
     () => selectedReferences.flatMap((reference) => parcelCache[reference] ? [parcelCache[reference]!] : []),
     [parcelCache, selectedReferences],
   );
+  const focusedItem = focusedReference ? parcelCache[focusedReference] ?? null : null;
 
   useEffect(() => {
     let cancelled = false;
@@ -183,15 +184,15 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
 
   function toggleSelection(item: CatastroParcel) {
     const reference = item.nationalCadastralReference;
+    setParcelCache((current) => ({ ...current, [reference]: item }));
+    setFocusedReference(reference);
     if (existingReferences.has(reference)) {
       setNotice(`La parcela ${reference} ya está añadida a esta finca.`);
       return;
     }
-    setParcelCache((current) => ({ ...current, [reference]: item }));
     setSelectedReferences((current) => current.includes(reference)
       ? current.filter((value) => value !== reference)
       : [...current, reference]);
-    setFocusedReference(reference);
     setReviewing(false);
     setNotice(null);
   }
@@ -350,6 +351,7 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
                       >
                         {rings.map((ring, index) => <polygon key={index} points={polygonPoints(ring)} />)}
                         {isSelected && marker ? <text x={marker.x} y={marker.y}>{selectedIndex + 1}</text> : null}
+                        {alreadyAdded && marker ? <text className="catastro-map-first-existing-label" x={marker.x} y={marker.y + 28}>Añadida</text> : null}
                       </g>,
                     ];
                   })}
@@ -373,6 +375,20 @@ export function CatastroMapFirstSelector({ farmId }: { farmId: string }) {
                   </div>
                   {selectedItems.length ? <button className="text-button" type="button" onClick={() => { setSelectedReferences([]); setReviewing(false); }}>Limpiar</button> : null}
                 </div>
+
+                {focusedItem ? (
+                  <article className="catastro-map-first-focus-card">
+                    <div>
+                      <strong>{focusedItem.label ? `Parcela ${focusedItem.label}` : focusedItem.nationalCadastralReference}</strong>
+                      <small>{focusedItem.nationalCadastralReference} · {formatArea(focusedItem.areaM2)}</small>
+                    </div>
+                    {existingReferences.has(focusedItem.nationalCadastralReference)
+                      ? <span className="badge">Ya añadida</span>
+                      : selectedReferences.includes(focusedItem.nationalCadastralReference)
+                        ? <span className="badge gold">Seleccionada</span>
+                        : <button className="ghost-button" type="button" onClick={() => toggleSelection(focusedItem)}>Seleccionar</button>}
+                  </article>
+                ) : null}
 
                 {selectedItems.length ? (
                   <div className="catastro-map-first-selection-list">

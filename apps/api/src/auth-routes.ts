@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { fromNodeHeaders } from 'better-auth/node';
-import { auth } from './auth.ts';
+import { auth, googleAuthEnabled } from './auth.ts';
 import { apiError } from './http-errors.ts';
 
 export function registerAuthRoutes(app: FastifyInstance): void {
@@ -33,6 +33,14 @@ export function registerAuthRoutes(app: FastifyInstance): void {
         });
       }
     },
+  });
+
+  app.get('/api/v1/auth/providers', async (_request, reply) => {
+    reply.header('cache-control', 'no-store');
+    return {
+      emailPassword: true,
+      google: googleAuthEnabled,
+    };
   });
 
   app.get('/api/v1/me', async (request, reply) => {

@@ -1,42 +1,155 @@
-import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { canWrite, getFarmAccess } from './authorization.ts';
-import { fetchCatastroParcelByReference, validateCadastralReference, type CatastroParcel } from './catastro-client.ts';
+import {
+  duplicateRaceValidation,
+  insertPreparedCatastroPlots,
+  MAX_CATASTRO_BATCH_SIZE,
+  prepareCatastroBatch,
+  type ImportParcelInput,
+  type ValidationItem,
+} from './catastro-import-service.ts';
 import { getPool } from './db.ts';
 import { apiError } from './http-errors.ts';
-import { validateBoundary, type GeoJsonPolygon } from './plot-boundary-geometry.ts';
 import { getAuthenticatedSession } from './session.ts';
 
 type FarmParams = { farmId: string };
-type IrrigationType = 'dryland' | 'irrigated' | 'mixed' | 'unknown';
-type ImportParcelInput = { cadastralReference: string; name: string; oliveTreeCount?: number | null; irrigationType?: IrrigationType | null; oliveVariety?: string | null; notes?: string | null };
 type BatchImportBody = { parcels: ImportParcelInput[] };
-type ValidationStatus = 'ready' | 'duplicate' | 'unsupported' | 'upstream-error' | 'invalid';
-type ValidationItem = { cadastralReference: string; status: ValidationStatus; message?: string };
-type PreparedParcel = { input: ImportParcelInput; official: CatastroParcel; boundary: GeoJsonPolygon; boundaryAreaHa: number; latitude: number; longitude: number };
 type PgError = Error & { code?: string };
-const MAX_BATCH_SIZE = 10;
-function normalizeReference(reference:string){return reference.trim().toUpperCase();}
-function simplePolygon(geometry:CatastroParcel['geometry']):GeoJsonPolygon|null{if(geometry.type!=='Polygon')return null;const coordinates=geometry.coordinates as number[][][];if(coordinates.length!==1||!coordinates[0]||coordinates[0].length<4)return null;return{type:'Polygon',coordinates};}
-function polygonCenter(boundary:GeoJsonPolygon){const ring=boundary.coordinates[0];if(!ring||ring.length<4)return null;const p=ring.slice(0,-1).filter(v=>Number.isFinite(v[0])&&Number.isFinite(v[1]));if(!p.length)return null;const sums=p.reduce((a,v)=>({longitude:a.longitude+Number(v[0]),latitude:a.latitude+Number(v[1])}),{longitude:0,latitude:0});return{longitude:sums.longitude/p.length,latitude:sums.latitude/p.length};}
-function failureResponse(requestId:string,items:ValidationItem[]){return{error:{code:'CATASTRO_BATCH_NOT_READY',message:'No se ha creado ninguna parcela. Revisa las referencias indicadas y vuelve a intentarlo.',requestId},created:false,items};}
 
-export function registerCatastroBatchImportRoutes(app:FastifyInstance):void{
- app.post<{Params:FarmParams;Body:BatchImportBody}>('/api/v1/farms/:farmId/plots/import-catastro',{schema:{body:{type:'object',additionalProperties:false,required:['parcels'],properties:{parcels:{type:'array',minItems:1,maxItems:MAX_BATCH_SIZE,items:{type:'object',additionalProperties:false,required:['cadastralReference','name'],properties:{cadastralReference:{type:'string',pattern:'^[A-Za-z0-9]{14}$'},name:{type:'string',minLength:1,maxLength:120},oliveTreeCount:{anyOf:[{type:'integer',minimum:0,maximum:100000000},{type:'null'}]},irrigationType:{anyOf:[{type:'string',enum:['dryland','irrigated','mixed','unknown']},{type:'null'}]},oliveVariety:{anyOf:[{type:'string',minLength:1,maxLength:80},{type:'null'}]},notes:{anyOf:[{type:'string',maxLength:5000},{type:'null'}]}}}}}}}},async(request,reply)=>{
-  const session=await getAuthenticatedSession(request);if(!session)return reply.code(401).send(apiError(request,'AUTH_REQUIRED','Authentication required'));
-  const access=await getFarmAccess(session.user.id,request.params.farmId);if(!access)return reply.code(404).send(apiError(request,'FARM_NOT_FOUND','Farm not found'));if(!canWrite(access.role))return reply.code(403).send(apiError(request,'WRITE_FORBIDDEN','Write access required'));
-  const inputs=request.body.parcels.map(parcel=>({...parcel,cadastralReference:normalizeReference(parcel.cadastralReference),name:parcel.name.trim(),oliveVariety:parcel.oliveVariety?.trim()||null,notes:parcel.notes?.trim()||null}));
-  const counts=new Map<string,number>();for(const i of inputs)counts.set(i.cadastralReference,(counts.get(i.cadastralReference)??0)+1);
-  const references=[...new Set(inputs.map(i=>i.cadastralReference))];
-  const existing=await getPool().query<{cadastral_reference:string}>(`select cadastral_reference from plots where holding_id=$1 and active=true and cadastral_reference=any($2::text[])`,[access.holdingId,references]);
-  const existingRefs=new Set(existing.rows.map(r=>r.cadastral_reference));const prepared=new Map<string,PreparedParcel>();const validations=new Map<string,ValidationItem>();
-  for(const input of inputs){const reference=input.cadastralReference;if(validations.has(reference))continue;if(!input.name){validations.set(reference,{cadastralReference:reference,status:'invalid',message:'El nombre de la parcela es obligatorio.'});continue;}if(input.oliveVariety&&input.oliveVariety.length>80){validations.set(reference,{cadastralReference:reference,status:'invalid',message:'La variedad debe tener 80 caracteres como máximo.'});continue;}if(!validateCadastralReference(reference)){validations.set(reference,{cadastralReference:reference,status:'invalid',message:'Referencia catastral no válida.'});continue;}if((counts.get(reference)??0)>1){validations.set(reference,{cadastralReference:reference,status:'duplicate',message:'La misma referencia aparece más de una vez en este lote.'});continue;}if(existingRefs.has(reference)){validations.set(reference,{cadastralReference:reference,status:'duplicate',message:'Esta referencia ya está añadida a la explotación.'});continue;}
-   let official:CatastroParcel;try{official=await fetchCatastroParcelByReference(reference);}catch(error){request.log.warn({err:error,cadastralReference:reference},'Catastro batch verification failed');validations.set(reference,{cadastralReference:reference,status:'upstream-error',message:'Catastro no ha podido verificar esta referencia.'});continue;}
-   const boundary=simplePolygon(official.geometry);if(!boundary){validations.set(reference,{cadastralReference:reference,status:'unsupported',message:'La geometría oficial es compleja y todavía no se puede importar automáticamente.'});continue;}const bv=validateBoundary(boundary);if(!bv.ok){validations.set(reference,{cadastralReference:reference,status:'unsupported',message:'La geometría oficial no supera la validación de Mágina Olivo.'});continue;}const center=polygonCenter(boundary);if(!center){validations.set(reference,{cadastralReference:reference,status:'unsupported',message:'No se ha podido obtener una ubicación válida para la parcela.'});continue;}prepared.set(reference,{input,official,boundary,boundaryAreaHa:Number(bv.areaHa.toFixed(4)),latitude:center.latitude,longitude:center.longitude});validations.set(reference,{cadastralReference:reference,status:'ready'});
-  }
-  const validationItems=inputs.map(i=>validations.get(i.cadastralReference)??{cadastralReference:i.cadastralReference,status:'invalid' as const,message:'No se ha podido validar la referencia.'});if(validationItems.some(i=>i.status!=='ready'))return reply.code(409).send(failureResponse(request.id,validationItems));
-  const client=await getPool().connect();try{await client.query('begin');const createdItems:Array<Record<string,unknown>>=[];for(const input of inputs){const item=prepared.get(input.cadastralReference)!;const checkedAt=new Date();const inserted=await client.query<{id:string;name:string;cadastral_reference:string;boundary_area_ha:string;latitude:number;longitude:number;olive_tree_count:number|null;irrigation_type:IrrigationType|null;olive_variety:string|null;boundary_source_checked_at:Date}>(`insert into plots (id,holding_id,farm_id,name,latitude,longitude,irrigation_type,olive_tree_count,olive_variety,notes,boundary_geojson,boundary_area_ha,boundary_source,boundary_updated_at,boundary_external_id,boundary_source_checked_at,cadastral_reference) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12,'catastro',$13,$14,$13,$14) returning id,name,cadastral_reference,boundary_area_ha,latitude,longitude,olive_tree_count,irrigation_type,olive_variety,boundary_source_checked_at`,[randomUUID(),access.holdingId,request.params.farmId,item.input.name,item.latitude,item.longitude,item.input.irrigationType??null,item.input.oliveTreeCount??null,item.input.oliveVariety??null,item.input.notes??null,JSON.stringify(item.boundary),item.boundaryAreaHa,checkedAt,item.official.nationalCadastralReference]);const row=inserted.rows[0];if(!row)throw new Error('Catastro plot insert returned no row');createdItems.push({id:row.id,name:row.name,cadastralReference:row.cadastral_reference,boundaryAreaHa:Number(row.boundary_area_ha),latitude:row.latitude,longitude:row.longitude,oliveTreeCount:row.olive_tree_count,irrigationType:row.irrigation_type,oliveVariety:row.olive_variety,boundarySourceCheckedAt:row.boundary_source_checked_at});}
-   await client.query('commit');return reply.code(201).send({created:true,items:createdItems,source:{provider:'Dirección General del Catastro',dataset:'INSPIRE Cadastral Parcel (CP)',verifiedServerSide:true}});
-  }catch(error){await client.query('rollback');const pgError=error as PgError;if(pgError.code==='23505'){const raced=await getPool().query<{cadastral_reference:string}>(`select cadastral_reference from plots where holding_id=$1 and active=true and cadastral_reference=any($2::text[])`,[access.holdingId,references]);const racedRefs=new Set(raced.rows.map(r=>r.cadastral_reference));return reply.code(409).send(failureResponse(request.id,inputs.map(i=>racedRefs.has(i.cadastralReference)?{cadastralReference:i.cadastralReference,status:'duplicate' as const,message:'La referencia se añadió mientras se procesaba este lote.'}:{cadastralReference:i.cadastralReference,status:'ready' as const})));}throw error;}finally{client.release();}
- });
+function failureResponse(requestId: string, items: ValidationItem[]) {
+  return {
+    error: {
+      code: 'CATASTRO_BATCH_NOT_READY',
+      message: 'No se ha creado ninguna parcela. Revisa las referencias indicadas y vuelve a intentarlo.',
+      requestId,
+    },
+    created: false,
+    items,
+  };
+}
+
+const parcelSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['cadastralReference', 'name'],
+  properties: {
+    cadastralReference: { type: 'string', pattern: '^[A-Za-z0-9]{14}$' },
+    name: { type: 'string', minLength: 1, maxLength: 120 },
+    oliveTreeCount: {
+      anyOf: [
+        { type: 'integer', minimum: 0, maximum: 100000000 },
+        { type: 'null' },
+      ],
+    },
+    irrigationType: {
+      anyOf: [
+        { type: 'string', enum: ['dryland', 'irrigated', 'mixed', 'unknown'] },
+        { type: 'null' },
+      ],
+    },
+    oliveVariety: {
+      anyOf: [
+        { type: 'string', minLength: 1, maxLength: 80 },
+        { type: 'null' },
+      ],
+    },
+    notes: {
+      anyOf: [
+        { type: 'string', maxLength: 5000 },
+        { type: 'null' },
+      ],
+    },
+  },
+} as const;
+
+export function registerCatastroBatchImportRoutes(app: FastifyInstance): void {
+  app.post<{ Params: FarmParams; Body: BatchImportBody }>(
+    '/api/v1/farms/:farmId/plots/import-catastro',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['parcels'],
+          properties: {
+            parcels: {
+              type: 'array',
+              minItems: 1,
+              maxItems: MAX_CATASTRO_BATCH_SIZE,
+              items: parcelSchema,
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const session = await getAuthenticatedSession(request);
+      if (!session) {
+        return reply.code(401).send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
+      }
+
+      const access = await getFarmAccess(session.user.id, request.params.farmId);
+      if (!access) {
+        return reply.code(404).send(apiError(request, 'FARM_NOT_FOUND', 'Farm not found'));
+      }
+      if (!canWrite(access.role)) {
+        return reply.code(403).send(apiError(request, 'WRITE_FORBIDDEN', 'Write access required'));
+      }
+
+      const batch = await prepareCatastroBatch(
+        access.holdingId,
+        request.body.parcels,
+        (error, cadastralReference) => request.log.warn(
+          { err: error, cadastralReference },
+          'Catastro batch verification failed',
+        ),
+      );
+
+      if (batch.validationItems.some((item) => item.status !== 'ready')) {
+        return reply.code(409).send(failureResponse(request.id, batch.validationItems));
+      }
+
+      const client = await getPool().connect();
+      try {
+        await client.query('begin');
+        const createdItems = await insertPreparedCatastroPlots(
+          client,
+          access.holdingId,
+          request.params.farmId,
+          batch.prepared,
+        );
+        await client.query('commit');
+        return reply.code(201).send({
+          created: true,
+          items: createdItems,
+          source: {
+            provider: 'Dirección General del Catastro',
+            dataset: 'INSPIRE Cadastral Parcel (CP)',
+            verifiedServerSide: true,
+          },
+        });
+      } catch (error) {
+        await client.query('rollback');
+        const pgError = error as PgError;
+        if (pgError.code === '23505') {
+          const raced = await getPool().query<{ cadastral_reference: string }>(
+            `select cadastral_reference
+             from plots
+             where holding_id = $1
+               and active = true
+               and cadastral_reference = any($2::text[])`,
+            [access.holdingId, batch.references],
+          );
+          const racedReferences = new Set(raced.rows.map((row) => row.cadastral_reference));
+          return reply.code(409).send(failureResponse(
+            request.id,
+            duplicateRaceValidation(batch.inputs, racedReferences),
+          ));
+        }
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+  );
 }

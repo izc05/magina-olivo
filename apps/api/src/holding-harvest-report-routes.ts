@@ -2,6 +2,10 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { getCampaignAccess } from './authorization.ts';
 import { getPool } from './db.ts';
 import {
+  buildHoldingHarvestComparisonPdf,
+  type HoldingHarvestComparisonInput,
+} from './holding-harvest-comparison-format.ts';
+import {
   buildHoldingHarvestPdf,
   type HoldingHarvestPlot,
   type HoldingHarvestReportInput,
@@ -17,6 +21,13 @@ type CampaignRow = {
   municipality: string | null;
   province: string | null;
   campaign_name: string;
+  season_start_year: number;
+  season_end_year: number;
+};
+
+type PreviousCampaignRow = {
+  id: string;
+  name: string;
   season_start_year: number;
   season_end_year: number;
 };
@@ -47,10 +58,87 @@ function filename(startYear: number, endYear: number): string {
   return `magina-olivo-informe-global-${startYear}-${String(endYear).slice(-2)}.pdf`;
 }
 
+function comparisonFilename(startYear: number, endYear: number): string {
+  return `magina-olivo-comparativa-campanas-${startYear}-${String(endYear).slice(-2)}.pdf`;
+}
+
 function privatePdf(reply: FastifyReply, name: string): void {
   reply.header('Cache-Control', 'private, no-store');
   reply.header('Content-Disposition', `attachment; filename="${name}"`);
   reply.type('application/pdf');
+}
+
+function groupDeliveries(rows: DeliveryRow[]): Map<string, PlotHarvestDelivery[]> {
+  const deliveriesByPlot = new Map<string, PlotHarvestDelivery[]>();
+  for (const row of rows) {
+    const item: PlotHarvestDelivery = {
+      id: row.id,
+      deliveredAt: row.delivered_at.toISOString(),
+      kilograms: row.kilograms,
+      destination: row.cooperative_name ?? row.custom_destination ?? 'Sin destino',
+      ticketNumber: row.ticket_number,
+      variety: row.variety,
+      yieldPercent: row.yield_percent,
+      verificationStatus: row.verification_status,
+      notes: row.notes,
+    };
+    const items = deliveriesByPlot.get(row.plot_id) ?? [];
+    items.push(item);
+    deliveriesByPlot.set(row.plot_id, items);
+  }
+  return deliveriesByPlot;
+}
+
+function mapPlots(rows: PlotRow[], deliveriesByPlot: Map<string, PlotHarvestDelivery[]>): HoldingHarvestPlot[] {
+  return rows.map((plot) => ({
+    id: plot.id,
+    farmName: plot.farm_name,
+    name: plot.name,
+    areaHa: plot.area_ha,
+    oliveTreeCount: plot.olive_tree_count,
+    deliveries: deliveriesByPlot.get(plot.id) ?? [],
+  }));
+}
+
+async function loadDeliveries(holdingId: string, campaignId: string): Promise<DeliveryRow[]> {
+  const db = getPool();
+  const result = await db.query<DeliveryRow>(
+    `
+      select
+        d.id,
+        d.plot_id,
+        d.delivered_at,
+        d.kilograms,
+        coop.official_name as cooperative_name,
+        d.custom_destination,
+        d.ticket_number,
+        d.variety,
+        current_result.value as yield_percent,
+        d.verification_status,
+        d.notes
+      from deliveries d
+      join plots p
+        on p.id = d.plot_id
+        and p.holding_id = d.holding_id
+        and p.active = true
+      left join cooperatives coop on coop.id = d.cooperative_id
+      left join lateral (
+        select r.value
+        from delivery_results r
+        where r.holding_id = d.holding_id
+          and r.delivery_id = d.id
+          and r.result_type = 'fat_yield'
+          and r.status = 'current'
+        limit 1
+      ) current_result on true
+      where d.holding_id = $1
+        and d.campaign_id = $2
+        and d.verification_status <> 'archived'
+      order by d.delivered_at asc, d.id asc
+    `,
+    [holdingId, campaignId],
+  );
+  return result.rows;
 }
 
 async function loadReport(userId: string, campaignId: string): Promise<HoldingHarvestReportInput | null> {
@@ -91,73 +179,11 @@ async function loadReport(userId: string, campaignId: string): Promise<HoldingHa
       `,
       [holdingId],
     ),
-    db.query<DeliveryRow>(
-      `
-        select
-          d.id,
-          d.plot_id,
-          d.delivered_at,
-          d.kilograms,
-          coop.official_name as cooperative_name,
-          d.custom_destination,
-          d.ticket_number,
-          d.variety,
-          current_result.value as yield_percent,
-          d.verification_status,
-          d.notes
-        from deliveries d
-        join plots p
-          on p.id = d.plot_id
-          and p.holding_id = d.holding_id
-          and p.active = true
-        left join cooperatives coop on coop.id = d.cooperative_id
-        left join lateral (
-          select r.value
-          from delivery_results r
-          where r.holding_id = d.holding_id
-            and r.delivery_id = d.id
-            and r.result_type = 'fat_yield'
-            and r.status = 'current'
-          limit 1
-        ) current_result on true
-        where d.holding_id = $1
-          and d.campaign_id = $2
-          and d.verification_status <> 'archived'
-        order by d.delivered_at asc, d.id asc
-      `,
-      [holdingId, campaignId],
-    ),
+    loadDeliveries(holdingId, campaignId),
   ]);
 
   const campaign = campaignResult.rows[0];
   if (!campaign) return null;
-
-  const deliveriesByPlot = new Map<string, PlotHarvestDelivery[]>();
-  for (const row of deliveriesResult.rows) {
-    const item: PlotHarvestDelivery = {
-      id: row.id,
-      deliveredAt: row.delivered_at.toISOString(),
-      kilograms: row.kilograms,
-      destination: row.cooperative_name ?? row.custom_destination ?? 'Sin destino',
-      ticketNumber: row.ticket_number,
-      variety: row.variety,
-      yieldPercent: row.yield_percent,
-      verificationStatus: row.verification_status,
-      notes: row.notes,
-    };
-    const items = deliveriesByPlot.get(row.plot_id) ?? [];
-    items.push(item);
-    deliveriesByPlot.set(row.plot_id, items);
-  }
-
-  const plots: HoldingHarvestPlot[] = plotsResult.rows.map((plot) => ({
-    id: plot.id,
-    farmName: plot.farm_name,
-    name: plot.name,
-    areaHa: plot.area_ha,
-    oliveTreeCount: plot.olive_tree_count,
-    deliveries: deliveriesByPlot.get(plot.id) ?? [],
-  }));
 
   return {
     generatedAt: new Date().toISOString(),
@@ -171,7 +197,72 @@ async function loadReport(userId: string, campaignId: string): Promise<HoldingHa
       seasonStartYear: campaign.season_start_year,
       seasonEndYear: campaign.season_end_year,
     },
-    plots,
+    plots: mapPlots(plotsResult.rows, groupDeliveries(deliveriesResult)),
+  };
+}
+
+async function loadComparisonReport(
+  userId: string,
+  campaignId: string,
+): Promise<HoldingHarvestComparisonInput | null> {
+  const access = await getCampaignAccess(userId, campaignId);
+  if (!access) return null;
+  const holdingId = access.holdingId;
+  const current = await loadReport(userId, campaignId);
+  if (!current) return null;
+  const db = getPool();
+
+  const previousResult = await db.query<PreviousCampaignRow>(
+    `
+      select id, name, season_start_year, season_end_year
+      from campaigns
+      where holding_id = $1
+        and status <> 'archived'
+        and season_start_year < $2
+      order by season_start_year desc, season_end_year desc
+      limit 1
+    `,
+    [holdingId, current.campaign.seasonStartYear],
+  );
+  const previousCampaign = previousResult.rows[0];
+
+  const currentSnapshot = {
+    name: current.campaign.name,
+    seasonStartYear: current.campaign.seasonStartYear,
+    seasonEndYear: current.campaign.seasonEndYear,
+    plots: current.plots,
+  };
+
+  if (!previousCampaign) {
+    return {
+      generatedAt: new Date().toISOString(),
+      holding: current.holding,
+      current: currentSnapshot,
+      previous: null,
+    };
+  }
+
+  const previousDeliveries = await loadDeliveries(holdingId, previousCampaign.id);
+  const previousByPlot = groupDeliveries(previousDeliveries);
+  const previousPlots: HoldingHarvestPlot[] = current.plots.map((plot) => ({
+    id: plot.id,
+    farmName: plot.farmName,
+    name: plot.name,
+    areaHa: plot.areaHa,
+    oliveTreeCount: plot.oliveTreeCount,
+    deliveries: previousByPlot.get(plot.id) ?? [],
+  }));
+
+  return {
+    generatedAt: new Date().toISOString(),
+    holding: current.holding,
+    current: currentSnapshot,
+    previous: {
+      name: previousCampaign.name,
+      seasonStartYear: previousCampaign.season_start_year,
+      seasonEndYear: previousCampaign.season_end_year,
+      plots: previousPlots,
+    },
   };
 }
 
@@ -189,6 +280,22 @@ export function registerHoldingHarvestReportRoutes(app: FastifyInstance): void {
 
       privatePdf(reply, filename(report.campaign.seasonStartYear, report.campaign.seasonEndYear));
       return reply.send(buildHoldingHarvestPdf(report));
+    },
+  );
+
+  app.get<{ Params: Params }>(
+    '/api/v1/campaigns/:campaignId/harvest-comparison.pdf',
+    async (request, reply) => {
+      const session = await getAuthenticatedSession(request);
+      if (!session) return reply.code(401).send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
+
+      const report = await loadComparisonReport(session.user.id, request.params.campaignId);
+      if (!report) {
+        return reply.code(404).send(apiError(request, 'HOLDING_HARVEST_COMPARISON_NOT_FOUND', 'Harvest comparison not found'));
+      }
+
+      privatePdf(reply, comparisonFilename(report.current.seasonStartYear, report.current.seasonEndYear));
+      return reply.send(buildHoldingHarvestComparisonPdf(report));
     },
   );
 }

@@ -84,6 +84,9 @@ export function FieldNotebook({
   const holdingHarvestReportUrl = campaignId
     ? `/api/v1/campaigns/${campaignId}/harvest-report.pdf`
     : null;
+  const holdingHarvestComparisonUrl = campaignId
+    ? `/api/v1/campaigns/${campaignId}/harvest-comparison.pdf`
+    : null;
 
   const timelineCounts = useMemo(() => ({
     all: timeline.length,
@@ -241,12 +244,13 @@ export function FieldNotebook({
               <>
                 {harvestReportUrl ? <a className="text-button" href={harvestReportUrl}>Informe de esta parcela PDF</a> : null}
                 {holdingHarvestReportUrl ? <a className="text-button" href={holdingHarvestReportUrl}>Informe global de campaña PDF</a> : null}
+                {holdingHarvestComparisonUrl ? <a className="text-button" href={holdingHarvestComparisonUrl}>Comparativa de campañas PDF</a> : null}
               </>
             ) : (
               <button className="text-button" type="button" disabled>Selecciona una campaña para descargar informes</button>
             )}
           </div>
-          <p className="section-copy">Informes privados de cosecha: detalle de la parcela seleccionada o resumen consolidado de toda la explotación para la campaña.</p>
+          <p className="section-copy">Informes privados de cosecha: detalle de parcela, resumen global y comparación de la campaña seleccionada con la anterior de la misma explotación.</p>
 
           <form className="form-grid notebook-form" onSubmit={submit}>
             <div className="inline-fields">

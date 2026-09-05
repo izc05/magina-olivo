@@ -271,7 +271,7 @@ export function App({ initialTab = 'home' }: { initialTab?: Tab }) {
       <nav className="bottom-nav bottom-nav-v2" aria-label="Navegación principal">
         <NavButton active={tab === 'home'} icon="home" label="Inicio" onClick={() => setTab('home')} />
         <NavButton active={tab === 'field'} icon="field" label="Mi Campo" onClick={() => setTab('field')} />
-        <button type="button" className="nav-plus" onClick={() => setTab('campaign')} aria-label="Registrar una entrega"><span aria-hidden="true">+</span></button>
+        <button type="button" className="nav-plus" onClick={() => { setTab('campaign'); window.setTimeout(() => document.querySelector<HTMLElement>('.delivery-entry-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0); }} aria-label="Registrar una entrega"><span aria-hidden="true">+</span></button>
         <NavButton active={tab === 'magina'} icon="magina" label="Mágina" onClick={() => setTab('magina')} />
         <NavButton active={tab === 'more'} icon="profile" label="Mi Mágina" onClick={() => setTab('more')} />
       </nav>

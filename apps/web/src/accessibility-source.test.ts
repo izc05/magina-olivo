@@ -13,6 +13,7 @@ test('primary SPA navigation keeps programmatic focus and current-page semantics
   assert.match(app, /pageRef\.current\?\.focus/);
   assert.match(app, /aria-current=\{active \? 'page' : undefined\}/);
   assert.match(app, /aria-label="Registrar una entrega"/);
+  assert.match(app, /delivery-entry-card'\)\?\.scrollIntoView/);
   assert.doesNotMatch(app, /nav-plus[^\n]*aria-current/);
   assert.match(app, /<svg viewBox="0 0 24 24" aria-hidden="true"/);
   assert.match(app, /aria-pressed=\{farm\.id === selectedFarmId\}/);

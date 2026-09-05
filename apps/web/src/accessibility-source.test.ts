@@ -12,7 +12,8 @@ test('primary SPA navigation keeps programmatic focus and current-page semantics
   assert.match(app, /tabIndex=\{-1\}/);
   assert.match(app, /pageRef\.current\?\.focus/);
   assert.match(app, /aria-current=\{active \? 'page' : undefined\}/);
-  assert.match(app, /aria-current=\{tab === 'campaign' \? 'page' : undefined\}/);
+  assert.match(app, /aria-label="Registrar una entrega"/);
+  assert.doesNotMatch(app, /nav-plus[^\n]*aria-current/);
   assert.match(app, /aria-pressed=\{farm\.id === selectedFarmId\}/);
 });
 
@@ -37,9 +38,10 @@ test('ticket upload after delivery remains a real keyboard-operable button', asy
 });
 
 test('login keeps its visible form before the fixed registration entry in keyboard order', async () => {
-  const main = await source('./main.tsx');
+  const login = await source('./LoginPage.tsx');
 
-  assert.ok(main.indexOf('<App />') < main.indexOf('<RegistrationEntry />'));
+  assert.match(login, /<form className="form-grid"/);
+  assert.match(login, /<button className="text-button" type="button" onClick=\{\(\) => void resetPassword\(\)\}/);
 });
 
 test('PWA updates are announced and can only be applied through an accessible user action', async () => {

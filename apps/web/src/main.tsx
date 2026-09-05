@@ -1,23 +1,26 @@
 import { StrictMode } from 'react';
+import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AccountPage } from './AccountPage';
 import { App } from './App';
 import { CalendarPage } from './CalendarPage';
-import { ConnectivityStatus } from './ConnectivityStatus';
 import { installDemoPreview } from './demoPreview';
+import { DiscoverPage } from './DiscoverPage';
+import { LoginPage } from './LoginPage';
 import { MaginaDirectoryPage } from './MaginaDirectoryPage';
 import { MaginaFieldAlertsPage } from './MaginaFieldAlertsPage';
 import { MaginaHubPage } from './MaginaHubPage';
 import { MaginaMarketPage } from './MaginaMarketPage';
 import { MaginaNewsPage } from './MaginaNewsPage';
 import { MaginaWeatherPage } from './MaginaWeatherPage';
-import { NoticeCenter } from './NoticeCenter';
 import { OnboardingPage } from './OnboardingPage';
-import { PilotAlerts } from './PilotAlerts';
 import { PwaUpdatePrompt } from './PwaUpdatePrompt';
+import { PrivateRoute } from './PrivateRoute';
+import { PublicHomePage } from './PublicHomePage';
+import { PublicNavigation } from './PublicNavigation';
 import { RegisterPage } from './RegisterPage';
-import { RegistrationEntry } from './RegistrationEntry';
 import { ResetPassword } from './ResetPassword';
+import { currentReturnTo, safeReturnTo } from './private-access';
 import { installWeatherDemoPreview } from './weatherDemoPreview';
 import './styles.css';
 import './brand.css';
@@ -55,6 +58,12 @@ const pathWithoutBase = basePath && browserPath.startsWith(basePath)
   ? browserPath.slice(basePath.length) || '/'
   : browserPath;
 const path = pathWithoutBase.startsWith('/') ? pathWithoutBase : `/${pathWithoutBase}`;
+const returnTo = currentReturnTo();
+const loginReturnTo = safeReturnTo(new URLSearchParams(window.location.search).get('next'));
+
+function PublicScreen({ children }: { children: ReactNode }) {
+  return <><a className="skip-link" href="#main-content">Saltar al contenido</a><PublicNavigation activePath={path} />{children}</>;
+}
 
 if (basePath) {
   document.addEventListener('click', (event) => {
@@ -78,34 +87,38 @@ createRoot(root).render(
     <>
       {path === '/reset-password' ? (
         <ResetPassword />
+      ) : path === '/login' ? (
+        <LoginPage returnTo={loginReturnTo} />
       ) : path === '/register' ? (
         <RegisterPage />
       ) : path === '/onboarding' ? (
         <OnboardingPage />
       ) : path === '/cuenta' ? (
-        <AccountPage />
+        <PrivateRoute returnTo={returnTo}><AccountPage /></PrivateRoute>
       ) : path === '/calendario' ? (
-        <CalendarPage />
+        <PrivateRoute returnTo={returnTo}><CalendarPage /></PrivateRoute>
+      ) : path === '/mi-campo' ? (
+        <App initialTab="field" />
+      ) : path === '/campana' ? (
+        <App initialTab="campaign" />
+      ) : path === '/mi-magina' ? (
+        <App initialTab="more" />
+      ) : path === '/descubre' ? (
+        <PublicScreen><DiscoverPage /></PublicScreen>
       ) : path === '/magina' ? (
-        <MaginaHubPage />
+        <PublicScreen><MaginaHubPage /></PublicScreen>
       ) : path === '/magina/directorio' ? (
-        <MaginaDirectoryPage />
+        <PublicScreen><MaginaDirectoryPage /></PublicScreen>
       ) : path === '/magina/tiempo' ? (
-        <MaginaWeatherPage />
+        <PublicScreen><MaginaWeatherPage /></PublicScreen>
       ) : path === '/magina/campo' ? (
-        <MaginaFieldAlertsPage />
+        <PublicScreen><MaginaFieldAlertsPage /></PublicScreen>
       ) : path === '/magina/noticias' ? (
-        <MaginaNewsPage />
+        <PublicScreen><MaginaNewsPage /></PublicScreen>
       ) : path === '/magina/mercado' ? (
-        <MaginaMarketPage />
+        <PublicScreen><MaginaMarketPage /></PublicScreen>
       ) : (
-        <>
-          <ConnectivityStatus />
-          <NoticeCenter />
-          <PilotAlerts />
-          <App />
-          <RegistrationEntry />
-        </>
+        <PublicScreen><PublicHomePage /></PublicScreen>
       )}
       <PwaUpdatePrompt />
     </>

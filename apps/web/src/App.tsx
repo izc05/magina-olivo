@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { FormEvent, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import {
   ApiError,
   api,
@@ -18,6 +18,7 @@ import { FieldNotebook } from './FieldNotebook.tsx';
 import { MaginaPrivateHub } from './MaginaPrivateHub.tsx';
 import { OfflineColdStart } from './OfflineColdStart.tsx';
 import { listPendingOperations } from './offline/outbox.ts';
+import { PrivateAccessGate } from './PrivateAccessGate.tsx';
 
 type Tab = 'home' | 'field' | 'campaign' | 'magina' | 'more';
 type SessionState = 'checking' | 'signed_out' | 'signed_in' | 'offline_locked';
@@ -44,75 +45,10 @@ function messageFrom(error: unknown): string {
   return 'Ha ocurrido un error inesperado.';
 }
 
-function LoginScreen({ onSignedIn }: { onSignedIn: (user: User) => void }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setBusy(true);
-    setError(null);
-    setNotice(null);
-    try {
-      await api.signIn(email.trim(), password);
-      const session = await api.me();
-      onSignedIn(session.user);
-    } catch (reason) {
-      setError('No se ha podido iniciar sesión. Revisa el correo y la contraseña.');
-      console.warn('Sign in failed', reason instanceof ApiError ? reason.code : 'unknown');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function resetPassword() {
-    if (!email.trim()) {
-      setError('Escribe primero tu correo para solicitar la recuperación.');
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      await api.requestPasswordReset(email.trim());
-    } catch {
-      // Keep the same public response to avoid account enumeration.
-    } finally {
-      setNotice('Si existe una cuenta con ese correo, recibirás instrucciones para recuperar el acceso.');
-      setBusy(false);
-    }
-  }
-
-  return (
-    <main className="login-shell">
-      <section className="login-card" aria-labelledby="login-title">
-        <div className="login-brand">
-          <span className="brand-title">Mágina Olivo</span>
-          <span className="brand-kicker">Tu olivar, campaña tras campaña</span>
-        </div>
-        <h1 id="login-title" className="login-title">Bienvenido</h1>
-        <p className="login-copy">Accede a tus fincas, entregas y rendimientos desde un único lugar.</p>
-        <form className="form-grid" onSubmit={submit}>
-          <Field name="email" label="Correo electrónico" type="email" required autoComplete="email" value={email} onChange={setEmail} />
-          <Field name="password" label="Contraseña" type="password" required autoComplete="current-password" value={password} onChange={setPassword} />
-          {error ? <div className="alert" role="alert">{error}</div> : null}
-          {notice ? <div className="alert success" role="status">{notice}</div> : null}
-          <button className="primary-button" type="submit" disabled={busy}>{busy ? 'Entrando…' : 'Entrar'}</button>
-        </form>
-        <div className="login-footer">
-          <button className="text-button" type="button" onClick={() => void resetPassword()} disabled={busy}>He olvidado mi contraseña</button>
-        </div>
-      </section>
-    </main>
-  );
-}
-
-export function App() {
+export function App({ initialTab = 'home' }: { initialTab?: Tab }) {
   const [sessionState, setSessionState] = useState<SessionState>('checking');
   const [user, setUser] = useState<User | null>(null);
-  const [tab, setTab] = useState<Tab>('home');
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [holdings, setHoldings] = useState<Holding[]>([]);
@@ -272,9 +208,7 @@ export function App() {
 
   if (sessionState === 'checking') return <div className="loading-screen" role="status" aria-live="polite">Abriendo Mágina Olivo…</div>;
   if (sessionState === 'offline_locked') return <OfflineColdStart onRetry={() => void checkSession()} />;
-  if (sessionState === 'signed_out' || !user) {
-    return <LoginScreen onSignedIn={(signedInUser) => { setUser(signedInUser); setSessionState('signed_in'); }} />;
-  }
+  if (sessionState === 'signed_out' || !user) return <PrivateAccessGate returnTo={window.location.pathname} />;
 
   const initials = (user.name || user.email).trim().slice(0, 1).toUpperCase();
   const coverage = Math.min(100, Math.max(0, Number(summary?.coveragePercent ?? 0)));
@@ -337,7 +271,7 @@ export function App() {
       <nav className="bottom-nav bottom-nav-v2" aria-label="Navegación principal">
         <NavButton active={tab === 'home'} icon="⌂" label="Inicio" onClick={() => setTab('home')} />
         <NavButton active={tab === 'field'} icon="◒" label="Mi Campo" onClick={() => setTab('field')} />
-        <button type="button" className={`nav-plus${tab === 'campaign' ? ' active' : ''}`} onClick={() => setTab('campaign')} aria-label="Campaña y nueva entrega" aria-current={tab === 'campaign' ? 'page' : undefined}><span aria-hidden="true">+</span></button>
+        <button type="button" className="nav-plus" onClick={() => setTab('campaign')} aria-label="Registrar una entrega"><span aria-hidden="true">+</span></button>
         <NavButton active={tab === 'magina'} icon="◇" label="Mágina" onClick={() => setTab('magina')} />
         <NavButton active={tab === 'more'} icon="•••" label="Mi Mágina" onClick={() => setTab('more')} />
       </nav>

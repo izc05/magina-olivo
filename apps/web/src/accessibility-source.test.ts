@@ -13,10 +13,13 @@ test('primary SPA navigation keeps programmatic focus and current-page semantics
   assert.match(app, /pageRef\.current\?\.focus/);
   assert.match(app, /aria-current=\{active \? 'page' : undefined\}/);
   assert.match(app, /aria-label="Registrar una entrega"/);
-  assert.match(app, /delivery-entry-card'\)\?\.scrollIntoView/);
+  assert.match(app, /querySelector<HTMLElement>\('\.delivery-entry-card'\)/);
+  assert.match(app, /entry\?\.scrollIntoView\(\{ behavior: 'smooth', block: 'start' \}\)/);
+  assert.match(app, /entry\?\.focus\(\{ preventScroll: true \}\)/);
   assert.doesNotMatch(app, /nav-plus[^\n]*aria-current/);
   assert.match(app, /<svg viewBox="0 0 24 24" aria-hidden="true"/);
   assert.match(app, /aria-pressed=\{farm\.id === selectedFarmId\}/);
+  assert.match(app, /aria-pressed=\{plot\.id === selectedPlotId\}/);
 });
 
 test('global styles preserve visible focus and user motion/contrast preferences', async () => {

@@ -271,7 +271,7 @@ export function App({ initialTab = 'home' }: { initialTab?: Tab }) {
       <nav className="bottom-nav bottom-nav-v2" aria-label="Navegación principal">
         <NavButton active={tab === 'home'} icon="home" label="Inicio" onClick={() => setTab('home')} />
         <NavButton active={tab === 'field'} icon="field" label="Mi Campo" onClick={() => setTab('field')} />
-        <button type="button" className="nav-plus" onClick={() => { setTab('campaign'); window.setTimeout(() => document.querySelector<HTMLElement>('.delivery-entry-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0); }} aria-label="Registrar una entrega"><span aria-hidden="true">+</span></button>
+        <button type="button" className="nav-plus" onClick={() => { setTab('campaign'); window.setTimeout(() => { const entry = document.querySelector<HTMLElement>('.delivery-entry-card'); entry?.scrollIntoView({ behavior: 'smooth', block: 'start' }); entry?.focus({ preventScroll: true }); }, 0); }} aria-label="Registrar una entrega"><span aria-hidden="true">+</span></button>
         <NavButton active={tab === 'magina'} icon="magina" label="Mágina" onClick={() => setTab('magina')} />
         <NavButton active={tab === 'more'} icon="profile" label="Mi Mágina" onClick={() => setTab('more')} />
       </nav>
@@ -411,23 +411,34 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
 function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelectedCampaignId, selectedCampaign, farms, deliveries, summary, busy, runAction, reloadHoldingData, reloadCampaign }: { selectedHolding: Holding | null; campaigns: Campaign[]; selectedCampaignId: string; setSelectedCampaignId: (id: string) => void; selectedCampaign: Campaign | null; farms: Farm[]; deliveries: Delivery[]; summary: CampaignSummary | null; busy: boolean; runAction: ActionRunner; reloadHoldingData: () => Promise<void>; reloadCampaign: () => Promise<void> }) {
   return (
     <>
-      <PageIntro eyebrow="Campaña" title="Entregas y rendimiento" copy="El núcleo productivo del olivar, con trazabilidad por entrega." />
-      {selectedHolding && !campaigns.length ? <CreateCampaignCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} /> : null}
+      <PageIntro eyebrow="Campaña" title="Tu campaña" copy="Entregas y rendimiento con trazabilidad por campaña." />
+      {selectedHolding && !campaigns.length ? <><EmptyState title="Aún no tienes una campaña creada.">Crea la campaña para empezar a registrar tus entregas.</EmptyState><CreateCampaignCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} /></> : null}
       {campaigns.length ? (
         <section className="section">
-          <select className="selector" value={selectedCampaignId} onChange={(event) => setSelectedCampaignId(event.target.value)} aria-label="Campaña activa">
-            {campaigns.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}
-          </select>
+          <div className="campaign-selector-card card">
+            <div><p className="eyebrow">Campaña activa</p><p>{selectedHolding?.name ?? 'Explotación activa'}</p></div>
+            <select className="selector" value={selectedCampaignId} onChange={(event) => setSelectedCampaignId(event.target.value)} aria-label="Campaña activa">
+              {campaigns.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}
+            </select>
+          </div>
         </section>
       ) : null}
 
       {selectedCampaign ? (
         <>
-          <section className="section card card-body">
-            <div className="metrics" style={{ marginTop: 0 }}>
-              <Metric value={formatKg(summary?.totalKilograms)} label="kilos" />
-              <Metric value={formatPercent(summary?.weightedYieldPercent)} label="rendimiento" />
+          <section className="campaign-detail-card" aria-labelledby="campaign-detail-title">
+            <div>
+              <p className="eyebrow">Campaña</p>
+              <h2 id="campaign-detail-title">{selectedCampaign.name}</h2>
+              <p>{selectedHolding?.name ?? 'Explotación activa'}</p>
             </div>
+            <div className="campaign-summary-grid" aria-label={`Resumen de ${selectedCampaign.name}`}>
+              <div><span>Aceituna entregada</span><strong>{formatKg(summary?.totalKilograms)}</strong></div>
+              <div><span>Rendimiento medio</span><strong>{formatPercent(summary?.weightedYieldPercent)}</strong></div>
+              <div><span>Entregas</span><strong>{summary?.deliveriesCount ?? 0}</strong></div>
+              <div><span>Pendientes de rendimiento</span><strong>{summary?.pendingResultCount ?? 0}</strong></div>
+            </div>
+            <p className="campaign-coverage">Cobertura de rendimiento · {formatPercent(summary?.coveragePercent)}</p>
           </section>
 
           {selectedHolding ? (
@@ -440,9 +451,9 @@ function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelect
           ) : null}
 
           <section className="section">
-            <div className="section-heading"><div><h2 className="section-title">Entregas</h2><p className="section-copy">{deliveries.length} registradas en esta campaña.</p></div></div>
+            <div className="section-heading"><div><p className="eyebrow page-eyebrow">Campaña · {selectedCampaign.name}</p><h2 className="section-title">Entregas</h2><p className="section-copy">{deliveries.length} registradas en esta campaña.</p></div></div>
             {deliveries.map((delivery) => (
-              <article className="card delivery-row" key={delivery.id}>
+              <article className="card delivery-row delivery-list-card" key={delivery.id}>
                 <div>
                   <div className="delivery-kilos">{formatKg(delivery.kilograms)}</div>
                   <div className="delivery-date">{new Date(delivery.deliveredAt).toLocaleDateString('es-ES')} · {delivery.customDestination || 'Cooperativa'}{delivery.ticketNumber ? ` · Ticket ${delivery.ticketNumber}` : ''}</div>
@@ -453,7 +464,7 @@ function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelect
                 </div>
               </article>
             ))}
-            {!deliveries.length ? <EmptyState title="Aún no hay entregas">Registra la primera cuando lleves aceituna a la almazara.</EmptyState> : null}
+            {!deliveries.length ? <EmptyState title="Aún no hay entregas.">Registra la primera cuando lleves aceituna a la almazara.</EmptyState> : null}
           </section>
           {selectedHolding ? <CampaignDocuments holdingId={selectedHolding.id} campaignId={selectedCampaign.id} deliveries={deliveries} /> : null}
         </>
@@ -520,7 +531,7 @@ function CreatePlotCard({ farmId, busy, runAction, onCreated }: { farmId: string
 
 function CreateCampaignCard({ holdingId, busy, runAction, onCreated }: { holdingId: string; busy: boolean; runAction: ActionRunner; onCreated: () => Promise<void> }) {
   const year = new Date().getFullYear();
-  return <FormCard title="Crear campaña" submitLabel="Abrir campaña" busy={busy} onSubmit={(form) => runAction(async () => {
+  return <FormCard title="Crear campaña" submitLabel="Crear campaña" busy={busy} onSubmit={(form) => runAction(async () => {
     const seasonStartYear = Number(form.get('seasonStartYear') || year);
     await api.createCampaign(holdingId, { name: String(form.get('name') || '').trim(), seasonStartYear });
     await onCreated();

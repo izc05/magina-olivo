@@ -38,3 +38,23 @@ test('farm detail and plots remain a local visual layer over the existing privat
   assert.match(app, /<FieldNotebook holdingId=\{selectedHolding\.id\} farmId=\{selectedFarm\.id\} plots=\{plots\} \/>/);
   assert.doesNotMatch(app, /boundaryGeoJson|<polygon/);
 });
+
+test('campaign and delivery composition preserves its private and offline workflow', async () => {
+  const app = await source('./App.tsx');
+  const delivery = await source('./DeliveryEntryCard.tsx');
+
+  assert.match(app, /selectedCampaignId/);
+  assert.match(app, /summary\?\.totalKilograms/);
+  assert.match(app, /summary\?\.weightedYieldPercent/);
+  assert.match(app, /summary\?\.pendingResultCount/);
+  assert.match(app, /Aún no tienes una campaña creada\./);
+  assert.match(app, /entry\?\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(app, /<CampaignDocuments holdingId=\{selectedHolding\.id\} campaignId=\{selectedCampaign\.id\} deliveries=\{deliveries\} \/>/);
+  assert.match(delivery, /crypto\.randomUUID\(\)/);
+  assert.match(delivery, /api\.createDelivery\(campaignId, body, clientGeneratedId\)/);
+  assert.match(delivery, /'offlineQueued' in result/);
+  assert.match(delivery, /api\.plots\(farmId\)/);
+  assert.match(delivery, /canonicalDestination.*cooperativeId/s);
+  assert.match(delivery, /uploadDeliveryTicket/);
+  assert.match(delivery, /tabIndex=\{-1\}/);
+});

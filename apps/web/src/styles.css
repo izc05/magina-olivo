@@ -203,6 +203,7 @@ a { color: inherit; }
 }
 .nav-button { min-height: 55px; border: 0; border-radius: 16px; background: transparent; color: var(--muted); font-size: .72rem; font-weight: 800; }
 .nav-button span { display: block; font-size: 1.1rem; line-height: 1.2; margin-bottom: 2px; }
+.nav-button svg { display: block; width: 19px; height: 19px; margin: 0 auto 3px; }
 .nav-button.active { background: var(--olive-950); color: #fff; }
 
 .login-shell { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at 75% 10%, rgba(212,160,23,.18), transparent 30%), var(--ivory); }

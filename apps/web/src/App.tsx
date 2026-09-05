@@ -269,18 +269,24 @@ export function App({ initialTab = 'home' }: { initialTab?: Tab }) {
       </main>
 
       <nav className="bottom-nav bottom-nav-v2" aria-label="Navegación principal">
-        <NavButton active={tab === 'home'} icon="⌂" label="Inicio" onClick={() => setTab('home')} />
-        <NavButton active={tab === 'field'} icon="◒" label="Mi Campo" onClick={() => setTab('field')} />
+        <NavButton active={tab === 'home'} icon="home" label="Inicio" onClick={() => setTab('home')} />
+        <NavButton active={tab === 'field'} icon="field" label="Mi Campo" onClick={() => setTab('field')} />
         <button type="button" className="nav-plus" onClick={() => setTab('campaign')} aria-label="Registrar una entrega"><span aria-hidden="true">+</span></button>
-        <NavButton active={tab === 'magina'} icon="◇" label="Mágina" onClick={() => setTab('magina')} />
-        <NavButton active={tab === 'more'} icon="•••" label="Mi Mágina" onClick={() => setTab('more')} />
+        <NavButton active={tab === 'magina'} icon="magina" label="Mágina" onClick={() => setTab('magina')} />
+        <NavButton active={tab === 'more'} icon="profile" label="Mi Mágina" onClick={() => setTab('more')} />
       </nav>
     </div>
   );
 }
 
-function NavButton({ active, icon, label, onClick }: { active: boolean; icon: string; label: string; onClick: () => void }) {
-  return <button type="button" className={`nav-button${active ? ' active' : ''}`} onClick={onClick} aria-current={active ? 'page' : undefined}><span aria-hidden="true">{icon}</span>{label}</button>;
+function NavButton({ active, icon, label, onClick }: { active: boolean; icon: 'home' | 'field' | 'magina' | 'profile'; label: string; onClick: () => void }) {
+  const paths = {
+    home: <><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10Z" /><path d="M9 21v-6h6v6" /></>,
+    field: <><path d="M4 20c7 0 13-4 16-14-8 1-14 6-16 14Z" /><path d="M4 20c3-5 7-8 12-11" /></>,
+    magina: <><path d="m3 19 6-8 4 5 3-4 5 7H3Z" /><path d="M14 5h.01" /></>,
+    profile: <><circle cx="12" cy="8" r="3" /><path d="M5 21c.7-4 3-6 7-6s6.3 2 7 6" /></>,
+  }[icon];
+  return <button type="button" className={`nav-button${active ? ' active' : ''}`} onClick={onClick} aria-current={active ? 'page' : undefined}><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths}</svg>{label}</button>;
 }
 
 function HomeTab({ holding, campaign, summary, coverage, onNavigate }: { holding: Holding | null; campaign: Campaign | null; summary: CampaignSummary | null; coverage: number; onNavigate: (tab: Tab) => void }) {

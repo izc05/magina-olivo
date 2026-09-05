@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { getPool } from './db.ts';
 import { apiError } from './http-errors.ts';
+import { awardLoyaltyBestEffort } from './loyalty-business-awards.ts';
+import { yieldRecordedLoyaltyAward } from './loyalty-business-policy.ts';
 import { getAuthenticatedSession } from './session.ts';
 
 type DeliveryParams = { deliveryId: string };
@@ -174,6 +176,11 @@ export function registerDeliveryResultRoutes(app: FastifyInstance): void {
         await client.query('commit');
         const row = inserted.rows[0];
         if (!row) throw new Error('Delivery result insert returned no row');
+
+        await awardLoyaltyBestEffort(
+          yieldRecordedLoyaltyAward(session.user.id, request.params.deliveryId, row.id),
+          'delivery_result.create',
+        );
 
         return reply.code(201).send({
           id: row.id,

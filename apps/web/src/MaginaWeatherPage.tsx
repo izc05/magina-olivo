@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { PublicHeader } from './publicNavigation';
 import { WeatherRainAlertSummary } from './WeatherRainAlertSummary';
 import './weather-radar.css';
 
@@ -242,13 +243,7 @@ export function MaginaWeatherPage() {
 
   return (
     <main className="weather-shell" id="main-content">
-      <header className="directory-header">
-        <a className="directory-brand" href="/" aria-label="Volver a Mágina Olivo">
-          <img src="/brand/magina-olivo-mark.svg" alt="" />
-          <span><strong>Mágina Olivo</strong><small>Sierra Mágina · Jaén</small></span>
-        </a>
-        <a className="directory-back" href="/">Volver a la aplicación</a>
-      </header>
+      <PublicHeader />
 
       <section className="weather-hero" aria-labelledby="weather-title">
         <p className="eyebrow">Mágina · Tiempo</p>

@@ -1,23 +1,23 @@
-name: Mágina Olivo integration preview validation
+name: Mágina Olivo convergence preview validation
 
 on:
   push:
     branches:
-      - feat/integration-v2-mvp-v1
+      - feat/pre-minipc-convergence-v1
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: magina-olivo-integration-preview-validation
+  group: magina-olivo-convergence-pages
   cancel-in-progress: true
 
 jobs:
-  build:
+  validate:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout convergence branch
         uses: actions/checkout@v6
 
       - name: Setup Node
@@ -27,7 +27,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-audit --no-fund
 
       - name: Typecheck workspaces
         run: npm run typecheck
@@ -35,11 +35,11 @@ jobs:
       - name: Run unit tests
         run: npm test
 
-      - name: Build integration preview
+      - name: Build isolated demo preview
         env:
           VITE_BASE_PATH: /magina-olivo/
           VITE_DEMO_MODE: "true"
         run: npm run build --workspace @magina/web
 
-      - name: Keep integration preview off public Pages
-        run: echo "Public GitHub Pages is reserved for the original Visual V2 review app."
+      - name: Keep convergence off public Pages
+        run: echo "Canonical public GitHub Pages remains reserved for the original Visual V2 review app."

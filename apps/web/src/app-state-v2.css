@@ -1,0 +1,134 @@
+.loading-screen {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 16px;
+  padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at 82% 8%, rgba(201, 155, 44, .13), transparent 23rem),
+    radial-gradient(circle at 8% 92%, rgba(86, 111, 67, .09), transparent 26rem),
+    #f5f0e4;
+  color: #2f3b27;
+  font-weight: 850;
+  text-align: center;
+}
+
+.loading-screen::before {
+  content: "";
+  width: 66px;
+  height: 66px;
+  display: block;
+  background: var(--magina-brand-logo) center / contain no-repeat;
+  filter: drop-shadow(0 10px 18px rgba(47, 59, 39, .12));
+}
+
+.loading-screen::after {
+  content: "";
+  width: 72px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(86, 111, 67, .18), #566f43, rgba(201, 155, 44, .42));
+  transform-origin: left center;
+  animation: magina-state-progress 1.05s ease-in-out infinite alternate;
+}
+
+.alert {
+  position: relative;
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(99, 48, 37, .06);
+  line-height: 1.45;
+}
+
+.alert[role="alert"] {
+  padding-left: 42px;
+}
+
+.alert[role="alert"]::before {
+  content: "!";
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(154, 61, 47, .12);
+  color: #743126;
+  font-size: .72rem;
+  font-weight: 900;
+}
+
+.alert.success[role="status"] {
+  padding-left: 42px;
+}
+
+.alert.success[role="status"]::before {
+  content: "✓";
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(92, 122, 70, .13);
+  color: #435637;
+  font-size: .72rem;
+  font-weight: 900;
+}
+
+.empty-state {
+  border-style: dashed;
+  border-color: rgba(86, 111, 67, .24);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(201, 155, 44, .08), transparent 13rem),
+    rgba(255, 253, 248, .84);
+}
+
+.empty-state::before {
+  content: "○";
+  display: block;
+  margin-bottom: 8px;
+  color: #a0853f;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+@keyframes magina-state-progress {
+  from { transform: scaleX(.38); opacity: .55; }
+  to { transform: scaleX(1); opacity: 1; }
+}
+
+@media (max-width: 520px) {
+  .loading-screen {
+    gap: 14px;
+    font-size: .94rem;
+  }
+
+  .loading-screen::before {
+    width: 58px;
+    height: 58px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-screen::after {
+    animation: none;
+    transform: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .loading-screen::before {
+    filter: none;
+  }
+
+  .loading-screen::after {
+    background: Highlight;
+  }
+}

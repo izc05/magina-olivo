@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { getCampaignAccess } from './authorization.ts';
 import { buildCampaignCsv, type CampaignExportDelivery } from './campaign-export-format.ts';
+import { buildCampaignHarvestReportPdf } from './campaign-harvest-report.ts';
 import { getPool } from './db.ts';
 import { apiError } from './http-errors.ts';
 import { getAuthenticatedSession } from './session.ts';
@@ -61,7 +62,7 @@ type CampaignExportPayload = {
   deliveries: CampaignExportDelivery[];
 };
 
-function safeFilename(startYear: number, endYear: number, extension: 'csv' | 'json'): string {
+function safeFilename(startYear: number, endYear: number, extension: 'csv' | 'json' | 'pdf'): string {
   return `magina-olivo-campana-${startYear}-${String(endYear).slice(-2)}.${extension}`;
 }
 
@@ -216,6 +217,28 @@ export function registerCampaignExportRoutes(app: FastifyInstance): void {
       );
       reply.type('text/csv; charset=utf-8');
       return reply.send(buildCampaignCsv(payload.deliveries));
+    },
+  );
+
+  app.get<{ Params: CampaignParams }>(
+    '/api/v1/campaigns/:campaignId/export.pdf',
+    async (request, reply) => {
+      const session = await getAuthenticatedSession(request);
+      if (!session) {
+        return reply.code(401).send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
+      }
+
+      const payload = await loadCampaignExport(session.user.id, request.params.campaignId);
+      if (!payload) {
+        return reply.code(404).send(apiError(request, 'CAMPAIGN_NOT_FOUND', 'Campaign not found'));
+      }
+
+      privateDownloadHeaders(
+        reply,
+        safeFilename(payload.campaign.seasonStartYear, payload.campaign.seasonEndYear, 'pdf'),
+      );
+      reply.type('application/pdf');
+      return reply.send(buildCampaignHarvestReportPdf(payload));
     },
   );
 }

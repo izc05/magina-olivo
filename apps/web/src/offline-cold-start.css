@@ -1,8 +1,9 @@
 .offline-start-shell {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: max(24px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
   background:
     radial-gradient(circle at 80% 8%, rgba(212, 160, 23, .13), transparent 28%),
     #f4f1e6;
@@ -77,4 +78,27 @@
   font-size: .7rem;
   line-height: 1.45;
   text-align: center;
+}
+
+@media (max-width: 520px) {
+  .offline-start-shell {
+    place-items: stretch;
+    padding: 0;
+  }
+
+  .offline-start-card {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 0;
+    border-radius: 0;
+    padding: max(28px, env(safe-area-inset-top)) 22px max(28px, env(safe-area-inset-bottom));
+    box-shadow: none;
+  }
+
+  .offline-start-button {
+    min-height: 52px;
+  }
 }

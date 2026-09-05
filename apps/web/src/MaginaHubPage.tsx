@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { PublicHeader } from './publicNavigation';
 
 type PublicSource = {
   key: string;
@@ -38,13 +39,7 @@ export function MaginaHubPage() {
 
   return (
     <main className="magina-hub-shell" id="main-content">
-      <header className="directory-header">
-        <a className="directory-brand" href="/" aria-label="Volver a Mágina Olivo">
-          <img src="/brand/magina-olivo-mark.svg" alt="" />
-          <span><strong>Mágina Olivo</strong><small>Sierra Mágina · Jaén</small></span>
-        </a>
-        <a className="directory-back" href="/">Mi Mágina Olivo</a>
-      </header>
+      <PublicHeader backLabel="Mi Mágina Olivo" />
 
       <section className="magina-hub-hero" aria-labelledby="magina-hub-title">
         <p className="eyebrow">Mágina</p>

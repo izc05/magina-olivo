@@ -1,6 +1,14 @@
 .bottom-nav.bottom-nav-v2 {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: center;
+  padding-bottom: max(7px, env(safe-area-inset-bottom));
+}
+
+.bottom-nav-v2 .nav-button {
+  min-width: 0;
+  padding-inline: 3px;
+  line-height: 1.1;
+  white-space: normal;
 }
 
 .nav-plus {
@@ -37,13 +45,43 @@
   margin-bottom: 14px;
 }
 
+@media (max-width: 520px) {
+  .bottom-nav.bottom-nav-v2 {
+    width: calc(100% - 14px);
+    bottom: max(7px, env(safe-area-inset-bottom));
+    padding-inline: 5px;
+  }
+
+  .bottom-nav-v2 .nav-button {
+    min-height: 52px;
+    font-size: .66rem;
+  }
+
+  .bottom-nav-v2 .nav-button span {
+    font-size: 1rem;
+  }
+}
+
 @media (max-width: 390px) {
-  .nav-button {
-    font-size: .64rem;
+  .bottom-nav-v2 .nav-button {
+    font-size: .61rem;
+    letter-spacing: -.01em;
   }
 
   .nav-plus {
-    width: 50px;
-    height: 50px;
+    width: 48px;
+    height: 48px;
+  }
+}
+
+@media (max-width: 340px) {
+  .bottom-nav-v2 .nav-button {
+    font-size: .58rem;
+  }
+
+  .nav-plus {
+    width: 44px;
+    height: 44px;
+    font-size: 1.7rem;
   }
 }

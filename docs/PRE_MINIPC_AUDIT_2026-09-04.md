@@ -99,6 +99,39 @@ El proyecto no está corto de funcionalidad: gran parte de la lógica real ya ex
 
 Solo entonces congelar una revisión única como `mini-pc-candidate-v1`, ejecutar CI completo y proceder a instalación de prueba.
 
+## Estado de convergencia — corte 2026-09-04
+
+Este bloque no sustituye la matriz original; registra qué líneas P0 ya han sido llevadas a la aplicación convergente y qué comprobaciones siguen abiertas antes de congelar el candidato.
+
+### P0 ya convergido en código
+
+- **Inicio Visual V2:** usa explotación, campaña, kilos, rendimiento, cobertura, AEMET, alertas, noticias y la referencia real de mercado mediante API; no utiliza valores privados demo como fuente de verdad.
+- **Mi Campo / parcelas / mapa / cuaderno:** holdings, fincas, parcelas, editor de perímetro y cuaderno están conectados a los flujos reales; la simulación queda limitada a `VITE_DEMO_MODE` para la preview.
+- **Campaña:** entregas y rendimientos reales están dentro de la capa Visual V2, manteniendo idempotencia, estados pendientes y cálculo ponderado del backend.
+- **Documentos:** subida, listado, descarga privada y asociación a entregas están integrados. La campaña puede exportarse en PDF, CSV y JSON; el PDF resume cosecha por finca y parcela sin estimar rendimientos pendientes.
+- **Tareas / calendario:** alta, prioridades, recordatorios, vencidas y completar tarea usan la API real y respetan permisos de solo lectura.
+- **Meteorología / radar / lluvia:** predicción municipal AEMET, frescura, fallback acotado, radar animado y alarma de lluvia comparten la misma experiencia.
+- **Alertas de campo:** RAIF permanece como fuente pública con control de frescura y sin convertir información regional en diagnóstico de parcela.
+- **Noticias:** solo se presentan metadatos verificados, fecha, tema y enlace original; se han añadido búsqueda, filtro por tema, estado vacío y reintento.
+- **Mercado del aceite:** endpoint público server-side sobre el Observatorio de Precios y Mercados de la Junta, con Virgen Extra, Virgen y Lampante en semanas sincronizadas, gráfica diferenciada, fecha/frescura, caché degradada limitada y separación explícita entre referencia de mercado y liquidación individual.
+- **Cooperativas / almazaras:** directorio público con filtros, web/fuente y estados `verified / unverified / stale`; aparecer en el directorio no implica colaboración ni acceso a datos privados.
+- **Mi Mágina / Mi Cuenta:** perfil, preferencias, avisos, cooperativa habitual, privacidad, copia estructurada de datos y cierre de sesión están integrados.
+- **Offline / PWA:** outbox real, bloqueo de cierre con trabajo pendiente, reintento al recuperar conectividad, sincronización al arranque y estados móviles de pendiente/error están integrados.
+- **Carga / error / vacío:** existe una capa Visual V2 común con accesibilidad, `prefers-reduced-motion`, contraste forzado y safe areas móviles.
+
+### Comprobaciones que siguen abiertas antes de `mini-pc-candidate-v1`
+
+1. **Preview final revisable por el propietario:** publicar un único corte demo aislado de la rama convergente y recorrerlo en móvil; no convertir la preview en producción ni permitir datos reales.
+2. **Auditoría final de botones y rutas:** recorrer navegación principal, accesos rápidos, formularios, descargas, enlaces públicos, reintentos y vuelta atrás para confirmar que no queda una acción principal muerta.
+3. **Smoke E2E de navegador:** los gates actuales cubren typecheck, pruebas unitarias/integración, API, migraciones, PWA, seguridad, contenedores y deploy/rollback, pero el criterio de salida exige además un recorrido real de navegador antes del freeze.
+4. **Revisión responsive final:** Android móvil, anchuras estrechas, teclado abierto, safe areas, overlays de sincronización, calendario, mapa, gráfica de mercado y documentos.
+5. **Backup / restore en el Mini PC:** los scripts y guards deben pasar además sobre el equipo de prueba, con evidencia del restore antes de considerar el candidato instalable.
+6. **Freeze trazable:** solo cuando lo anterior esté verde, fijar un SHA único como `mini-pc-candidate-v1`; no seguir añadiendo funcionalidades P1/P2 dentro de ese candidato.
+
+### Fuera del bloqueo del primer Mini PC
+
+Costes/rentabilidad, maquinaria, Mágina Local ampliado, Descubre, Agenda, Comunidad, favoritos/guardados y push externo permanecen como P1/P2 salvo que una revisión posterior demuestre que alguno es imprescindible para el flujo piloto. No deben retrasar el cierre P0 ni volver a ampliar el alcance antes de la primera instalación.
+
 ## Regla de trabajo desde esta auditoría
 
 Todo desarrollo nuevo que afecte al usuario debe responder a una fila de esta matriz. No abrir una tercera interfaz ni duplicar lógica. Primero converger y cerrar lo que ya está diseñado.

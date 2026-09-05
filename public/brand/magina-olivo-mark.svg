@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140" role="img" aria-labelledby="title desc">
+  <title id="title">Mágina Olivo</title>
+  <desc id="desc">Rama de olivo, paisaje de Sierra Mágina y gota dorada de aceite.</desc>
+  <path d="M54 118C31 107 18 87 20 60c13 14 28 23 47 26-3 12-7 23-13 32Z" fill="#A7B497"/>
+  <path d="M23 94c20-16 41-24 66-24-14 11-24 23-30 38-12-1-24-6-36-14Z" fill="#F4F1E6" opacity=".92"/>
+  <path d="M22 48C43 42 57 27 68 6c4 27-4 48-24 65" fill="none" stroke="#2E3A22" stroke-width="6" stroke-linecap="round"/>
+  <ellipse cx="34" cy="35" rx="8" ry="16" transform="rotate(-38 34 35)" fill="#5C7A46"/>
+  <ellipse cx="53" cy="23" rx="7" ry="14" transform="rotate(18 53 23)" fill="#5C7A46"/>
+  <ellipse cx="70" cy="40" rx="8" ry="15" transform="rotate(55 70 40)" fill="#5C7A46"/>
+  <ellipse cx="46" cy="51" rx="10" ry="13" transform="rotate(-20 46 51)" fill="#2E3A22"/>
+  <ellipse cx="64" cy="54" rx="9" ry="12" transform="rotate(20 64 54)" fill="#2E3A22"/>
+  <path d="M91 52c16 25 17 39 2 54-16-14-14-28-2-54Z" fill="#D4A017"/>
+  <path d="M91 68c6 10 7 17 2 23" fill="none" stroke="#F4F1E6" stroke-width="4" stroke-linecap="round" opacity=".9"/>
+  <path d="M21 96c20 15 41 20 63 17" fill="none" stroke="#2E3A22" stroke-width="5" stroke-linecap="round"/>
+</svg>

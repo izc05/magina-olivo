@@ -1,0 +1,89 @@
+.news-hero-card__image {
+  background-image: url('/photos/field-olivares-magina.webp');
+  background-position: center 56%;
+  background-size: cover;
+  color: transparent;
+}
+
+.news-hero-card__image svg {
+  display: none;
+}
+
+.news-hero-card__overlay {
+  background: linear-gradient(180deg, rgba(22, 30, 18, .08) 8%, rgba(22, 30, 18, .2) 45%, rgba(22, 30, 18, .82) 100%);
+}
+
+.story-row__image {
+  overflow: hidden;
+  background-position: center;
+  background-size: cover;
+  color: transparent;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .2);
+}
+
+.story-row__image svg {
+  display: none;
+}
+
+.story-list .story-row:nth-child(1) .story-row__image {
+  background-image: url('/photos/home-sierra-magina.webp');
+}
+
+.story-list .story-row:nth-child(2) .story-row__image {
+  background-image: url('/photos/discover-jimena.webp');
+}
+
+.news-hero-card__copy h2 {
+  max-width: 620px;
+  text-wrap: balance;
+}
+
+.news-hero-card__copy small {
+  color: rgba(255, 255, 255, .82);
+}
+
+@media (max-width: 430px) {
+  .news-hero-card {
+    min-height: 238px;
+  }
+
+  .news-hero-card__copy {
+    right: 14px;
+    bottom: 14px;
+    left: 14px;
+  }
+
+  .news-hero-card__copy h2 {
+    font-size: 23px;
+  }
+
+  .hub-tabs--primary {
+    gap: 3px;
+    padding: 4px;
+  }
+
+  .hub-tabs--primary .hub-tab {
+    min-width: 0;
+    min-height: 40px;
+    padding: 0 1px;
+    font-size: 8.5px;
+    letter-spacing: -.03em;
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 820px) {
+  .news-hero-card {
+    min-height: 330px;
+  }
+
+  .news-hero-card__copy {
+    right: 24px;
+    bottom: 22px;
+    left: 24px;
+  }
+
+  .news-hero-card__copy h2 {
+    font-size: 31px;
+  }
+}

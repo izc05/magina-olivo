@@ -1,0 +1,54 @@
+name: Visual V2 build
+
+on:
+  push:
+    branches:
+      - feat/visual-v2-foundation
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Generate approved photography
+        run: npm run photos:sync
+
+      - name: Typecheck and build
+        run: npm run build
+
+      - name: Responsive smoke test
+        run: npm run test:responsive
+
+      - name: Navigation layout smoke
+        run: node scripts/navigation-layout-smoke.mjs
+
+      - name: Upload responsive captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: responsive-captures
+          path: artifacts/responsive
+          if-no-files-found: warn
+          retention-days: 14

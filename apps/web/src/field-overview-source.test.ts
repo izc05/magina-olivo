@@ -42,6 +42,7 @@ test('farm detail and plots remain a local visual layer over the existing privat
 test('campaign and delivery composition preserves its private and offline workflow', async () => {
   const app = await source('./App.tsx');
   const delivery = await source('./DeliveryEntryCard.tsx');
+  const documents = await source('./CampaignDocuments.tsx');
 
   assert.match(app, /selectedCampaignId/);
   assert.match(app, /summary\?\.totalKilograms/);
@@ -57,4 +58,15 @@ test('campaign and delivery composition preserves its private and offline workfl
   assert.match(delivery, /canonicalDestination.*cooperativeId/s);
   assert.match(delivery, /uploadDeliveryTicket/);
   assert.match(delivery, /tabIndex=\{-1\}/);
+  assert.match(documents, /listCampaignDocuments\(holdingId, campaignId\)/);
+  assert.match(documents, /privateDocumentContentUrl\(document\.id\)/);
+  assert.match(documents, /Cargando archivo privado…/);
+  assert.match(documents, /Aún no hay documentos/);
+  assert.match(documents, /Los tickets que adjuntes a una entrega aparecerán aquí automáticamente\./);
+  assert.match(documents, /role="alert"/);
+  assert.match(documents, /aria-busy=\{loading\}/);
+  assert.match(documents, /aria-hidden="true"/);
+  assert.doesNotMatch(documents, /▤/);
+  assert.match(documents, /Para hoja de cálculo/);
+  assert.match(documents, /Copia completa estructurada/);
 });

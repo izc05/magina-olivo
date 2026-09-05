@@ -71,11 +71,11 @@ export function CampaignDocuments({
     <section className="section campaign-documents" aria-labelledby="campaign-documents-title">
       <div className="section-heading campaign-documents-heading">
         <div>
-          <p className="eyebrow page-eyebrow">Archivo privado</p>
+          <p className="eyebrow page-eyebrow">DOCUMENTOS</p>
           <h2 id="campaign-documents-title" className="section-title">Tickets y documentos</h2>
           <p className="section-copy">Archivos vinculados a las entregas de esta campaña.</p>
         </div>
-        <span className="badge gold">{documents.length}</span>
+        <span className="badge gold" aria-label={`${documents.length} archivos`}>{documents.length} archivos</span>
       </div>
 
       <div className="card card-body" aria-labelledby="campaign-export-title">
@@ -83,8 +83,8 @@ export function CampaignDocuments({
         <h3 id="campaign-export-title" className="section-title form-card-title">Exportar campaña</h3>
         <p className="section-copy">Descarga tus entregas, destinos, fincas, parcelas y rendimientos. CSV sirve para hoja de cálculo; JSON conserva la estructura completa.</p>
         <div className="form-actions">
-          <a className="text-button" href={`/api/v1/campaigns/${campaignId}/export.csv`}>Descargar CSV</a>
-          <a className="text-button" href={`/api/v1/campaigns/${campaignId}/export.json`}>Descargar JSON</a>
+          <a className="campaign-export-link text-button" href={`/api/v1/campaigns/${campaignId}/export.csv`} aria-label="Descargar CSV para hoja de cálculo"><strong>CSV</strong><span>Para hoja de cálculo</span></a>
+          <a className="campaign-export-link text-button" href={`/api/v1/campaigns/${campaignId}/export.json`} aria-label="Descargar JSON, copia completa estructurada"><strong>JSON</strong><span>Copia completa estructurada</span></a>
         </div>
       </div>
 
@@ -93,7 +93,9 @@ export function CampaignDocuments({
       <div className="campaign-document-list" aria-busy={loading}>
         {documents.map((document) => (
           <article className="card campaign-document-row" key={document.id}>
-            <div className="campaign-document-icon" aria-hidden="true">▤</div>
+            <div className="campaign-document-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M6 3.75h8.2L18 7.55v12.7H6z"/><path d="M14 3.75v4h4M8.5 12h7M8.5 15.5h5"/></svg>
+            </div>
             <div className="campaign-document-copy">
               <div className="campaign-document-topline">
                 <strong>{document.filename}</strong>
@@ -102,7 +104,7 @@ export function CampaignDocuments({
               <p>{deliveryLine(document)}</p>
               <small>{formatBytes(document.sizeBytes)} · {new Date(document.createdAt).toLocaleDateString('es-ES')}</small>
             </div>
-            <a className="campaign-document-download" href={privateDocumentContentUrl(document.id)}>Descargar</a>
+            <a className="campaign-document-download" href={privateDocumentContentUrl(document.id)} aria-label={`Descargar ${document.filename}`}>Descargar</a>
           </article>
         ))}
 

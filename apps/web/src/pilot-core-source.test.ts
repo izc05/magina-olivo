@@ -15,7 +15,7 @@ test('pilot core keeps the complete grower journey wired end to end', async () =
   const resultRoutes = await read('../../api/src/delivery-result-routes.ts');
   const summaryRoutes = await read('../../api/src/campaign-summary-routes.ts');
 
-  assert.match(app, /Crear explotación/);
+  assert.match(app, /Crea tu explotación/);
   assert.match(app, /Añadir finca/);
   assert.match(app, /Añadir parcela/);
   assert.match(app, /Crear campaña/);

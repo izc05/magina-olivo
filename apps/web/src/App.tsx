@@ -325,21 +325,28 @@ function Metric({ value, label }: { value: string; label: string }) {
 function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarmId, plots, busy, setSelectedFarmId, runAction, reloadHoldings, reloadHoldingData, reloadPlots }: { holdings: Holding[]; selectedHolding: Holding | null; farms: Farm[]; selectedFarm: Farm | null; selectedFarmId: string; plots: Plot[]; busy: boolean; setSelectedFarmId: (id: string) => void; runAction: ActionRunner; reloadHoldings: () => Promise<void>; reloadHoldingData: () => Promise<void>; reloadPlots: () => Promise<void> }) {
   return (
     <>
-      <PageIntro eyebrow="Mi Campo" title="Fincas y parcelas" copy="Tu estructura agrícola es la base de todo el histórico." />
+      <PageIntro eyebrow="Mi Campo" title="Mis fincas" copy="Gestiona tus fincas, parcelas y campañas desde un único lugar." />
       {holdings.length === 0 ? <CreateHoldingCard busy={busy} runAction={runAction} onCreated={reloadHoldings} /> : null}
       {selectedHolding ? (
         <>
+          <section className="card field-holding-context" aria-label="Explotación activa">
+            <div>
+              <p className="eyebrow">Explotación activa</p>
+              <h2>{selectedHolding.name}</h2>
+              <p>{[selectedHolding.municipality, selectedHolding.province].filter(Boolean).join(' · ') || 'Ubicación pendiente'}</p>
+            </div>
+          </section>
           <section className="section">
-            <div className="section-heading"><div><h2 className="section-title">Fincas</h2><p className="section-copy">{selectedHolding.municipality || 'Sierra Mágina'}{selectedHolding.province ? ` · ${selectedHolding.province}` : ''}</p></div></div>
+            <div className="section-heading"><div><h2 className="section-title">Mis fincas</h2><p className="section-copy">Selecciona una finca para continuar con sus parcelas.</p></div></div>
             {farms.map((farm) => (
-              <button key={farm.id} type="button" className="card list-card interactive" style={{ width: '100%', textAlign: 'left' }} onClick={() => setSelectedFarmId(farm.id)} aria-pressed={farm.id === selectedFarmId}>
-                <div className="list-card-main"><p className="list-card-title">{farm.name}</p><p className="list-card-meta">{farm.areaHa ? `${farm.areaHa} ha` : 'Superficie pendiente'}</p></div>
-                <span className={`badge${farm.id === selectedFarmId ? ' gold' : ''}`}>{farm.id === selectedFarmId ? 'Activa' : 'Ver'}</span>
+              <button key={farm.id} type="button" className="card list-card interactive farm-list-card" onClick={() => setSelectedFarmId(farm.id)} aria-pressed={farm.id === selectedFarmId}>
+                <div className="list-card-main"><p className="list-card-title">{farm.name}</p><p className="list-card-meta">{farm.areaHa != null ? `${farm.areaHa} ha` : 'Superficie pendiente'}</p></div>
+                <span className={`badge${farm.id === selectedFarmId ? ' gold' : ''}`}>{farm.id === selectedFarmId ? 'Seleccionada' : 'Ver finca'}</span>
               </button>
             ))}
-            {!farms.length ? <EmptyState title="Añade tu primera finca">Después podrás dividirla en parcelas y asociar tus entregas.</EmptyState> : null}
+            {!farms.length ? <EmptyState title="Aún no has añadido ninguna finca.">Crea tu primera finca para empezar a organizar tus parcelas.</EmptyState> : null}
           </section>
-          <CreateFarmCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} />
+          <CreateFarmCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} firstFarm={farms.length === 0} />
         </>
       ) : null}
 
@@ -437,7 +444,7 @@ function EmptyState({ title, children }: { title: string; children: ReactNode })
 }
 
 function CreateHoldingCard({ busy, runAction, onCreated }: { busy: boolean; runAction: ActionRunner; onCreated: () => Promise<void> }) {
-  return <FormCard title="Crear explotación" submitLabel="Guardar explotación" busy={busy} onSubmit={(form) => runAction(async () => {
+  return <FormCard title="Crea tu explotación" submitLabel="Guardar explotación" busy={busy} onSubmit={(form) => runAction(async () => {
     const municipality = String(form.get('municipality') || '').trim();
     const body: { name: string; municipality?: string; province?: string } = { name: String(form.get('name') || '').trim(), province: 'Jaén' };
     if (municipality) body.municipality = municipality;
@@ -446,8 +453,8 @@ function CreateHoldingCard({ busy, runAction, onCreated }: { busy: boolean; runA
   })} fields={<><Field name="name" label="Nombre" placeholder="Mi explotación" required /><Field name="municipality" label="Municipio" placeholder="Bedmar, Huelma, Cambil…" /></>} />;
 }
 
-function CreateFarmCard({ holdingId, busy, runAction, onCreated }: { holdingId: string; busy: boolean; runAction: ActionRunner; onCreated: () => Promise<void> }) {
-  return <FormCard title="Añadir finca" submitLabel="Guardar finca" busy={busy} onSubmit={(form) => runAction(async () => {
+function CreateFarmCard({ holdingId, busy, runAction, onCreated, firstFarm = false }: { holdingId: string; busy: boolean; runAction: ActionRunner; onCreated: () => Promise<void>; firstFarm?: boolean }) {
+  return <FormCard title={firstFarm ? 'Añade tu primera finca' : 'Añadir finca'} submitLabel={firstFarm ? 'Añadir mi primera finca' : 'Guardar finca'} busy={busy} onSubmit={(form) => runAction(async () => {
     const area = String(form.get('areaHa') || '').trim();
     const body: { name: string; areaHa?: number } = { name: String(form.get('name') || '').trim() };
     if (area) body.areaHa = Number(area);

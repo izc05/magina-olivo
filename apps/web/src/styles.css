@@ -175,6 +175,12 @@ a { color: inherit; }
 
 .empty-state { padding: 28px 20px; text-align: center; color: var(--muted); }
 .empty-state strong { display: block; color: var(--olive-950); font-family: "Playfair Display", Georgia, serif; font-size: 1.25rem; margin-bottom: 6px; }
+.field-holding-context { margin-top: 20px; padding: 18px; }
+.field-holding-context .eyebrow { color: var(--olive-800); opacity: 1; }
+.field-holding-context h2 { margin: 0; color: var(--olive-950); font-family: "Playfair Display", Georgia, serif; font-size: 1.3rem; letter-spacing: -.02em; }
+.field-holding-context p:last-child { margin: 5px 0 0; color: var(--muted); font-size: .86rem; }
+.farm-list-card { width: 100%; min-height: 72px; border: 1px solid var(--line); text-align: left; }
+.farm-list-card[aria-pressed="true"] { border-color: var(--olive-650); background: rgba(92,122,70,.09); box-shadow: 0 0 0 2px rgba(92,122,70,.16); }
 .alert { padding: 13px 15px; border-radius: 14px; background: #fff1ee; border: 1px solid rgba(154,61,47,.18); color: #743126; font-size: .86rem; }
 .success { background: #eff5e8; border-color: rgba(92,122,70,.22); color: var(--olive-800); }
 

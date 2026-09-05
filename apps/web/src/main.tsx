@@ -1,6 +1,5 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { registerSW } from 'virtual:pwa-register';
 import { AccountPage } from './AccountPage';
 import { App } from './App';
 import { CalendarPage } from './CalendarPage';
@@ -15,6 +14,7 @@ import { MaginaWeatherPage } from './MaginaWeatherPage';
 import { NoticeCenter } from './NoticeCenter';
 import { OnboardingPage } from './OnboardingPage';
 import { PilotAlerts } from './PilotAlerts';
+import { PwaUpdatePrompt } from './PwaUpdatePrompt';
 import { RegisterPage } from './RegisterPage';
 import { RegistrationEntry } from './RegistrationEntry';
 import { ResetPassword } from './ResetPassword';
@@ -46,13 +46,6 @@ import './calendar.css';
 installDemoPreview();
 installWeatherDemoPreview();
 
-registerSW({
-  immediate: true,
-  onOfflineReady() {
-    console.info('Mágina Olivo app shell is available offline.');
-  },
-});
-
 const root = document.getElementById('root');
 if (!root) throw new Error('Root element not found');
 
@@ -82,36 +75,39 @@ if (basePath) {
 
 createRoot(root).render(
   <StrictMode>
-    {path === '/reset-password' ? (
-      <ResetPassword />
-    ) : path === '/register' ? (
-      <RegisterPage />
-    ) : path === '/onboarding' ? (
-      <OnboardingPage />
-    ) : path === '/cuenta' ? (
-      <AccountPage />
-    ) : path === '/calendario' ? (
-      <CalendarPage />
-    ) : path === '/magina' ? (
-      <MaginaHubPage />
-    ) : path === '/magina/directorio' ? (
-      <MaginaDirectoryPage />
-    ) : path === '/magina/tiempo' ? (
-      <MaginaWeatherPage />
-    ) : path === '/magina/campo' ? (
-      <MaginaFieldAlertsPage />
-    ) : path === '/magina/noticias' ? (
-      <MaginaNewsPage />
-    ) : path === '/magina/mercado' ? (
-      <MaginaMarketPage />
-    ) : (
-      <>
-        <ConnectivityStatus />
-        <NoticeCenter />
-        <PilotAlerts />
-        <RegistrationEntry />
-        <App />
-      </>
-    )}
+    <>
+      {path === '/reset-password' ? (
+        <ResetPassword />
+      ) : path === '/register' ? (
+        <RegisterPage />
+      ) : path === '/onboarding' ? (
+        <OnboardingPage />
+      ) : path === '/cuenta' ? (
+        <AccountPage />
+      ) : path === '/calendario' ? (
+        <CalendarPage />
+      ) : path === '/magina' ? (
+        <MaginaHubPage />
+      ) : path === '/magina/directorio' ? (
+        <MaginaDirectoryPage />
+      ) : path === '/magina/tiempo' ? (
+        <MaginaWeatherPage />
+      ) : path === '/magina/campo' ? (
+        <MaginaFieldAlertsPage />
+      ) : path === '/magina/noticias' ? (
+        <MaginaNewsPage />
+      ) : path === '/magina/mercado' ? (
+        <MaginaMarketPage />
+      ) : (
+        <>
+          <ConnectivityStatus />
+          <NoticeCenter />
+          <PilotAlerts />
+          <App />
+          <RegistrationEntry />
+        </>
+      )}
+      <PwaUpdatePrompt />
+    </>
   </StrictMode>,
 );

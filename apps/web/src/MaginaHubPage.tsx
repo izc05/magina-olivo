@@ -87,6 +87,13 @@ export function MaginaHubPage() {
           <p>Publicaciones del Observatorio con fecha visible y control de frescura antes de mostrar precios estructurados.</p>
           <strong>Ver contexto de mercado →</strong>
         </a>
+
+        <a className="card magina-hub-card ready magina-hub-card-territory" href="/descubre">
+          <span className="badge gold">Territorio</span>
+          <h2>Descubre Sierra Mágina</h2>
+          <p>Rutas, pueblos y cultura del olivar con contenidos locales claramente identificados.</p>
+          <strong>Explorar el territorio →</strong>
+        </a>
       </section>
 
       <section className="magina-source-section" aria-labelledby="source-health-title">

@@ -14,6 +14,7 @@ test('Mágina public hub links only to implemented public surfaces', async () =>
   assert.match(page, /href="\/magina\/campo"/);
   assert.match(page, /href="\/magina\/noticias"/);
   assert.match(page, /href="\/magina\/mercado"/);
+  assert.match(page, /href="\/descubre"/);
   assert.match(page, /RAIF/);
   assert.match(page, /Campo y alertas/);
   assert.match(page, /Noticias/);

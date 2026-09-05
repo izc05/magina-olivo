@@ -75,6 +75,10 @@
   background: rgba(255,253,247,.66);
 }
 
+.magina-hub-card-territory {
+  background: linear-gradient(145deg, rgba(92,122,70,.16), rgba(212,160,23,.12)), var(--paper);
+}
+
 .magina-source-section {
   margin-top: 42px;
 }

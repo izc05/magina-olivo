@@ -70,3 +70,24 @@ test('campaign and delivery composition preserves its private and offline workfl
   assert.match(documents, /Para hoja de cálculo/);
   assert.match(documents, /Copia completa estructurada/);
 });
+
+test('notebook and private hub keep real contracts while presenting the V2 hierarchy', async () => {
+  const notebook = await source('./FieldNotebook.tsx');
+  const app = await source('./App.tsx');
+
+  assert.match(notebook, /CUADERNO/);
+  assert.match(notebook, /Registra el trabajo realizado y consulta la historia de cada parcela\./);
+  assert.match(notebook, /Parcela activa:/);
+  assert.match(notebook, /<PlotMapPanel farmId=\{farmId\}/);
+  assert.match(notebook, /api\.createActivity\(holdingId, body\)/);
+  assert.match(notebook, /offlineQueued/);
+  assert.match(notebook, /api\.plotTimeline\(plotId\)/);
+  assert.match(notebook, /aria-pressed=\{timelineFilter === filter\}/);
+  assert.match(notebook, /Labor guardada en este móvil/);
+  assert.match(app, /MI MÁGINA/);
+  assert.match(app, /Cuenta y ajustes/);
+  assert.match(app, /href="\/cuenta"/);
+  assert.match(app, /href="\/calendario"/);
+  assert.match(app, /onSignOut/);
+  assert.doesNotMatch(app, /Biblia Visual V2/);
+});

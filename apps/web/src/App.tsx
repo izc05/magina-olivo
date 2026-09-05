@@ -476,10 +476,18 @@ function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelect
 function MoreTab({ user, holding, busy, onSignOut }: { user: User; holding: Holding | null; busy: boolean; onSignOut: () => void }) {
   return (
     <>
-      <PageIntro eyebrow="Mi Mágina" title="Cuenta y proyecto" />
-      <section className="section card card-body"><p className="list-card-title">{user.name || 'Agricultor'}</p><p className="list-card-meta">{user.email}</p>{holding ? <p className="list-card-meta">Explotación activa · {holding.name}</p> : null}</section>
-      <section className="section card card-body"><h2 className="section-title more-card-title">Identidad visual</h2><p className="section-copy">Esta rama usa la Biblia Visual V2. El logo gráfico aprobado se importará como activo único; aquí no se genera uno alternativo.</p></section>
-      <section className="section"><button className="ghost-button danger-button" type="button" onClick={onSignOut} disabled={busy}>Cerrar sesión</button></section>
+      <PageIntro eyebrow="MI MÁGINA" title="Cuenta y ajustes" copy="Tu espacio privado para revisar la cuenta, organizar tareas y cuidar tus datos." />
+      <section className="section card card-body more-profile-card" aria-labelledby="more-profile-title">
+        <h2 id="more-profile-title" className="section-title more-card-title">Tu perfil</h2>
+        <p className="list-card-title">{user.name || 'Agricultor'}</p>
+        <p className="list-card-meta">{user.email}</p>
+        {holding ? <p className="list-card-meta">Explotación activa · {holding.name}</p> : <p className="list-card-meta">Sin explotación activa</p>}
+      </section>
+      <section className="section more-links" aria-label="Accesos privados">
+        <a className="card more-link-card" href="/cuenta"><span><strong>Mi cuenta</strong><small>Perfil, preferencias y copia de datos</small></span><span aria-hidden="true">→</span></a>
+        <a className="card more-link-card" href="/calendario"><span><strong>Calendario</strong><small>Tareas y próximos trabajos</small></span><span aria-hidden="true">→</span></a>
+      </section>
+      <section className="section more-logout"><button className="ghost-button danger-button" type="button" onClick={onSignOut} disabled={busy}>Cerrar sesión</button></section>
     </>
   );
 }

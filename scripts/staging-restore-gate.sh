@@ -122,9 +122,10 @@ docker exec "$PG_CONTAINER" sh -c \
 ACTUAL_DB_MANIFEST="$(mktemp)"
 trap 'rm -f "$ACTUAL_DB_MANIFEST"; cleanup' EXIT
 
-docker exec "$PG_CONTAINER" sh -c '
-  export PGPASSWORD="$POSTGRES_PASSWORD"
-  psql -U "$POSTGRES_USER" -d '"$RESTORE_DB"' -At -F= <<'"'"'SQL'"'"'
+docker exec -i "$PG_CONTAINER" sh -c \
+  'export PGPASSWORD="$POSTGRES_PASSWORD"; exec psql -U "$POSTGRES_USER" -d "$1" -At -F=' \
+  sh "$RESTORE_DB" \
+  > "$ACTUAL_DB_MANIFEST" <<'SQL'
 select 'auth_users', count(*) from "user";
 select 'auth_sessions', count(*) from session;
 select 'holdings', count(*) from holdings;
@@ -142,7 +143,6 @@ select 'schema_migrations', count(*) from schema_migrations;
 select 'delivery_kilograms_sum', coalesce(to_char(sum(kilograms), 'FM999999999990.000'), '0.000') from deliveries;
 select 'current_yield_rows', count(*) from delivery_results where status='current';
 SQL
-' > "$ACTUAL_DB_MANIFEST"
 
 if ! diff -u "$BUNDLE/database-manifest.txt" "$ACTUAL_DB_MANIFEST"; then
   fail "restored PostgreSQL state differs from backup manifest"

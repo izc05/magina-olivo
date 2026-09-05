@@ -85,9 +85,9 @@ docker exec "$PG_CONTAINER" sh -c \
 chmod 600 "$BUNDLE/postgres.dump"
 
 log "Recording relational manifest for later restore verification"
-docker exec "$PG_CONTAINER" sh -c '
-  export PGPASSWORD="$POSTGRES_PASSWORD"
-  psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -F= <<'"'"'SQL'"'"'
+docker exec -i "$PG_CONTAINER" sh -c \
+  'export PGPASSWORD="$POSTGRES_PASSWORD"; exec psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -F=' \
+  > "$BUNDLE/database-manifest.txt" <<'SQL'
 select 'auth_users', count(*) from "user";
 select 'auth_sessions', count(*) from session;
 select 'holdings', count(*) from holdings;
@@ -105,7 +105,6 @@ select 'schema_migrations', count(*) from schema_migrations;
 select 'delivery_kilograms_sum', coalesce(to_char(sum(kilograms), 'FM999999999990.000'), '0.000') from deliveries;
 select 'current_yield_rows', count(*) from delivery_results where status='current';
 SQL
-' > "$BUNDLE/database-manifest.txt"
 [[ -s "$BUNDLE/database-manifest.txt" ]] || fail "database manifest is empty"
 chmod 600 "$BUNDLE/database-manifest.txt"
 

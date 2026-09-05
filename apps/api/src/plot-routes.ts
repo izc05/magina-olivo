@@ -3,6 +3,8 @@ import type { FastifyInstance } from 'fastify';
 import { canWrite, getFarmAccess } from './authorization.ts';
 import { getPool } from './db.ts';
 import { apiError } from './http-errors.ts';
+import { awardLoyaltyBestEffort } from './loyalty-business-awards.ts';
+import { firstPlotLoyaltyAward } from './loyalty-business-policy.ts';
 import { type BoundarySource, type GeoJsonPolygon, validateBoundary } from './plot-boundary-geometry.ts';
 import { getAuthenticatedSession } from './session.ts';
 
@@ -190,6 +192,7 @@ export function registerPlotRoutes(app: FastifyInstance): void {
       ).rows[0];
 
       if (!row) throw new Error('Plot insert returned no row');
+      await awardLoyaltyBestEffort(firstPlotLoyaltyAward(session.user.id, row.id), 'plot.create');
       return reply.code(201).send(serializePlot(row));
     },
   );

@@ -33,6 +33,8 @@ export function buildApp(): FastifyInstance {
     logger: {
       level: process.env.LOG_LEVEL ?? 'info',
       redact: [
+        // Reset tokens can occur in URL paths and query strings.
+        'req.url',
         'req.headers.authorization',
         'req.headers.cookie',
         'res.headers.set-cookie',

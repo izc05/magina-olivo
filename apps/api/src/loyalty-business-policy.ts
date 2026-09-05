@@ -28,3 +28,17 @@ export function yieldRecordedLoyaltyAward(
     },
   };
 }
+
+export function campaignCompletedLoyaltyAward(
+  userId: string,
+  campaignId: string,
+): AwardLoyaltyEventInput {
+  return {
+    userId,
+    eventType: 'campaign.completed',
+    idempotencyKey: `campaign.completed:${campaignId}`,
+    sourceType: 'campaign',
+    sourceId: campaignId,
+    metadata: { trigger: 'campaign.close' },
+  };
+}

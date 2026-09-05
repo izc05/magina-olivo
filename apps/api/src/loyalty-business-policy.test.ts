@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  campaignCompletedLoyaltyAward,
   firstPlotLoyaltyAward,
   yieldRecordedLoyaltyAward,
 } from './loyalty-business-policy.ts';
@@ -37,4 +38,14 @@ test('different deliveries have different yield reward identities', () => {
   const first = yieldRecordedLoyaltyAward('user-1', 'delivery-a', 'result-a');
   const second = yieldRecordedLoyaltyAward('user-1', 'delivery-b', 'result-b');
   assert.notEqual(first.idempotencyKey, second.idempotencyKey);
+});
+
+test('campaign completion reward is once per campaign', () => {
+  const first = campaignCompletedLoyaltyAward('user-1', '55555555-5555-4555-8555-555555555555');
+  const retry = campaignCompletedLoyaltyAward('user-1', '55555555-5555-4555-8555-555555555555');
+  assert.equal(first.eventType, 'campaign.completed');
+  assert.equal(first.idempotencyKey, 'campaign.completed:55555555-5555-4555-8555-555555555555');
+  assert.equal(retry.idempotencyKey, first.idempotencyKey);
+  assert.equal(first.sourceType, 'campaign');
+  assert.equal(first.sourceId, '55555555-5555-4555-8555-555555555555');
 });

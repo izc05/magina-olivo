@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { CampaignClosePanel } from './CampaignClosePanel.tsx';
 import {
   listCampaignDocuments,
   privateDocumentContentUrl,
@@ -68,53 +69,57 @@ export function CampaignDocuments({
   }, [holdingId, campaignId]);
 
   return (
-    <section className="section campaign-documents" aria-labelledby="campaign-documents-title">
-      <div className="section-heading campaign-documents-heading">
-        <div>
-          <p className="eyebrow page-eyebrow">Archivo privado</p>
-          <h2 id="campaign-documents-title" className="section-title">Tickets y documentos</h2>
-          <p className="section-copy">Archivos vinculados a las entregas de esta campaña.</p>
-        </div>
-        <span className="badge gold">{documents.length}</span>
-      </div>
+    <>
+      <CampaignClosePanel holdingId={holdingId} campaignId={campaignId} />
 
-      <div className="card card-body" aria-labelledby="campaign-export-title">
-        <p className="eyebrow page-eyebrow">Tus datos</p>
-        <h3 id="campaign-export-title" className="section-title form-card-title">Exportar campaña</h3>
-        <p className="section-copy">Descarga tus entregas, destinos, fincas, parcelas y rendimientos. CSV sirve para hoja de cálculo; JSON conserva la estructura completa.</p>
-        <div className="form-actions">
-          <a className="text-button" href={`/api/v1/campaigns/${campaignId}/export.csv`}>Descargar CSV</a>
-          <a className="text-button" href={`/api/v1/campaigns/${campaignId}/export.json`}>Descargar JSON</a>
-        </div>
-      </div>
-
-      {error ? <div className="alert" role="alert">{error}</div> : null}
-
-      <div className="campaign-document-list" aria-busy={loading}>
-        {documents.map((document) => (
-          <article className="card campaign-document-row" key={document.id}>
-            <div className="campaign-document-icon" aria-hidden="true">▤</div>
-            <div className="campaign-document-copy">
-              <div className="campaign-document-topline">
-                <strong>{document.filename}</strong>
-                <span>{documentLabel(document.documentType)}</span>
-              </div>
-              <p>{deliveryLine(document)}</p>
-              <small>{formatBytes(document.sizeBytes)} · {new Date(document.createdAt).toLocaleDateString('es-ES')}</small>
-            </div>
-            <a className="campaign-document-download" href={privateDocumentContentUrl(document.id)}>Descargar</a>
-          </article>
-        ))}
-
-        {!loading && documents.length === 0 ? (
-          <div className="card empty-state">
-            <strong>Aún no hay documentos</strong>
-            Los tickets que adjuntes a una entrega aparecerán aquí automáticamente.
+      <section className="section campaign-documents" aria-labelledby="campaign-documents-title">
+        <div className="section-heading campaign-documents-heading">
+          <div>
+            <p className="eyebrow page-eyebrow">Archivo privado</p>
+            <h2 id="campaign-documents-title" className="section-title">Tickets y documentos</h2>
+            <p className="section-copy">Archivos vinculados a las entregas de esta campaña.</p>
           </div>
-        ) : null}
+          <span className="badge gold">{documents.length}</span>
+        </div>
 
-        {loading ? <div className="campaign-documents-loading" role="status">Cargando archivo privado…</div> : null}
-      </div>
-    </section>
+        <div className="card card-body" aria-labelledby="campaign-export-title">
+          <p className="eyebrow page-eyebrow">Tus datos</p>
+          <h3 id="campaign-export-title" className="section-title form-card-title">Exportar campaña</h3>
+          <p className="section-copy">Descarga tus entregas, destinos, fincas, parcelas y rendimientos. CSV sirve para hoja de cálculo; JSON conserva la estructura completa.</p>
+          <div className="form-actions">
+            <a className="text-button" href={`/api/v1/campaigns/${campaignId}/export.csv`}>Descargar CSV</a>
+            <a className="text-button" href={`/api/v1/campaigns/${campaignId}/export.json`}>Descargar JSON</a>
+          </div>
+        </div>
+
+        {error ? <div className="alert" role="alert">{error}</div> : null}
+
+        <div className="campaign-document-list" aria-busy={loading}>
+          {documents.map((document) => (
+            <article className="card campaign-document-row" key={document.id}>
+              <div className="campaign-document-icon" aria-hidden="true">▤</div>
+              <div className="campaign-document-copy">
+                <div className="campaign-document-topline">
+                  <strong>{document.filename}</strong>
+                  <span>{documentLabel(document.documentType)}</span>
+                </div>
+                <p>{deliveryLine(document)}</p>
+                <small>{formatBytes(document.sizeBytes)} · {new Date(document.createdAt).toLocaleDateString('es-ES')}</small>
+              </div>
+              <a className="campaign-document-download" href={privateDocumentContentUrl(document.id)}>Descargar</a>
+            </article>
+          ))}
+
+          {!loading && documents.length === 0 ? (
+            <div className="card empty-state">
+              <strong>Aún no hay documentos</strong>
+              Los tickets que adjuntes a una entrega aparecerán aquí automáticamente.
+            </div>
+          ) : null}
+
+          {loading ? <div className="campaign-documents-loading" role="status">Cargando archivo privado…</div> : null}
+        </div>
+      </section>
+    </>
   );
 }

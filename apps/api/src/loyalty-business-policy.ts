@@ -42,3 +42,17 @@ export function campaignCompletedLoyaltyAward(
     metadata: { trigger: 'campaign.close' },
   };
 }
+
+export function firstHarvestLoyaltyAward(
+  userId: string,
+  activityId: string,
+): AwardLoyaltyEventInput {
+  return {
+    userId,
+    eventType: 'harvest.first_created',
+    idempotencyKey: `harvest.first_created:${userId}`,
+    sourceType: 'activity',
+    sourceId: activityId,
+    metadata: { trigger: 'activity.create' },
+  };
+}

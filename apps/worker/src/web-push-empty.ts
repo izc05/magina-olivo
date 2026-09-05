@@ -1,7 +1,7 @@
 import { createPrivateKey, sign } from 'node:crypto';
 import type { Pool } from 'pg';
 
-export type PushCategory = 'weather' | 'tasks' | 'rewards';
+export type PushCategory = 'weather' | 'tasks' | 'rewards' | 'pending_yield';
 
 type PushSubscriptionRow = {
   id: string;
@@ -86,11 +86,14 @@ export function buildVapidAuthorization(endpoint: string, now = new Date()): { a
   };
 }
 
-export function categoryPreferenceColumn(category: PushCategory): 'notify_weather' | 'notify_tasks' | 'notify_rewards' {
+export function categoryPreferenceColumn(
+  category: PushCategory,
+): 'notify_weather' | 'notify_tasks' | 'notify_rewards' | 'notify_pending_yield' {
   switch (category) {
     case 'weather': return 'notify_weather';
     case 'tasks': return 'notify_tasks';
     case 'rewards': return 'notify_rewards';
+    case 'pending_yield': return 'notify_pending_yield';
   }
 }
 

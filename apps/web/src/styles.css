@@ -297,6 +297,35 @@ a { color: inherit; }
 .discover-hero { min-height: 330px; }
 .discover-grid { margin-top: 28px; }
 
+.public-home-v2 { padding-top: 0; }
+.public-home-topbar { display: flex; min-height: 78px; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line); }
+.public-home-brand { display: flex; min-width: 0; align-items: center; gap: 10px; color: var(--olive-950); text-decoration: none; }
+.public-home-brand img { width: 42px; height: 48px; object-fit: contain; }
+.public-home-brand strong, .public-home-brand small { display: block; }
+.public-home-brand strong { font-family: "Playfair Display", Georgia, serif; font-size: 1.22rem; }
+.public-home-brand small { margin-top: 2px; color: var(--muted); font-size: .64rem; letter-spacing: .06em; text-transform: uppercase; }
+.public-home-profile { display: grid; width: 44px; height: 44px; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); color: var(--olive-950); font-weight: 900; text-decoration: none; }
+.public-home-v2-hero { position: relative; min-height: 330px; margin-top: 20px; overflow: hidden; border-radius: 28px; box-shadow: var(--shadow); }
+.public-home-v2-photo { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(46,58,34,.08), rgba(46,58,34,.28)), url('/photos/home-sierra-magina.webp') center / cover no-repeat; }
+.public-home-weather-card { position: absolute; right: clamp(14px, 5vw, 46px); bottom: clamp(14px, 5vw, 46px); display: grid; gap: 4px; min-width: 170px; padding: 16px 18px; border: 1px solid rgba(255,255,255,.5); border-radius: 18px; background: rgba(255,253,247,.92); color: var(--olive-950); box-shadow: 0 10px 26px rgba(46,58,34,.2); }
+.public-home-weather-card span { font-size: .75rem; font-weight: 800; }
+.public-home-weather-card strong { font-family: "Playfair Display", Georgia, serif; font-size: 2.6rem; line-height: 1; }
+.public-home-weather-card small { color: var(--muted); font-size: .7rem; }
+.public-home-v2-section { margin-top: 34px; }
+.public-home-v2-section h1, .public-home-v2-section h2 { margin: 0; color: var(--olive-950); font-family: "Playfair Display", Georgia, serif; }
+.public-home-v2-section h1 { font-size: clamp(1.8rem, 6vw, 2.6rem); }
+.public-home-field-card, .public-home-market-card { display: flex; min-height: 74px; align-items: center; gap: 12px; margin-top: 16px; padding: 15px 17px; color: var(--olive-950); text-decoration: none; }
+.public-home-field-card > span:nth-child(2), .public-home-market-card span:nth-child(2) { min-width: 0; flex: 1; }
+.public-home-field-card strong, .public-home-field-card small, .public-home-market-card strong, .public-home-market-card span { display: block; }
+.public-home-field-card small, .public-home-market-card span { margin-top: 4px; color: var(--muted); font-size: .78rem; }
+.public-home-field-icon { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 13px; background: rgba(92,122,70,.1); color: var(--olive-800); }
+.public-home-field-icon svg, .public-home-v2-quick svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.public-home-v2-quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+.public-home-v2-quick a { display: grid; min-height: 76px; place-items: center; align-content: center; gap: 7px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); color: var(--olive-950); font-size: .72rem; font-weight: 800; text-align: center; text-decoration: none; }
+.public-home-v2-quick a:focus-visible, .public-home-field-card:focus-visible, .public-home-market-card:focus-visible, .public-home-brand:focus-visible, .public-home-profile:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+.public-home-market-card { justify-content: space-between; }
+.public-home-open { color: var(--olive-800); font-size: .76rem; font-weight: 850; white-space: nowrap; }
+
 .access-gate-shell { display: grid; min-height: 100vh; place-items: center; padding: 24px; background: var(--ivory); }
 .access-gate-card { width: min(100%, 560px); padding: clamp(28px, 6vw, 54px); border: 1px solid var(--line); border-radius: 28px; background: var(--paper); box-shadow: var(--shadow); }
 .access-gate-card h1 { max-width: 14ch; color: var(--olive-950); font-size: clamp(2rem, 6vw, 3.4rem); }
@@ -328,6 +357,11 @@ a { color: inherit; }
   .campaign-document-row { grid-template-columns: auto minmax(0, 1fr); }
   .campaign-document-download { grid-column: 2; justify-self: start; padding-left: 0; }
   .campaign-export-link { flex: 1 1 140px; }
+  .public-home-topbar { min-height: 70px; }
+  .public-home-v2-hero { min-height: 290px; margin-top: 14px; border-radius: 22px; }
+  .public-home-weather-card { right: 12px; bottom: 12px; min-width: 145px; padding: 12px 14px; }
+  .public-home-v2-quick { gap: 7px; }
+  .public-home-v2-quick a { min-height: 70px; font-size: .65rem; }
 }
 
 @media (prefers-reduced-motion: no-preference) {

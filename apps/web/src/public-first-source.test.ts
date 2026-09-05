@@ -11,6 +11,7 @@ test('public routes are reachable without a session and private destinations use
   const home = await source('./PublicHomePage.tsx');
   const gate = await source('./PrivateAccessGate.tsx');
   const navigation = await source('./PublicNavigation.tsx');
+  const styles = await source('./styles.css');
 
   for (const route of ['/descubre', '/magina', '/magina/directorio', '/magina/tiempo', '/magina/campo', '/magina/noticias', '/magina/mercado']) {
     assert.match(main, new RegExp(`path === '${route}'`));
@@ -25,6 +26,13 @@ test('public routes are reachable without a session and private destinations use
   assert.match(navigation, /href: '\/mi-magina', label: 'Mi Mágina'/);
   assert.match(navigation, /public-nav-action.*href="\/campana"/);
   assert.match(home, /fetch\('\/api\/v1\/public\/sources'/);
+  assert.match(styles, /home-sierra-magina\.webp/);
+  assert.match(home, /api\/v1\/public\/weather/);
+  assert.match(home, /QuickIcon/);
+  assert.match(home, /href=\{holding \? '\/calendario' : '\/login\?next=%2Fcalendario'\}/);
+  assert.match(home, /Referencia AOVE/);
+  assert.doesNotMatch(home, /22°|26°|14°|Riego pendiente/);
+  assert.doesNotMatch(home, /https?:\/\//);
   assert.doesNotMatch(home, /\/api\/v1\/(?!public\/)/);
 });
 

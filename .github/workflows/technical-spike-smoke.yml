@@ -7,6 +7,7 @@ on:
       - feat/foundation-v1
       - feat/mvp-core-v1
       - feat/integration-v2-mvp-v1
+      - staging/**
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
@@ -50,10 +51,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24.20.0
           cache: npm
@@ -82,10 +83,7 @@ jobs:
       - name: Run unit tests
         run: npm test
 
-      - name: Migrate Better Auth from pinned dependency
-        run: npm run auth:migrate --workspace @magina/api
-
-      - name: Migrate business schema
+      - name: Migrate auth and business schemas
         run: npm run db:migrate
 
       - name: Verify durable worker and lease recovery

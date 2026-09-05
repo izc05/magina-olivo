@@ -24,3 +24,17 @@ La IA será una capa opcional para interpretación de lenguaje natural, document
 Proyecto en fase de definición funcional y arquitectura inicial.
 
 La documentación de producto se desarrollará primero en una rama de trabajo antes de iniciar la implementación.
+
+## Desarrollo local
+
+El entorno local requiere Node `24.20.0`, Docker Compose y datos sintéticos. Tras crear un `.env` local a partir de `.env.example`:
+
+```bash
+npm ci
+docker compose -f infra/docker/compose.dev.yml up -d
+npm run db:migrate
+npm run dev:api
+npm run dev:web
+```
+
+`npm run db:migrate` aplica primero las migraciones de Better Auth y después las migraciones de dominio; así una base PostgreSQL vacía queda preparada para registro e inicio de sesión local.

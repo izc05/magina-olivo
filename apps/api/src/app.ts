@@ -37,6 +37,9 @@ export function buildApp(): FastifyInstance {
     logger: {
       level: process.env.LOG_LEVEL ?? 'info',
       redact: [
+        // Fastify/Pino logs the request URL separately from headers, so redact it
+        // to prevent password-reset tokens and other query credentials from leaking.
+        'req.url',
         'req.headers.authorization',
         'req.headers.cookie',
         'res.headers.set-cookie',

@@ -16,7 +16,7 @@
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "db:migrate": "npm run db:migrate --workspace @magina/api"
+    "db:migrate": "npm run auth:migrate --workspace @magina/api && npm run db:migrate --workspace @magina/api"
   },
   "devDependencies": {
     "typescript": "^6.0.0"

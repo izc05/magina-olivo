@@ -322,7 +322,21 @@ function Metric({ value, label }: { value: string; label: string }) {
   return <div className="metric"><span className="metric-value">{value}</span><span className="metric-label">{label}</span></div>;
 }
 
+function irrigationLabel(value: string | null): string {
+  if (value === 'dryland') return 'Secano';
+  if (value === 'irrigated') return 'Regadío';
+  if (value === 'mixed') return 'Mixto';
+  return 'Sin definir';
+}
+
 function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarmId, plots, busy, setSelectedFarmId, runAction, reloadHoldings, reloadHoldingData, reloadPlots }: { holdings: Holding[]; selectedHolding: Holding | null; farms: Farm[]; selectedFarm: Farm | null; selectedFarmId: string; plots: Plot[]; busy: boolean; setSelectedFarmId: (id: string) => void; runAction: ActionRunner; reloadHoldings: () => Promise<void>; reloadHoldingData: () => Promise<void>; reloadPlots: () => Promise<void> }) {
+  const [selectedPlotId, setSelectedPlotId] = useState('');
+  const selectedPlot = useMemo(() => plots.find((plot) => plot.id === selectedPlotId) ?? null, [plots, selectedPlotId]);
+
+  useEffect(() => {
+    setSelectedPlotId((current) => plots.some((plot) => plot.id === current) ? current : (plots[0]?.id ?? ''));
+  }, [plots]);
+
   return (
     <>
       <PageIntro eyebrow="Mi Campo" title="Mis fincas" copy="Gestiona tus fincas, parcelas y campañas desde un único lugar." />
@@ -352,17 +366,41 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
 
       {selectedFarm && selectedHolding ? (
         <>
+          <section className="farm-detail-card" aria-labelledby="selected-farm-title">
+            <div>
+              <p className="eyebrow">Finca seleccionada</p>
+              <h2 id="selected-farm-title">{selectedFarm.name}</h2>
+              <p>{selectedHolding.name}{selectedHolding.municipality ? ` · ${selectedHolding.municipality}` : ''}</p>
+            </div>
+            <div className="farm-detail-metrics" aria-label={`Resumen de ${selectedFarm.name}`}>
+              <div><span>Superficie</span><strong>{selectedFarm.areaHa != null ? `${selectedFarm.areaHa} ha` : 'Pendiente'}</strong></div>
+              <div><span>Parcelas</span><strong>{plots.length}</strong></div>
+            </div>
+          </section>
           <section className="section">
-            <div className="section-heading"><div><h2 className="section-title">Parcelas de {selectedFarm.name}</h2><p className="section-copy">SIGPAC, superficie, olivos y tipo de riego.</p></div></div>
+            <div className="section-heading"><div><p className="eyebrow page-eyebrow">Finca · {selectedFarm.name}</p><h2 className="section-title">Parcelas</h2><p className="section-copy">Selecciona una parcela para ver su información disponible.</p></div></div>
             {plots.map((plot) => (
-              <article className="card list-card" key={plot.id}>
-                <div className="list-card-main"><p className="list-card-title">{plot.name}</p><p className="list-card-meta">{plot.areaHa ? `${plot.areaHa} ha` : 'Sin superficie'} · {plot.oliveTreeCount ?? '—'} olivos · {plot.irrigationType || 'riego sin definir'}</p></div>
-                <span className="badge">{plot.sigpacReference ? 'SIGPAC' : 'Manual'}</span>
-              </article>
+              <button type="button" className="card list-card interactive plot-list-card" key={plot.id} onClick={() => setSelectedPlotId(plot.id)} aria-pressed={plot.id === selectedPlotId}>
+                <div className="list-card-main"><p className="list-card-title">{plot.name}</p><p className="list-card-meta">{[plot.areaHa != null ? `${plot.areaHa} ha` : null, plot.oliveTreeCount != null ? `${plot.oliveTreeCount} olivos` : null, plot.irrigationType ? irrigationLabel(plot.irrigationType) : null].filter(Boolean).join(' · ') || 'Información pendiente'}</p></div>
+                <span className={`badge${plot.id === selectedPlotId ? ' gold' : ''}`}>{plot.id === selectedPlotId ? 'Seleccionada' : plot.sigpacReference ? 'SIGPAC' : 'Ver parcela'}</span>
+              </button>
             ))}
-            {!plots.length ? <EmptyState title="Sin parcelas todavía">Añade una para construir su línea de tiempo.</EmptyState> : null}
+            {!plots.length ? <EmptyState title="Aún no has añadido parcelas a esta finca.">Crea la primera parcela para empezar a registrar su información.</EmptyState> : null}
             <CreatePlotCard farmId={selectedFarm.id} busy={busy} runAction={runAction} onCreated={reloadPlots} />
           </section>
+          {selectedPlot ? (
+            <section className="card plot-detail-card" aria-labelledby="selected-plot-title">
+              <p className="eyebrow">Parcela seleccionada</p>
+              <h3 id="selected-plot-title">{selectedPlot.name}</h3>
+              <dl>
+                {selectedPlot.areaHa != null ? <div><dt>Superficie</dt><dd>{selectedPlot.areaHa} ha</dd></div> : null}
+                {selectedPlot.oliveTreeCount != null ? <div><dt>Olivos</dt><dd>{selectedPlot.oliveTreeCount}</dd></div> : null}
+                {selectedPlot.irrigationType ? <div><dt>Riego</dt><dd>{irrigationLabel(selectedPlot.irrigationType)}</dd></div> : null}
+                {selectedPlot.sigpacReference ? <div><dt>Referencia SIGPAC</dt><dd>{selectedPlot.sigpacReference}</dd></div> : null}
+              </dl>
+              <p className="plot-detail-map-note">El mapa y el perímetro de esta parcela se gestionan en el cuaderno de campo.</p>
+            </section>
+          ) : null}
           <FieldNotebook holdingId={selectedHolding.id} farmId={selectedFarm.id} plots={plots} />
         </>
       ) : null}

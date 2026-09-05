@@ -8,6 +8,7 @@ async function source(path: string): Promise<string> {
 
 test('public routes are reachable without a session and private destinations use an explicit gate', async () => {
   const main = await source('./main.tsx');
+  const home = await source('./PublicHomePage.tsx');
   const gate = await source('./PrivateAccessGate.tsx');
   const navigation = await source('./PublicNavigation.tsx');
 
@@ -23,6 +24,8 @@ test('public routes are reachable without a session and private destinations use
   assert.match(navigation, /href: '\/mi-campo', label: 'Mi Campo'/);
   assert.match(navigation, /href: '\/mi-magina', label: 'Mi Mágina'/);
   assert.match(navigation, /public-nav-action.*href="\/campana"/);
+  assert.match(home, /fetch\('\/api\/v1\/public\/sources'/);
+  assert.doesNotMatch(home, /\/api\/v1\/(?!public\/)/);
 });
 
 test('login returns only to a safe requested private destination', async () => {

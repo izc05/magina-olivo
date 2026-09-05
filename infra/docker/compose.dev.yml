@@ -8,7 +8,9 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - magina_postgres_data:/var/lib/postgresql/data
+      # PostgreSQL 18 stores clusters under a version-specific subdirectory.
+      # Mount its parent directory so a fresh local volume can initialize.
+      - magina_postgres_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U magina -d magina_olivo"]
       interval: 5s

@@ -1,0 +1,88 @@
+.field-alert-shell {
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 24px 0 48px;
+}
+
+.field-alert-hero {
+  padding: 42px 0 28px;
+  max-width: 760px;
+}
+
+.field-alert-hero h1 {
+  margin: 8px 0 14px;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 0.98;
+}
+
+.field-alert-status {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
+  gap: 28px;
+  padding: 28px;
+}
+
+.field-alert-status h2,
+.field-alert-resource h2,
+.field-alert-rule h2 {
+  margin: 10px 0;
+}
+
+.field-alert-facts {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.field-alert-facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line, #d9ded8);
+}
+
+.field-alert-facts dt {
+  color: var(--muted, #657066);
+}
+
+.field-alert-facts dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 700;
+}
+
+.field-alert-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin: 22px 0;
+}
+
+.field-alert-resource {
+  display: block;
+  padding: 24px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.field-alert-resource strong {
+  display: inline-block;
+  margin-top: 12px;
+}
+
+.field-alert-rule {
+  padding: 28px;
+  margin-top: 24px;
+}
+
+@media (max-width: 760px) {
+  .field-alert-status,
+  .field-alert-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .field-alert-facts div {
+    align-items: flex-start;
+  }
+}

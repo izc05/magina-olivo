@@ -217,12 +217,12 @@ if (!currentValue || currentValue.status !== 'current') throw new Error('Correct
 NODE
 
 log "Uploading private ticket and proving access isolation"
-printf 'ticket-004281-private' > /tmp/ticket-004281.txt
+printf '%%PDF-1.4\n%% synthetic Mágina Olivo technical gate ticket 004281\n' > /tmp/ticket-004281.pdf
 upload_status=$(curl --silent --output /tmp/document-a.json --write-out "%{http_code}" \
   --cookie /tmp/cookies-a.txt \
   --header 'content-type: application/octet-stream' \
-  --data-binary @/tmp/ticket-004281.txt \
-  "$API_BASE/api/v1/holdings/$HOLDING_A/documents?filename=ticket-004281.txt&mimeType=text%2Fplain&documentType=ticket&deliveryId=$DELIVERY_A")
+  --data-binary @/tmp/ticket-004281.pdf \
+  "$API_BASE/api/v1/holdings/$HOLDING_A/documents?filename=ticket-004281.pdf&mimeType=application%2Fpdf&documentType=ticket&deliveryId=$DELIVERY_A")
 [[ "$upload_status" = "201" ]] || fail "ticket upload expected 201, got $upload_status"
 DOCUMENT_A=$(json_value /tmp/document-a.json 'value.id')
 
@@ -236,7 +236,7 @@ content_status=$(curl --silent --output /tmp/document-content-a.bin --write-out 
   --cookie /tmp/cookies-a.txt \
   "$API_BASE/api/v1/documents/$DOCUMENT_A/content")
 [[ "$content_status" = "200" ]] || fail "ticket content expected 200"
-cmp /tmp/ticket-004281.txt /tmp/document-content-a.bin || fail "downloaded ticket bytes changed"
+cmp /tmp/ticket-004281.pdf /tmp/document-content-a.bin || fail "downloaded ticket bytes changed"
 
 foreign_metadata_status=$(curl --silent --output /tmp/document-metadata-b.json --write-out "%{http_code}" \
   --cookie /tmp/cookies-b.txt \

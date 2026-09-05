@@ -1,0 +1,57 @@
+.weather-rain-alerts {
+  margin-top: 1.5rem;
+}
+
+.weather-rain-alert-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.weather-rain-alert-card {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+}
+
+.weather-rain-alert-card h3,
+.weather-rain-alert-card p {
+  margin: 0;
+}
+
+.weather-rain-alert-card p {
+  margin-top: 0.35rem;
+}
+
+.weather-rain-alert-card small,
+.weather-rain-alerts-note {
+  display: block;
+  margin-top: 0.55rem;
+  opacity: 0.78;
+}
+
+.weather-rain-alert-icon {
+  display: grid;
+  place-items: center;
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 999px;
+  background: rgba(177, 136, 58, 0.12);
+  font-size: 1.25rem;
+  flex: 0 0 auto;
+}
+
+.weather-rain-alerts-empty {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.weather-rain-alerts-empty a {
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .weather-rain-alert-grid {
+    grid-template-columns: 1fr;
+  }
+}

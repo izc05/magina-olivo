@@ -25,12 +25,13 @@ fail() {
 [[ -w "$DESTINATION" ]] || fail "backup destination is not writable: $DESTINATION"
 
 CURRENT_RELEASE=""
+CURRENT_SOURCE_SHA=""
 [[ ! -f "$STATE_DIR/current" ]] || CURRENT_RELEASE="$(cat "$STATE_DIR/current")"
+[[ ! -f "$STATE_DIR/current-source-sha" ]] || CURRENT_SOURCE_SHA="$(cat "$STATE_DIR/current-source-sha")"
 [[ -n "$CURRENT_RELEASE" ]] || fail "no current staging release recorded"
+[[ "$CURRENT_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || fail "current staging source SHA is missing or invalid"
 export MAGINA_IMAGE_TAG="$CURRENT_RELEASE"
 
-# As in staging-release.sh, do not let an inherited shell/CI environment
-# override the secrets-managed env file while rendering Compose.
 compose() {
   env \
     -u POSTGRES_PASSWORD \
@@ -41,6 +42,7 @@ compose() {
     -u AUTH_MAIL_TRANSPORT \
     -u AUTH_MAIL_FROM \
     -u RESEND_API_KEY \
+    -u AEMET_API_KEY \
     -u LOG_LEVEL \
     -u DB_POOL_MAX \
     -u OBJECT_STORAGE_ENDPOINT \
@@ -83,15 +85,17 @@ docker exec "$PG_CONTAINER" sh -c \
 chmod 600 "$BUNDLE/postgres.dump"
 
 log "Recording relational manifest for later restore verification"
-docker exec "$PG_CONTAINER" sh -c '
-  export PGPASSWORD="$POSTGRES_PASSWORD"
-  psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -F= <<'"'"'SQL'"'"'
+docker exec -i "$PG_CONTAINER" sh -c \
+  'export PGPASSWORD="$POSTGRES_PASSWORD"; exec psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -F=' \
+  > "$BUNDLE/database-manifest.txt" <<'SQL'
 select 'auth_users', count(*) from "user";
 select 'auth_sessions', count(*) from session;
 select 'holdings', count(*) from holdings;
 select 'farms', count(*) from farms;
 select 'plots', count(*) from plots;
 select 'campaigns', count(*) from campaigns;
+select 'activities', count(*) from activities;
+select 'tasks', count(*) from tasks;
 select 'deliveries', count(*) from deliveries;
 select 'delivery_results', count(*) from delivery_results;
 select 'documents', count(*) from documents;
@@ -101,7 +105,6 @@ select 'schema_migrations', count(*) from schema_migrations;
 select 'delivery_kilograms_sum', coalesce(to_char(sum(kilograms), 'FM999999999990.000'), '0.000') from deliveries;
 select 'current_yield_rows', count(*) from delivery_results where status='current';
 SQL
-' > "$BUNDLE/database-manifest.txt"
 [[ -s "$BUNDLE/database-manifest.txt" ]] || fail "database manifest is empty"
 chmod 600 "$BUNDLE/database-manifest.txt"
 
@@ -112,8 +115,6 @@ docker exec \
   "$API_CONTAINER" \
   node scripts/export-private-objects.mjs
 
-# Read the manifest using Node already present inside the deployed runtime.
-# The staging host therefore does not need its own Node/npm installation.
 OBJECT_COUNT="$(docker exec "$API_CONTAINER" node -e '
 const fs=require("fs");
 const value=JSON.parse(fs.readFileSync("/tmp/magina-object-backup/objects-manifest.json","utf8"));
@@ -129,6 +130,7 @@ cat > "$BUNDLE/backup-meta.txt" <<META
 format_version=1
 created_at_utc=$TIMESTAMP
 application_release=$CURRENT_RELEASE
+application_source_sha=$CURRENT_SOURCE_SHA
 compose_project=$COMPOSE_PROJECT_NAME
 postgres_format=custom
 private_object_count=$OBJECT_COUNT
@@ -151,4 +153,4 @@ log "Validating bundle checksums"
   sha256sum --check --quiet SHA256SUMS
 )
 
-log "PASS bundle=$BUNDLE postgres=yes private_objects=$OBJECT_COUNT"
+log "PASS bundle=$BUNDLE release=$CURRENT_RELEASE source_sha=$CURRENT_SOURCE_SHA postgres=yes private_objects=$OBJECT_COUNT"

@@ -5,9 +5,15 @@ export type UploadedDocument = {
   filename: string;
   mimeType: string;
   sizeBytes: number;
-  sha256: string;
-  documentType: 'ticket' | 'photo' | string;
+  sha256: string | null;
+  documentType: 'ticket' | 'delivery_note' | 'yield_report' | 'invoice' | 'settlement' | 'photo' | 'other' | string;
   deliveryId: string | null;
+  delivery: {
+    id: string;
+    deliveredAt: string | null;
+    kilograms: string | null;
+    destination: string | null;
+  } | null;
   createdAt: string;
 };
 
@@ -18,6 +24,37 @@ const ALLOWED_TICKET_TYPES = new Set([
   'image/webp',
   'application/pdf',
 ]);
+
+async function parseDocumentError(response: Response): Promise<never> {
+  let message = `HTTP ${response.status}`;
+  let code: string | undefined;
+  try {
+    const payload = await response.json() as { error?: { message?: string; code?: string } };
+    message = payload.error?.message ?? message;
+    code = payload.error?.code;
+  } catch {
+    // Keep the generic HTTP message.
+  }
+  throw new ApiError(message, response.status, code);
+}
+
+export async function listCampaignDocuments(
+  holdingId: string,
+  campaignId: string,
+): Promise<UploadedDocument[]> {
+  const params = new URLSearchParams({ campaignId });
+  const response = await fetch(`/api/v1/holdings/${holdingId}/documents?${params.toString()}`, {
+    credentials: 'include',
+    headers: { accept: 'application/json' },
+  });
+  if (!response.ok) return parseDocumentError(response);
+  const payload = await response.json() as { items: UploadedDocument[] };
+  return payload.items;
+}
+
+export function privateDocumentContentUrl(documentId: string): string {
+  return `/api/v1/documents/${documentId}/content`;
+}
 
 export async function uploadDeliveryTicket(
   holdingId: string,
@@ -50,18 +87,10 @@ export async function uploadDeliveryTicket(
     body: file,
   });
 
-  if (!response.ok) {
-    let message = `HTTP ${response.status}`;
-    let code: string | undefined;
-    try {
-      const payload = await response.json() as { error?: { message?: string; code?: string } };
-      message = payload.error?.message ?? message;
-      code = payload.error?.code;
-    } catch {
-      // Keep the generic HTTP message.
-    }
-    throw new ApiError(message, response.status, code);
+  if (!response.ok) return parseDocumentError(response);
+  const document = await response.json() as UploadedDocument;
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('magina:document-uploaded', { detail: { deliveryId, documentId: document.id } }));
   }
-
-  return await response.json() as UploadedDocument;
+  return document;
 }

@@ -2,7 +2,20 @@
 
 Estado: **preparado para ejecución cuando exista host + hostname + credenciales de staging**.
 
-Este runbook empieza donde termina el smoke CI. No introduce datos reales y no convierte staging en producción.
+Rama objetivo: `feat/integration-v2-mvp-v1`
+Base funcional: `feat/mvp-core-v1`
+PR de integración: #6
+Gate operativo: issue #7
+
+Este documento aporta detalle operativo. La autoridad sobre orden y criterio PASS es:
+
+1. `docs/mvp/STAGING_ACCEPTANCE_V1.md`;
+2. `docs/mvp/STAGING_EXECUTION_V1.md`;
+3. issue #7.
+
+Si este documento contradice alguno de ellos, prevalecen los tres anteriores.
+
+No introduce datos reales y no convierte staging en producción.
 
 ## Arquitectura objetivo
 
@@ -15,14 +28,16 @@ Cloudflare Tunnel (outbound only)
    |
 127.0.0.1:8088
    |
-Nginx / PWA
+Nginx / PWA Visual V2 integrada
    +-- /api    -> Fastify:3001
    +-- /health -> Fastify:3001
 
 Fastify ---- private Docker networks ---- PostgreSQL 18.6
 Worker  ----- private Docker network  ---- PostgreSQL 18.6
 Fastify ---- HTTPS S3 API ------------ Cloudflare R2 private bucket
+Fastify ---- HTTPS API --------------- AEMET OpenData
 Fastify ---- HTTPS API --------------- transactional mail provider
+Worker  ----- HTTPS ------------------- RAIF / Observatorio public sources
 ```
 
 Reglas duras:
@@ -32,38 +47,39 @@ Reglas duras:
 - worker no publica endpoint público.
 - Nginx solo enlaza `127.0.0.1:8088`.
 - Tunnel es el único camino de entrada desde Internet.
-- staging usa solo datos sintéticos.
+- staging usa solo datos sintéticos y documentos anonimizados.
+- el checkout desplegado debe estar limpio y trazado a un SHA Git completo.
+- ningún secreto de staging se carga mediante `source` ni se guarda en Git.
 
 ## 1. Host
 
-Prerequisitos mínimos:
+Prerrequisitos mínimos:
 
-- Linux x86_64 o arm64 compatible con las imágenes elegidas;
+- Linux `x86_64`, `aarch64` o `arm64` compatible con las imágenes elegidas;
 - Docker Engine + Docker Compose v2;
 - Git;
-- `curl` y utilidades Linux básicas;
+- `curl`, `sha256sum`, `awk`, `grep`, `stat`, `df` y utilidades Linux básicas;
 - espacio persistente para PostgreSQL;
-- salida a Internet hacia Cloudflare/R2/proveedor de correo;
+- salida a Internet hacia Cloudflare/R2/AEMET/RAIF/Observatorio/proveedor de correo;
 - reloj/NTP correcto.
 
-El host no necesita Node/npm para deploy, R2 gate, backup o restore: las utilidades Node operativas viajan dentro de la imagen runtime.
+El host no necesita Node/npm para deploy, R2 gate, backup o restore: las utilidades operativas Node viajan dentro de la imagen runtime.
 
-Un host compartido es válido. Otros servicios pueden usar puertos 3001/5432; lo importante es que **los contenedores de Mágina no publiquen esos puertos**. Esto se demuestra después del deploy mediante Docker inspect/port.
+Un host compartido es válido. Otros servicios pueden usar puertos 3001/5432; lo importante es que **los contenedores de Mágina no publiquen esos puertos**.
 
-## 2. Checkout
-
-Clonar el repositorio y seleccionar exactamente la revisión que se desea probar.
-
-Nunca ejecutar staging desde un working tree con cambios sin commit.
-
-Antes del deploy:
+## 2. Checkout y revisión exacta
 
 ```bash
+git fetch origin
+git switch feat/integration-v2-mvp-v1
+git pull --ff-only
 git status --short
 git rev-parse HEAD
 ```
 
-La revisión desplegada debe quedar registrada como release.
+`git status --short` debe estar vacío.
+
+`scripts/staging-release.sh` rechaza cualquier deploy desde un working tree con cambios tracked o ficheros no ignorados.
 
 ## 3. Env file de staging
 
@@ -73,23 +89,27 @@ Crear fuera del repositorio, por ejemplo:
 /etc/magina-olivo/staging.env
 ```
 
-Permisos recomendados:
+Permisos:
 
 ```bash
 sudo chown root:root /etc/magina-olivo/staging.env
 sudo chmod 600 /etc/magina-olivo/staging.env
 ```
 
+Partir de `infra/docker/staging.env.example`.
+
 Variables mínimas:
 
 ```dotenv
 POSTGRES_PASSWORD=<random-staging-only>
 DATABASE_URL=postgres://magina:<password>@postgres:5432/magina_olivo
+
 BETTER_AUTH_SECRET=<random-staging-only>
 BETTER_AUTH_URL=https://<staging-hostname>
 BETTER_AUTH_TRUSTED_ORIGINS=https://<staging-hostname>
 
-# Puede mantenerse disabled hasta la prueba real de correo.
+AEMET_API_KEY=<staging-server-side-key>
+
 AUTH_MAIL_TRANSPORT=disabled
 AUTH_MAIL_FROM="Mágina Olivo <no-reply@<verified-staging-domain>>"
 RESEND_API_KEY=<staging-only-api-key>
@@ -106,22 +126,20 @@ STAGING_BIND=127.0.0.1:8088
 LOG_LEVEL=info
 ```
 
-`AUTH_MAIL_TRANSPORT=capture` está prohibido fuera de `NODE_ENV=test`.
+`AUTH_MAIL_TRANSPORT=capture` está prohibido en staging externo.
 
-**No ejecutar `source /etc/magina-olivo/staging.env`.** El fichero sigue sintaxis de env de Docker Compose, no se trata como script shell; además, los secretos no necesitan cargarse en el proceso interactivo del operador.
-
-Los scripts de deploy/R2/backup/restore usan Docker Compose o el contenedor API para consumir la configuración sin imprimir valores sensibles.
+**No ejecutar `source /etc/magina-olivo/staging.env`.** Compose recibe el fichero directamente y los scripts eliminan del entorno heredado las variables sensibles que podrían pisarlo.
 
 ## 4. Preflight del host
 
 ```bash
 export STAGING_ENV_FILE=/etc/magina-olivo/staging.env
-bash scripts/staging-host-preflight.sh
+bash scripts/staging-acceptance.sh preflight
 ```
 
-Debe quedar verde antes del primer deploy.
+Comprueba Linux/arquitectura, Docker/Compose, permisos del env file, claves mínimas —incluida AEMET—, HTTPS de Better Auth/R2, trusted origins, loopback, disco y reloj.
 
-Comprueba Linux/arquitectura, Docker, Compose, permisos del env file, claves mínimas, HTTPS de Better Auth/R2, trusted origins, loopback, disco y reloj. En un host compartido, detectar otro proceso en 3001/5432 produce una advertencia, no un falso bloqueo; el aislamiento real de Mágina se verifica después del deploy.
+No continuar si falla.
 
 ## 5. Cloudflare R2 — preparar recursos
 
@@ -132,88 +150,69 @@ Crear dos buckets de staging:
 <restore-validation-bucket>
 ```
 
-El primero es el almacenamiento privado de la aplicación. El segundo existe únicamente para simulacros de restore y debe estar vacío antes de cada gate.
+El primero es almacenamiento privado de la aplicación. El segundo existe únicamente para simulacros de restore y debe estar vacío antes de cada gate.
 
-Las credenciales de staging no deben dar acceso a buckets de producción.
+Las credenciales de staging no deben dar acceso a producción.
 
-Endpoint S3 estándar:
+## 6. Primer deploy local
 
-```text
-https://<ACCOUNT_ID>.r2.cloudflarestorage.com
-```
-
-Región habitual:
-
-```text
-auto
-```
-
-Antes de elegir la localización definitiva, decidir si se necesita jurisdicción explícita de datos. Si se usa jurisdicción EU, el endpoint cambia y la decisión no debe improvisarse después de crear los buckets.
-
-## 6. Primer deploy A
+Forma recomendada:
 
 ```bash
 export STAGING_ENV_FILE=/etc/magina-olivo/staging.env
-bash scripts/staging-release.sh deploy <git-sha-or-release-tag-A>
-bash scripts/staging-release.sh status
+bash scripts/staging-acceptance.sh deploy-local
+bash scripts/staging-acceptance.sh status
 ```
 
-Debe existir un `current` claro.
+Esta orden ejecuta preflight, build desde checkout limpio, deploy, comprobación de trazabilidad, aislamiento y roundtrip R2.
 
-Todavía **no conectar Cloudflare Tunnel**.
+Estado canónico en disco:
+
+```text
+.deploy/staging/current
+.deploy/staging/current-source-sha
+.deploy/staging/previous
+.deploy/staging/previous-source-sha
+```
+
+`staging-acceptance.sh status` expone el SHA actual como:
+
+```text
+source_sha=<full-git-sha>
+```
+
+Ese SHA debe coincidir con `git rev-parse HEAD`.
+
+Todavía **no conectar Cloudflare Tunnel** si `deploy-local` no termina en PASS.
 
 ## 7. Gate de aislamiento local
 
-```bash
-bash scripts/staging-host-postdeploy-gate.sh
-```
-
-Debe probar:
+`deploy-local` ya ejecuta `scripts/staging-host-postdeploy-gate.sh`, que debe demostrar:
 
 - PostgreSQL/API healthy;
 - worker/web running;
 - PostgreSQL sin host ports;
 - API sin host ports;
 - worker sin host ports;
-- Nginx únicamente en `127.0.0.1:<STAGING_BIND>`;
+- Nginx únicamente en loopback;
 - health 200 por Nginx local;
 - raíz PWA 200 por la misma entrada.
 
-Si falla, no publicar el hostname.
-
 ## 8. Gate R2 real
 
-Con A desplegado e isolation gate verde:
-
-```bash
-bash scripts/staging-r2-gate.sh
-```
-
-El wrapper localiza el contenedor API ya desplegado y ejecuta dentro de él:
+`deploy-local` también ejecuta `scripts/staging-r2-gate.sh`:
 
 ```text
 PUT -> GET -> SHA-256 -> DELETE -> GET must fail
 ```
 
-Ventajas:
-
-- no necesita Node en el host;
-- no necesita `source` del env file;
-- no copia las credenciales R2 al shell interactivo;
-- prueba exactamente el mismo endpoint/bucket/credenciales que usa la API desplegada.
-
-Debe terminar con:
-
-```text
-[r2-roundtrip-gate] PASS PUT/GET/SHA-256/DELETE
-[staging-r2-gate] PASS release=<release>
-```
+Debe terminar en PASS sin copiar credenciales R2 al shell interactivo.
 
 ## 9. Cloudflare Tunnel
 
 Usar preferentemente un Tunnel gestionado remotamente.
 
-Publicar un único hostname de staging hacia:
+Publicar un único hostname hacia:
 
 ```text
 http://127.0.0.1:8088
@@ -221,74 +220,100 @@ http://127.0.0.1:8088
 
 El token del Tunnel es secreto y nunca entra en Git ni en el env de la aplicación.
 
-El proceso `cloudflared` puede ejecutarse como servicio del host o contenedor separado, pero no debe compartir credenciales de PostgreSQL/R2/Better Auth.
-
 Si staging no debe quedar públicamente accesible, proteger el hostname con Cloudflare Access y usar una cuenta/service token específico para los gates automatizados.
 
-## 10. Gate HTTPS real
+## 10. Cuenta sintética para gate externo
 
-Crear previamente una cuenta sintética de staging y ejecutar:
+Antes de `external`, preparar una cuenta exclusivamente sintética. No reutilizar credenciales personales ni de producción.
+
+Variables requeridas:
 
 ```bash
 export STAGING_BASE_URL=https://<staging-hostname>
 export STAGING_GATE_EMAIL=<synthetic-email>
 export STAGING_GATE_PASSWORD=<synthetic-password>
-
-# Solo si Cloudflare Access protege el hostname:
-export CF_ACCESS_CLIENT_ID=<service-token-client-id>
-export CF_ACCESS_CLIENT_SECRET=<service-token-client-secret>
-
-bash scripts/staging-https-gate.sh
 ```
 
-El gate exige:
+Si Cloudflare Access protege el hostname:
 
-- TLS/HTTPS válido;
+```bash
+export CF_ACCESS_CLIENT_ID=<service-token-client-id>
+export CF_ACCESS_CLIENT_SECRET=<service-token-client-secret>
+```
+
+Nunca registrar estos valores en issues, PR, chat ni documentos de evidencia.
+
+## 11. Gate externo agregado
+
+Ejecutar:
+
+```bash
+bash scripts/staging-acceptance.sh external
+```
+
+Debe pasar, sobre el mismo hostname y revisión:
+
+### HTTPS / seguridad
+
+- TLS válido;
 - `/health/ready` 200;
-- entrada PWA accesible;
+- PWA accesible;
 - HSTS;
 - login válido;
-- `Set-Cookie` con `HttpOnly`, `Secure`, `SameSite=Lax`;
-- `/api/v1/me` privado con `no-store`;
-- origen hostil rechazado para mutaciones autenticadas;
-- logout real;
-- sesión antigua inválida después del logout.
+- cookie `HttpOnly`, `Secure`, `SameSite=Lax`;
+- API privada `no-store`;
+- origen hostil rechazado;
+- logout y sesión invalidada.
 
-No imprimir respuestas de login completas.
+### Recorrido agrícola privado
 
-## 11. Password recovery real
+- dos usuarios aislados;
+- explotación -> finca -> parcela -> campaña;
+- entrega 1.842 kg + idempotencia;
+- rendimiento 21,9 %;
+- labor de poda + replay retry-safe;
+- timeline/resumen;
+- ticket privado con roundtrip exacto;
+- bloqueo de acceso cruzado.
 
-El comportamiento backend ya está probado en CI:
+### Mágina pública
 
-- token de reset de un solo uso;
-- cambio real de contraseña;
-- revocación de sesiones anteriores;
-- `capture` de CI no imprime el token.
+- `/magina`;
+- Tiempo/AEMET;
+- Campo/RAIF;
+- Noticias verificadas;
+- Mercado;
+- Directorio de cooperativas/almazaras;
+- procedencia/frescura/URLs HTTPS;
+- separación explícita entre contexto público y datos privados.
+
+El municipio AEMET por defecto es `bedmar-y-garciez` y puede cambiarse con `STAGING_PUBLIC_WEATHER_MUNICIPALITY` usando únicamente un slug verificado.
+
+## 12. Password recovery real
 
 Para la prueba real:
 
-1. verificar dominio/remitente de staging en Resend;
+1. verificar dominio/remitente de staging en el proveedor de correo;
 2. editar el env file: `AUTH_MAIL_TRANSPORT=resend`;
 3. mantener `AUTH_MAIL_FROM` entre comillas si contiene espacios;
 4. añadir `RESEND_API_KEY` staging-only;
 5. desplegar una nueva release/configuración;
-6. repetir `staging-host-postdeploy-gate.sh`;
+6. repetir postdeploy y gate externo;
 7. solicitar reset para una cuenta sintética;
-8. confirmar recepción del correo;
-9. completar el reset;
-10. comprobar sesiones antiguas inválidas y token no reutilizable.
+8. confirmar recepción real;
+9. completar reset;
+10. comprobar sesiones antiguas inválidas y token no reutilizable;
+11. comprobar ausencia de token/URL sensible en logs.
 
-La llamada pública de reset no espera al proveedor remoto. Los fallos de envío no imprimen email, URL/token, body del proveedor ni credenciales.
+## 13. Deploy B y rollback A
 
-## 12. Deploy B y rollback A
+El lifecycle ya está cubierto por CI, pero debe observarse también en el entorno real antes del piloto si se cambia de revisión durante staging.
 
 ```bash
-bash scripts/staging-release.sh deploy <release-B>
+bash scripts/staging-release.sh deploy staging-b
 bash scripts/staging-host-postdeploy-gate.sh
 bash scripts/staging-release.sh status
 ```
-
-Repetir el gate HTTPS externo.
 
 Después:
 
@@ -298,50 +323,31 @@ bash scripts/staging-host-postdeploy-gate.sh
 bash scripts/staging-release.sh status
 ```
 
-Repetir otra vez el gate HTTPS externo.
+El rollback recupera etiqueta y SHA de origen desde la imagen. Repetir el gate externo si el hostname ya está publicado.
 
 No usar migraciones destructivas durante el piloto. Las migraciones deben mantenerse aditivas/backward-compatible para que rollback de código sea seguro.
 
-## 13. Backup fuera del host
-
-No considerar operativo el backup si el único dump permanece en el mismo servidor.
-
-Montar o preparar un destino que esté fuera del host de staging:
+## 14. Backup fuera del host
 
 ```bash
 export STAGING_ENV_FILE=/etc/magina-olivo/staging.env
 export BACKUP_DESTINATION_DIR=/mnt/off-host/magina-staging-backups
 export BACKUP_DESTINATION_CONFIRMED_OFF_HOST=1
-bash scripts/staging-backup.sh
+bash scripts/staging-acceptance.sh backup
 ```
 
-El script se niega a continuar sin la confirmación explícita de destino externo.
+Cada bundle conserva:
 
-Cada bundle contiene:
+- PostgreSQL;
+- manifiesto relacional;
+- objetos privados;
+- `SHA256SUMS`;
+- etiqueta de release;
+- **`application_source_sha`**, el SHA Git exacto que produjo la copia.
 
-```text
-postgres.dump
-backup-meta.txt
-database-manifest.txt
-SHA256SUMS
-objects/
-  objects-manifest.json
-  <object-key files...>
-```
+No incluye env file ni credenciales.
 
-`database-manifest.txt` conserva conteos de entidades críticas, suma de kilos y estado de migraciones. `objects-manifest.json` conserva key, tamaño y SHA-256 por objeto.
-
-El bundle no contiene el env file ni credenciales.
-
-## 14. Restore no destructivo
-
-Un backup no se marca PASS hasta restaurarlo.
-
-El simulacro usa:
-
-- base PostgreSQL separada, por defecto `magina_restore_validation`;
-- bucket R2 de recuperación separado y vacío;
-- staging activo intacto.
+## 15. Restore no destructivo
 
 ```bash
 export STAGING_ENV_FILE=/etc/magina-olivo/staging.env
@@ -349,46 +355,83 @@ export RESTORE_BUNDLE_DIR=/mnt/off-host/magina-staging-backups/<bundle>
 export RESTORE_DATABASE=magina_restore_validation
 export RESTORE_OBJECT_STORAGE_BUCKET=<restore-validation-bucket>
 export RESTORE_TARGETS_CONFIRMED_ISOLATED=1
-bash scripts/staging-restore-gate.sh
+bash scripts/staging-acceptance.sh restore
 ```
 
-Si la base aislada ya existe de un simulacro anterior:
+El simulacro debe:
 
-```bash
-export RESTORE_DATABASE_CONFIRM_RECREATE=1
-```
+- rechazar un bundle sin `application_source_sha` válido;
+- verificar `SHA256SUMS`;
+- restaurar en DB/bucket aislados;
+- comparar manifiesto relacional;
+- volver a descargar/verificar objetos privados.
 
-El gate:
+## 16. Accesibilidad manual — bloque 8
 
-1. verifica `SHA256SUMS` antes de restaurar;
-2. rechaza `magina_olivo` como target;
-3. restaura PG18 en la base aislada;
-4. reconstruye el manifiesto relacional y exige `diff` exacto;
-5. valida tamaño + SHA-256 del snapshot de objetos;
-6. exige bucket de restore vacío;
-7. sube objetos al bucket separado;
-8. vuelve a descargarlos y verifica SHA-256;
-9. compara inventario final contra manifiesto;
-10. intenta limpiar objetos parciales si falla la carga.
+Ejecutar `docs/mvp/ACCESSIBILITY_GATE_V1.md` sobre **el mismo SHA**:
 
-## 15. Criterio PASS de staging externo
+- teclado;
+- TalkBack/NVDA;
+- 200 % zoom/reflow;
+- reduced motion;
+- foco visible;
+- navegación activa anunciada;
+- adjunto de ticket operable sin ratón.
 
-Staging externo se marca PASS únicamente cuando se conservan evidencias de:
+## 17. PWA/offline manual — bloque 9
 
-- host preflight;
-- deploy A healthy;
-- aislamiento local de puertos;
-- R2 roundtrip real;
-- HTTPS válido;
-- cookie `Secure` real;
-- origin/CSRF bajo proxy;
-- password recovery por correo real;
-- deploy B + aislamiento + HTTPS;
-- rollback A + aislamiento + HTTPS;
-- backup realmente fuera del host;
-- restore limpio de PostgreSQL + objetos;
-- cero datos personales reales durante las pruebas.
+Con usuario sintético y la misma revisión:
 
-Solo después puede plantearse un piloto cerrado con agricultores.
+- instalar/abrir PWA;
+- iniciar sesión online;
+- cortar red;
+- crear entrega y labor compatibles con offline;
+- confirmar pendientes visibles;
+- cerrar/reabrir sin red;
+- confirmar `Modo protegido` y conservación de outbox;
+- recuperar red;
+- revalidar sesión;
+- sincronizar/reintentar;
+- confirmar una sola entrega y una sola labor;
+- confirmar timeline actualizado;
+- confirmar bloqueo/desbloqueo de logout según pendientes;
+- confirmar que un error de sync no borra operaciones;
+- confirmar que tickets privados no se prometen como guardados offline antes de subida real.
 
-Documentación específica de los gates locales: `docs/spike/STAGING_HOST_GATES.md`.
+## 18. Evidencia y criterio PASS
+
+Registrar únicamente evidencia no sensible:
+
+- fecha/hora;
+- etiqueta de release;
+- **`source_sha` completo mostrado por `staging-acceptance.sh status`**;
+- PASS/FAIL por gate;
+- navegador/SO;
+- municipio AEMET usado;
+- IDs sintéticos necesarios;
+- incidencias + commit correctivo.
+
+No registrar cookies, passwords, tokens, secretos ni datos reales.
+
+Staging externo se marca PASS solo cuando los **nueve bloques** del issue #7 estén verdes sobre la misma revisión:
+
+1. host/contenedores;
+2. HTTPS/seguridad;
+3. recorrido privado sintético;
+4. Mágina pública/fuentes;
+5. almacenamiento privado;
+6. correo/reset;
+7. backup/restore;
+8. accesibilidad manual;
+9. PWA/offline manual.
+
+Solo entonces puede cerrarse el issue #7 y plantearse un piloto cerrado con 2–5 olivareros usando cuentas y datos sintéticos o documentos anonimizados.
+
+## Referencias
+
+- PR #6 — integración Visual V2 + MVP Core.
+- issue #7 — P0 staging real.
+- `docs/mvp/STAGING_ACCEPTANCE_V1.md` — criterio de aceptación.
+- `docs/mvp/STAGING_EXECUTION_V1.md` — secuencia operativa principal.
+- `docs/spike/STAGING_HOST_GATES.md` — gates del host.
+- `docs/INTEGRATION_V2_MVP_V1.md` — contrato de integración.

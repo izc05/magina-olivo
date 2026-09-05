@@ -1,0 +1,56 @@
+.pilot-alerts {
+  position: fixed;
+  right: 1rem;
+  top: 5.25rem;
+  z-index: 40;
+  display: grid;
+  gap: .65rem;
+  width: min(25rem, calc(100vw - 2rem));
+  pointer-events: none;
+}
+
+.pilot-alert-card {
+  display: grid;
+  gap: .3rem;
+  padding: .9rem 1rem;
+  border: 1px solid rgba(89, 91, 48, .18);
+  border-radius: 1rem;
+  background: rgba(255, 252, 242, .97);
+  box-shadow: 0 .75rem 2rem rgba(54, 55, 32, .12);
+  color: #353523;
+}
+
+.pilot-alert-card strong {
+  font-size: .95rem;
+}
+
+.pilot-alert-card span,
+.pilot-alert-card small {
+  line-height: 1.4;
+}
+
+.pilot-alert-card span {
+  font-size: .86rem;
+}
+
+.pilot-alert-card small {
+  color: #67674d;
+  font-size: .75rem;
+}
+
+@media (max-width: 720px) {
+  .pilot-alerts {
+    top: auto;
+    bottom: 5.4rem;
+    left: .75rem;
+    right: .75rem;
+    width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pilot-alerts,
+  .pilot-alert-card {
+    scroll-behavior: auto;
+  }
+}

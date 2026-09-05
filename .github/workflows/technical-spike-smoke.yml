@@ -3,7 +3,11 @@ name: Technical Spike Smoke
 on:
   pull_request:
     branches:
+      - main
       - feat/foundation-v1
+      - feat/mvp-core-v1
+      - feat/integration-v2-mvp-v1
+      - staging/**
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
@@ -13,6 +17,7 @@ concurrency:
 
 jobs:
   smoke:
+    name: Technical Spike Gate
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -46,10 +51,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24.20.0
           cache: npm
@@ -69,16 +74,16 @@ jobs:
             node --check "$script"
           done < <(find scripts -type f -name '*.mjs' -print0 | sort -z)
 
+      - name: Verify staging backup and restore safety contract
+        run: bash scripts/staging-backup-restore-contract-gate.sh
+
       - name: Typecheck workspaces
         run: npm run typecheck
 
       - name: Run unit tests
         run: npm test
 
-      - name: Migrate Better Auth from pinned dependency
-        run: npm run auth:migrate --workspace @magina/api
-
-      - name: Migrate business schema
+      - name: Migrate auth and business schemas
         run: npm run db:migrate
 
       - name: Verify durable worker and lease recovery
@@ -124,8 +129,17 @@ jobs:
           cat /tmp/magina-api.log
           exit 1
 
-      - name: Verify API security and agricultural vertical slice
+      - name: Verify API security, agricultural flow, concurrency and restore
         run: bash scripts/spike-api-flow.sh
+
+      - name: Verify persisted account preferences
+        run: bash scripts/spike-account-preferences.sh
+
+      - name: Verify structured account portability
+        run: bash scripts/spike-account-export.sh
+
+      - name: Verify agricultural tasks and calendar
+        run: bash scripts/spike-tasks-calendar.sh
 
       - name: Verify password reset and session revocation
         run: bash scripts/spike-password-reset-gate.sh

@@ -6,6 +6,7 @@ export type Farm = { id: string; name: string; description: string | null; areaH
 export type Plot = { id: string; name: string; areaHa: string | null; sigpacReference: string | null; irrigationType: string | null; oliveTreeCount: number | null; notes: string | null };
 export type Campaign = { id: string; name: string; seasonStartYear: number; seasonEndYear: number; startDate: string | null; status: string; notes: string | null };
 export type Delivery = { id: string; deliveredAt: string; kilograms: string; cooperativeId: string | null; customDestination: string | null; farmId: string | null; plotId: string | null; ticketNumber: string | null; variety: string | null; verificationStatus: string; version: number };
+export type DeliveryResult = { id: string; resultType: 'fat_yield'; value: string; unit: string; measuredAt: string | null; sourceKind: string; status: string; notes: string | null; createdAt: string; updatedAt: string };
 export type CampaignSummary = { campaignId: string; deliveriesCount: number; totalKilograms: string; deliveriesWithResult: number; pendingResultCount: number; resultCoveredKilograms: string; coveragePercent: string | null; weightedYieldPercent: string | null };
 export type DeliveryCreateBody = { deliveredAt: string; kilograms: string; cooperativeId?: string; customDestination?: string; farmId?: string; plotId?: string; ticketNumber?: string; variety?: string; notes?: string; clientGeneratedId: string };
 export type DeliveryCreateResult = Delivery | { offlineQueued: true; clientGeneratedId: string };
@@ -206,7 +207,13 @@ export const api = {
     }
   },
 
-  createYield: (deliveryId: string, value: string) => request<unknown>(`/api/v1/deliveries/${deliveryId}/results`, { method: 'POST', body: JSON.stringify({ value, measuredAt: new Date().toISOString() }) }),
+  deliveryResults: (deliveryId: string) => cachedGet<{ items: DeliveryResult[] }>(`/api/v1/deliveries/${deliveryId}/results`),
+  createYield: async (deliveryId: string, value: string) => {
+    const result = await request<DeliveryResult>(`/api/v1/deliveries/${deliveryId}/results`, { method: 'POST', body: JSON.stringify({ value, measuredAt: new Date().toISOString() }) });
+    memoryCache.delete(`/api/v1/deliveries/${deliveryId}/results`);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('magina:yield-saved', { detail: { deliveryId } }));
+    return result;
+  },
   campaignSummary: (campaignId: string) => cachedGet<CampaignSummary>(`/api/v1/campaigns/${campaignId}/summary`),
 
   activities: (holdingId: string, query: { plotId?: string; campaignId?: string; activityType?: ActivityType; limit?: number } = {}) => {

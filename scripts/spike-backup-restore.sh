@@ -8,6 +8,7 @@ SOURCE_DB="${SOURCE_DB:-magina_olivo}"
 RESTORE_DB="${RESTORE_DB:-magina_restore}"
 DOCUMENT_STORAGE_DIR="${DOCUMENT_STORAGE_DIR:-/tmp/magina-private-documents}"
 BACKUP_ROOT="${BACKUP_ROOT:-/tmp/magina-restore-bundle}"
+TICKET_FIXTURE="${TICKET_FIXTURE:-/tmp/ticket-004281.pdf}"
 
 log() {
   printf '[restore-gate] %s\n' "$*"
@@ -23,6 +24,7 @@ bash scripts/spike-delivery-concurrency.sh
 
 PG_CONTAINER="$(docker ps --filter "ancestor=${POSTGRES_IMAGE}" --format '{{.ID}}' | head -n 1)"
 [[ -n "$PG_CONTAINER" ]] || fail "PostgreSQL service container not found"
+[[ -f "$TICKET_FIXTURE" ]] || fail "Original ticket fixture is missing: $TICKET_FIXTURE"
 
 rm -rf "$BACKUP_ROOT"
 mkdir -p "$BACKUP_ROOT/documents"
@@ -126,10 +128,7 @@ RESTORED_PATH="$DOCUMENT_STORAGE_DIR/$RESTORED_OBJECT_KEY"
 [[ -f "$RESTORED_PATH" ]] || fail "Restored document object is missing: $RESTORED_OBJECT_KEY"
 ACTUAL_SHA256="$(sha256sum "$RESTORED_PATH" | awk '{print $1}')"
 [[ "$ACTUAL_SHA256" = "$RESTORED_SHA256" ]] || fail "Restored document checksum mismatch"
-
-EXPECTED_TICKET_CONTENT='ticket-004281-private'
-ACTUAL_TICKET_CONTENT="$(cat "$RESTORED_PATH")"
-[[ "$ACTUAL_TICKET_CONTENT" = "$EXPECTED_TICKET_CONTENT" ]] || fail "Restored ticket bytes differ from original fixture"
+cmp "$TICKET_FIXTURE" "$RESTORED_PATH" || fail "Restored ticket bytes differ from original fixture"
 
 log "PASS restored private document checksum and content"
 log "RESTORE GATE PASS"

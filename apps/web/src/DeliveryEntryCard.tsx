@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { api, type Farm, type Plot } from './api.ts';
+import { CampaignDocuments } from './CampaignDocuments.tsx';
 import { uploadDeliveryTicket } from './document-api.ts';
 
 type DestinationSuggestion = {
@@ -10,9 +11,24 @@ type DestinationSuggestion = {
   municipality: string | null;
 };
 
+const MAX_TICKET_BYTES = 10 * 1024 * 1024;
+const ALLOWED_TICKET_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
+
 function localDateTimeValue(): string {
   const now = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000);
   return now.toISOString().slice(0, 16);
+}
+
+function ticketFileError(file: File): string | null {
+  if (!ALLOWED_TICKET_TYPES.has(file.type)) return 'El ticket debe ser JPG, PNG, WEBP o PDF.';
+  if (file.size > MAX_TICKET_BYTES) return 'El ticket supera el máximo de 10 MB.';
+  return null;
+}
+
+function formatYield(value: string): string {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return `${value} %`;
+  return `${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 }).format(numeric)} %`;
 }
 
 export function DeliveryEntryCard({
@@ -37,6 +53,11 @@ export function DeliveryEntryCard({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
+
+  const canonicalDestination = useMemo(
+    () => destinations.find((item) => item.officialName === destinationText.trim()) ?? null,
+    [destinations, destinationText],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -78,6 +99,21 @@ export function DeliveryEntryCard({
     return () => { cancelled = true; };
   }, [farmId]);
 
+  function chooseTicket(file: File | null) {
+    setWarning(null);
+    if (!file) {
+      setTicketFile(null);
+      return;
+    }
+    const validationError = ticketFileError(file);
+    if (validationError) {
+      setTicketFile(null);
+      setWarning(validationError);
+      return;
+    }
+    setTicketFile(file);
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -88,7 +124,6 @@ export function DeliveryEntryCard({
     const ticketNumber = String(data.get('ticketNumber') || '').trim();
     const variety = String(data.get('variety') || '').trim();
     const notes = String(data.get('notes') || '').trim();
-    const canonicalDestination = destinations.find((item) => item.officialName === destination);
 
     setBusy(true);
     setError(null);
@@ -96,6 +131,11 @@ export function DeliveryEntryCard({
     setWarning(null);
 
     try {
+      if (ticketFile) {
+        const validationError = ticketFileError(ticketFile);
+        if (validationError) throw new Error(validationError);
+      }
+
       const clientGeneratedId = crypto.randomUUID();
       const body: {
         deliveredAt: string;
@@ -153,107 +193,121 @@ export function DeliveryEntryCard({
   }
 
   return (
-    <section className="section card card-body delivery-entry-card" aria-labelledby="new-delivery-title">
-      <div className="delivery-form-heading">
-        <div>
-          <p className="eyebrow page-eyebrow">Registro rápido</p>
-          <h2 id="new-delivery-title" className="section-title form-card-title">Nueva entrega</h2>
-        </div>
-        <span className="badge gold">Campaña</span>
-      </div>
-
-      <form className="form-grid" onSubmit={submit} aria-busy={busy}>
-        <div className="inline-fields">
-          <div className="field">
-            <label htmlFor="delivery-kilograms">Kilos</label>
-            <input id="delivery-kilograms" name="kilograms" type="number" min="0.001" step="0.001" inputMode="decimal" placeholder="1842" required />
+    <>
+      <section className="section card card-body delivery-entry-card" aria-labelledby="new-delivery-title">
+        <div className="delivery-form-heading">
+          <div>
+            <p className="eyebrow page-eyebrow">Registro rápido</p>
+            <h2 id="new-delivery-title" className="section-title form-card-title">Nueva entrega</h2>
           </div>
-          <div className="field">
-            <label htmlFor="delivery-destination">Almazara / cooperativa</label>
-            <input
-              id="delivery-destination"
-              name="destination"
-              type="text"
-              list="magina-destination-suggestions"
-              maxLength={200}
-              placeholder="San Sebastián"
-              aria-describedby="delivery-destination-help"
-              value={destinationText}
-              onChange={(event) => setDestinationText(event.target.value)}
-              required
-            />
-            <datalist id="magina-destination-suggestions">
-              {destinations.map((item) => (
-                <option key={item.id} value={item.officialName}>
-                  {[item.brandName, item.municipality].filter(Boolean).join(' · ')}
-                </option>
-              ))}
-            </datalist>
-            <small id="delivery-destination-help">Puedes elegir una entidad pública de Mágina o escribir cualquier otro destino.</small>
-          </div>
+          <span className="badge gold">Campaña</span>
         </div>
 
-        <div className="inline-fields">
-          <div className="field">
-            <label htmlFor="delivery-farm-dependent">Finca</label>
-            <select id="delivery-farm-dependent" value={farmId} onChange={(event) => setFarmId(event.target.value)}>
-              <option value="">Sin especificar</option>
-              {farms.map((farm) => <option key={farm.id} value={farm.id}>{farm.name}</option>)}
-            </select>
+        <form className="form-grid" onSubmit={submit} aria-busy={busy}>
+          <div className="inline-fields">
+            <div className="field">
+              <label htmlFor="delivery-kilograms">Kilos</label>
+              <input id="delivery-kilograms" name="kilograms" type="number" min="0.001" step="0.001" inputMode="decimal" placeholder="1842" required />
+            </div>
+            <div className="field">
+              <label htmlFor="delivery-destination">Almazara / cooperativa</label>
+              <input
+                id="delivery-destination"
+                name="destination"
+                type="text"
+                list="magina-destination-suggestions"
+                maxLength={200}
+                placeholder="San Sebastián"
+                aria-describedby="delivery-destination-help delivery-destination-status"
+                value={destinationText}
+                onChange={(event) => setDestinationText(event.target.value)}
+                required
+              />
+              <datalist id="magina-destination-suggestions">
+                {destinations.map((item) => (
+                  <option key={item.id} value={item.officialName}>
+                    {[item.brandName, item.municipality].filter(Boolean).join(' · ')}
+                  </option>
+                ))}
+              </datalist>
+              <small id="delivery-destination-help">Puedes elegir una entidad pública de Mágina o escribir cualquier otro destino.</small>
+              {destinationText.trim() ? (
+                <small id="delivery-destination-status" className={`destination-status${canonicalDestination ? ' destination-status--known' : ''}`}>
+                  {canonicalDestination
+                    ? `Entidad reconocida${canonicalDestination.municipality ? ` · ${canonicalDestination.municipality}` : ''}`
+                    : 'Destino manual · se guardará tal como lo has escrito'}
+                </small>
+              ) : <span id="delivery-destination-status" className="sr-only">Sin destino seleccionado</span>}
+            </div>
           </div>
-          <div className="field">
-            <label htmlFor="delivery-plot-dependent">Parcela</label>
-            <select id="delivery-plot-dependent" value={plotId} onChange={(event) => setPlotId(event.target.value)} disabled={!farmId || loadingPlots} aria-busy={loadingPlots}>
-              <option value="">{loadingPlots ? 'Cargando…' : farmId ? 'Sin especificar' : 'Elige primero una finca'}</option>
-              {plots.map((plot) => <option key={plot.id} value={plot.id}>{plot.name}</option>)}
-            </select>
-          </div>
-        </div>
 
-        <div className="inline-fields">
+          <div className="inline-fields">
+            <div className="field">
+              <label htmlFor="delivery-farm-dependent">Finca</label>
+              <select id="delivery-farm-dependent" value={farmId} onChange={(event) => setFarmId(event.target.value)}>
+                <option value="">Sin especificar</option>
+                {farms.map((farm) => <option key={farm.id} value={farm.id}>{farm.name}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="delivery-plot-dependent">Parcela</label>
+              <select id="delivery-plot-dependent" value={plotId} onChange={(event) => setPlotId(event.target.value)} disabled={!farmId || loadingPlots} aria-busy={loadingPlots}>
+                <option value="">{loadingPlots ? 'Cargando…' : farmId ? 'Sin especificar' : 'Elige primero una finca'}</option>
+                {plots.map((plot) => <option key={plot.id} value={plot.id}>{plot.name}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="inline-fields">
+            <div className="field">
+              <label htmlFor="delivery-ticket-number">Nº ticket</label>
+              <input id="delivery-ticket-number" name="ticketNumber" type="text" maxLength={200} placeholder="004281" />
+            </div>
+            <div className="field">
+              <label htmlFor="delivery-date-time">Fecha y hora</label>
+              <input id="delivery-date-time" name="deliveredAt" type="datetime-local" defaultValue={localDateTimeValue()} required />
+            </div>
+          </div>
+
+          <div className="inline-fields">
+            <div className="field">
+              <label htmlFor="delivery-variety">Variedad</label>
+              <input id="delivery-variety" name="variety" type="text" maxLength={120} placeholder="Picual" />
+            </div>
+            <div className="field delivery-file-field">
+              <label htmlFor="delivery-ticket-file">Foto / PDF del ticket</label>
+              <input
+                id="delivery-ticket-file"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,application/pdf"
+                aria-describedby="delivery-ticket-help"
+                onChange={(event) => {
+                  chooseTicket(event.target.files?.[0] ?? null);
+                  if (event.target.files?.[0] && ticketFileError(event.target.files[0])) event.target.value = '';
+                }}
+              />
+              <small id="delivery-ticket-help">{ticketFile ? `${ticketFile.name} · ${(ticketFile.size / 1024 / 1024).toFixed(2)} MB` : 'Opcional · JPG, PNG, WEBP o PDF · máximo 10 MB · archivo privado'}</small>
+            </div>
+          </div>
+
           <div className="field">
-            <label htmlFor="delivery-ticket-number">Nº ticket</label>
-            <input id="delivery-ticket-number" name="ticketNumber" type="text" maxLength={200} placeholder="004281" />
+            <label htmlFor="delivery-notes">Notas</label>
+            <textarea id="delivery-notes" name="notes" maxLength={5000} placeholder="Observaciones de la entrega…" />
           </div>
-          <div className="field">
-            <label htmlFor="delivery-date-time">Fecha y hora</label>
-            <input id="delivery-date-time" name="deliveredAt" type="datetime-local" defaultValue={localDateTimeValue()} required />
+
+          {error ? <div className="alert" role="alert">{error}</div> : null}
+          {notice ? <div className="alert success" role="status" aria-live="polite">{notice}</div> : null}
+          {warning ? <div className="alert delivery-warning" role="status" aria-live="polite">{warning}</div> : null}
+
+          <div className="delivery-save-row">
+            <button className="primary-button" type="submit" disabled={busy}>{busy ? 'Guardando…' : 'Guardar entrega'}</button>
+            <span>La finca es opcional. Si eliges parcela, siempre pertenecerá a la finca seleccionada.</span>
           </div>
-        </div>
+        </form>
+      </section>
 
-        <div className="inline-fields">
-          <div className="field">
-            <label htmlFor="delivery-variety">Variedad</label>
-            <input id="delivery-variety" name="variety" type="text" maxLength={120} placeholder="Picual" />
-          </div>
-          <div className="field delivery-file-field">
-            <label htmlFor="delivery-ticket-file">Foto / PDF del ticket</label>
-            <input
-              id="delivery-ticket-file"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,application/pdf"
-              aria-describedby="delivery-ticket-help"
-              onChange={(event) => setTicketFile(event.target.files?.[0] ?? null)}
-            />
-            <small id="delivery-ticket-help">{ticketFile ? `${ticketFile.name} · ${(ticketFile.size / 1024 / 1024).toFixed(2)} MB` : 'Opcional · máximo 10 MB · archivo privado'}</small>
-          </div>
-        </div>
-
-        <div className="field">
-          <label htmlFor="delivery-notes">Notas</label>
-          <textarea id="delivery-notes" name="notes" maxLength={5000} placeholder="Observaciones de la entrega…" />
-        </div>
-
-        {error ? <div className="alert" role="alert">{error}</div> : null}
-        {notice ? <div className="alert success" role="status" aria-live="polite">{notice}</div> : null}
-        {warning ? <div className="alert delivery-warning" role="status" aria-live="polite">{warning}</div> : null}
-
-        <div className="delivery-save-row">
-          <button className="primary-button" type="submit" disabled={busy}>{busy ? 'Guardando…' : 'Guardar entrega'}</button>
-          <span>La finca es opcional. Si eliges parcela, siempre pertenecerá a la finca seleccionada.</span>
-        </div>
-      </form>
-    </section>
+      <CampaignDocuments holdingId={holdingId} campaignId={campaignId} />
+    </>
   );
 }
 
@@ -267,10 +321,48 @@ export function DeliveryTicketButton({
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [yieldPercent, setYieldPercent] = useState<string | null>(null);
+  const [yieldLoaded, setYieldLoaded] = useState(false);
+  const [yieldUnavailable, setYieldUnavailable] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadYield() {
+      try {
+        const result = await api.deliveryResults(deliveryId);
+        const current = [...result.items].reverse().find((item) => item.resultType === 'fat_yield' && item.status === 'current') ?? null;
+        if (!cancelled) {
+          setYieldPercent(current?.value ?? null);
+          setYieldUnavailable(false);
+        }
+      } catch {
+        if (!cancelled) setYieldUnavailable(true);
+      } finally {
+        if (!cancelled) setYieldLoaded(true);
+      }
+    }
+
+    const refresh = (event: Event) => {
+      if (event instanceof CustomEvent && event.detail?.deliveryId === deliveryId) void loadYield();
+    };
+
+    void loadYield();
+    window.addEventListener('magina:yield-saved', refresh);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('magina:yield-saved', refresh);
+    };
+  }, [deliveryId]);
 
   async function choose(file: File | null) {
     if (!file) return;
+    const validationError = ticketFileError(file);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
     setBusy(true);
     setNotice(null);
     setError(null);
@@ -284,8 +376,15 @@ export function DeliveryTicketButton({
     }
   }
 
+  const yieldLabel = yieldPercent
+    ? `Rendimiento ${formatYield(yieldPercent)}`
+    : yieldLoaded
+      ? (yieldUnavailable ? 'Rendimiento no disponible' : 'Rendimiento pendiente')
+      : 'Cargando rendimiento…';
+
   return (
     <div className="delivery-ticket-action" aria-busy={busy}>
+      <span className={`badge${yieldPercent ? ' gold' : ''}`} aria-live="polite">{yieldLabel}</span>
       <button
         className="ticket-upload-button"
         type="button"

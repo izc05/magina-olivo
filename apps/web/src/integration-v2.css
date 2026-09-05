@@ -1,0 +1,351 @@
+/*
+ * Visual V2 integration layer.
+ *
+ * This file intentionally contains presentation-only overrides. It must not
+ * introduce demo data, business calculations, authorization decisions or API
+ * behaviour. The MVP Core remains the authority for data and domain rules.
+ */
+
+:root {
+  --v2-ivory: #f5f0e4;
+  --v2-paper: #fffdf8;
+  --v2-olive-deep: #2f3b27;
+  --v2-olive: #566f43;
+  --v2-olive-soft: #a9b59a;
+  --v2-gold: #c99b2c;
+  --v2-gold-soft: #efe1b8;
+  --v2-line: rgba(47, 59, 39, 0.12);
+  --v2-shadow: 0 18px 48px rgba(47, 59, 39, 0.09);
+}
+
+html,
+body {
+  background:
+    radial-gradient(circle at 84% -6%, rgba(201, 155, 44, 0.08), transparent 28rem),
+    var(--v2-ivory);
+}
+
+.app-shell {
+  background: transparent;
+}
+
+.app-header {
+  min-height: 72px;
+  padding: 11px max(18px, calc((100vw - 920px) / 2));
+  background: rgba(245, 240, 228, 0.93);
+  border-bottom-color: var(--v2-line);
+}
+
+.brand-lockup,
+.login-brand {
+  position: relative;
+}
+
+.brand-lockup {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: center;
+}
+
+.brand-lockup::before,
+.login-brand::before {
+  content: "";
+  background: url('/brand/magina-olivo-mark.svg') center / contain no-repeat;
+}
+
+.brand-lockup::before {
+  grid-row: 1 / span 2;
+  width: 42px;
+  height: 42px;
+}
+
+.brand-lockup .brand-title,
+.brand-lockup .brand-kicker {
+  grid-column: 2;
+}
+
+.brand-title {
+  color: var(--v2-olive-deep);
+  font-size: 1.28rem;
+}
+
+.brand-kicker {
+  letter-spacing: 0.025em;
+}
+
+.user-chip {
+  width: 44px;
+  height: 44px;
+  border-color: var(--v2-line);
+  background: rgba(255, 253, 248, 0.9);
+  box-shadow: 0 6px 18px rgba(47, 59, 39, 0.07);
+}
+
+.page {
+  width: min(100% - 30px, 820px);
+  padding-top: 18px;
+}
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  border-radius: 30px;
+  padding: 30px 24px 24px;
+  background:
+    linear-gradient(180deg, rgba(31, 43, 26, 0.12) 0%, rgba(31, 43, 26, 0.88) 100%),
+    radial-gradient(circle at 78% 18%, rgba(201, 155, 44, 0.45), transparent 24%),
+    linear-gradient(135deg, #647653 0%, #33432b 72%);
+  box-shadow: var(--v2-shadow);
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.24;
+  background:
+    radial-gradient(ellipse at 15% 85%, rgba(190, 204, 165, 0.72) 0 10%, transparent 10.5%),
+    radial-gradient(ellipse at 30% 70%, rgba(190, 204, 165, 0.55) 0 8%, transparent 8.5%),
+    radial-gradient(ellipse at 47% 83%, rgba(190, 204, 165, 0.5) 0 7%, transparent 7.5%);
+}
+
+.hero .eyebrow {
+  color: #f1d690;
+  opacity: 1;
+}
+
+.hero h1 {
+  max-width: 11ch;
+  font-size: clamp(2.2rem, 10vw, 4.2rem);
+}
+
+.hero-sub {
+  max-width: 40ch;
+  font-size: 0.94rem;
+}
+
+.metrics {
+  gap: 9px;
+}
+
+.metric {
+  min-width: 0;
+  padding: 14px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(8px);
+}
+
+.metric-value {
+  font-size: clamp(1.12rem, 5vw, 1.45rem);
+}
+
+.coverage-track {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.quick-actions {
+  margin-top: 13px;
+  gap: 8px;
+}
+
+.quick-button {
+  position: relative;
+  min-height: 54px;
+  border: 1px solid var(--v2-line);
+  background: rgba(255, 253, 248, 0.92);
+  color: var(--v2-olive-deep);
+  box-shadow: 0 8px 20px rgba(47, 59, 39, 0.045);
+}
+
+.quick-button:first-child {
+  background: var(--v2-olive-deep);
+  color: white;
+  border-color: transparent;
+}
+
+.section {
+  margin-top: 30px;
+}
+
+.section-heading {
+  align-items: center;
+}
+
+.section-title {
+  color: var(--v2-olive-deep);
+  font-size: clamp(1.45rem, 5vw, 1.72rem);
+}
+
+.section-copy {
+  line-height: 1.45;
+}
+
+.card {
+  background: rgba(255, 253, 248, 0.94);
+  border-color: var(--v2-line);
+  box-shadow: 0 8px 26px rgba(47, 59, 39, 0.04);
+}
+
+.card.interactive,
+.list-card.interactive {
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.card.interactive[aria-pressed="true"],
+.list-card.interactive[aria-pressed="true"] {
+  border-color: rgba(86, 111, 67, 0.42);
+  box-shadow: 0 10px 28px rgba(47, 59, 39, 0.08);
+}
+
+.badge {
+  background: rgba(86, 111, 67, 0.1);
+  color: var(--v2-olive-deep);
+}
+
+.badge.gold {
+  background: var(--v2-gold-soft);
+  color: #5c4816;
+}
+
+.selector {
+  border-color: var(--v2-line);
+  background: rgba(255, 253, 248, 0.95);
+}
+
+.login-shell {
+  background:
+    radial-gradient(circle at 84% 8%, rgba(201, 155, 44, 0.18), transparent 24rem),
+    radial-gradient(circle at 12% 92%, rgba(86, 111, 67, 0.12), transparent 28rem),
+    var(--v2-ivory);
+}
+
+.login-card {
+  padding: 32px;
+  border-color: var(--v2-line);
+  background: rgba(255, 253, 248, 0.97);
+  box-shadow: var(--v2-shadow);
+}
+
+.login-brand {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  align-items: center;
+  margin-bottom: 34px;
+}
+
+.login-brand::before {
+  grid-row: 1 / span 2;
+  width: 58px;
+  height: 58px;
+}
+
+.login-brand .brand-title,
+.login-brand .brand-kicker {
+  grid-column: 2;
+}
+
+.login-title {
+  font-size: clamp(2.35rem, 9vw, 3.15rem);
+}
+
+.login-copy {
+  line-height: 1.5;
+}
+
+.primary-button {
+  background: var(--v2-olive-deep);
+}
+
+.field input,
+.field select,
+.field textarea {
+  border-color: rgba(47, 59, 39, 0.16);
+  background: #fffefa;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: var(--v2-olive);
+  box-shadow: 0 0 0 3px rgba(86, 111, 67, 0.12);
+}
+
+.bottom-nav-v2 {
+  border-color: var(--v2-line);
+  background: rgba(255, 253, 248, 0.96);
+  box-shadow: 0 18px 46px rgba(47, 59, 39, 0.16);
+}
+
+.delivery-row {
+  background: rgba(255, 253, 248, 0.96);
+}
+
+@media (max-width: 520px) {
+  .page {
+    width: min(100% - 22px, 820px);
+    padding-top: 12px;
+  }
+
+  .app-header {
+    min-height: 66px;
+    padding-inline: 13px;
+  }
+
+  .brand-lockup {
+    grid-template-columns: 36px minmax(0, 1fr);
+    column-gap: 8px;
+  }
+
+  .brand-lockup::before {
+    width: 36px;
+    height: 36px;
+  }
+
+  .brand-title {
+    font-size: 1.15rem;
+  }
+
+  .brand-kicker {
+    font-size: 0.66rem;
+  }
+
+  .hero {
+    min-height: 330px;
+    padding: 25px 18px 18px;
+    border-radius: 26px;
+  }
+
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quick-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .login-card {
+    padding: 26px 22px;
+    border-radius: 27px;
+  }
+}
+
+@media (min-width: 900px) {
+  .page {
+    width: min(100% - 48px, 980px);
+  }
+
+  .hero {
+    min-height: 360px;
+    padding: 42px 38px 34px;
+  }
+}

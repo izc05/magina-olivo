@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { WeatherRainAlertSummary } from './WeatherRainAlertSummary';
+import './weather-radar.css';
 
 type Municipality = {
   slug: string;
@@ -16,6 +18,11 @@ type WeatherDay = {
   windMaxKmh: number | null;
 };
 
+type WeatherFreshness = {
+  status: 'fresh' | 'aging' | 'stale' | 'unknown';
+  ageHours: number | null;
+};
+
 type WeatherResponse = {
   municipality: { slug: string; name: string; province: string };
   forecast: {
@@ -23,10 +30,35 @@ type WeatherResponse = {
     elaboratedAt: string | null;
     days: WeatherDay[];
   };
+  freshness: WeatherFreshness;
+  availability: {
+    mode: 'live' | 'cache' | 'degraded-cache';
+  };
   source: {
     label: string;
     attribution: string;
     scopeNote: string;
+  };
+};
+
+type RadarFrame = {
+  id: string;
+  capturedAt: string;
+  imageUrl: string;
+};
+
+type RadarResponse = {
+  items: RadarFrame[];
+  playback: {
+    automatic: boolean;
+    frameCount: number;
+    scope: string;
+  };
+  source: {
+    provider: string;
+    product: string;
+    attribution: string;
+    note: string;
   };
 };
 
@@ -41,10 +73,56 @@ function dayLabel(date: string): string {
     : new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }).format(parsed);
 }
 
+function radarTimeLabel(value: string): string {
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime())
+    ? 'Hora no disponible'
+    : new Intl.DateTimeFormat('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(parsed);
+}
+
+function freshnessCopy(freshness: WeatherFreshness): { label: string; detail: string } {
+  const age = freshness.ageHours == null
+    ? null
+    : new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 }).format(freshness.ageHours);
+
+  switch (freshness.status) {
+    case 'fresh':
+      return {
+        label: 'Actualizada',
+        detail: age == null ? 'Predicción reciente de AEMET.' : `Predicción elaborada hace aproximadamente ${age} h.`,
+      };
+    case 'aging':
+      return {
+        label: 'Revisar fecha',
+        detail: age == null ? 'Comprueba la hora de elaboración antes de planificar.' : `La predicción tiene aproximadamente ${age} h. Comprueba la hora de elaboración.`,
+      };
+    case 'stale':
+      return {
+        label: 'Predicción desactualizada',
+        detail: age == null ? 'No la uses como referencia actual sin contrastarla.' : `La predicción tiene aproximadamente ${age} h. Contrástala antes de organizar labores.`,
+      };
+    default:
+      return {
+        label: 'Fecha no disponible',
+        detail: 'AEMET no ha proporcionado una hora de elaboración utilizable; no asumimos que el dato sea reciente.',
+      };
+  }
+}
+
 export function MaginaWeatherPage() {
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
   const [selectedSlug, setSelectedSlug] = useState('huelma');
   const [weather, setWeather] = useState<WeatherResponse | null>(null);
+  const [radar, setRadar] = useState<RadarResponse | null>(null);
+  const [radarIndex, setRadarIndex] = useState(0);
+  const [radarPlaying, setRadarPlaying] = useState(false);
+  const [radarLoading, setRadarLoading] = useState(true);
+  const [radarError, setRadarError] = useState<string | null>(null);
   const [loadingMunicipalities, setLoadingMunicipalities] = useState(true);
   const [loadingWeather, setLoadingWeather] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,10 +190,55 @@ export function MaginaWeatherPage() {
     return () => controller.abort();
   }, [selectedSlug, loadingMunicipalities]);
 
+  useEffect(() => {
+    let active = true;
+
+    const loadRadar = async () => {
+      try {
+        const response = await fetch('/api/v1/public/weather/radar/frames', {
+          headers: { accept: 'application/json' },
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const result = await response.json() as RadarResponse;
+        if (!active) return;
+        setRadar(result);
+        setRadarIndex(result.items.length > 0 ? result.items.length - 1 : 0);
+        setRadarError(null);
+      } catch {
+        if (!active) return;
+        setRadarError('El radar de lluvia no está disponible temporalmente.');
+      } finally {
+        if (active) setRadarLoading(false);
+      }
+    };
+
+    void loadRadar();
+    const refreshTimer = window.setInterval(() => void loadRadar(), 5 * 60 * 1000);
+
+    return () => {
+      active = false;
+      window.clearInterval(refreshTimer);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!radarPlaying || !radar || radar.items.length < 2) return;
+
+    const playbackTimer = window.setInterval(() => {
+      setRadarIndex((current) => (current + 1) % radar.items.length);
+    }, 900);
+
+    return () => window.clearInterval(playbackTimer);
+  }, [radarPlaying, radar]);
+
   const selectedMunicipality = useMemo(
     () => municipalities.find((item) => item.slug === selectedSlug) ?? null,
     [municipalities, selectedSlug],
   );
+  const freshness = weather ? freshnessCopy(weather.freshness) : null;
+  const degraded = weather?.availability.mode === 'degraded-cache';
+  const radarFrame = radar?.items[radarIndex] ?? null;
+  const radarFrameCount = radar?.items.length ?? 0;
 
   return (
     <main className="weather-shell" id="main-content">
@@ -164,6 +287,11 @@ export function MaginaWeatherPage() {
         </div>
 
         {error ? <div className="alert" role="status">{error}</div> : null}
+        {degraded ? (
+          <div className="alert" role="status">
+            <strong>AEMET no responde ahora.</strong> Mostramos temporalmente la última predicción disponible porque todavía está dentro del límite de frescura permitido. Revisa su fecha antes de organizar labores sensibles al tiempo.
+          </div>
+        ) : null}
 
         {weather ? (
           <>
@@ -183,12 +311,86 @@ export function MaginaWeatherPage() {
               ))}
             </div>
             <div className="weather-source card">
+              <p><strong>Estado:</strong> {freshness?.label ?? 'Fecha no disponible'}</p>
+              {freshness ? <p>{freshness.detail}</p> : null}
               <p><strong>Fuente:</strong> {weather.source.attribution} · {weather.source.label}</p>
               <p>{weather.source.scopeNote}</p>
               {weather.forecast.elaboratedAt ? <p>Predicción elaborada: {new Date(weather.forecast.elaboratedAt).toLocaleString('es-ES')}</p> : null}
             </div>
           </>
         ) : null}
+      </section>
+
+      <WeatherRainAlertSummary />
+
+      <section className="weather-radar-section" aria-labelledby="weather-radar-title">
+        <div className="weather-results-heading">
+          <div>
+            <p className="eyebrow">Movimiento reciente</p>
+            <h2 id="weather-radar-title">Radar de lluvia</h2>
+            <p>Observa cómo se desplazan las zonas de precipitación en los últimos fotogramas disponibles.</p>
+          </div>
+          <span className="badge gold">AEMET</span>
+        </div>
+
+        {radarError ? <div className="alert" role="status">{radarError}</div> : null}
+
+        <div className="card weather-radar-card" aria-busy={radarLoading}>
+          {radarLoading ? (
+            <div className="weather-radar-empty">Cargando radar de lluvia…</div>
+          ) : radarFrame ? (
+            <>
+              <div className="weather-radar-viewport">
+                <img
+                  key={radarFrame.id}
+                  className="weather-radar-image"
+                  src={radarFrame.imageUrl}
+                  alt="Composición nacional del radar de precipitación de AEMET"
+                />
+                <span className="weather-radar-time">{radarTimeLabel(radarFrame.capturedAt)}</span>
+              </div>
+
+              <div className="weather-radar-controls">
+                <button
+                  type="button"
+                  className="secondary-button weather-radar-play"
+                  disabled={radarFrameCount < 2}
+                  aria-pressed={radarPlaying}
+                  onClick={() => setRadarPlaying((playing) => !playing)}
+                >
+                  {radarPlaying ? '⏸ Pausar' : '▶ Reproducir'}
+                </button>
+                <div className="weather-radar-timeline">
+                  <label htmlFor="weather-radar-frame">
+                    Fotograma {radarIndex + 1} de {radarFrameCount}
+                  </label>
+                  <input
+                    id="weather-radar-frame"
+                    type="range"
+                    min="0"
+                    max={Math.max(0, radarFrameCount - 1)}
+                    step="1"
+                    value={radarIndex}
+                    onChange={(event) => {
+                      setRadarPlaying(false);
+                      setRadarIndex(Number(event.target.value));
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="weather-radar-source">
+                <p><strong>Fuente:</strong> {radar?.source.attribution ?? 'AEMET'} · {radar?.source.provider ?? 'AEMET OpenData'}</p>
+                <p>{radar?.source.note ?? 'Radar de precipitación. No representa una capa de nubosidad por satélite.'}</p>
+              </div>
+            </>
+          ) : (
+            <div className="weather-radar-empty">
+              <strong>Historial de radar en formación.</strong>
+              <span>El servidor irá incorporando automáticamente nuevos fotogramas. Con dos o más imágenes se activará la reproducción.</span>
+            </div>
+          )}
+        </div>
       </section>
     </main>
   );

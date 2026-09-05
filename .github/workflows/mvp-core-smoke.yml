@@ -3,7 +3,11 @@ name: MVP Core Smoke
 on:
   pull_request:
     branches:
+      - main
       - feat/technical-spike-v1
+      - feat/mvp-core-v1
+      - feat/integration-v2-mvp-v1
+      - staging/**
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
@@ -13,14 +17,15 @@ concurrency:
 
 jobs:
   web:
+    name: MVP Core Gate
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24.20.0
           cache: npm
@@ -35,14 +40,168 @@ jobs:
         run: npm test
 
       - name: Validate staging gate scripts
-        run: bash -n scripts/mvp-core-flow-gate.sh
+        run: |
+          bash -n scripts/mvp-core-flow-gate.sh
+          bash -n scripts/staging-host-preflight.sh
+          bash -n scripts/staging-release.sh
+          bash -n scripts/staging-release-source-gate.sh
+          bash -n scripts/staging-acceptance.sh
+          bash -n scripts/staging-public-magina-gate.sh
+          bash -n scripts/staging-backup.sh
+          bash -n scripts/staging-restore-gate.sh
+          bash -n scripts/pilot-participant-setup.sh
+          bash -n scripts/pilot-evidence-init.sh
+          node --check scripts/pilot-evidence-summary.mjs
+
+      - name: Verify staging acceptance documentation contract
+        run: |
+          acceptance=docs/mvp/STAGING_ACCEPTANCE_V1.md
+          execution=docs/mvp/STAGING_EXECUTION_V1.md
+          external=docs/spike/EXTERNAL_STAGING_RUNBOOK.md
+
+          grep -q 'nueve bloques' "$acceptance"
+          grep -q '### 8. Accesibilidad manual' "$acceptance"
+          grep -q '### 9. PWA / offline manual' "$acceptance"
+          grep -q 'nueve bloques' "$execution"
+          grep -q '## Fase 8 — Accesibilidad manual' "$execution"
+          grep -q '## Fase 9 — PWA / offline manual' "$execution"
+          grep -q 'nueve bloques' "$external"
+          grep -q '## 16. Accesibilidad manual — bloque 8' "$external"
+          grep -q '## 17. PWA/offline manual — bloque 9' "$external"
+          grep -q 'current-source-sha' "$acceptance"
+          grep -q 'current-source-sha' "$execution"
+          grep -q 'application_source_sha' "$acceptance"
+          grep -q 'application_source_sha' "$external"
+
+          if grep -Eq 'ocho bloques|eight blocks|current_source_sha|previous_source_sha' "$acceptance" "$execution" "$external"; then
+            echo 'Staging documentation drifted back to the obsolete eight-block/underscore contract'
+            exit 1
+          fi
+
+      - name: Verify staging public-data configuration
+        run: |
+          grep -q '^AEMET_API_KEY=' infra/docker/staging.env.example
+          grep -q 'AEMET_API_KEY:.*AEMET_API_KEY' infra/docker/compose.staging.yml
+          grep -q 'AEMET_API_KEY' scripts/staging-host-preflight.sh
+          grep -q -- '-u AEMET_API_KEY' scripts/staging-release.sh
+          grep -q -- '-u AEMET_API_KEY' scripts/staging-backup.sh
+          grep -q -- '-u AEMET_API_KEY' scripts/staging-restore-gate.sh
+
+      - name: Verify Raspberry external data guard
+        run: |
+          grep -q '^MAGINA_POSTGRES_DATA_DIR=' infra/docker/staging.env.example
+          grep -q '^STAGING_REQUIRE_EXTERNAL_DATA=' infra/docker/staging.env.example
+          grep -q 'MAGINA_POSTGRES_DATA_DIR:-magina_staging_postgres' infra/docker/compose.staging.yml
+          grep -q 'STAGING_REQUIRE_EXTERNAL_DATA' scripts/staging-host-preflight.sh
+          grep -q 'findmnt' scripts/staging-host-preflight.sh
+          grep -q "PostgreSQL data path is still on the root filesystem" scripts/staging-host-preflight.sh
+          grep -q -- '-u MAGINA_POSTGRES_DATA_DIR' scripts/staging-release.sh
+
+      - name: Verify Docker build context excludes local evidence
+        run: |
+          grep -qxF '.deploy/' .dockerignore
+          grep -qxF '.tmp/' .dockerignore
+          grep -qxF '.cache/' .dockerignore
+          grep -qxF '**/*.credentials' .dockerignore
+
+      - name: Verify staging release source guard
+        run: |
+          bash scripts/staging-release-source-gate.sh
+
+          trace_state=/tmp/magina-staging-traceability-state
+          rm -rf "$trace_state"
+          mkdir -p "$trace_state"
+          printf '%s\n' 'ci-trace-release' > "$trace_state/current"
+          printf '%s\n' '0123456789abcdef0123456789abcdef01234567' > "$trace_state/current-source-sha"
+          trace_status="$(MAGINA_STAGING_STATE_DIR="$trace_state" bash scripts/staging-acceptance.sh status)"
+          printf '%s\n' "$trace_status"
+          grep -q '^release=ci-trace-release$' <<<"$trace_status"
+          grep -q '^source_sha=0123456789abcdef0123456789abcdef01234567$' <<<"$trace_status"
+          grep -q 'application_source_sha=' scripts/staging-backup.sh
+          grep -q 'application_source_sha' scripts/staging-restore-gate.sh
+          rm -rf "$trace_state"
+
+      - name: Verify Cloudflare Access gate configuration guard
+        run: |
+          if CF_ACCESS_CLIENT_ID=ci-only-id API_BASE=http://127.0.0.1:9 bash scripts/mvp-core-flow-gate.sh > /tmp/mvp-access-guard.log 2>&1; then
+            echo 'MVP gate unexpectedly accepted a partial Cloudflare Access service token'
+            cat /tmp/mvp-access-guard.log
+            exit 1
+          fi
+          grep -q 'both CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET must be set' /tmp/mvp-access-guard.log
+
+          if STAGING_BASE_URL=https://staging.example.com \
+            CF_ACCESS_CLIENT_ID=ci-only-id \
+            bash scripts/staging-public-magina-gate.sh > /tmp/public-magina-access-guard.log 2>&1; then
+            echo 'Public Mágina gate unexpectedly accepted a partial Cloudflare Access service token'
+            cat /tmp/public-magina-access-guard.log
+            exit 1
+          fi
+          grep -q 'both CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET must be set' /tmp/public-magina-access-guard.log
+
+      - name: Verify pilot safety and decision guards
+        run: |
+          if STAGING_BASE_URL=https://staging.example.com \
+            PILOT_PARTICIPANT_ID=p01 \
+            CF_ACCESS_CLIENT_ID=ci-only-id \
+            bash scripts/pilot-participant-setup.sh > /tmp/pilot-access-guard.log 2>&1; then
+            echo 'Pilot participant setup unexpectedly accepted a partial Cloudflare Access service token'
+            cat /tmp/pilot-access-guard.log
+            exit 1
+          fi
+          grep -q 'both CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET must be set' /tmp/pilot-access-guard.log
+
+          if STAGING_BASE_URL=https://staging.example.com \
+            PILOT_PARTICIPANT_ID=p01 \
+            PILOT_PARTICIPANT_EMAIL=real-user@invalid.test \
+            bash scripts/pilot-participant-setup.sh > /tmp/pilot-email-guard.log 2>&1; then
+            echo 'Pilot participant setup unexpectedly accepted a non-synthetic email'
+            cat /tmp/pilot-email-guard.log
+            exit 1
+          fi
+          grep -q 'synthetic pilot email required' /tmp/pilot-email-guard.log
+
+          PILOT_RUN_ID=ci-round \
+            PILOT_PARTICIPANT_IDS=p01,p02 \
+            STAGING_BASE_URL=https://staging.example.com \
+            bash scripts/pilot-evidence-init.sh
+          test -f .deploy/pilot-evidence/ci-round/results.csv
+          test -f .deploy/pilot-evidence/ci-round/findings.csv
+          test -f .deploy/pilot-evidence/ci-round/round-checks.csv
+          grep -q '^participant_id,task,completed,help,time_seconds' .deploy/pilot-evidence/ci-round/results.csv
+          grep -q 'Privacy rule: aliases only' .deploy/pilot-evidence/ci-round/manifest.txt
+
+          for participant in p01 p02; do
+            for task_number in $(seq 1 10); do
+              seconds=10
+              [ "$task_number" = 3 ] && seconds=30
+              [ "$task_number" = 4 ] && seconds=20
+              [ "$task_number" = 5 ] && seconds=10
+              echo "$participant,T$task_number,yes,none,$seconds,no,no,no,5,none,ci" >> .deploy/pilot-evidence/ci-round/results.csv
+            done
+          done
+
+          cat > .deploy/pilot-evidence/ci-round/round-checks.csv <<'EOF'
+          check,value,required,notes
+          data_loss_count,0,0,ci
+          duplicate_count,0,0,ci
+          cross_user_access_count,0,0,ci
+          market_understanding_percent,100,100,ci
+          source_understanding_percent,100,100,ci
+          critical_mobile_accessibility_blockers,0,0,ci
+          EOF
+
+          PILOT_RUN_ID=ci-round node scripts/pilot-evidence-summary.mjs > /tmp/pilot-summary.log
+          grep -q '^Decision: GO$' /tmp/pilot-summary.log
+          grep -q '"decision": "GO"' .deploy/pilot-evidence/ci-round/summary.json
+          rm -rf .deploy/pilot-evidence/ci-round
 
       - name: Build web PWA
         run: npm run build --workspace @magina/web
 
       - name: Inspect frontend bundle for server secrets
         run: |
-          if grep -R -E 'BETTER_AUTH_SECRET|DATABASE_URL|RESEND_API_KEY|OBJECT_STORAGE_SECRET_ACCESS_KEY' apps/web/dist; then
+          if grep -R -E 'BETTER_AUTH_SECRET|DATABASE_URL|RESEND_API_KEY|AEMET_API_KEY|OBJECT_STORAGE_SECRET_ACCESS_KEY' apps/web/dist; then
             echo 'Server-only secret material found in frontend bundle'
             exit 1
           fi

@@ -26,3 +26,21 @@ test('server keeps private API no-store while permitting cache for public reads'
   assert.match(security, /cache-control', 'no-store'/);
   assert.match(security, /request\.method === 'GET' && isPublicReadApiPath/);
 });
+
+test('staging cache-controlled web entries retain required security headers', async () => {
+  const nginx = await read('../../../infra/docker/nginx.staging.conf');
+  const requiredHeaders = [
+    'add_header Cache-Control "no-cache, no-store, must-revalidate" always;',
+    'add_header X-Content-Type-Options "nosniff" always;',
+    'add_header X-Frame-Options "DENY" always;',
+    'add_header Referrer-Policy "no-referrer" always;',
+    'add_header Strict-Transport-Security "max-age=31536000" always;',
+  ];
+
+  for (const path of ['index.html', 'sw.js']) {
+    const escapedPath = path.replace('.', '\\.');
+    const block = nginx.match(new RegExp(`location = /${escapedPath} \\{([\\s\\S]*?)\\n  \\}`))?.[1];
+    assert.ok(block, `missing staging location for /${path}`);
+    for (const header of requiredHeaders) assert.ok(block.includes(header), `/${path} is missing ${header}`);
+  }
+});

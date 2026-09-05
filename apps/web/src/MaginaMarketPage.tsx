@@ -13,6 +13,7 @@ type PublicSource = {
   key: string;
   provider: string;
   label: string;
+  sourceUrl: string | null;
   licenseLabel: string | null;
   updateFrequency: string | null;
   lastCheckedAt: string | null;
@@ -71,6 +72,11 @@ export function MaginaMarketPage() {
       </section>
 
       {error ? <div className="alert" role="alert">No se ha podido consultar ahora el estado de la fuente oficial.</div> : null}
+      {source?.hasError ? (
+        <div className="alert" role="status">
+          La última comprobación automática de esta fuente registró una incidencia. Mágina Olivo mantiene bloqueada la publicación de precios estructurados hasta recuperar y verificar la fuente.
+        </div>
+      ) : null}
 
       <section className="market-grid" aria-busy={loading}>
         <article className="card market-card editorial-card">
@@ -103,7 +109,10 @@ export function MaginaMarketPage() {
       </section>
 
       <footer className="directory-footer">
-        <p>Fuente registrada: {source?.provider ?? 'Observatorio de Precios y Mercados · Junta de Andalucía'}{source?.licenseLabel ? ` · ${source.licenseLabel}` : ''}.</p>
+        <p>
+          Fuente registrada: {source?.provider ?? 'Observatorio de Precios y Mercados · Junta de Andalucía'}{source?.licenseLabel ? ` · ${source.licenseLabel}` : ''}.
+          {source?.sourceUrl ? <> <a href={source.sourceUrl} target="_blank" rel="noreferrer noopener">Consultar fuente oficial</a>.</> : null}
+        </p>
       </footer>
     </main>
   );

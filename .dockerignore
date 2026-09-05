@@ -7,5 +7,13 @@ node_modules
 .env.*
 !.env.example
 .data
+.deploy
+.deploy/
+.tmp
+.tmp/
+.cache
+.cache/
+*.credentials
+**/*.credentials
 coverage
 *.log

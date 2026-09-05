@@ -18,12 +18,25 @@ fail() {
   exit 1
 }
 
+meta_value() {
+  local key="$1"
+  awk -F= -v wanted="$key" '$1 == wanted { sub(/^[^=]*=/, ""); print; exit }' "$BUNDLE/backup-meta.txt"
+}
+
+read_env_value() {
+  local key="$1"
+  awk -F= -v wanted="$key" '$1 == wanted { sub(/^[^=]*=/, ""); print; exit }' "$ENV_FILE"
+}
+
 [[ -n "$ENV_FILE" && -f "$ENV_FILE" ]] || fail "STAGING_ENV_FILE must point to the staging env file"
 [[ -n "$BUNDLE" && -d "$BUNDLE" ]] || fail "RESTORE_BUNDLE_DIR must point to an existing backup bundle"
 [[ "$BUNDLE" = /* ]] || fail "RESTORE_BUNDLE_DIR must be an absolute path"
 [[ "$RESTORE_DB" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]] || fail "RESTORE_DATABASE must be a simple PostgreSQL identifier"
 [[ "$RESTORE_DB" != "magina_olivo" ]] || fail "restore drill must never target the live staging database"
 [[ -n "$RESTORE_BUCKET" ]] || fail "RESTORE_OBJECT_STORAGE_BUCKET is required and must be a separate empty recovery bucket"
+ACTIVE_BUCKET="$(read_env_value OBJECT_STORAGE_BUCKET)"
+[[ -n "$ACTIVE_BUCKET" ]] || fail "active OBJECT_STORAGE_BUCKET is missing from staging env file"
+[[ "$RESTORE_BUCKET" != "$ACTIVE_BUCKET" ]] || fail "restore bucket must differ from active staging bucket"
 [[ "${RESTORE_TARGETS_CONFIRMED_ISOLATED:-}" = "1" ]] \
   || fail "set RESTORE_TARGETS_CONFIRMED_ISOLATED=1 only after selecting isolated restore targets"
 
@@ -38,6 +51,11 @@ log "Verifying backup bundle checksums before restore"
 ) || fail "backup bundle checksum verification failed"
 
 grep -q '^format_version=1$' "$BUNDLE/backup-meta.txt" || fail "unsupported backup bundle format"
+BACKUP_RELEASE="$(meta_value application_release)"
+BACKUP_SOURCE_SHA="$(meta_value application_source_sha)"
+[[ -n "$BACKUP_RELEASE" ]] || fail "backup metadata is missing application_release"
+[[ "$BACKUP_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || fail "backup metadata is missing a valid application_source_sha"
+log "Backup provenance release=$BACKUP_RELEASE source_sha=$BACKUP_SOURCE_SHA"
 
 CURRENT_RELEASE=""
 [[ ! -f "$STATE_DIR/current" ]] || CURRENT_RELEASE="$(cat "$STATE_DIR/current")"
@@ -54,6 +72,7 @@ compose() {
     -u AUTH_MAIL_TRANSPORT \
     -u AUTH_MAIL_FROM \
     -u RESEND_API_KEY \
+    -u AEMET_API_KEY \
     -u LOG_LEVEL \
     -u DB_POOL_MAX \
     -u OBJECT_STORAGE_ENDPOINT \
@@ -103,15 +122,18 @@ docker exec "$PG_CONTAINER" sh -c \
 ACTUAL_DB_MANIFEST="$(mktemp)"
 trap 'rm -f "$ACTUAL_DB_MANIFEST"; cleanup' EXIT
 
-docker exec "$PG_CONTAINER" sh -c '
-  export PGPASSWORD="$POSTGRES_PASSWORD"
-  psql -U "$POSTGRES_USER" -d '"$RESTORE_DB"' -At -F= <<'"'"'SQL'"'"'
+docker exec -i "$PG_CONTAINER" sh -c \
+  'export PGPASSWORD="$POSTGRES_PASSWORD"; exec psql -U "$POSTGRES_USER" -d "$1" -At -F=' \
+  sh "$RESTORE_DB" \
+  > "$ACTUAL_DB_MANIFEST" <<'SQL'
 select 'auth_users', count(*) from "user";
 select 'auth_sessions', count(*) from session;
 select 'holdings', count(*) from holdings;
 select 'farms', count(*) from farms;
 select 'plots', count(*) from plots;
 select 'campaigns', count(*) from campaigns;
+select 'activities', count(*) from activities;
+select 'tasks', count(*) from tasks;
 select 'deliveries', count(*) from deliveries;
 select 'delivery_results', count(*) from delivery_results;
 select 'documents', count(*) from documents;
@@ -121,7 +143,6 @@ select 'schema_migrations', count(*) from schema_migrations;
 select 'delivery_kilograms_sum', coalesce(to_char(sum(kilograms), 'FM999999999990.000'), '0.000') from deliveries;
 select 'current_yield_rows', count(*) from delivery_results where status='current';
 SQL
-' > "$ACTUAL_DB_MANIFEST"
 
 if ! diff -u "$BUNDLE/database-manifest.txt" "$ACTUAL_DB_MANIFEST"; then
   fail "restored PostgreSQL state differs from backup manifest"
@@ -141,4 +162,4 @@ docker exec \
   "$API_CONTAINER" \
   node scripts/import-private-objects.mjs
 
-log "RESTORE GATE PASS database=$RESTORE_DB bucket=$RESTORE_BUCKET"
+log "RESTORE GATE PASS database=$RESTORE_DB bucket=$RESTORE_BUCKET source_sha=$BACKUP_SOURCE_SHA"

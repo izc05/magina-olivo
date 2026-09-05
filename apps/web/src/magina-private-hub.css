@@ -1,0 +1,80 @@
+.magina-private-intro {
+  margin: 2px 0 18px;
+  padding: 4px 2px 0;
+}
+
+.magina-private-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.magina-private-card {
+  display: grid;
+  min-height: 190px;
+  align-content: start;
+  gap: 10px;
+  padding: 18px;
+  color: inherit;
+  text-decoration: none;
+  border-color: rgba(86,111,67,.15);
+  background:
+    radial-gradient(circle at 92% 8%, rgba(201,155,44,.1), transparent 34%),
+    rgba(255,253,248,.94);
+  box-shadow: 0 10px 28px rgba(47,59,39,.045);
+}
+
+.magina-private-card h2 {
+  margin: 2px 0 0;
+  color: var(--v2-olive-deep);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.25rem;
+  line-height: 1.08;
+}
+
+.magina-private-card p {
+  margin: 0;
+  color: #6c705f;
+  font-size: .78rem;
+  line-height: 1.5;
+}
+
+.magina-private-card strong {
+  align-self: end;
+  margin-top: auto;
+  color: var(--v2-olive-deep);
+  font-size: .76rem;
+}
+
+.magina-private-note {
+  margin-top: 16px;
+  border-color: rgba(86,111,67,.14);
+  background: linear-gradient(135deg, rgba(86,111,67,.06), rgba(255,253,248,.97));
+}
+
+.magina-private-note .section-title {
+  margin-top: 10px;
+}
+
+.magina-private-all {
+  display: inline-flex;
+  margin-top: 14px;
+  text-decoration: none;
+}
+
+@media (max-width: 620px) {
+  .magina-private-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .magina-private-card {
+    min-height: 152px;
+  }
+}
+
+@media (forced-colors: active) {
+  .magina-private-card,
+  .magina-private-note {
+    background: Canvas;
+  }
+}

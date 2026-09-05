@@ -1,12 +1,17 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { getPool } from './db.ts';
+import {
+  normalizeDocumentFilename,
+  normalizeDocumentMimeType,
+} from './document-validation.ts';
 import { apiError } from './http-errors.ts';
 import { getPrivateStorage } from './private-storage.ts';
 import { getAuthenticatedSession } from './session.ts';
 
 type HoldingParams = { holdingId: string };
 type DocumentParams = { documentId: string };
+type DocumentListQuery = { campaignId?: string };
 type UploadQuery = {
   filename: string;
   mimeType: string;
@@ -25,6 +30,20 @@ type DocumentAccessRow = {
   document_type: string;
   created_at: Date;
   role: 'owner' | 'admin' | 'collaborator' | 'viewer';
+};
+
+type DocumentListRow = {
+  id: string;
+  original_filename: string;
+  mime_type: string;
+  size_bytes: string;
+  sha256: string | null;
+  document_type: string;
+  created_at: Date;
+  delivery_id: string | null;
+  delivered_at: Date | null;
+  delivery_kilograms: string | null;
+  delivery_destination: string | null;
 };
 
 async function getDocumentAccess(userId: string, documentId: string): Promise<DocumentAccessRow | null> {
@@ -52,6 +71,103 @@ export function registerDocumentRoutes(app: FastifyInstance): void {
     'application/octet-stream',
     { parseAs: 'buffer', bodyLimit: 10 * 1024 * 1024 },
     (_request, body, done) => done(null, body),
+  );
+
+  app.get<{ Params: HoldingParams; Querystring: DocumentListQuery }>(
+    '/api/v1/holdings/:holdingId/documents',
+    {
+      schema: {
+        querystring: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            campaignId: { type: 'string', format: 'uuid' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const session = await getAuthenticatedSession(request);
+      if (!session) {
+        return reply.code(401).send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
+      }
+
+      const membership = await getPool().query<{ role: string }>(
+        `
+          select hm.role
+          from holding_members hm
+          join holdings h on h.id = hm.holding_id
+          where hm.holding_id = $1
+            and hm.user_id = $2
+            and hm.status = 'active'
+            and h.active = true
+          limit 1
+        `,
+        [request.params.holdingId, session.user.id],
+      );
+      if (!membership.rows[0]) {
+        return reply.code(404).send(apiError(request, 'HOLDING_NOT_FOUND', 'Holding not found'));
+      }
+
+      if (request.query.campaignId) {
+        const campaign = await getPool().query<{ id: string }>(
+          `select id from campaigns where id = $1 and holding_id = $2 limit 1`,
+          [request.query.campaignId, request.params.holdingId],
+        );
+        if (!campaign.rows[0]) {
+          return reply.code(404).send(apiError(request, 'CAMPAIGN_NOT_FOUND', 'Campaign not found'));
+        }
+      }
+
+      const result = await getPool().query<DocumentListRow>(
+        `
+          select
+            d.id,
+            d.original_filename,
+            d.mime_type,
+            d.size_bytes,
+            d.sha256,
+            d.document_type,
+            d.created_at,
+            dl.entity_id as delivery_id,
+            dy.delivered_at,
+            dy.kilograms::text as delivery_kilograms,
+            dy.custom_destination as delivery_destination
+          from documents d
+          left join document_links dl
+            on dl.document_id = d.id
+           and dl.holding_id = d.holding_id
+           and dl.entity_type = 'delivery'
+          left join deliveries dy
+            on dy.id = dl.entity_id
+           and dy.holding_id = d.holding_id
+          where d.holding_id = $1
+            and ($2::uuid is null or dy.campaign_id = $2::uuid)
+          order by d.created_at desc
+          limit 100
+        `,
+        [request.params.holdingId, request.query.campaignId ?? null],
+      );
+
+      return {
+        items: result.rows.map((row) => ({
+          id: row.id,
+          filename: row.original_filename,
+          mimeType: row.mime_type,
+          sizeBytes: Number(row.size_bytes),
+          sha256: row.sha256,
+          documentType: row.document_type,
+          deliveryId: row.delivery_id,
+          delivery: row.delivery_id ? {
+            id: row.delivery_id,
+            deliveredAt: row.delivered_at,
+            kilograms: row.delivery_kilograms,
+            destination: row.delivery_destination,
+          } : null,
+          createdAt: row.created_at,
+        })),
+      };
+    },
   );
 
   app.post<{ Params: HoldingParams; Querystring: UploadQuery; Body: Buffer }>(
@@ -106,6 +222,18 @@ export function registerDocumentRoutes(app: FastifyInstance): void {
         return reply.code(400).send(apiError(request, 'EMPTY_DOCUMENT', 'Document content is required'));
       }
 
+      const filename = normalizeDocumentFilename(request.query.filename);
+      if (!filename) {
+        return reply.code(400).send(apiError(request, 'INVALID_DOCUMENT_FILENAME', 'Document filename is invalid'));
+      }
+
+      const mimeType = normalizeDocumentMimeType(request.query.mimeType);
+      if (!mimeType) {
+        return reply
+          .code(415)
+          .send(apiError(request, 'UNSUPPORTED_DOCUMENT_MIME_TYPE', 'Document format is not supported'));
+      }
+
       if (request.query.deliveryId) {
         const delivery = await getPool().query<{ id: string }>(
           `select id from deliveries where id = $1 and holding_id = $2 and verification_status <> 'archived'`,
@@ -120,11 +248,19 @@ export function registerDocumentRoutes(app: FastifyInstance): void {
       const objectKey = `${request.params.holdingId}/${documentId}`;
       const sha256 = createHash('sha256').update(content).digest('hex');
       const storage = getPrivateStorage();
-      await storage.put(objectKey, content);
 
+      // Acquire the database connection before storing the object. If PostgreSQL is unavailable,
+      // we fail without creating an orphaned private object in R2/S3.
       const client = await getPool().connect();
+      let objectStored = false;
+      let transactionStarted = false;
+      let committed = false;
       try {
+        await storage.put(objectKey, content);
+        objectStored = true;
+
         await client.query('begin');
+        transactionStarted = true;
         const inserted = await client.query<{
           id: string;
           original_filename: string;
@@ -146,8 +282,8 @@ export function registerDocumentRoutes(app: FastifyInstance): void {
             documentId,
             request.params.holdingId,
             objectKey,
-            request.query.filename.trim(),
-            request.query.mimeType.trim(),
+            filename,
+            mimeType,
             content.byteLength,
             sha256,
             request.query.documentType,
@@ -166,6 +302,7 @@ export function registerDocumentRoutes(app: FastifyInstance): void {
         }
 
         await client.query('commit');
+        committed = true;
         const row = inserted.rows[0];
         if (!row) throw new Error('Document insert returned no row');
 
@@ -177,11 +314,24 @@ export function registerDocumentRoutes(app: FastifyInstance): void {
           sha256: row.sha256,
           documentType: row.document_type,
           deliveryId: request.query.deliveryId ?? null,
+          delivery: null,
           createdAt: row.created_at,
         });
       } catch (error) {
-        await client.query('rollback');
-        await storage.delete(objectKey);
+        if (transactionStarted && !committed) {
+          try {
+            await client.query('rollback');
+          } catch {
+            // Preserve the original error; the connection is released below.
+          }
+        }
+        if (objectStored && !committed) {
+          try {
+            await storage.delete(objectKey);
+          } catch {
+            // Preserve the original error. Orphan cleanup can reconcile rare storage failures.
+          }
+        }
         throw error;
       } finally {
         client.release();

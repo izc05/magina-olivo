@@ -2,11 +2,65 @@
 
 Estado: **preparado para ejecución; requiere entorno externo real**.
 
-Rama: `feat/mvp-core-v1`
+Rama de ejecución: `feat/integration-v2-mvp-v1`
+Base funcional: `feat/mvp-core-v1`
+PR de integración: #6
+Gate operativo: issue #7
 
 ## Objetivo
 
-Convertir los P0 externos restantes en una secuencia reproducible. Ningún dato real de agricultor debe entrar en staging hasta completar esta aceptación con datos sintéticos.
+Convertir los P0 externos restantes en una secuencia reproducible sobre la **aplicación integrada Visual V2 + MVP Core**. Ningún dato real de agricultor debe entrar en staging hasta completar esta aceptación con datos sintéticos.
+
+La integración P0 de interfaz ya cubre:
+
+```text
+Login
+  -> Inicio
+  -> Mi Campo
+     -> Explotación
+     -> Finca
+     -> Parcela
+     -> Cuaderno/Labor
+  -> Campaña
+     -> Entrega
+     -> Rendimiento
+     -> Ticket privado
+  -> Offline
+     -> outbox
+     -> sync
+     -> modo protegido
+  -> Mágina
+     -> Tiempo / AEMET
+     -> Campo / RAIF
+     -> Noticias verificadas
+     -> Mercado
+     -> Cooperativas y almazaras
+```
+
+Staging debe validar este recorrido integrado, no una imagen anterior del MVP sin la capa Visual V2.
+
+## Autoridad y trazabilidad del despliegue
+
+Antes de cualquier deploy real:
+
+- el checkout debe estar exactamente en la revisión que se desea probar;
+- el working tree debe estar limpio;
+- `scripts/staging-release.sh` rechaza automáticamente un checkout con cambios sin commit;
+- las imágenes runtime/web registran el SHA real mediante `org.opencontainers.image.revision`;
+- el estado de release conserva `current-source-sha` y `previous-source-sha` además de las etiquetas de release;
+- `scripts/staging-acceptance.sh status` expone ese SHA como `source_sha`;
+- una etiqueta humana de release no sustituye al SHA real como evidencia.
+
+Comprobar siempre:
+
+```bash
+git status --short
+git rev-parse HEAD
+bash scripts/staging-release.sh status
+bash scripts/staging-acceptance.sh status
+```
+
+El SHA desplegado debe coincidir con el commit que se pretende validar.
 
 ## Prerrequisitos
 
@@ -15,8 +69,9 @@ El entorno debe disponer de:
 - HTTPS válido;
 - API y PWA same-origin según la arquitectura definida;
 - PostgreSQL de staging;
-- migraciones aplicadas, incluida `0004_activities.sql`;
+- todas las migraciones aplicadas, incluidas actividades y fuentes públicas;
 - Better Auth configurado con secreto exclusivo de staging;
+- clave AEMET solo en servidor;
 - correo de recuperación de staging o buzón de pruebas controlado;
 - almacenamiento privado configurado;
 - backup/restore disponible;
@@ -27,28 +82,45 @@ El entorno debe disponer de:
 
 ### 1. Preflight del host
 
-Ejecutar los scripts ya preparados del spike técnico:
+```bash
+export STAGING_ENV_FILE=/etc/magina-olivo/staging.env
+bash scripts/staging-host-preflight.sh
+```
+
+Después del primer deploy:
 
 ```bash
-scripts/staging-host-preflight.sh
-scripts/staging-container-gate.sh
+bash scripts/staging-host-postdeploy-gate.sh
 ```
 
 No continuar si el host, red o contenedores no pasan.
 
+Debe quedar demostrado que:
+
+- PostgreSQL no publica puerto al host;
+- API no publica puerto al host;
+- worker no publica endpoint público;
+- Nginx/web enlaza solo loopback;
+- PWA y `/health/ready` responden por la misma entrada local.
+
 ### 2. HTTPS / seguridad pública
 
+Con Tunnel/hostname ya configurados:
+
 ```bash
-scripts/staging-https-gate.sh
+export STAGING_BASE_URL=https://<staging-host>
+bash scripts/staging-https-gate.sh
 ```
 
 Validar como mínimo:
 
 - certificado válido;
-- redirección HTTP -> HTTPS;
-- cookies seguras;
-- cabeceras de seguridad;
+- redirección HTTP -> HTTPS cuando aplique;
+- cookie `HttpOnly`, `Secure`, `SameSite=Lax`;
+- HSTS/cabeceras de seguridad;
 - API privada no cacheable;
+- origen hostil rechazado para mutaciones autenticadas;
+- logout invalida la sesión;
 - frontend sin secretos de servidor.
 
 ### 3. Recorrido funcional MVP sintético
@@ -87,32 +159,85 @@ Salida esperada:
 [mvp-core-gate] PASS: MVP synthetic journey, idempotency, timeline, summary and private ticket isolation
 ```
 
-### 4. Almacenamiento privado externo
+### 4. Mágina pública y fuentes externas
 
-Cuando staging utilice el proveedor externo definido:
+Ejecutar sobre el mismo hostname:
 
 ```bash
-scripts/staging-r2-gate.sh
+export STAGING_BASE_URL=https://<staging-host>
+export STAGING_PUBLIC_WEATHER_MUNICIPALITY=bedmar-y-garciez
+bash scripts/staging-public-magina-gate.sh
 ```
 
-Debe probar subida, descarga y borrado controlados sin exponer credenciales ni objetos públicamente.
+Debe demostrar que responden por HTTPS las rutas:
 
-### 5. Recuperación de contraseña / correo
+- `/magina`;
+- `/magina/tiempo`;
+- `/magina/campo`;
+- `/magina/noticias`;
+- `/magina/mercado`;
+- `/magina/directorio`.
 
-Ejecutar el gate definido por el spike para recuperación y comprobar en el entorno real:
+Y que sus contratos públicos cumplen:
+
+- registro de AEMET, RAIF, Observatorio, DOP Sierra Mágina y noticias oficiales;
+- directorio no vacío y sin URLs públicas no HTTPS;
+- RAIF con procedencia, frescura y `regional-fitosanitary-context-not-plot-diagnosis`;
+- Noticias con política `verified-metadata-only-no-article-copy`, sin cuerpo de artículo y con enlaces originales HTTPS;
+- mercado con metadatos y fecha de verificación antes de mostrar datos estructurados;
+- AEMET con municipio verificado, atribución, predicción no vacía, frescura y modo de disponibilidad válido.
+
+El municipio meteorológico por defecto es `bedmar-y-garciez`; puede sustituirse por otro slug verificado sin modificar el script.
+
+Si Cloudflare Access protege staging, este gate debe usar el mismo par `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET`. Un token parcial debe ser rechazado antes de realizar llamadas.
+
+### 5. Almacenamiento privado externo
+
+Con el bucket privado de staging y un bucket separado de restore-validation:
+
+```bash
+bash scripts/staging-r2-gate.sh
+```
+
+Debe probar:
+
+```text
+PUT -> GET -> SHA-256 -> DELETE -> GET must fail
+```
+
+sin exponer credenciales ni objetos públicamente.
+
+### 6. Recuperación de contraseña / correo
+
+Comprobar en el entorno real:
 
 - petición genérica anti-enumeración;
-- recepción de correo en buzón de pruebas;
+- recepción de correo en buzón sintético/controlado;
 - token válido una sola vez;
 - contraseña nueva funcional;
 - sesiones anteriores revocadas cuando corresponda;
 - ninguna URL/token sensible en logs públicos.
 
-### 6. Backup y restore
+`AUTH_MAIL_TRANSPORT=capture` no es válido en staging externo.
+
+### 7. Backup y restore
 
 ```bash
-scripts/staging-backup.sh
-scripts/staging-restore-gate.sh
+export BACKUP_DESTINATION_DIR=/mnt/off-host/magina-staging-backups
+export BACKUP_DESTINATION_CONFIRMED_OFF_HOST=1
+bash scripts/staging-backup.sh
+```
+
+El backup debe registrar en `backup-meta.txt` tanto la release como `application_source_sha` y generar checksums independientes.
+
+Después ejecutar restore en targets aislados:
+
+```bash
+export RESTORE_BUNDLE_DIR=/mnt/off-host/magina-staging-backups/<bundle>
+export RESTORE_DATABASE=magina_restore_validation
+export RESTORE_OBJECT_STORAGE_BUCKET=<restore-validation-bucket>
+export RESTORE_TARGETS_CONFIRMED_ISOLATED=1
+bash scripts/staging-restore-gate.sh
 ```
 
 Debe demostrarse que se recuperan conjuntamente:
@@ -120,13 +245,15 @@ Debe demostrarse que se recuperan conjuntamente:
 - PostgreSQL;
 - metadatos de documentos;
 - objetos privados necesarios;
-- relaciones entrega/rendimiento/labor/timeline.
+- relaciones entrega/rendimiento/labor/timeline;
+- manifiestos/checksums exactos;
+- procedencia del backup mediante un SHA Git válido.
 
 Una copia que no se haya restaurado con éxito no cuenta como backup validado.
 
-### 7. Accesibilidad manual
+### 8. Accesibilidad manual
 
-Ejecutar `docs/mvp/ACCESSIBILITY_GATE_V1.md` sobre este mismo staging.
+Ejecutar `docs/mvp/ACCESSIBILITY_GATE_V1.md` sobre este mismo staging y la misma revisión.
 
 Mínimo:
 
@@ -138,9 +265,9 @@ Mínimo:
 - navegación activa anunciada;
 - adjunto de ticket operable sin ratón.
 
-### 8. PWA / offline manual
+### 9. PWA / offline manual
 
-Con un usuario sintético:
+Después, con un usuario sintético y sobre la misma revisión:
 
 1. instalar/abrir PWA;
 2. iniciar sesión online;
@@ -155,16 +282,33 @@ Con un usuario sintético:
 11. sincronizar;
 12. comprobar una sola entrega y una sola labor en servidor;
 13. confirmar que el timeline se actualiza;
-14. comprobar que logout queda bloqueado mientras hay operaciones pendientes y vuelve a estar permitido tras sync.
+14. comprobar que logout queda bloqueado mientras hay operaciones pendientes y vuelve a estar permitido tras sync;
+15. provocar o simular un fallo recuperable y confirmar que la interfaz muestra `Sincronización pendiente` / `Reintentar` sin borrar la outbox;
+16. confirmar que un ticket no se promete como guardado offline si su archivo todavía no se ha subido.
+
+## Ejecución agregada
+
+Una vez configuradas las variables, la fase externa combina tres gates externos:
+
+```bash
+bash scripts/staging-acceptance.sh external
+```
+
+Orden:
+
+1. HTTPS/seguridad;
+2. recorrido agrícola sintético;
+3. Mágina pública y fuentes.
 
 ## Evidencia que conservar
 
 Para cada ejecución guardar únicamente evidencia no sensible:
 
 - fecha/hora;
-- commit SHA;
-- versión desplegada;
+- **SHA completo real desplegado (`source_sha` en `staging-acceptance.sh status`)**;
+- etiqueta de release, si se usa;
 - resultados PASS/FAIL de cada gate;
+- municipio AEMET usado en el gate público;
 - IDs sintéticos cuando sean necesarios para diagnóstico;
 - navegador/SO usados en accesibilidad;
 - incidencias encontradas y commit de corrección.
@@ -179,15 +323,26 @@ No guardar:
 
 ## Criterio de salida de staging
 
-Staging V1 queda en **PASS** solo cuando todos estos bloques estén verdes:
+Staging V1 queda en **PASS** solo cuando estos **nueve bloques** estén verdes sobre la misma revisión trazable:
 
 1. host/contenedores;
 2. HTTPS/seguridad;
 3. recorrido funcional MVP sintético;
-4. almacenamiento privado;
-5. correo/reset;
-6. backup/restore;
-7. accesibilidad manual;
-8. PWA/offline manual.
+4. Mágina pública/fuentes externas;
+5. almacenamiento privado;
+6. correo/reset;
+7. backup/restore;
+8. accesibilidad manual;
+9. PWA/offline manual.
+
+El issue #7 solo debe cerrarse cuando exista evidencia PASS de los nueve bloques.
 
 Después de ese PASS se puede iniciar la validación con 2–5 olivareros usando todavía datos sintéticos o documentos anonimizados. Los datos reales siguen siendo un paso posterior y controlado.
+
+## Referencias
+
+- PR #6 — integración Visual V2 + MVP Core.
+- issue #7 — checklist operativo P0 de staging.
+- `scripts/staging-public-magina-gate.sh` — validación externa de páginas y fuentes públicas.
+- `docs/spike/EXTERNAL_STAGING_RUNBOOK.md` — procedimiento de ejecución externo.
+- `docs/INTEGRATION_V2_MVP_V1.md` — contrato de autoridad visual/funcional.

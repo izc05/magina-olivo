@@ -35,3 +35,20 @@ test('ticket upload after delivery remains a real keyboard-operable button', asy
   assert.match(delivery, /aria-live="polite"/);
   assert.match(delivery, /aria-busy=\{busy\}/);
 });
+
+test('login keeps its visible form before the fixed registration entry in keyboard order', async () => {
+  const main = await source('./main.tsx');
+
+  assert.ok(main.indexOf('<App />') < main.indexOf('<RegistrationEntry />'));
+});
+
+test('PWA updates are announced and can only be applied through an accessible user action', async () => {
+  const prompt = await source('./PwaUpdatePrompt.tsx');
+
+  assert.match(prompt, /onNeedRefresh/);
+  assert.match(prompt, /applyPwaUpdateWhenSafe/);
+  assert.match(prompt, /role="status"/);
+  assert.match(prompt, /aria-live="polite"/);
+  assert.match(prompt, /type="button"/);
+  assert.match(prompt, /Actualizar ahora/);
+});

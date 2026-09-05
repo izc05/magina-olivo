@@ -1,0 +1,131 @@
+/* Campaign private documents — Visual V2 over authenticated storage. */
+
+.campaign-documents {
+  margin-top: 30px;
+}
+
+.campaign-documents-heading {
+  align-items: end;
+}
+
+.campaign-document-list {
+  display: grid;
+  gap: 9px;
+}
+
+.campaign-document-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 78px;
+  padding: 13px 14px;
+  border-color: rgba(86,111,67,.14);
+  background: rgba(255,253,248,.94);
+}
+
+.campaign-document-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(201,155,44,.13);
+  color: var(--v2-olive-deep);
+  font-size: 1.15rem;
+}
+
+.campaign-document-copy {
+  min-width: 0;
+}
+
+.campaign-document-topline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.campaign-document-topline strong {
+  overflow: hidden;
+  color: var(--v2-olive-deep);
+  font-size: .86rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.campaign-document-topline span {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(86,111,67,.08);
+  color: #64705f;
+  font-size: .61rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.campaign-document-copy p,
+.campaign-document-copy small {
+  display: block;
+  margin: 4px 0 0;
+  color: #767769;
+  font-size: .69rem;
+  line-height: 1.35;
+}
+
+.campaign-document-copy small {
+  color: #8a897c;
+  font-size: .63rem;
+}
+
+.campaign-document-download {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border: 1px solid rgba(86,111,67,.17);
+  border-radius: 11px;
+  background: #fffefa;
+  color: var(--v2-olive-deep);
+  font-size: .7rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.campaign-document-download:hover,
+.campaign-document-download:focus-visible {
+  border-color: var(--v2-olive);
+  background: rgba(86,111,67,.06);
+}
+
+.campaign-documents-loading {
+  padding: 14px 2px;
+  color: #777a6b;
+  font-size: .72rem;
+}
+
+@media (max-width: 580px) {
+  .campaign-document-row {
+    grid-template-columns: 36px minmax(0, 1fr);
+  }
+
+  .campaign-document-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .campaign-document-download {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}
+
+@media (forced-colors: active) {
+  .campaign-document-icon,
+  .campaign-document-topline span {
+    border: 1px solid CanvasText;
+  }
+}

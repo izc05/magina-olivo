@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { FormEvent, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import {
   ApiError,
   api,
@@ -18,6 +18,7 @@ import { FieldNotebook } from './FieldNotebook.tsx';
 import { MaginaPrivateHub } from './MaginaPrivateHub.tsx';
 import { OfflineColdStart } from './OfflineColdStart.tsx';
 import { listPendingOperations } from './offline/outbox.ts';
+import { PrivateAccessGate } from './PrivateAccessGate.tsx';
 
 type Tab = 'home' | 'field' | 'campaign' | 'magina' | 'more';
 type SessionState = 'checking' | 'signed_out' | 'signed_in' | 'offline_locked';
@@ -44,75 +45,10 @@ function messageFrom(error: unknown): string {
   return 'Ha ocurrido un error inesperado.';
 }
 
-function LoginScreen({ onSignedIn }: { onSignedIn: (user: User) => void }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setBusy(true);
-    setError(null);
-    setNotice(null);
-    try {
-      await api.signIn(email.trim(), password);
-      const session = await api.me();
-      onSignedIn(session.user);
-    } catch (reason) {
-      setError('No se ha podido iniciar sesión. Revisa el correo y la contraseña.');
-      console.warn('Sign in failed', reason instanceof ApiError ? reason.code : 'unknown');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function resetPassword() {
-    if (!email.trim()) {
-      setError('Escribe primero tu correo para solicitar la recuperación.');
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      await api.requestPasswordReset(email.trim());
-    } catch {
-      // Keep the same public response to avoid account enumeration.
-    } finally {
-      setNotice('Si existe una cuenta con ese correo, recibirás instrucciones para recuperar el acceso.');
-      setBusy(false);
-    }
-  }
-
-  return (
-    <main className="login-shell">
-      <section className="login-card" aria-labelledby="login-title">
-        <div className="login-brand">
-          <span className="brand-title">Mágina Olivo</span>
-          <span className="brand-kicker">Tu olivar, campaña tras campaña</span>
-        </div>
-        <h1 id="login-title" className="login-title">Bienvenido</h1>
-        <p className="login-copy">Accede a tus fincas, entregas y rendimientos desde un único lugar.</p>
-        <form className="form-grid" onSubmit={submit}>
-          <Field name="email" label="Correo electrónico" type="email" required autoComplete="email" value={email} onChange={setEmail} />
-          <Field name="password" label="Contraseña" type="password" required autoComplete="current-password" value={password} onChange={setPassword} />
-          {error ? <div className="alert" role="alert">{error}</div> : null}
-          {notice ? <div className="alert success" role="status">{notice}</div> : null}
-          <button className="primary-button" type="submit" disabled={busy}>{busy ? 'Entrando…' : 'Entrar'}</button>
-        </form>
-        <div className="login-footer">
-          <button className="text-button" type="button" onClick={() => void resetPassword()} disabled={busy}>He olvidado mi contraseña</button>
-        </div>
-      </section>
-    </main>
-  );
-}
-
-export function App() {
+export function App({ initialTab = 'home' }: { initialTab?: Tab }) {
   const [sessionState, setSessionState] = useState<SessionState>('checking');
   const [user, setUser] = useState<User | null>(null);
-  const [tab, setTab] = useState<Tab>('home');
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [holdings, setHoldings] = useState<Holding[]>([]);
@@ -272,9 +208,7 @@ export function App() {
 
   if (sessionState === 'checking') return <div className="loading-screen" role="status" aria-live="polite">Abriendo Mágina Olivo…</div>;
   if (sessionState === 'offline_locked') return <OfflineColdStart onRetry={() => void checkSession()} />;
-  if (sessionState === 'signed_out' || !user) {
-    return <LoginScreen onSignedIn={(signedInUser) => { setUser(signedInUser); setSessionState('signed_in'); }} />;
-  }
+  if (sessionState === 'signed_out' || !user) return <PrivateAccessGate returnTo={window.location.pathname} />;
 
   const initials = (user.name || user.email).trim().slice(0, 1).toUpperCase();
   const coverage = Math.min(100, Math.max(0, Number(summary?.coveragePercent ?? 0)));
@@ -335,18 +269,24 @@ export function App() {
       </main>
 
       <nav className="bottom-nav bottom-nav-v2" aria-label="Navegación principal">
-        <NavButton active={tab === 'home'} icon="⌂" label="Inicio" onClick={() => setTab('home')} />
-        <NavButton active={tab === 'field'} icon="◒" label="Mi Campo" onClick={() => setTab('field')} />
-        <button type="button" className={`nav-plus${tab === 'campaign' ? ' active' : ''}`} onClick={() => setTab('campaign')} aria-label="Campaña y nueva entrega" aria-current={tab === 'campaign' ? 'page' : undefined}><span aria-hidden="true">+</span></button>
-        <NavButton active={tab === 'magina'} icon="◇" label="Mágina" onClick={() => setTab('magina')} />
-        <NavButton active={tab === 'more'} icon="•••" label="Mi Mágina" onClick={() => setTab('more')} />
+        <NavButton active={tab === 'home'} icon="home" label="Inicio" onClick={() => setTab('home')} />
+        <NavButton active={tab === 'field'} icon="field" label="Mi Campo" onClick={() => setTab('field')} />
+        <button type="button" className="nav-plus" onClick={() => { setTab('campaign'); window.setTimeout(() => { const entry = document.querySelector<HTMLElement>('.delivery-entry-card'); entry?.scrollIntoView({ behavior: 'smooth', block: 'start' }); entry?.focus({ preventScroll: true }); }, 0); }} aria-label="Registrar una entrega"><span aria-hidden="true">+</span></button>
+        <NavButton active={tab === 'magina'} icon="magina" label="Mágina" onClick={() => setTab('magina')} />
+        <NavButton active={tab === 'more'} icon="profile" label="Mi Mágina" onClick={() => setTab('more')} />
       </nav>
     </div>
   );
 }
 
-function NavButton({ active, icon, label, onClick }: { active: boolean; icon: string; label: string; onClick: () => void }) {
-  return <button type="button" className={`nav-button${active ? ' active' : ''}`} onClick={onClick} aria-current={active ? 'page' : undefined}><span aria-hidden="true">{icon}</span>{label}</button>;
+function NavButton({ active, icon, label, onClick }: { active: boolean; icon: 'home' | 'field' | 'magina' | 'profile'; label: string; onClick: () => void }) {
+  const paths = {
+    home: <><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10Z" /><path d="M9 21v-6h6v6" /></>,
+    field: <><path d="M4 20c7 0 13-4 16-14-8 1-14 6-16 14Z" /><path d="M4 20c3-5 7-8 12-11" /></>,
+    magina: <><path d="m3 19 6-8 4 5 3-4 5 7H3Z" /><path d="M14 5h.01" /></>,
+    profile: <><circle cx="12" cy="8" r="3" /><path d="M5 21c.7-4 3-6 7-6s6.3 2 7 6" /></>,
+  }[icon];
+  return <button type="button" className={`nav-button${active ? ' active' : ''}`} onClick={onClick} aria-current={active ? 'page' : undefined}><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths}</svg>{label}</button>;
 }
 
 function HomeTab({ holding, campaign, summary, coverage, onNavigate }: { holding: Holding | null; campaign: Campaign | null; summary: CampaignSummary | null; coverage: number; onNavigate: (tab: Tab) => void }) {
@@ -382,40 +322,85 @@ function Metric({ value, label }: { value: string; label: string }) {
   return <div className="metric"><span className="metric-value">{value}</span><span className="metric-label">{label}</span></div>;
 }
 
+function irrigationLabel(value: string | null): string {
+  if (value === 'dryland') return 'Secano';
+  if (value === 'irrigated') return 'Regadío';
+  if (value === 'mixed') return 'Mixto';
+  return 'Sin definir';
+}
+
 function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarmId, plots, busy, setSelectedFarmId, runAction, reloadHoldings, reloadHoldingData, reloadPlots }: { holdings: Holding[]; selectedHolding: Holding | null; farms: Farm[]; selectedFarm: Farm | null; selectedFarmId: string; plots: Plot[]; busy: boolean; setSelectedFarmId: (id: string) => void; runAction: ActionRunner; reloadHoldings: () => Promise<void>; reloadHoldingData: () => Promise<void>; reloadPlots: () => Promise<void> }) {
+  const [selectedPlotId, setSelectedPlotId] = useState('');
+  const selectedPlot = useMemo(() => plots.find((plot) => plot.id === selectedPlotId) ?? null, [plots, selectedPlotId]);
+
+  useEffect(() => {
+    setSelectedPlotId((current) => plots.some((plot) => plot.id === current) ? current : (plots[0]?.id ?? ''));
+  }, [plots]);
+
   return (
     <>
-      <PageIntro eyebrow="Mi Campo" title="Fincas y parcelas" copy="Tu estructura agrícola es la base de todo el histórico." />
+      <PageIntro eyebrow="Mi Campo" title="Mis fincas" copy="Gestiona tus fincas, parcelas y campañas desde un único lugar." />
       {holdings.length === 0 ? <CreateHoldingCard busy={busy} runAction={runAction} onCreated={reloadHoldings} /> : null}
       {selectedHolding ? (
         <>
+          <section className="card field-holding-context" aria-label="Explotación activa">
+            <div>
+              <p className="eyebrow">Explotación activa</p>
+              <h2>{selectedHolding.name}</h2>
+              <p>{[selectedHolding.municipality, selectedHolding.province].filter(Boolean).join(' · ') || 'Ubicación pendiente'}</p>
+            </div>
+          </section>
           <section className="section">
-            <div className="section-heading"><div><h2 className="section-title">Fincas</h2><p className="section-copy">{selectedHolding.municipality || 'Sierra Mágina'}{selectedHolding.province ? ` · ${selectedHolding.province}` : ''}</p></div></div>
+            <div className="section-heading"><div><h2 className="section-title">Mis fincas</h2><p className="section-copy">Selecciona una finca para continuar con sus parcelas.</p></div></div>
             {farms.map((farm) => (
-              <button key={farm.id} type="button" className="card list-card interactive" style={{ width: '100%', textAlign: 'left' }} onClick={() => setSelectedFarmId(farm.id)} aria-pressed={farm.id === selectedFarmId}>
-                <div className="list-card-main"><p className="list-card-title">{farm.name}</p><p className="list-card-meta">{farm.areaHa ? `${farm.areaHa} ha` : 'Superficie pendiente'}</p></div>
-                <span className={`badge${farm.id === selectedFarmId ? ' gold' : ''}`}>{farm.id === selectedFarmId ? 'Activa' : 'Ver'}</span>
+              <button key={farm.id} type="button" className="card list-card interactive farm-list-card" onClick={() => setSelectedFarmId(farm.id)} aria-pressed={farm.id === selectedFarmId}>
+                <div className="list-card-main"><p className="list-card-title">{farm.name}</p><p className="list-card-meta">{farm.areaHa != null ? `${farm.areaHa} ha` : 'Superficie pendiente'}</p></div>
+                <span className={`badge${farm.id === selectedFarmId ? ' gold' : ''}`}>{farm.id === selectedFarmId ? 'Seleccionada' : 'Ver finca'}</span>
               </button>
             ))}
-            {!farms.length ? <EmptyState title="Añade tu primera finca">Después podrás dividirla en parcelas y asociar tus entregas.</EmptyState> : null}
+            {!farms.length ? <EmptyState title="Aún no has añadido ninguna finca.">Crea tu primera finca para empezar a organizar tus parcelas.</EmptyState> : null}
           </section>
-          <CreateFarmCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} />
+          <CreateFarmCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} firstFarm={farms.length === 0} />
         </>
       ) : null}
 
       {selectedFarm && selectedHolding ? (
         <>
+          <section className="farm-detail-card" aria-labelledby="selected-farm-title">
+            <div>
+              <p className="eyebrow">Finca seleccionada</p>
+              <h2 id="selected-farm-title">{selectedFarm.name}</h2>
+              <p>{selectedHolding.name}{selectedHolding.municipality ? ` · ${selectedHolding.municipality}` : ''}</p>
+            </div>
+            <div className="farm-detail-metrics" aria-label={`Resumen de ${selectedFarm.name}`}>
+              <div><span>Superficie</span><strong>{selectedFarm.areaHa != null ? `${selectedFarm.areaHa} ha` : 'Pendiente'}</strong></div>
+              <div><span>Parcelas</span><strong>{plots.length}</strong></div>
+            </div>
+          </section>
           <section className="section">
-            <div className="section-heading"><div><h2 className="section-title">Parcelas de {selectedFarm.name}</h2><p className="section-copy">SIGPAC, superficie, olivos y tipo de riego.</p></div></div>
+            <div className="section-heading"><div><p className="eyebrow page-eyebrow">Finca · {selectedFarm.name}</p><h2 className="section-title">Parcelas</h2><p className="section-copy">Selecciona una parcela para ver su información disponible.</p></div></div>
             {plots.map((plot) => (
-              <article className="card list-card" key={plot.id}>
-                <div className="list-card-main"><p className="list-card-title">{plot.name}</p><p className="list-card-meta">{plot.areaHa ? `${plot.areaHa} ha` : 'Sin superficie'} · {plot.oliveTreeCount ?? '—'} olivos · {plot.irrigationType || 'riego sin definir'}</p></div>
-                <span className="badge">{plot.sigpacReference ? 'SIGPAC' : 'Manual'}</span>
-              </article>
+              <button type="button" className="card list-card interactive plot-list-card" key={plot.id} onClick={() => setSelectedPlotId(plot.id)} aria-pressed={plot.id === selectedPlotId}>
+                <div className="list-card-main"><p className="list-card-title">{plot.name}</p><p className="list-card-meta">{[plot.areaHa != null ? `${plot.areaHa} ha` : null, plot.oliveTreeCount != null ? `${plot.oliveTreeCount} olivos` : null, plot.irrigationType ? irrigationLabel(plot.irrigationType) : null].filter(Boolean).join(' · ') || 'Información pendiente'}</p></div>
+                <span className={`badge${plot.id === selectedPlotId ? ' gold' : ''}`}>{plot.id === selectedPlotId ? 'Seleccionada' : plot.sigpacReference ? 'SIGPAC' : 'Ver parcela'}</span>
+              </button>
             ))}
-            {!plots.length ? <EmptyState title="Sin parcelas todavía">Añade una para construir su línea de tiempo.</EmptyState> : null}
+            {!plots.length ? <EmptyState title="Aún no has añadido parcelas a esta finca.">Crea la primera parcela para empezar a registrar su información.</EmptyState> : null}
             <CreatePlotCard farmId={selectedFarm.id} busy={busy} runAction={runAction} onCreated={reloadPlots} />
           </section>
+          {selectedPlot ? (
+            <section className="card plot-detail-card" aria-labelledby="selected-plot-title">
+              <p className="eyebrow">Parcela seleccionada</p>
+              <h3 id="selected-plot-title">{selectedPlot.name}</h3>
+              <dl>
+                {selectedPlot.areaHa != null ? <div><dt>Superficie</dt><dd>{selectedPlot.areaHa} ha</dd></div> : null}
+                {selectedPlot.oliveTreeCount != null ? <div><dt>Olivos</dt><dd>{selectedPlot.oliveTreeCount}</dd></div> : null}
+                {selectedPlot.irrigationType ? <div><dt>Riego</dt><dd>{irrigationLabel(selectedPlot.irrigationType)}</dd></div> : null}
+                {selectedPlot.sigpacReference ? <div><dt>Referencia SIGPAC</dt><dd>{selectedPlot.sigpacReference}</dd></div> : null}
+              </dl>
+              <p className="plot-detail-map-note">El mapa y el perímetro de esta parcela se gestionan en el cuaderno de campo.</p>
+            </section>
+          ) : null}
           <FieldNotebook holdingId={selectedHolding.id} farmId={selectedFarm.id} plots={plots} />
         </>
       ) : null}
@@ -426,23 +411,34 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
 function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelectedCampaignId, selectedCampaign, farms, deliveries, summary, busy, runAction, reloadHoldingData, reloadCampaign }: { selectedHolding: Holding | null; campaigns: Campaign[]; selectedCampaignId: string; setSelectedCampaignId: (id: string) => void; selectedCampaign: Campaign | null; farms: Farm[]; deliveries: Delivery[]; summary: CampaignSummary | null; busy: boolean; runAction: ActionRunner; reloadHoldingData: () => Promise<void>; reloadCampaign: () => Promise<void> }) {
   return (
     <>
-      <PageIntro eyebrow="Campaña" title="Entregas y rendimiento" copy="El núcleo productivo del olivar, con trazabilidad por entrega." />
-      {selectedHolding && !campaigns.length ? <CreateCampaignCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} /> : null}
+      <PageIntro eyebrow="Campaña" title="Tu campaña" copy="Entregas y rendimiento con trazabilidad por campaña." />
+      {selectedHolding && !campaigns.length ? <><EmptyState title="Aún no tienes una campaña creada.">Crea la campaña para empezar a registrar tus entregas.</EmptyState><CreateCampaignCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} /></> : null}
       {campaigns.length ? (
         <section className="section">
-          <select className="selector" value={selectedCampaignId} onChange={(event) => setSelectedCampaignId(event.target.value)} aria-label="Campaña activa">
-            {campaigns.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}
-          </select>
+          <div className="campaign-selector-card card">
+            <div><p className="eyebrow">Campaña activa</p><p>{selectedHolding?.name ?? 'Explotación activa'}</p></div>
+            <select className="selector" value={selectedCampaignId} onChange={(event) => setSelectedCampaignId(event.target.value)} aria-label="Campaña activa">
+              {campaigns.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}
+            </select>
+          </div>
         </section>
       ) : null}
 
       {selectedCampaign ? (
         <>
-          <section className="section card card-body">
-            <div className="metrics" style={{ marginTop: 0 }}>
-              <Metric value={formatKg(summary?.totalKilograms)} label="kilos" />
-              <Metric value={formatPercent(summary?.weightedYieldPercent)} label="rendimiento" />
+          <section className="campaign-detail-card" aria-labelledby="campaign-detail-title">
+            <div>
+              <p className="eyebrow">Campaña</p>
+              <h2 id="campaign-detail-title">{selectedCampaign.name}</h2>
+              <p>{selectedHolding?.name ?? 'Explotación activa'}</p>
             </div>
+            <div className="campaign-summary-grid" aria-label={`Resumen de ${selectedCampaign.name}`}>
+              <div><span>Aceituna entregada</span><strong>{formatKg(summary?.totalKilograms)}</strong></div>
+              <div><span>Rendimiento medio</span><strong>{formatPercent(summary?.weightedYieldPercent)}</strong></div>
+              <div><span>Entregas</span><strong>{summary?.deliveriesCount ?? 0}</strong></div>
+              <div><span>Pendientes de rendimiento</span><strong>{summary?.pendingResultCount ?? 0}</strong></div>
+            </div>
+            <p className="campaign-coverage">Cobertura de rendimiento · {formatPercent(summary?.coveragePercent)}</p>
           </section>
 
           {selectedHolding ? (
@@ -455,9 +451,9 @@ function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelect
           ) : null}
 
           <section className="section">
-            <div className="section-heading"><div><h2 className="section-title">Entregas</h2><p className="section-copy">{deliveries.length} registradas en esta campaña.</p></div></div>
+            <div className="section-heading"><div><p className="eyebrow page-eyebrow">Campaña · {selectedCampaign.name}</p><h2 className="section-title">Entregas</h2><p className="section-copy">{deliveries.length} registradas en esta campaña.</p></div></div>
             {deliveries.map((delivery) => (
-              <article className="card delivery-row" key={delivery.id}>
+              <article className="card delivery-row delivery-list-card" key={delivery.id}>
                 <div>
                   <div className="delivery-kilos">{formatKg(delivery.kilograms)}</div>
                   <div className="delivery-date">{new Date(delivery.deliveredAt).toLocaleDateString('es-ES')} · {delivery.customDestination || 'Cooperativa'}{delivery.ticketNumber ? ` · Ticket ${delivery.ticketNumber}` : ''}</div>
@@ -468,7 +464,7 @@ function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelect
                 </div>
               </article>
             ))}
-            {!deliveries.length ? <EmptyState title="Aún no hay entregas">Registra la primera cuando lleves aceituna a la almazara.</EmptyState> : null}
+            {!deliveries.length ? <EmptyState title="Aún no hay entregas.">Registra la primera cuando lleves aceituna a la almazara.</EmptyState> : null}
           </section>
           {selectedHolding ? <CampaignDocuments holdingId={selectedHolding.id} campaignId={selectedCampaign.id} deliveries={deliveries} /> : null}
         </>
@@ -480,10 +476,18 @@ function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelect
 function MoreTab({ user, holding, busy, onSignOut }: { user: User; holding: Holding | null; busy: boolean; onSignOut: () => void }) {
   return (
     <>
-      <PageIntro eyebrow="Mi Mágina" title="Cuenta y proyecto" />
-      <section className="section card card-body"><p className="list-card-title">{user.name || 'Agricultor'}</p><p className="list-card-meta">{user.email}</p>{holding ? <p className="list-card-meta">Explotación activa · {holding.name}</p> : null}</section>
-      <section className="section card card-body"><h2 className="section-title more-card-title">Identidad visual</h2><p className="section-copy">Esta rama usa la Biblia Visual V2. El logo gráfico aprobado se importará como activo único; aquí no se genera uno alternativo.</p></section>
-      <section className="section"><button className="ghost-button danger-button" type="button" onClick={onSignOut} disabled={busy}>Cerrar sesión</button></section>
+      <PageIntro eyebrow="MI MÁGINA" title="Cuenta y ajustes" copy="Tu espacio privado para revisar la cuenta, organizar tareas y cuidar tus datos." />
+      <section className="section card card-body more-profile-card" aria-labelledby="more-profile-title">
+        <h2 id="more-profile-title" className="section-title more-card-title">Tu perfil</h2>
+        <p className="list-card-title">{user.name || 'Agricultor'}</p>
+        <p className="list-card-meta">{user.email}</p>
+        {holding ? <p className="list-card-meta">Explotación activa · {holding.name}</p> : <p className="list-card-meta">Sin explotación activa</p>}
+      </section>
+      <section className="section more-links" aria-label="Accesos privados">
+        <a className="card more-link-card" href="/cuenta"><span><strong>Mi cuenta</strong><small>Perfil, preferencias y copia de datos</small></span><span aria-hidden="true">→</span></a>
+        <a className="card more-link-card" href="/calendario"><span><strong>Calendario</strong><small>Tareas y próximos trabajos</small></span><span aria-hidden="true">→</span></a>
+      </section>
+      <section className="section more-logout"><button className="ghost-button danger-button" type="button" onClick={onSignOut} disabled={busy}>Cerrar sesión</button></section>
     </>
   );
 }
@@ -497,7 +501,7 @@ function EmptyState({ title, children }: { title: string; children: ReactNode })
 }
 
 function CreateHoldingCard({ busy, runAction, onCreated }: { busy: boolean; runAction: ActionRunner; onCreated: () => Promise<void> }) {
-  return <FormCard title="Crear explotación" submitLabel="Guardar explotación" busy={busy} onSubmit={(form) => runAction(async () => {
+  return <FormCard title="Crea tu explotación" submitLabel="Guardar explotación" busy={busy} onSubmit={(form) => runAction(async () => {
     const municipality = String(form.get('municipality') || '').trim();
     const body: { name: string; municipality?: string; province?: string } = { name: String(form.get('name') || '').trim(), province: 'Jaén' };
     if (municipality) body.municipality = municipality;
@@ -506,8 +510,8 @@ function CreateHoldingCard({ busy, runAction, onCreated }: { busy: boolean; runA
   })} fields={<><Field name="name" label="Nombre" placeholder="Mi explotación" required /><Field name="municipality" label="Municipio" placeholder="Bedmar, Huelma, Cambil…" /></>} />;
 }
 
-function CreateFarmCard({ holdingId, busy, runAction, onCreated }: { holdingId: string; busy: boolean; runAction: ActionRunner; onCreated: () => Promise<void> }) {
-  return <FormCard title="Añadir finca" submitLabel="Guardar finca" busy={busy} onSubmit={(form) => runAction(async () => {
+function CreateFarmCard({ holdingId, busy, runAction, onCreated, firstFarm = false }: { holdingId: string; busy: boolean; runAction: ActionRunner; onCreated: () => Promise<void>; firstFarm?: boolean }) {
+  return <FormCard title={firstFarm ? 'Añade tu primera finca' : 'Añadir finca'} submitLabel={firstFarm ? 'Añadir mi primera finca' : 'Guardar finca'} busy={busy} onSubmit={(form) => runAction(async () => {
     const area = String(form.get('areaHa') || '').trim();
     const body: { name: string; areaHa?: number } = { name: String(form.get('name') || '').trim() };
     if (area) body.areaHa = Number(area);
@@ -535,7 +539,7 @@ function CreatePlotCard({ farmId, busy, runAction, onCreated }: { farmId: string
 
 function CreateCampaignCard({ holdingId, busy, runAction, onCreated }: { holdingId: string; busy: boolean; runAction: ActionRunner; onCreated: () => Promise<void> }) {
   const year = new Date().getFullYear();
-  return <FormCard title="Crear campaña" submitLabel="Abrir campaña" busy={busy} onSubmit={(form) => runAction(async () => {
+  return <FormCard title="Crear campaña" submitLabel="Crear campaña" busy={busy} onSubmit={(form) => runAction(async () => {
     const seasonStartYear = Number(form.get('seasonStartYear') || year);
     await api.createCampaign(holdingId, { name: String(form.get('name') || '').trim(), seasonStartYear });
     await onCreated();

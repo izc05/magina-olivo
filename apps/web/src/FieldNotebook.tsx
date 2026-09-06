@@ -202,13 +202,13 @@ export function FieldNotebook({
 
   return (
     <>
-      <PlotMapPanel farmId={farmId} />
       <section className="section notebook-shell" aria-labelledby="field-notebook-title">
         <div className="section-heading">
           <div>
-            <p className="eyebrow page-eyebrow">Cuaderno personal</p>
+            <p className="eyebrow page-eyebrow">CUADERNO</p>
             <h2 id="field-notebook-title" className="section-title">Labores e historia</h2>
-            <p className="section-copy">Recolección y entrega siguen siendo registros distintos.</p>
+            <p className="section-copy">Registra el trabajo realizado y consulta la historia de cada parcela.</p>
+            <p className="notebook-context"><strong>Parcela activa:</strong> {selectedPlot?.name ?? 'Sin seleccionar'} · <strong>Campaña:</strong> {campaigns.find((campaign) => campaign.id === campaignId)?.name ?? 'Sin campaña'}</p>
           </div>
         </div>
 
@@ -227,6 +227,10 @@ export function FieldNotebook({
                 {campaigns.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}
               </select>
             </div>
+          </div>
+
+          <div className="notebook-map-context" aria-label={`Mapa de ${selectedPlot?.name ?? 'la parcela activa'}`}>
+            <PlotMapPanel farmId={farmId} />
           </div>
 
           <form className="form-grid notebook-form" onSubmit={submit}>

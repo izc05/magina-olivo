@@ -7,9 +7,10 @@ async function read(relativePath: string): Promise<string> {
 }
 
 test('minimal pilot alerts are mounted only in the private app shell', async () => {
+  const privateRoute = await read('./PrivateRoute.tsx');
   const main = await read('./main.tsx');
-  assert.match(main, /import \{ PilotAlerts \} from '\.\/PilotAlerts'/);
-  assert.match(main, /<PilotAlerts \/>/);
+  assert.match(privateRoute, /import \{ PilotAlerts \} from '\.\/PilotAlerts'/);
+  assert.match(privateRoute, /<PilotAlerts \/>/);
   assert.match(main, /import '\.\/pilot-alerts\.css'/);
 });
 

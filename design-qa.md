@@ -52,6 +52,49 @@ final result: passed
 
 ---
 
+# Design QA — Afinado visual de Campaña
+
+## Evidence
+
+- Source visual truth:
+  - `/tmp/codex-clipboard-9a150763-18ce-4634-a033-c1f8be364977.png` — tablero de campaña de Los Llanos.
+  - `/tmp/codex-clipboard-08f82a38-fb0b-4797-bbc3-18642c099be9.png` — historial de entregas.
+  - `/tmp/codex-clipboard-a7df8dd3-5c82-406b-966b-81678c477074.png` — comparativa de campaña.
+- Rendered implementation: full-page capture of `http://127.0.0.1:5175/campana` in the in-app browser after the visual refinement. CUA presents the image in the active browser session but does not expose a local capture path.
+- Viewport and normalization: 634 px wide browser capture; source is a 941 px wide mobile capture that includes phone chrome. Evaluation used the app-owned content crop and did not judge browser/device chrome.
+- State: authenticated demo account, Campaña 2026/27, three live delivery rows and one historical season for comparison.
+
+## Findings and comparison history
+
+1. [P1] Earlier campaign composition had a large generic page introduction and separate selector above the image, unlike the compact reference hero. Fixed: the campaign season is now part of the hero as a usable picker; generic intro and duplicate context strip were removed.
+2. [P1] Earlier hero was too tall and the central campaign information was diluted. Fixed: tightened its height, title scale, photo crop, spacing and season control while keeping readable image contrast.
+3. [P2] The references organize the campaign summary as four compact facts below the hero. Fixed: the page now has four equally weighted cards for delivery total, yield, last delivery and destination/cooperative.
+4. [P2] At small widths, long destination text risked dominating the summary. Fixed: a compact destination variant with responsive typography preserves all four cards without overflow.
+
+## Required fidelity surfaces
+
+- Typography: the large Georgia editorial title, compact sans-serif data, uppercase campaign kicker and subtle metadata now more closely mirror the source hierarchy; long cooperative names wrap within their card instead of truncating essential content.
+- Spacing and layout rhythm: the hero now begins directly below the shared header, uses a tighter 214–236 px visual band and leads to 4 aligned metric cards, matching the source's cadence.
+- Colors and tokens: ivory background, paper cards, olive primary CTA, sage positive states and quiet borders were retained. The change introduces no new visual palette.
+- Image quality: the existing Sierra Mágina landscape remains a real, sharp supplied product asset with adjusted focal crop; no substitute imagery or fabricated icon artwork was introduced.
+- Copy and content: all visible campaign quantities, destinations and dates remain derived from connected private data; the campaign selector is a real control rather than static reference chrome.
+
+## Primary interactions checked
+
+- The campaign selector remains a native select inside the hero and preserves the selected campaign state.
+- Register delivery, ticket actions, documents, CSV/JSON exports, browser print action and fixed navigation remain visible and operable in the refined layout.
+- In-app browser capture showed no clipping or overflow through the complete delivery, comparison and documents flow.
+- `npm --prefix apps/web run build`, `npm --prefix apps/web test -- --run` (66 tests), and `git diff --check` pass.
+
+## Follow-up polish
+
+- A future delivery reference with more varied cooperative names will allow tuning of the fourth metric's ideal truncation/wrapping threshold.
+- Meteorología remains intentionally out of this pass, ready for the dedicated visual review with its own radar references.
+
+final result: passed
+
+---
+
 # Design QA — Comparativas e informes de campaña
 
 ## Evidence

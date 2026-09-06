@@ -468,20 +468,12 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
 
 function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelectedCampaignId, selectedCampaign, farms, deliveries, summary, busy, runAction, reloadHoldingData, reloadCampaign }: { selectedHolding: Holding | null; campaigns: Campaign[]; selectedCampaignId: string; setSelectedCampaignId: (id: string) => void; selectedCampaign: Campaign | null; farms: Farm[]; deliveries: Delivery[]; summary: CampaignSummary | null; busy: boolean; runAction: ActionRunner; reloadHoldingData: () => Promise<void>; reloadCampaign: () => Promise<void> }) {
   const latestDelivery = deliveries[0] ?? null;
+  const latestDeliveryDate = latestDelivery
+    ? new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(latestDelivery.deliveredAt))
+    : 'Sin entregas';
   return (
     <>
-      <PageIntro eyebrow="MI CAMPO" title="Campaña y entregas" copy="Controla la cosecha, los rendimientos y la trazabilidad de tu finca." />
       {selectedHolding && !campaigns.length ? <><EmptyState title="Aún no tienes una campaña creada.">Crea la campaña para empezar a registrar tus entregas.</EmptyState><CreateCampaignCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} /></> : null}
-      {campaigns.length ? (
-        <section className="section">
-          <div className="campaign-selector-card card">
-            <div><p className="eyebrow">Campaña activa</p><p>{selectedHolding?.name ?? 'Explotación activa'}</p></div>
-            <select className="selector" value={selectedCampaignId} onChange={(event) => setSelectedCampaignId(event.target.value)} aria-label="Campaña activa">
-              {campaigns.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}
-            </select>
-          </div>
-        </section>
-      ) : null}
 
       {selectedCampaign ? (
         <>
@@ -491,18 +483,15 @@ function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelect
               <h2 id="campaign-detail-title">{selectedHolding?.name ?? 'Tu olivar'}</h2>
               <p>{selectedHolding?.municipality ? `${selectedHolding.municipality}${selectedHolding.province ? ` · ${selectedHolding.province}` : ''}` : 'Tu explotación activa'}</p>
               <span>Tradición, esfuerzo y un olivar con futuro.</span>
+              {campaigns.length > 1 ? <label className="campaign-hero-select"><span>Cambiar campaña</span><select value={selectedCampaignId} onChange={(event) => setSelectedCampaignId(event.target.value)} aria-label="Cambiar campaña">{campaigns.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}</select></label> : null}
             </div>
-          </section>
-
-          <section className="campaign-context-card card" aria-label="Contexto de campaña">
-            <div><span className="campaign-context-icon"><Sprout /></span><span><small>Finca</small><strong>{selectedHolding?.name ?? 'Explotación activa'}</strong></span></div>
-            <div><span className="campaign-context-icon"><Building2 /></span><span><small>Último destino</small><strong>{latestDelivery?.customDestination || 'Cooperativa pendiente'}</strong></span></div>
           </section>
 
           <section className="campaign-metric-cards" aria-label={`Resumen de ${selectedCampaign.name}`}>
             <article className="card"><span className="campaign-context-icon"><Tractor /></span><small>Total entregado</small><strong>{formatKg(summary?.totalKilograms)}</strong><em>Esta campaña</em></article>
-            <article className="card"><span className="campaign-context-icon"><FileText /></span><small>Nº entregas</small><strong>{summary?.deliveriesCount ?? 0}</strong><em>Hasta la fecha</em></article>
             <article className="card"><span className="campaign-context-icon"><BarChart3 /></span><small>Rendimiento medio</small><strong>{formatPercent(summary?.weightedYieldPercent)}</strong><em>{summary?.pendingResultCount ? `${summary.pendingResultCount} pendiente${summary.pendingResultCount === 1 ? '' : 's'}` : 'Media disponible'}</em></article>
+            <article className="card"><span className="campaign-context-icon"><CalendarDays /></span><small>Última entrega</small><strong>{latestDelivery ? formatKg(latestDelivery.kilograms) : '—'}</strong><em>{latestDeliveryDate}</em></article>
+            <article className="card campaign-destination-metric"><span className="campaign-context-icon"><Building2 /></span><small>Cooperativa</small><strong>{latestDelivery?.customDestination || 'Pendiente'}</strong><em>{summary?.deliveriesCount ?? 0} entregas</em></article>
           </section>
 
           {selectedHolding ? <details className="campaign-create-disclosure"><summary><Plus aria-hidden="true" />Registrar entrega</summary><DeliveryEntryCard holdingId={selectedHolding.id} campaignId={selectedCampaign.id} farms={farms} onSaved={reloadCampaign} /></details> : null}

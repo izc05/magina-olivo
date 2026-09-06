@@ -97,6 +97,7 @@ test('home preferences and support are private, real routes', async () => {
   assert.match(preferences, /HOME_PREFERENCES_KEY/);
   assert.match(preferences, /localStorage\.setItem/);
   assert.match(support, /VITE_CONTACT_EMAIL/);
+  assert.match(support, /soportemaginaolivo@gmail\.com/);
   assert.doesNotMatch(support, /soporte@maginaolivo\.es/);
 });
 

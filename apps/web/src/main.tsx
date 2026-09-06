@@ -6,6 +6,7 @@ import { App } from './App';
 import { CalendarPage } from './CalendarPage';
 import { installDemoPreview } from './demoPreview';
 import { DiscoverPage } from './DiscoverPage';
+import { DiscoverRouteDetailPage, DiscoverRoutesPage } from './DiscoverRoutesPage';
 import { LocalServiceDetailPage, LocalServicesPage } from './LocalServicesPage';
 import { EditProfilePage } from './EditProfilePage';
 import { HomePreferencesPage } from './HomePreferencesPage';
@@ -48,6 +49,7 @@ import './magina-market.css';
 import './magina-field-alerts.css';
 import './local-services.css';
 import './discover-territory.css';
+import './discover-routes.css';
 import './integration-v2.css';
 import './field-v2-integration.css';
 import './journal-v2-integration.css';
@@ -83,8 +85,8 @@ const path = pathWithoutBase.startsWith('/') ? pathWithoutBase : `/${pathWithout
 const returnTo = currentReturnTo();
 const loginReturnTo = safeReturnTo(new URLSearchParams(window.location.search).get('next'));
 
-function PublicScreen({ children }: { children: ReactNode }) {
-  return <><a className="skip-link" href="#main-content">Saltar al contenido</a><PublicNavigation activePath={path} />{children}</>;
+function PublicScreen({ children, showAction = true }: { children: ReactNode; showAction?: boolean }) {
+  return <><a className="skip-link" href="#main-content">Saltar al contenido</a><PublicNavigation activePath={path} showAction={showAction} />{children}</>;
 }
 
 if (basePath) {
@@ -142,7 +144,11 @@ createRoot(root).render(
       ) : path === '/mi-magina' ? (
         <App initialTab="more" />
       ) : path === '/descubre' ? (
-        <PublicScreen><DiscoverPage /></PublicScreen>
+        <PublicScreen showAction={false}><DiscoverPage /></PublicScreen>
+      ) : path === '/descubre/rutas' ? (
+        <PublicScreen showAction={false}><DiscoverRoutesPage /></PublicScreen>
+      ) : path.startsWith('/descubre/rutas/') ? (
+        <PublicScreen showAction={false}><DiscoverRouteDetailPage routeId={path.split('/').filter(Boolean).at(-1) ?? ''} /></PublicScreen>
       ) : path === '/descubre/servicios' ? (
         <PublicScreen><LocalServicesPage directory /></PublicScreen>
       ) : path.startsWith('/descubre/servicios/') ? (

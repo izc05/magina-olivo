@@ -52,6 +52,32 @@ final result: passed
 
 ---
 
+# Design QA — Descubre, rutas
+
+## Evidence
+
+- Source visual truth: paneles `2. Rutas · Listado` y `3. Ruta · Detalle` de `/tmp/codex-clipboard-b56d20d2-9604-44d2-9892-0f489ce6bb9a.png`.
+- Rendered implementation: `/descubre/rutas` y `/descubre/rutas/mar-olivos`, inspeccionadas a 634 px en el navegador integrado.
+
+## Full-view comparison
+
+- El listado conserva cabecera, filtros por dificultad, miniaturas, dificultad, distancia, duración y desnivel en tarjetas compactas.
+- La ficha de ruta añade imagen principal, ficha de métricas, acción de inicio con estado operable y explicación honesta de la disponibilidad futura de puntos, navegación y track.
+
+## Comparison history
+
+1. P1: el icono de aviso de preparación se reducía excesivamente por el padding. Se ajustó su contenedor visual y se verificó de nuevo.
+2. P2: el esquema visual muestra navegación/track que no puede inventarse. La implementación mantiene el botón de inicio como estado de interfaz y explicita que no hay GPS ni track publicados aún.
+
+## Primary interactions checked
+
+- Filtros de dificultad, navegación a ficha, regreso al listado y botón de inicio/detención de la ruta.
+- Producción compila: `npm --prefix apps/web run build`.
+
+final result: passed
+
+---
+
 # Design QA — Descubre Sierra Mágina
 
 ## Evidence

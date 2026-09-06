@@ -11,8 +11,8 @@ Este índice registra el avance ordenado del catálogo visual PWA. Las capturas 
 3. ✅ Crear cuenta / Registro
 4. ✅ Recuperar contraseña
 5. ✅ Confirmación de correo
-6. ⏭️ Selección inicial de municipio y cooperativa
-7. ⬜ Inicio público
+6. ✅ Selección inicial de municipio y cooperativa
+7. ⏭️ Inicio público
 8. ⬜ Inicio autenticado
 
 ## Módulos posteriores

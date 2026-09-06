@@ -50,8 +50,8 @@ export function CampaignDocuments({
     setError(null);
     try {
       setDocuments(await listCampaignDocuments(holdingId, campaignId));
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'No se han podido cargar los documentos privados.');
+    } catch {
+      setError('No se han podido cargar los documentos privados ahora. Puedes seguir consultando tus entregas e intentarlo más tarde.');
     } finally {
       setLoading(false);
     }
@@ -68,7 +68,7 @@ export function CampaignDocuments({
   }, [holdingId, campaignId]);
 
   return (
-    <section className="section campaign-documents" aria-labelledby="campaign-documents-title">
+    <section id="documentos" className="section campaign-documents" aria-labelledby="campaign-documents-title">
       <div className="section-heading campaign-documents-heading">
         <div>
           <p className="eyebrow page-eyebrow">DOCUMENTOS</p>

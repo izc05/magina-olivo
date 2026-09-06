@@ -195,7 +195,7 @@ const yields: DemoYield[] = [
     unit: '%',
     measuredAt: '2026-11-25T10:00:00.000Z',
     sourceKind: 'manual',
-    status: 'verified',
+    status: 'current',
     notes: null,
     createdAt: '2026-11-25T10:00:00.000Z',
     updatedAt: '2026-11-25T10:00:00.000Z',
@@ -208,7 +208,7 @@ const yields: DemoYield[] = [
     unit: '%',
     measuredAt: '2026-12-03T10:00:00.000Z',
     sourceKind: 'manual',
-    status: 'verified',
+    status: 'current',
     notes: null,
     createdAt: '2026-12-03T10:00:00.000Z',
     updatedAt: '2026-12-03T10:00:00.000Z',
@@ -672,7 +672,7 @@ async function handleDemoApi(input: RequestInfo | URL, init?: RequestInit): Prom
       unit: '%',
       measuredAt: body.measuredAt ? String(body.measuredAt) : now,
       sourceKind: 'manual',
-      status: 'verified',
+      status: 'current',
       notes: null,
       createdAt: now,
       updatedAt: now,
@@ -721,6 +721,9 @@ async function handleDemoApi(input: RequestInfo | URL, init?: RequestInit): Prom
     activities.unshift(created);
     return json(created, 201);
   }
+
+  const holdingDocuments = path.match(/^\/api\/v1\/holdings\/([^/]+)\/documents$/);
+  if (holdingDocuments && method === 'GET') return json({ items: [] });
 
   const plotTimeline = path.match(/^\/api\/v1\/plots\/([^/]+)\/timeline$/);
   if (plotTimeline && method === 'GET') return json({ items: timelineForPlot(plotTimeline[1]) });

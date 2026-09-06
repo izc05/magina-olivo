@@ -19,7 +19,7 @@ import { MaginaPrivateHub } from './MaginaPrivateHub.tsx';
 import { OfflineColdStart } from './OfflineColdStart.tsx';
 import { listPendingOperations } from './offline/outbox.ts';
 import { PrivateAccessGate } from './PrivateAccessGate.tsx';
-import { BarChart3, Bell, Building2, CalendarDays, ChevronLeft, ChevronRight, CircleHelp, Compass, House, Map, MapPin, Mountain, PackageCheck, Pencil, Plus, Settings, ShieldCheck, Sprout, Tractor, UserRound } from 'lucide-react';
+import { BarChart3, Bell, Building2, CalendarDays, ChevronLeft, ChevronRight, CircleHelp, Compass, FileText, House, Map, MapPin, Mountain, PackageCheck, Pencil, Plus, Settings, ShieldCheck, Sprout, Tractor, UserRound } from 'lucide-react';
 import { PhotoCredit, VisualHeader, navigationIcons } from './VisualChrome';
 
 type Tab = 'home' | 'field' | 'campaign' | 'magina' | 'more';
@@ -467,9 +467,10 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
 }
 
 function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelectedCampaignId, selectedCampaign, farms, deliveries, summary, busy, runAction, reloadHoldingData, reloadCampaign }: { selectedHolding: Holding | null; campaigns: Campaign[]; selectedCampaignId: string; setSelectedCampaignId: (id: string) => void; selectedCampaign: Campaign | null; farms: Farm[]; deliveries: Delivery[]; summary: CampaignSummary | null; busy: boolean; runAction: ActionRunner; reloadHoldingData: () => Promise<void>; reloadCampaign: () => Promise<void> }) {
+  const latestDelivery = deliveries[0] ?? null;
   return (
     <>
-      <PageIntro eyebrow="Campaña" title="Tu campaña" copy="Entregas y rendimiento con trazabilidad por campaña." />
+      <PageIntro eyebrow="MI CAMPO" title="Campaña y entregas" copy="Controla la cosecha, los rendimientos y la trazabilidad de tu finca." />
       {selectedHolding && !campaigns.length ? <><EmptyState title="Aún no tienes una campaña creada.">Crea la campaña para empezar a registrar tus entregas.</EmptyState><CreateCampaignCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} /></> : null}
       {campaigns.length ? (
         <section className="section">
@@ -484,43 +485,32 @@ function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelect
 
       {selectedCampaign ? (
         <>
-          <section className="campaign-detail-card" aria-labelledby="campaign-detail-title">
-            <div>
-              <p className="eyebrow">Campaña</p>
-              <h2 id="campaign-detail-title">{selectedCampaign.name}</h2>
-              <p>{selectedHolding?.name ?? 'Explotación activa'}</p>
+          <section className="campaign-reference-hero" aria-labelledby="campaign-detail-title">
+            <div className="campaign-reference-copy">
+              <p className="eyebrow">{selectedCampaign.name}</p>
+              <h2 id="campaign-detail-title">{selectedHolding?.name ?? 'Tu olivar'}</h2>
+              <p>{selectedHolding?.municipality ? `${selectedHolding.municipality}${selectedHolding.province ? ` · ${selectedHolding.province}` : ''}` : 'Tu explotación activa'}</p>
+              <span>Tradición, esfuerzo y un olivar con futuro.</span>
             </div>
-            <div className="campaign-summary-grid" aria-label={`Resumen de ${selectedCampaign.name}`}>
-              <div><span>Aceituna entregada</span><strong>{formatKg(summary?.totalKilograms)}</strong></div>
-              <div><span>Rendimiento medio</span><strong>{formatPercent(summary?.weightedYieldPercent)}</strong></div>
-              <div><span>Entregas</span><strong>{summary?.deliveriesCount ?? 0}</strong></div>
-              <div><span>Pendientes de rendimiento</span><strong>{summary?.pendingResultCount ?? 0}</strong></div>
-            </div>
-            <p className="campaign-coverage">Cobertura de rendimiento · {formatPercent(summary?.coveragePercent)}</p>
           </section>
 
-          {selectedHolding ? (
-            <DeliveryEntryCard
-              holdingId={selectedHolding.id}
-              campaignId={selectedCampaign.id}
-              farms={farms}
-              onSaved={reloadCampaign}
-            />
-          ) : null}
+          <section className="campaign-context-card card" aria-label="Contexto de campaña">
+            <div><span className="campaign-context-icon"><Sprout /></span><span><small>Finca</small><strong>{selectedHolding?.name ?? 'Explotación activa'}</strong></span></div>
+            <div><span className="campaign-context-icon"><Building2 /></span><span><small>Último destino</small><strong>{latestDelivery?.customDestination || 'Cooperativa pendiente'}</strong></span></div>
+          </section>
 
-          <section className="section">
-            <div className="section-heading"><div><p className="eyebrow page-eyebrow">Campaña · {selectedCampaign.name}</p><h2 className="section-title">Entregas</h2><p className="section-copy">{deliveries.length} registradas en esta campaña.</p></div></div>
+          <section className="campaign-metric-cards" aria-label={`Resumen de ${selectedCampaign.name}`}>
+            <article className="card"><span className="campaign-context-icon"><Tractor /></span><small>Total entregado</small><strong>{formatKg(summary?.totalKilograms)}</strong><em>Esta campaña</em></article>
+            <article className="card"><span className="campaign-context-icon"><FileText /></span><small>Nº entregas</small><strong>{summary?.deliveriesCount ?? 0}</strong><em>Hasta la fecha</em></article>
+            <article className="card"><span className="campaign-context-icon"><BarChart3 /></span><small>Rendimiento medio</small><strong>{formatPercent(summary?.weightedYieldPercent)}</strong><em>{summary?.pendingResultCount ? `${summary.pendingResultCount} pendiente${summary.pendingResultCount === 1 ? '' : 's'}` : 'Media disponible'}</em></article>
+          </section>
+
+          {selectedHolding ? <details className="campaign-create-disclosure"><summary><Plus aria-hidden="true" />Registrar entrega</summary><DeliveryEntryCard holdingId={selectedHolding.id} campaignId={selectedCampaign.id} farms={farms} onSaved={reloadCampaign} /></details> : null}
+
+          <section className="section campaign-history-section">
+            <div className="section-heading"><div><p className="eyebrow page-eyebrow">Campaña · {selectedCampaign.name}</p><h2 className="section-title">Historial de entregas</h2><p className="section-copy">{deliveries.length} registradas con destino y rendimiento.</p></div><a className="text-button" href="#documentos">Documentos</a></div>
             {deliveries.map((delivery) => (
-              <article className="card delivery-row delivery-list-card" key={delivery.id}>
-                <div>
-                  <div className="delivery-kilos">{formatKg(delivery.kilograms)}</div>
-                  <div className="delivery-date">{new Date(delivery.deliveredAt).toLocaleDateString('es-ES')} · {delivery.customDestination || 'Cooperativa'}{delivery.ticketNumber ? ` · Ticket ${delivery.ticketNumber}` : ''}</div>
-                </div>
-                <div className="delivery-actions">
-                  <YieldForm deliveryId={delivery.id} busy={busy} runAction={runAction} onCreated={reloadCampaign} />
-                  {selectedHolding ? <DeliveryTicketButton holdingId={selectedHolding.id} deliveryId={delivery.id} /> : null}
-                </div>
-              </article>
+              <DeliveryHistoryRow key={delivery.id} delivery={delivery} holdingId={selectedHolding?.id ?? ''} busy={busy} runAction={runAction} onCreated={reloadCampaign} />
             ))}
             {!deliveries.length ? <EmptyState title="Aún no hay entregas.">Registra la primera cuando lleves aceituna a la almazara.</EmptyState> : null}
           </section>
@@ -621,6 +611,32 @@ function CreateCampaignCard({ holdingId, busy, runAction, onCreated }: { holding
     await api.createCampaign(holdingId, { name: String(form.get('name') || '').trim(), seasonStartYear });
     await onCreated();
   })} fields={<div className="inline-fields"><Field name="name" label="Nombre" placeholder={`Campaña ${year}/${String(year + 1).slice(-2)}`} required /><Field name="seasonStartYear" label="Año inicio" type="number" defaultValue={String(year)} required /></div>} />;
+}
+
+function DeliveryHistoryRow({ delivery, holdingId, busy, runAction, onCreated }: { delivery: Delivery; holdingId: string; busy: boolean; runAction: ActionRunner; onCreated: () => Promise<void> }) {
+  const [yieldValue, setYieldValue] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void api.deliveryResults(delivery.id).then(({ items }) => {
+      if (cancelled) return;
+      const result = items.find((item) => item.resultType === 'fat_yield');
+      setYieldValue(result?.value ?? null);
+    }).catch(() => { if (!cancelled) setYieldValue(null); });
+    return () => { cancelled = true; };
+  }, [delivery.id]);
+
+  const date = new Date(delivery.deliveredAt);
+  const day = new Intl.DateTimeFormat('es-ES', { day: 'numeric' }).format(date);
+  const weekday = new Intl.DateTimeFormat('es-ES', { weekday: 'short' }).format(date).replace('.', '').toUpperCase();
+  const month = new Intl.DateTimeFormat('es-ES', { month: 'short' }).format(date).replace('.', '');
+  return <article className="card campaign-delivery-row">
+    <time dateTime={delivery.deliveredAt}><small>{weekday}</small><strong>{day}</strong><em>{month}</em></time>
+    <span className="campaign-context-icon"><Tractor /></span>
+    <div className="campaign-delivery-destination"><strong>{delivery.customDestination || 'Cooperativa sin especificar'}</strong><small>{delivery.variety || 'Variedad pendiente'}{delivery.ticketNumber ? ` · Ticket ${delivery.ticketNumber}` : ''}</small></div>
+    <div className="campaign-delivery-kilos"><strong>{formatKg(delivery.kilograms)}</strong><small>{yieldValue == null ? 'Rendimiento pendiente' : `Rend. ${formatPercent(yieldValue)}`}</small></div>
+    <div className="campaign-delivery-actions"><span className={`campaign-delivery-status${yieldValue == null ? ' pending' : ''}`}>{yieldValue == null ? 'En análisis' : 'Entregado'}</span>{yieldValue == null ? <YieldForm deliveryId={delivery.id} busy={busy} runAction={runAction} onCreated={onCreated} /> : null}{holdingId ? <DeliveryTicketButton holdingId={holdingId} deliveryId={delivery.id} /> : null}</div>
+    <ChevronRight className="campaign-delivery-chevron" aria-hidden="true" />
+  </article>;
 }
 
 function YieldForm({ deliveryId, busy, runAction, onCreated }: { deliveryId: string; busy: boolean; runAction: ActionRunner; onCreated: () => Promise<void> }) {

@@ -52,6 +52,45 @@ final result: passed
 
 ---
 
+# Design QA — Campaña y entregas
+
+## Evidence
+
+- Source visual truth:
+  - `/tmp/codex-clipboard-08f82a38-fb0b-4797-bbc3-18642c099be9.png` — Historial de entregas.
+  - `/tmp/codex-clipboard-9a150763-18ce-4634-a033-c1f8be364977.png` — Resumen de campaña de finca.
+  - `/tmp/codex-clipboard-a7df8dd3-5c82-406b-966b-81678c477074.png` — Comparativas, referencia para la fase de históricos.
+  - `/tmp/codex-clipboard-69cec3a0-28ed-4692-bd7e-7c2be2ab311a.png` — Informes, referencia para la fase de PDF.
+- Rendered implementation: full-page capture of `/campana` in the Codex in-app browser, con datos de campaña privados de demostración.
+- Capture surface: 634 px wide. Se compararon jerarquía, fotografía, tarjetas, estado de entregas y navegación inferior con las referencias móviles.
+
+## Full-view comparison
+
+- Se implantó la composición de campaña: foto de finca, etiqueta de temporada, resumen de entrega/rendimiento y acción principal para registrar una entrega.
+- El historial conserva fecha, destino, variedad, ticket, kilos, rendimiento y estado desde los contratos privados existentes.
+- La presentación de documentos usa las descargas CSV/JSON reales y comunica de forma amable la ausencia temporal de archivos, sin exponer errores HTTP.
+
+## Comparison history
+
+1. P1: el contexto de finca y último destino se truncaba en móvil. Se agrupó cada texto con su icono para preservar ambas etiquetas.
+2. P1: el entorno demo comunicaba los rendimientos como pendientes aunque existiesen. Se alineó el estado de datos de demostración con el contrato productivo `current`.
+3. P1: la carga de documentos exponía el texto técnico `HTTP 400`. Se sustituyó por un mensaje de continuidad comprensible.
+
+## Expected follow-up
+
+- Comparativa con media de Sierra Mágina requiere una fuente histórica y agregada verificada; no se muestra una media inventada.
+- Generación PDF requiere un servicio de documentos real; por ahora se mantienen las exportaciones CSV/JSON y documentos privados existentes.
+
+## Primary interactions checked
+
+- Selector de campaña, registro desplegable de entrega, descarga de CSV/JSON, adjunto de ticket y navegación a documentos.
+- Resultados por entrega se leen del endpoint privado y se actualizan con el estado correcto.
+- Producción build y suite web pasan tras los cambios.
+
+final result: passed
+
+---
+
 # Design QA — Meteorología
 
 ## Evidence

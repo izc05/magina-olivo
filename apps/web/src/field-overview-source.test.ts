@@ -95,6 +95,8 @@ test('notebook and private hub keep real contracts while presenting the V2 hiera
   assert.match(app, /href: '\/perfil\/editar'/);
   assert.match(app, /href: '\/perfil\/notificaciones'/);
   assert.match(app, /href: '\/perfil\/privacidad'/);
+  assert.match(app, /href: '\/perfil\/preferencias'/);
+  assert.match(app, /href: '\/perfil\/soporte'/);
   assert.match(app, /onSignOut/);
   assert.doesNotMatch(app, /Biblia Visual V2/);
 });

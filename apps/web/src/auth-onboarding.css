@@ -218,9 +218,9 @@
 .notification-setting-row strong, .notification-setting-row small { display: block; }
 .notification-setting-row strong { color: var(--ink); font-size: 1rem; }
 .notification-setting-row small { margin-top: 4px; color: var(--muted); line-height: 1.35; }
-.profile-switch { position: relative; width: 52px; height: 30px; padding: 0; border: 0; border-radius: 999px; background: #d8dad8; transition: background .18s ease; }
+.profile-switch, button.profile-switch { position: relative; width: 52px; height: 30px; padding: 0; border: 0; border-radius: 999px; background-color: #d8dad8; box-shadow: inset 0 0 0 1px rgba(35,52,27,.08); transition: background .18s ease; }
 .profile-switch span { position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: white; box-shadow: 0 1px 4px rgba(0,0,0,.22); transition: transform .18s ease; }
-.profile-switch.is-on { background: var(--olive-900); }
+.profile-switch.is-on, button.profile-switch.is-on { background-color: var(--olive-900); }
 .profile-switch.is-on span { transform: translateX(22px); }
 
 .privacy-permission-list { display: grid; gap: 12px; }
@@ -238,6 +238,25 @@ button.privacy-permission-row:disabled { cursor: default; opacity: 1; }
 .privacy-note > svg { flex: 0 0 30px; width: 30px; height: 30px; }
 .privacy-note strong, .privacy-note small { display: block; }
 .privacy-note small { margin-top: 4px; color: var(--muted); line-height: 1.45; }
+
+.home-preferences-note { display: flex; gap: 16px; align-items: center; padding: 20px; border-radius: 18px; color: var(--olive-950); background: #eaf0e3; }
+.home-preferences-note svg { flex: 0 0 34px; width: 34px; height: 34px; }
+.home-preferences-note strong, .home-preferences-note small { display: block; }
+.home-preferences-note small { margin-top: 5px; color: var(--muted); }
+.home-preference-list, .support-profile-list { display: grid; gap: 12px; }
+.home-preference-row { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto 26px; align-items: center; gap: 14px; min-height: 94px; padding: 13px 16px; }
+.home-preference-row strong, .home-preference-row small, .support-profile-row strong, .support-profile-row small { display: block; }
+.home-preference-row strong, .support-profile-row strong { color: var(--ink); font: 700 1.12rem Georgia, serif; }
+.home-preference-row small, .support-profile-row small { margin-top: 5px; color: var(--muted); line-height: 1.35; }
+.home-preference-grip { color: #aeb2ad; }
+.support-profile-hero { min-height: 230px; display: flex; align-items: center; padding: 26px; border-radius: 24px; overflow: hidden; background: linear-gradient(90deg, rgba(240,244,233,.98) 0%, rgba(240,244,233,.86) 48%, rgba(240,244,233,.14) 75%), url('/photos/field-olivares-magina.webp') center / cover; }
+.support-profile-hero div { max-width: 390px; }
+.support-profile-hero h2 { margin: 0; color: var(--ink); font: 700 2rem/1.05 Georgia, serif; }
+.support-profile-hero p { color: var(--muted); line-height: 1.5; }
+.support-profile-hero small { color: var(--olive-800); font-weight: 700; }
+.support-profile-row { display: grid; grid-template-columns: 58px minmax(0, 1fr) 24px; align-items: center; gap: 14px; min-height: 90px; padding: 13px 16px; color: inherit; text-decoration: none; }
+.support-profile-row > svg { width: 22px; height: 22px; }
+.support-profile-row.is-disabled { opacity: .65; }
 
 @media (max-width: 640px) {
   .account-entry {
@@ -258,6 +277,8 @@ button.privacy-permission-row:disabled { cursor: default; opacity: 1; }
   .notification-setting-row { grid-template-columns: 48px minmax(0, 1fr) auto; padding: 11px 13px; }
   .privacy-permission-row { grid-template-columns: 52px minmax(0, 1fr); gap: 12px; }
   .privacy-permission-row .permission-status { grid-column: 2; justify-self: start; }
+  .home-preference-row { grid-template-columns: 50px minmax(0, 1fr) auto; }
+  .home-preference-grip { display: none; }
 }
 
 @media (max-width: 520px) {

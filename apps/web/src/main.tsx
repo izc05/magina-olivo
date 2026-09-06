@@ -7,6 +7,7 @@ import { CalendarPage } from './CalendarPage';
 import { installDemoPreview } from './demoPreview';
 import { DiscoverPage } from './DiscoverPage';
 import { EditProfilePage } from './EditProfilePage';
+import { HomePreferencesPage } from './HomePreferencesPage';
 import { LoginPage } from './LoginPage';
 import { LoyaltyOlivePage } from './LoyaltyOlivePage';
 import { MaginaDirectoryPage } from './MaginaDirectoryPage';
@@ -27,6 +28,7 @@ import { ResetPassword } from './ResetPassword';
 import { currentReturnTo, safeReturnTo } from './private-access';
 import { RewardCatalogPage } from './RewardCatalogPage';
 import { RewardValidatorPage } from './RewardValidatorPage';
+import { SupportPage } from './SupportPage';
 import { installWeatherDemoPreview } from './weatherDemoPreview';
 import './styles.css';
 import './brand.css';
@@ -115,6 +117,10 @@ createRoot(root).render(
         <PrivateRoute returnTo={returnTo}><NotificationPreferencesPage /></PrivateRoute>
       ) : path === '/perfil/privacidad' ? (
         <PrivateRoute returnTo={returnTo}><PrivacyPermissionsPage /></PrivateRoute>
+      ) : path === '/perfil/preferencias' ? (
+        <PrivateRoute returnTo={returnTo}><HomePreferencesPage /></PrivateRoute>
+      ) : path === '/perfil/soporte' ? (
+        <PrivateRoute returnTo={returnTo}><SupportPage /></PrivateRoute>
       ) : path === '/calendario' ? (
         <PrivateRoute returnTo={returnTo}><CalendarPage /></PrivateRoute>
       ) : path === '/tu-olivo' ? (

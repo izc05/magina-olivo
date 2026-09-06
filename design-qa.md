@@ -48,4 +48,13 @@
 - P3: once a real challenge/history API exists, add the daily-retos and recent-activity blocks from the reference rather than supplying static rewards.
 - P3: the administration visuals are represented by separate repository branches and should be converged in a dedicated secure admin pass instead of being merged into the grower navigation.
 
+## Profile refinement — 6 September 2026
+
+- Sources: six supplied mobile references for profile overview, editing, notifications, privacy, home preferences and support.
+- Reviewed implementation routes: `/mi-magina`, `/perfil/editar`, `/perfil/notificaciones`, `/perfil/privacidad`, `/perfil/preferencias` and `/perfil/soporte`.
+- Profile overview now follows the reference hierarchy and uses live farm, delivery and campaign-kilogram values instead of copying sample figures.
+- Home preferences and support complete the visible route family. Preferences persist locally for the current device; unsupported server fields and an unconfigured support email are not fabricated.
+- Mobile visual inspection found no clipped headings, horizontal overflow or inaccessible primary controls. Switch-track contrast was corrected during the pass.
+- Web build: passed. Web tests: 65 passed, 0 failed.
+
 final result: passed

@@ -88,4 +88,16 @@ test('privacy permissions are private, gesture-driven and never prompt on mount'
   assert.match(privacy, /onClick=\{action\}/);
 });
 
+test('home preferences and support are private, real routes', async () => {
+  const main = await read('./main.tsx');
+  const preferences = await read('./HomePreferencesPage.tsx');
+  const support = await read('./SupportPage.tsx');
+  assert.match(main, /path === '\/perfil\/preferencias'/);
+  assert.match(main, /path === '\/perfil\/soporte'/);
+  assert.match(preferences, /HOME_PREFERENCES_KEY/);
+  assert.match(preferences, /localStorage\.setItem/);
+  assert.match(support, /VITE_CONTACT_EMAIL/);
+  assert.doesNotMatch(support, /soporte@maginaolivo\.es/);
+});
+
 // Keep this source gate in the CI-triggering slice so portability changes always re-run both repository gates.

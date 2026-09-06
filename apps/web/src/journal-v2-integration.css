@@ -302,6 +302,13 @@
   background: rgba(255, 253, 248, .94);
 }
 
+.profile-real-stats { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 4px; padding-top: 16px; border-top: 1px solid var(--line); }
+.profile-real-stats > span { display: grid; place-items: center; gap: 3px; min-width: 0; text-align: center; border-right: 1px solid var(--line); }
+.profile-real-stats > span:last-child { border-right: 0; }
+.profile-real-stats svg { width: 24px; height: 24px; color: var(--olive-800); }
+.profile-real-stats strong { color: var(--ink); font: 700 1.15rem Georgia, serif; }
+.profile-real-stats small { color: var(--muted); }
+
 .profile-reference-card .profile-initials {
   position: static;
   width: 74px;

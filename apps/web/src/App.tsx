@@ -19,7 +19,7 @@ import { MaginaPrivateHub } from './MaginaPrivateHub.tsx';
 import { OfflineColdStart } from './OfflineColdStart.tsx';
 import { listPendingOperations } from './offline/outbox.ts';
 import { PrivateAccessGate } from './PrivateAccessGate.tsx';
-import { BarChart3, Bell, Building2, CalendarDays, ChevronLeft, ChevronRight, CircleHelp, Compass, House, Map, MapPin, Mountain, Pencil, Plus, Settings, ShieldCheck, Sprout, UserRound } from 'lucide-react';
+import { BarChart3, Bell, Building2, CalendarDays, ChevronLeft, ChevronRight, CircleHelp, Compass, House, Map, MapPin, Mountain, PackageCheck, Pencil, Plus, Settings, ShieldCheck, Sprout, Tractor, UserRound } from 'lucide-react';
 import { PhotoCredit, VisualHeader, navigationIcons } from './VisualChrome';
 
 type Tab = 'home' | 'field' | 'campaign' | 'magina' | 'more';
@@ -268,7 +268,7 @@ export function App({ initialTab = 'home' }: { initialTab?: Tab }) {
           />
         ) : null}
         {tab === 'magina' ? <MaginaPrivateHub /> : null}
-        {tab === 'more' ? <MoreTab user={user} holding={selectedHolding} busy={busy} onSignOut={() => void signOut()} /> : null}
+        {tab === 'more' ? <MoreTab user={user} holding={selectedHolding} farms={farms} deliveries={deliveries} summary={summary} busy={busy} onSignOut={() => void signOut()} /> : null}
       </main>
 
       <nav className="bottom-nav bottom-nav-v2" aria-label="Navegación principal">
@@ -531,15 +531,15 @@ function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelect
   );
 }
 
-function MoreTab({ user, holding, busy, onSignOut }: { user: User; holding: Holding | null; busy: boolean; onSignOut: () => void }) {
+function MoreTab({ user, holding, farms, deliveries, summary, busy, onSignOut }: { user: User; holding: Holding | null; farms: Farm[]; deliveries: Delivery[]; summary: CampaignSummary | null; busy: boolean; onSignOut: () => void }) {
   const initials = (user.name || user.email).trim().split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
   const profileLinks = [
     { href: '/perfil/editar', icon: UserRound, title: 'Datos personales', copy: 'Nombre, contacto e información de tu cuenta' },
     { href: '/cuenta#cooperativa', icon: MapPin, title: 'Municipio y cooperativa', copy: 'Tu ubicación y entidad de referencia' },
-    { href: '/cuenta#preferencias', icon: Settings, title: 'Preferencias', copy: 'Umbrales y configuración de la aplicación' },
+    { href: '/perfil/preferencias', icon: Settings, title: 'Preferencias', copy: 'Configura la información de tu inicio' },
     { href: '/perfil/notificaciones', icon: Bell, title: 'Notificaciones', copy: 'Gestiona tus alertas y avisos' },
     { href: '/perfil/privacidad', icon: ShieldCheck, title: 'Privacidad', copy: 'Controla tus datos y permisos' },
-    { href: 'mailto:soporte@maginaolivo.es', icon: CircleHelp, title: 'Soporte', copy: 'Ayuda, contacto y preguntas frecuentes' },
+    { href: '/perfil/soporte', icon: CircleHelp, title: 'Soporte', copy: 'Ayuda, contacto y preguntas frecuentes' },
   ];
   return (
     <>
@@ -553,6 +553,7 @@ function MoreTab({ user, holding, busy, onSignOut }: { user: User; holding: Hold
           <p className="list-card-meta profile-email">{user.email}</p>
         </div>
         <a className="profile-edit-button" href="/perfil/editar"><Pencil aria-hidden="true" /> Editar perfil</a>
+        <div className="profile-real-stats"><span><Tractor aria-hidden="true" /><strong>{farms.length}</strong><small>Fincas</small></span><span><PackageCheck aria-hidden="true" /><strong>{deliveries.length}</strong><small>Entregas</small></span><span><BarChart3 aria-hidden="true" /><strong>{formatKg(summary?.totalKilograms)}</strong><small>Aceitunas</small></span></div>
       </section>
       <section className="section more-links profile-reference-links" aria-label="Opciones del perfil">
         {profileLinks.map(({ href, icon: Icon, title, copy }) => (

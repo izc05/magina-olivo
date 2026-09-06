@@ -52,6 +52,39 @@ final result: passed
 
 ---
 
+# Design QA — Servicios locales
+
+## Evidence
+
+- Source visual truth: `/tmp/codex-clipboard-299588b9-2d13-496b-8dd1-d610c89a29ae.png`, `/tmp/codex-clipboard-89b5064e-ded8-4798-b4ad-310e45f71d69.png`, `/tmp/codex-clipboard-9c26d21d-1e70-46b8-b396-466c4191ecc5.png` y `/tmp/codex-clipboard-50f6b28b-431c-4010-99b0-55d8d8fe1b6c.png`.
+- Rendered implementation: `/descubre` en el navegador integrado de Codex a 634 px; contraste a nivel de contenido con las capturas móviles suministradas.
+- Asset: `/apps/web/public/photos/local-services-triptych.png`, generado como imagen editorial sin texto ni marcas, para no hacer pasar una imagen artificial por una ficha comercial real.
+
+## Full-view comparison
+
+- La entrada de Descubre pasa a ser un directorio de servicios locales: título editorial, búsqueda, matriz de categorías, destacados, lista próxima y CTA hacia el catálogo.
+- Búsqueda y categorías actualizan los resultados; las tarjetas llevan a una ficha individual y el catálogo completo vive en `/descubre/servicios`.
+- Las fichas declaran de forma visible que sus contactos, horarios y rutas no se publicarán hasta verificarlos.
+
+## Comparison history
+
+1. P1: los iconos de categoría salían demasiado pequeños por el padding de los SVG. Se amplió el marco visual y se comprobó de nuevo en el navegador.
+2. P2: no existe aún una fuente de comercios locales verificable. Se mantuvo la experiencia navegable con datos de diseño rotulados, sin habilitar llamadas, rutas u horarios falsos.
+
+## Primary interactions checked
+
+- Filtro de categoría, búsqueda, CTA de directorio y enlaces a fichas de servicio.
+- Producción compila sin errores: `npm --prefix apps/web run build`.
+
+## Expected follow-up
+
+- La capa de producción sustituirá el dataset visual por un endpoint público con procedencia, fecha de revisión, teléfono, horario, coordenadas y consentimiento del negocio.
+- El mapa y las rutas sólo se habilitarán al elegir proveedor cartográfico y mantener la atribución/licencia correspondiente.
+
+final result: passed
+
+---
+
 # Design QA — Meteorología, ajuste de fidelidad móvil
 
 ## Evidence

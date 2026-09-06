@@ -6,6 +6,7 @@ import { App } from './App';
 import { CalendarPage } from './CalendarPage';
 import { installDemoPreview } from './demoPreview';
 import { DiscoverPage } from './DiscoverPage';
+import { LocalServiceDetailPage, LocalServicesPage } from './LocalServicesPage';
 import { EditProfilePage } from './EditProfilePage';
 import { HomePreferencesPage } from './HomePreferencesPage';
 import { LoginPage } from './LoginPage';
@@ -45,6 +46,7 @@ import './weather-experience.css';
 import './magina-hub.css';
 import './magina-market.css';
 import './magina-field-alerts.css';
+import './local-services.css';
 import './integration-v2.css';
 import './field-v2-integration.css';
 import './journal-v2-integration.css';
@@ -139,6 +141,12 @@ createRoot(root).render(
       ) : path === '/mi-magina' ? (
         <App initialTab="more" />
       ) : path === '/descubre' ? (
+        <PublicScreen><LocalServicesPage /></PublicScreen>
+      ) : path === '/descubre/servicios' ? (
+        <PublicScreen><LocalServicesPage directory /></PublicScreen>
+      ) : path.startsWith('/descubre/servicios/') ? (
+        <PublicScreen><LocalServiceDetailPage slug={path.split('/').filter(Boolean).at(-1) ?? ''} /></PublicScreen>
+      ) : path === '/descubre/sierra-magina' ? (
         <PublicScreen><DiscoverPage /></PublicScreen>
       ) : path === '/magina' ? (
         <PublicScreen><MaginaHubPage /></PublicScreen>

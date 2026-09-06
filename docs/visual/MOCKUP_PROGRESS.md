@@ -13,7 +13,11 @@ Este índice registra el avance ordenado del catálogo visual PWA. Las capturas 
 5. ✅ Confirmación de correo
 6. ✅ Selección inicial de municipio y cooperativa
 7. ✅ Inicio público
-8. ⏭️ Inicio autenticado
+8. ✅ Inicio autenticado
+
+## Siguiente pantalla
+
+9. ⏭️ Mi Campo · resumen de explotación
 
 ## Módulos posteriores
 

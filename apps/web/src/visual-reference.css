@@ -182,6 +182,48 @@ summary { cursor: pointer; }
 .territory-feature h2, .discover-hero h1, .farm-detail-card > div:first-child { text-shadow: 0 1px 3px #0008; }
 .photo-credit { display: block; margin: 10px 2px; color: var(--muted); font-size: .61rem; line-height: 1.5; }
 .farm-detail-card { background-image: url('/photos/field-olivares-magina.webp'); }
+
+/* Mi Campo overview: connected real holdings/farms, matched to the supplied mobile reference. */
+.field-overview-hero { position: relative; min-height: 360px; margin: 14px 0 16px; padding: 150px 20px 18px; overflow: hidden; border-radius: 26px; color: #fff; background: #667459 url('/photos/field-olivares-magina.webp') center / cover; }
+.field-overview-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 24%, rgba(18,27,13,.78) 100%); }
+.field-overview-copy, .field-overview-metrics { position: relative; z-index: 1; }
+.field-overview-copy .eyebrow { width: fit-content; margin: 0 0 8px; padding: 5px 10px; border-radius: 99px; color: #fff; background: rgba(34,47,25,.68); }
+.field-overview-copy h1 { margin: 0; color: #fff; font: 700 clamp(2.7rem, 12vw, 4.5rem)/.98 Georgia, serif; letter-spacing: -.035em; text-shadow: 0 2px 7px rgba(0,0,0,.45); }
+.field-overview-copy > p:last-child { margin: 8px 0 16px; color: rgba(255,255,255,.94); font-size: 1.05rem; }
+.field-overview-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 13px 4px; border-radius: 19px; color: var(--ink); background: rgba(255,253,248,.94); }
+.field-overview-metrics > div { padding: 0 8px; text-align: center; }
+.field-overview-metrics > div + div { border-left: 1px solid var(--line); }
+.field-overview-metrics span, .field-overview-metrics strong { display: block; }
+.field-overview-metrics span { color: var(--muted); font-size: .7rem; }
+.field-overview-metrics strong { margin-top: 3px; font: 700 clamp(.95rem, 4vw, 1.25rem)/1.1 Georgia, serif; }
+.field-overview-highlights { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin-bottom: 26px; }
+.field-overview-highlights > a, .field-overview-highlights > button { position: relative; display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 9px; min-height: 118px; padding: 12px 10px; border: 1px solid var(--line); border-radius: 18px; color: var(--ink); background: var(--paper); text-align: left; text-decoration: none; }
+.field-overview-highlights > a > svg:first-child, .field-overview-highlights > button > svg:first-child { width: 42px; height: 42px; padding: 9px; border-radius: 12px; color: var(--olive-950); background: #e9eee2; }
+.field-overview-highlights > * > svg:last-child { position: absolute; right: 7px; bottom: 9px; width: 16px; }
+.field-overview-highlights span, .field-overview-highlights small, .field-overview-highlights strong, .field-overview-highlights em { display: block; min-width: 0; }
+.field-overview-highlights small { color: var(--muted); font-size: .65rem; line-height: 1.25; }
+.field-overview-highlights strong { margin-top: 5px; overflow-wrap: anywhere; font: 700 .9rem/1.2 Georgia, serif; }
+.field-overview-highlights em { margin-top: 4px; color: var(--muted); font-size: .64rem; font-style: normal; line-height: 1.2; }
+.field-farms-section { margin-top: 0; }
+.field-farms-section .section-heading { align-items: end; }
+.field-farms-section .text-button { white-space: nowrap; }
+.field-farm-grid { display: grid; gap: 10px; }
+.field-farm-card { position: relative; display: grid; grid-template-columns: 105px minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; min-height: 132px; padding: 12px 42px 12px 12px; border: 1px solid var(--line); border-radius: 19px; color: var(--ink); background: var(--paper); text-align: left; }
+.field-farm-card:first-child { border-color: #a8b396; background: #f2f4ec; }
+.field-farm-thumb { align-self: stretch; min-height: 106px; border-radius: 14px; background: #77856b url('/photos/field-olivares-magina.webp') center / cover; }
+.field-farm-content, .field-farm-content > strong, .field-farm-content > small { display: block; min-width: 0; }
+.field-farm-content > strong { font: 700 1.25rem/1.15 Georgia, serif; }
+.field-farm-content > small { margin-top: 5px; color: var(--muted); font-size: .78rem; }
+.field-farm-stats { display: flex; flex-wrap: wrap; gap: 7px 14px; margin-top: 14px; color: var(--ink); font-size: .72rem; }
+.field-farm-stats > span { display: inline-flex; align-items: center; gap: 5px; }
+.field-farm-stats svg { width: 17px; height: 17px; color: var(--olive-650); }
+.field-farm-card > .badge { align-self: start; margin-top: 3px; }
+.field-farm-card > .row-chevron { position: absolute; right: 12px; top: 50%; width: 20px; transform: translateY(-50%); }
+.field-add-farm { margin-top: 12px; border-style: dashed; }
+.field-add-farm > summary { display: flex; justify-content: center; align-items: center; gap: 8px; font-weight: 600; }
+.field-add-farm > summary svg { width: 22px; }
+.field-back-button { display: inline-flex; align-items: center; gap: 5px; min-height: 42px; margin-top: 5px; padding: 0 10px 0 2px; border: 0; color: var(--olive-650); background: transparent; }
+.field-back-button svg { width: 20px; }
 .account-shell, .calendar-shell { max-width: 920px; margin: auto; padding: 0 16px 120px; }
 .account-page, .calendar-page { padding: 10px 0; }
 .account-shell > .visual-header { padding-left: 0; padding-right: 0; }
@@ -255,6 +297,8 @@ summary { cursor: pointer; }
   .public-home-v2-quick a { min-height: 92px; font-size: .9rem; }
   .public-navigation > a:not(.public-nav-action), .bottom-nav-v2 .nav-button { font-size: .8rem; }
   .farm-detail-card { min-height: 370px; padding: 130px 24px 20px; }
+  .field-overview-hero { min-height: 440px; padding: 210px 30px 24px; }
+  .field-farm-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .territory-feature, .discover-hero { min-height: 370px; padding: 28px; }
   .visual-segments a { font-size: .9rem; }
   .loyalty-hero-card { min-height: 300px; }
@@ -262,6 +306,17 @@ summary { cursor: pointer; }
   .loyalty-heading-row h2 { font-size: 2.15rem; }
   .loyalty-harvest-button { right: 28px; bottom: 28px; min-height: 50px; font-size: .9rem; }
   .rewards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 430px) {
+  .field-overview-hero { min-height: 330px; padding: 132px 14px 14px; border-radius: 22px; }
+  .field-overview-copy h1 { font-size: 2.65rem; }
+  .field-overview-highlights { gap: 6px; }
+  .field-overview-highlights > a, .field-overview-highlights > button { grid-template-columns: 1fr; min-height: 130px; padding: 9px; }
+  .field-overview-highlights > a > svg:first-child, .field-overview-highlights > button > svg:first-child { width: 38px; height: 38px; }
+  .field-farm-card { grid-template-columns: 82px minmax(0, 1fr); min-height: 118px; padding-right: 34px; }
+  .field-farm-thumb { min-height: 92px; }
+  .field-farm-card > .badge { position: absolute; right: 30px; top: 10px; }
+  .field-farm-content { padding-top: 22px; }
 }
 @media (max-width: 359px) {
   .visual-brand { gap: 6px; }

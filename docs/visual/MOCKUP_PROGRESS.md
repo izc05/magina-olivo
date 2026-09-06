@@ -26,8 +26,8 @@ Este índice registra el avance ordenado del catálogo visual PWA. Las capturas 
 15. ✅ Tratamientos
 16. ✅ Campaña actual
 17. ✅ Registrar entrega
-18. ⏭️ Rendimiento
-19. ⬜ Documentos
+18. ✅ Rendimiento
+19. ⏭️ Documentos
 
 ## Módulos posteriores
 

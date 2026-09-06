@@ -49,3 +49,48 @@
 No actionable P0, P1 or P2 visual differences remain for these three screens. The remaining deviations are expected product/runtime constraints listed above.
 
 final result: passed
+
+---
+
+# Design QA — Meteorología
+
+## Evidence
+
+- Source visual truth:
+  - `/tmp/codex-clipboard-13d6d646-bde4-4cee-91ba-90ae5e97e782.png` — Previsión por horas.
+  - `/tmp/codex-clipboard-9d20508a-a66b-4e5b-a5d0-8d707a40ba4e.png` — Previsión semanal.
+  - `/tmp/codex-clipboard-d539cb6e-f454-42b8-a9db-8c2f9ca0bc5c.png` — Detalle de alerta.
+  - `/tmp/codex-clipboard-228780bf-0524-487c-a9bc-8cf748998b7c.png` — Configurar alertas.
+- Rendered implementation: full-page captures from `/magina/tiempo`, `/magina/tiempo/horas`, `/magina/alerta` and `/magina/alertas/configurar` in the Codex in-app browser.
+- Capture surface: 634 px wide. Reference proportions, hierarchy, color, density, wrapping and fixed navigation were compared at the available mobile width.
+- State: explicit demo preview for visual QA. Simulated values are labelled as such; production routes use server-side AEMET data and authenticated account data.
+
+## Full-view comparison
+
+- Typography and hierarchy retain the large Georgia titles, green meteorology eyebrow and compact Inter data labels.
+- The ivory background, white bordered cards, olive controls, sage icon tiles and amber caution states match the supplied visual system.
+- Weekly rows, horizontal hourly strip, alert summary, recommendation cards and per-plot settings reproduce the reference information architecture.
+- The shared official logo, header and bottom navigation remain consistent with the rest of the product.
+
+## Comparison history
+
+1. P1: the first hourly demo exposed only four usable time columns. Expanded the source fixture so the horizontal strip now shows eight two-hour intervals.
+2. P1: the alert detail lacked the precipitation radar shown in the reference. Added the latest real radar frame and linked the full animated radar view.
+3. P1: public weather pages initially inherited a second navigation wrapper. Removed the duplicate wrapper and kept one accessible navigation landmark.
+4. P2: the former route only exposed a single weather page. Added dedicated weekly, hourly, alert-detail and per-plot configuration routes and connected their primary actions.
+
+## Primary interactions checked
+
+- Weekly-to-hourly navigation and radar destination resolve to implemented pages.
+- Hourly and daily forecasts use public server routes; no AEMET credential is shipped to the client.
+- Alert detail reads the authenticated rain-alert feed and the public radar feed.
+- Per-plot switches, channels, lead time, intensity and time band are operable and persist locally with an explicit scope note.
+- Production build, API tests and frontend tests pass.
+
+## Expected deviations
+
+- The reference names Bedmar and sample parcels; the implementation preserves the account/municipality actually returned by the connected data instead of fabricating those values.
+- Android/iOS status and system bars belong to the reference device and are not reproduced by the web application.
+- Fixed private pilot notices may overlay the lower edge in demo mode when a real alert is active; their presence is intentional account feedback.
+
+final result: passed

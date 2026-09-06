@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { fetchAemetDailyForecast, type PublicWeatherForecast } from './aemet-weather-provider.ts';
+import { fetchAemetDailyForecast, fetchAemetHourlyForecast, type PublicWeatherForecast } from './aemet-weather-provider.ts';
 import { getPool } from './db.ts';
 import { apiError } from './http-errors.ts';
 import { canServeWeatherFallback, classifyWeatherFreshness } from './weather-freshness.ts';
@@ -46,6 +46,19 @@ function weatherPayload(
 }
 
 export function registerPublicWeatherRoutes(app: FastifyInstance): void {
+  app.get<{ Querystring: WeatherQuery }>('/api/v1/public/weather/hourly', { schema: { querystring: { type: 'object', additionalProperties: false, required: ['municipality'], properties: { municipality: { type: 'string', pattern: '^[a-z0-9-]{2,80}$' } } } } }, async (request, reply) => {
+    if (!process.env.AEMET_API_KEY?.trim()) return reply.code(503).send(apiError(request, 'WEATHER_PROVIDER_NOT_CONFIGURED', 'Weather provider is not configured'));
+    const result = await getPool().query<MunicipalityRow>('select slug, name, province, aemet_code from public_municipalities where slug = $1 and active = true limit 1', [request.query.municipality]);
+    const municipality = result.rows[0];
+    if (!municipality) return reply.code(404).send(apiError(request, 'MUNICIPALITY_NOT_AVAILABLE', 'Weather is not available for this municipality'));
+    try {
+      const forecast = await fetchAemetHourlyForecast(municipality.aemet_code);
+      return { municipality: { slug: municipality.slug, name: municipality.name, province: municipality.province }, forecast, source: { label: 'AEMET OpenData', attribution: 'AEMET', scopeNote: 'Predicción horaria para la capital del municipio; puede variar dentro del término municipal.' } };
+    } catch (error) {
+      request.log.warn({ err: error, municipality: municipality.slug }, 'AEMET hourly forecast unavailable');
+      return reply.code(502).send(apiError(request, 'WEATHER_PROVIDER_UNAVAILABLE', 'Hourly weather data is temporarily unavailable'));
+    }
+  });
   app.get<{ Querystring: WeatherQuery }>(
     '/api/v1/public/weather',
     {

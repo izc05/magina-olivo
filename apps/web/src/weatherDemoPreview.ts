@@ -106,6 +106,32 @@ function demoRainAlerts() {
   };
 }
 
+function demoHourlyWeather() {
+  const now = new Date();
+  now.setMinutes(0, 0, 0);
+  const rain = [5, 5, 5, 10, 10, 15, 15, 25, 35, 45, 60, 55, 45, 35, 20, 15];
+  const temperatures = [14, 15, 17, 19, 21, 23, 24, 25, 25, 24, 22, 20, 18, 17, 15, 14];
+  return {
+    municipality: { slug: 'huelma', name: 'Huelma', province: 'Jaén' },
+    forecast: {
+      elaboratedAt: new Date().toISOString(),
+      hours: rain.map((probability, index) => ({
+        dateTime: new Date(now.getTime() + index * 60 * 60_000).toISOString(),
+        skyDescription: probability >= 55 ? 'Lluvia' : probability >= 30 ? 'Nuboso' : 'Poco nuboso',
+        precipitationProbabilityPercent: probability,
+        temperatureC: temperatures[index],
+        humidityPercent: 54 + index * 3,
+        windKmh: 6 + index * 2,
+        windDirection: 'O',
+      })),
+    },
+    source: {
+      attribution: 'AEMET OpenData · preview visual',
+      scopeNote: 'Datos ilustrativos solo en modo demo; la aplicación conectada consulta la predicción horaria municipal de AEMET.',
+    },
+  };
+}
+
 export function installWeatherDemoPreview(): void {
   if (!DEMO_ENABLED) return;
 
@@ -116,6 +142,9 @@ export function installWeatherDemoPreview(): void {
 
     if (method === 'GET' && url.pathname === '/api/v1/public/weather/radar/frames') {
       return json(demoRadar());
+    }
+    if (method === 'GET' && url.pathname === '/api/v1/public/weather/hourly') {
+      return json(demoHourlyWeather());
     }
     if (method === 'GET' && url.pathname === '/api/v1/account/rain-alerts') {
       return json(demoRainAlerts());

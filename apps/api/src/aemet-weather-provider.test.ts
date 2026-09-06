@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parseAemetDailyForecast } from './aemet-weather-provider.ts';
+import { parseAemetDailyForecast, parseAemetHourlyForecast } from './aemet-weather-provider.ts';
 
 test('normalizes AEMET daily municipality forecast for field use', () => {
   const result = parseAemetDailyForecast('23044', [
@@ -51,6 +51,11 @@ test('normalizes AEMET daily municipality forecast for field use', () => {
   });
   assert.equal(result.days[1]?.precipitationProbabilityPercent, 60);
   assert.equal(result.days[1]?.windMaxKmh, 25);
+});
+
+test('normalizes hourly municipality values without inventing missing measurements', () => {
+  const result = parseAemetHourlyForecast('23044', [{ elaborado: '2026-09-06T06:00:00', nombre: 'Huelma', provincia: 'Jaén', prediccion: { dia: [{ fecha: '2026-09-06', temperatura: [{ periodo: '08', value: 14 }], probPrecipitacion: [{ periodo: '08', value: 35 }], humedadRelativa: [{ periodo: '08', value: 58 }], estadoCielo: [{ periodo: '08', descripcion: 'Poco nuboso' }], vientoAndRachaMax: [{ periodo: '08', direccion: ['O'], velocidad: [12] }] }] } }]);
+  assert.deepEqual(result.hours[0], { dateTime: '2026-09-06T08:00:00', skyDescription: 'Poco nuboso', precipitationProbabilityPercent: 35, temperatureC: 14, humidityPercent: 58, windKmh: 12, windDirection: 'O' });
 });
 
 test('keeps missing AEMET values explicit instead of inventing zeroes', () => {

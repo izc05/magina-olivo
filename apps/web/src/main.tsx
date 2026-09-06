@@ -14,8 +14,9 @@ import { MaginaDirectoryPage } from './MaginaDirectoryPage';
 import { MaginaFieldAlertsPage } from './MaginaFieldAlertsPage';
 import { MaginaHubPage } from './MaginaHubPage';
 import { MaginaMarketPage } from './MaginaMarketPage';
-import { MaginaNewsPage } from './MaginaNewsPage';
 import { MaginaWeatherPage } from './MaginaWeatherPage';
+import { MaginaNewsPage } from './MaginaNewsPage';
+import { WeatherAlertDetailPage, WeatherAlertSettingsPage, WeatherHourlyPage, WeatherWeeklyPage } from './WeatherExperiencePages';
 import { NotificationPreferencesPage } from './NotificationPreferencesPage';
 import { OnboardingPage } from './OnboardingPage';
 import { PwaUpdatePrompt } from './PwaUpdatePrompt';
@@ -40,6 +41,7 @@ import './delivery-entry.css';
 import './offline-cold-start.css';
 import './magina-directory.css';
 import './magina-weather.css';
+import './weather-experience.css';
 import './magina-hub.css';
 import './magina-market.css';
 import './magina-field-alerts.css';
@@ -142,7 +144,15 @@ createRoot(root).render(
       ) : path === '/magina/directorio' ? (
         <PublicScreen><MaginaDirectoryPage /></PublicScreen>
       ) : path === '/magina/tiempo' ? (
+        <WeatherWeeklyPage />
+      ) : path === '/magina/tiempo/horas' ? (
+        <WeatherHourlyPage />
+      ) : path === '/magina/tiempo/radar' ? (
         <PublicScreen><MaginaWeatherPage /></PublicScreen>
+      ) : path === '/magina/alerta' ? (
+        <PrivateRoute returnTo={returnTo}><WeatherAlertDetailPage /></PrivateRoute>
+      ) : path === '/magina/alertas/configurar' ? (
+        <PrivateRoute returnTo={returnTo}><WeatherAlertSettingsPage /></PrivateRoute>
       ) : path === '/magina/campo' ? (
         <PublicScreen><MaginaFieldAlertsPage /></PublicScreen>
       ) : path === '/magina/noticias' ? (

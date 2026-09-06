@@ -98,13 +98,40 @@
   margin-bottom: .65rem;
 }
 
+.account-page > section[id] {
+  scroll-margin-top: 92px;
+}
+
+.account-profile-summary {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(236, 241, 229, .95), rgba(255, 253, 248, .96));
+}
+
+.account-profile-summary::after {
+  content: '';
+  position: absolute;
+  right: -34px;
+  bottom: -44px;
+  width: 126px;
+  height: 126px;
+  opacity: .09;
+  background: url('/brand/magina-olivo-official-mark.png') center / contain no-repeat;
+  pointer-events: none;
+}
+
+.account-group-label {
+  margin-bottom: .35rem;
+  color: var(--olive-800, #4d6b37);
+}
+
 .account-field {
   margin-top: 1rem;
 }
 
 .account-toggle {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: 1fr auto;
   gap: .75rem;
   align-items: start;
   padding: .85rem 0;
@@ -116,9 +143,16 @@
 }
 
 .account-toggle input {
+  grid-column: 2;
+  grid-row: 1;
   width: 1.25rem;
   height: 1.25rem;
   margin-top: .1rem;
+}
+
+.account-toggle span {
+  grid-column: 1;
+  grid-row: 1;
 }
 
 .account-toggle span,

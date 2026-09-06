@@ -197,21 +197,21 @@ export function AccountPage() {
 
       <div className="account-page">
         <section>
-          <p className="eyebrow page-eyebrow">Mi Cuenta</p>
+          <p className="eyebrow page-eyebrow">MI PERFIL</p>
           <h1 className="section-title">Preferencias y privacidad</h1>
-          <p className="section-copy">Configura lo que quieres ver y recibir sin mezclar estas preferencias con los datos privados de tu explotación.</p>
+          <p className="section-copy">Elige la información que quieres recibir y gestiona tus datos con claridad.</p>
         </section>
 
         {error ? <div className="alert section" role="alert">{error}</div> : null}
         {notice ? <div className="alert success section" role="status">{notice}</div> : null}
 
-        <section className="section card card-body">
+        <section className="section card card-body account-profile-summary" id="perfil">
           <h2 className="section-title account-section-title">Tu perfil</h2>
           <p className="list-card-title">{user?.name || 'Agricultor'}</p>
           <p className="list-card-meta">{user?.email}</p>
         </section>
 
-        <section className="section card card-body">
+        <section className="section card card-body" id="cooperativa">
           <h2 className="section-title account-section-title">Cooperativa / almazara habitual</h2>
           <p className="section-copy">Sirve como preferencia de uso. Seleccionarla no comparte tus entregas ni tus documentos con esa entidad.</p>
           <div className="field account-field">
@@ -232,8 +232,9 @@ export function AccountPage() {
           {preferred ? <p className="list-card-meta">Actual: {preferred.brandName || preferred.officialName}{preferred.municipality ? ` · ${preferred.municipality}` : ''}</p> : null}
         </section>
 
-        <section className="section card card-body">
-          <h2 className="section-title account-section-title">Avisos</h2>
+        <section className="section card card-body" id="notificaciones">
+          <p className="eyebrow account-group-label">NOTIFICACIONES GENERALES</p>
+          <h2 className="section-title account-section-title">Notificaciones</h2>
           <p className="section-copy">La alarma de lluvia se revisa automáticamente en el servidor para los próximos 2 días con la predicción municipal de AEMET y tu umbral. Helada y viento siguen apareciendo como avisos meteorológicos complementarios. Son contexto para organizarte, no un diagnóstico de parcela.</p>
 
           <label className="account-toggle">
@@ -265,7 +266,7 @@ export function AccountPage() {
           </div>
         </section>
 
-        <section className="section card card-body account-privacy-card">
+        <section className="section card card-body account-privacy-card" id="privacidad">
           <h2 className="section-title account-section-title">Copia de tus datos</h2>
           <p className="section-copy">Puedes preparar una copia estructurada y versionada de tu perfil, preferencias y de las explotaciones donde eres propietario: fincas, parcelas, campañas, entregas, rendimientos, labores e índice de documentos.</p>
           <p className="section-copy"><strong>Importante:</strong> esta fase no incluye todavía los archivos binarios originales dentro de un ZIP. El índice sí conserva nombre, tipo, tamaño y hash cuando existe; los documentos siguen disponibles mediante descarga privada.</p>
@@ -294,7 +295,7 @@ export function AccountPage() {
           <p className="section-copy"><strong>Baja de cuenta:</strong> sigue separada de la exportación. No mostraremos una acción destructiva hasta implementar reautenticación, ownership, revocación de sesiones y política de retención completa.</p>
         </section>
 
-        <div className="section form-actions account-save-row">
+        <div className="section form-actions account-save-row" id="preferencias">
           <button className="primary-button" type="button" onClick={() => void save()} disabled={busy}>{busy ? 'Guardando…' : 'Guardar preferencias'}</button>
         </div>
       </div>

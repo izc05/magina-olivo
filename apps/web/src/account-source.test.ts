@@ -46,4 +46,13 @@ test('account preferences persist user choices and portability does not overprom
   assert.doesNotMatch(account, /Eliminar cuenta<\/button>/);
 });
 
+test('the official supplied brand mark is used by the shared web chrome', async () => {
+  const chrome = await read('./VisualChrome.tsx');
+  const brand = await read('./brand.css');
+
+  assert.match(chrome, /magina-olivo-official-mark\.png/);
+  assert.match(brand, /magina-olivo-official-mark\.png/);
+  assert.doesNotMatch(chrome, /magina-olivo-mark\.svg/);
+});
+
 // Keep this source gate in the CI-triggering slice so portability changes always re-run both repository gates.

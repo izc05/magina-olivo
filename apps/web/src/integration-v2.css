@@ -52,7 +52,7 @@ body {
 .brand-lockup::before,
 .login-brand::before {
   content: "";
-  background: url('/brand/magina-olivo-mark.svg') center / contain no-repeat;
+  background: url('/brand/magina-olivo-official-mark.png') center / contain no-repeat;
 }
 
 .brand-lockup::before {

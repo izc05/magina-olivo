@@ -19,7 +19,7 @@ import { MaginaPrivateHub } from './MaginaPrivateHub.tsx';
 import { OfflineColdStart } from './OfflineColdStart.tsx';
 import { listPendingOperations } from './offline/outbox.ts';
 import { PrivateAccessGate } from './PrivateAccessGate.tsx';
-import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, Compass, House, Map, Mountain, Plus, Sprout } from 'lucide-react';
+import { BarChart3, Bell, Building2, CalendarDays, ChevronLeft, ChevronRight, CircleHelp, Compass, House, Map, MapPin, Mountain, Pencil, Plus, Settings, ShieldCheck, Sprout, UserRound } from 'lucide-react';
 import { PhotoCredit, VisualHeader, navigationIcons } from './VisualChrome';
 
 type Tab = 'home' | 'field' | 'campaign' | 'magina' | 'more';
@@ -532,19 +532,36 @@ function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelect
 }
 
 function MoreTab({ user, holding, busy, onSignOut }: { user: User; holding: Holding | null; busy: boolean; onSignOut: () => void }) {
+  const initials = (user.name || user.email).trim().split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
+  const profileLinks = [
+    { href: '/cuenta#perfil', icon: UserRound, title: 'Datos personales', copy: 'Nombre, contacto e información de tu cuenta' },
+    { href: '/cuenta#cooperativa', icon: MapPin, title: 'Municipio y cooperativa', copy: 'Tu ubicación y entidad de referencia' },
+    { href: '/cuenta#preferencias', icon: Settings, title: 'Preferencias', copy: 'Umbrales y configuración de la aplicación' },
+    { href: '/cuenta#notificaciones', icon: Bell, title: 'Notificaciones', copy: 'Gestiona tus alertas y avisos' },
+    { href: '/cuenta#privacidad', icon: ShieldCheck, title: 'Privacidad', copy: 'Consulta y descarga tus datos' },
+    { href: 'mailto:soporte@maginaolivo.es', icon: CircleHelp, title: 'Soporte', copy: 'Ayuda, contacto y preguntas frecuentes' },
+  ];
   return (
     <>
-      <PageIntro eyebrow="MI MÁGINA" title="Cuenta y ajustes" copy="Tu espacio privado para revisar la cuenta, organizar tareas y cuidar tus datos." />
-      <section className="section card card-body more-profile-card" aria-labelledby="more-profile-title">
-        <span className="profile-initials" aria-hidden="true">{(user.name || user.email).trim().slice(0, 2).toUpperCase()}</span>
-        <h2 id="more-profile-title" className="section-title more-card-title">Tu perfil</h2>
-        <p className="list-card-title">{user.name || 'Agricultor'}</p>
-        <p className="list-card-meta">{user.email}</p>
-        {holding ? <p className="list-card-meta">Explotación activa · {holding.name}</p> : <p className="list-card-meta">Sin explotación activa</p>}
+      <PageIntro eyebrow="MI PERFIL" title="Mi perfil" copy="Tu información y preferencias en un solo lugar." />
+      <section className="section card more-profile-card profile-reference-card" aria-labelledby="more-profile-title">
+        <span className="profile-initials" aria-hidden="true">{initials}</span>
+        <div className="profile-reference-main">
+          <h2 id="more-profile-title" className="section-title more-card-title">{user.name || 'Agricultor'}</h2>
+          <p className="list-card-meta"><MapPin aria-hidden="true" />{holding?.municipality || 'Sierra Mágina'}</p>
+          <p className="list-card-meta"><Building2 aria-hidden="true" />{holding ? `Explotación · ${holding.name}` : 'Sin explotación activa'}</p>
+          <p className="list-card-meta profile-email">{user.email}</p>
+        </div>
+        <a className="profile-edit-button" href="/cuenta#perfil"><Pencil aria-hidden="true" /> Editar perfil</a>
       </section>
-      <section className="section more-links" aria-label="Accesos privados">
-        <a className="card more-link-card" href="/cuenta"><span><strong>Mi cuenta</strong><small>Perfil, preferencias y copia de datos</small></span><span aria-hidden="true">→</span></a>
-        <a className="card more-link-card" href="/calendario"><span><strong>Calendario</strong><small>Tareas y próximos trabajos</small></span><span aria-hidden="true">→</span></a>
+      <section className="section more-links profile-reference-links" aria-label="Opciones del perfil">
+        {profileLinks.map(({ href, icon: Icon, title, copy }) => (
+          <a className="card more-link-card" href={href} key={title}>
+            <span className="profile-link-icon"><Icon aria-hidden="true" /></span>
+            <span className="profile-link-copy"><strong>{title}</strong><small>{copy}</small></span>
+            <ChevronRight aria-hidden="true" />
+          </a>
+        ))}
       </section>
       <section className="section more-logout"><button className="ghost-button danger-button" type="button" onClick={onSignOut} disabled={busy}>Cerrar sesión</button></section>
     </>

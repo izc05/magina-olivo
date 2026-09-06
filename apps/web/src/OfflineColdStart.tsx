@@ -40,7 +40,7 @@ export function OfflineColdStart({ onRetry }: { onRetry: () => void }) {
   return (
     <main className="offline-start-shell">
       <section className="offline-start-card" aria-labelledby="offline-start-title">
-        <img className="offline-start-mark" src="/brand/magina-olivo-mark.svg" alt="" />
+        <img className="offline-start-mark" src="/brand/magina-olivo-official-mark.png" alt="" />
         <p className="eyebrow page-eyebrow">Modo protegido</p>
         <h1 id="offline-start-title" className="login-title">Estás sin conexión</h1>
         <p className="offline-start-copy">

@@ -8,7 +8,7 @@ export const quickIcons = { book: BookOpen, calendar: CalendarCheck, alert: Bell
 export function VisualHeader({ children }: { children?: ReactNode }) {
   return <header className="visual-header">
     <a className="visual-brand" href="/" aria-label="Mágina Olivo, Inicio">
-      <img src="/brand/magina-olivo-mark.svg" alt="" width="48" height="54" />
+      <img src="/brand/magina-olivo-official-mark.png" alt="" width="48" height="54" />
       <span><strong>Mágina Olivo</strong><small>La herramienta digital del olivar</small></span>
     </a>
     {children ?? <a className="visual-header-action" href="/magina/campo" aria-label="Consultar alertas del campo"><Bell aria-hidden="true" /></a>}

@@ -7,6 +7,7 @@ import { CalendarPage } from './CalendarPage';
 import { installDemoPreview } from './demoPreview';
 import { DiscoverPage } from './DiscoverPage';
 import { LoginPage } from './LoginPage';
+import { LoyaltyOlivePage } from './LoyaltyOlivePage';
 import { MaginaDirectoryPage } from './MaginaDirectoryPage';
 import { MaginaFieldAlertsPage } from './MaginaFieldAlertsPage';
 import { MaginaHubPage } from './MaginaHubPage';
@@ -21,6 +22,8 @@ import { PublicNavigation } from './PublicNavigation';
 import { RegisterPage } from './RegisterPage';
 import { ResetPassword } from './ResetPassword';
 import { currentReturnTo, safeReturnTo } from './private-access';
+import { RewardCatalogPage } from './RewardCatalogPage';
+import { RewardValidatorPage } from './RewardValidatorPage';
 import { installWeatherDemoPreview } from './weatherDemoPreview';
 import './styles.css';
 import './brand.css';
@@ -45,6 +48,10 @@ import './offline-v2-integration.css';
 import './auth-onboarding.css';
 import './pilot-alerts.css';
 import './calendar.css';
+import './loyalty-olive.css';
+import './reward-catalog.css';
+import './reward-local-qr.css';
+import './reward-validator.css';
 import '@fontsource/inter/latin-400.css';
 import '@fontsource/inter/latin-500.css';
 import '@fontsource/inter/latin-600.css';
@@ -101,6 +108,12 @@ createRoot(root).render(
         <PrivateRoute returnTo={returnTo}><AccountPage /></PrivateRoute>
       ) : path === '/calendario' ? (
         <PrivateRoute returnTo={returnTo}><CalendarPage /></PrivateRoute>
+      ) : path === '/tu-olivo' ? (
+        <PrivateRoute returnTo={returnTo}><LoyaltyOlivePage /></PrivateRoute>
+      ) : path === '/recompensas/validar' ? (
+        <PrivateRoute returnTo={returnTo}><RewardValidatorPage /></PrivateRoute>
+      ) : path === '/recompensas' ? (
+        <PrivateRoute returnTo={returnTo}><RewardCatalogPage /></PrivateRoute>
       ) : path === '/mi-campo' ? (
         <App initialTab="field" />
       ) : path === '/campana' ? (

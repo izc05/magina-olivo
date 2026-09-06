@@ -1,0 +1,396 @@
+.reward-validator-page {
+  min-height: 100vh;
+  padding: 18px clamp(16px, 3vw, 36px) 48px;
+  color: #17331f;
+  background:
+    radial-gradient(circle at top right, rgba(183, 202, 92, 0.2), transparent 34%),
+    linear-gradient(180deg, #f7f5eb 0%, #edf2e7 100%);
+}
+
+.reward-validator-topbar,
+.reward-validator-hero,
+.reward-validator-grid,
+.reward-validator-notice,
+.reward-validator-error {
+  width: min(1120px, 100%);
+  margin-inline: auto;
+}
+
+.reward-validator-topbar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.reward-validator-topbar > a {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 14px;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 8px 28px rgba(42, 63, 34, 0.08);
+  text-decoration: none;
+  font-size: 1.35rem;
+}
+
+.reward-validator-topbar strong,
+.reward-validator-topbar span {
+  display: block;
+}
+
+.reward-validator-role {
+  padding: 8px 12px;
+  border: 1px solid rgba(49, 91, 56, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.74);
+  font-size: 0.82rem;
+  text-transform: capitalize;
+}
+
+.reward-validator-kicker {
+  color: #6c7b45;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.reward-validator-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.8fr);
+  gap: 28px;
+  padding: clamp(24px, 4vw, 44px);
+  border: 1px solid rgba(46, 83, 50, 0.12);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 24px 60px rgba(55, 75, 42, 0.1);
+}
+
+.reward-validator-hero h1 {
+  margin: 8px 0 10px;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 0.98;
+}
+
+.reward-validator-hero p {
+  max-width: 720px;
+  margin: 0;
+  color: #53645a;
+  line-height: 1.65;
+}
+
+.reward-validator-partners {
+  display: grid;
+  gap: 10px;
+  align-content: center;
+}
+
+.reward-validator-partners article {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #f0f3e5;
+}
+
+.reward-validator-partners strong,
+.reward-validator-partners span {
+  display: block;
+}
+
+.reward-validator-partners span {
+  margin-top: 3px;
+  color: #64705f;
+  font-size: 0.84rem;
+}
+
+.reward-validator-notice,
+.reward-validator-error {
+  box-sizing: border-box;
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 14px;
+}
+
+.reward-validator-notice {
+  background: #eef6df;
+  color: #36562e;
+}
+
+.reward-validator-error {
+  background: #f9e8e4;
+  color: #8b332a;
+}
+
+.reward-validator-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.reward-validator-scan-card,
+.reward-validator-check-card,
+.reward-validator-state-card {
+  padding: clamp(20px, 3vw, 30px);
+  border: 1px solid rgba(46, 83, 50, 0.12);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 18px 48px rgba(55, 75, 42, 0.08);
+}
+
+.reward-validator-card-heading {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.reward-validator-card-heading h2 {
+  margin: 5px 0 0;
+  font-size: 1.35rem;
+}
+
+.reward-validator-camera-button,
+.reward-validator-primary,
+.reward-validator-confirm-zone button,
+.reward-validator-result button {
+  border: 0;
+  border-radius: 14px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.reward-validator-camera-button {
+  padding: 10px 13px;
+  background: #edf1e3;
+  color: #2f5835;
+}
+
+.reward-validator-camera {
+  position: relative;
+  display: grid;
+  min-height: 220px;
+  margin-bottom: 18px;
+  overflow: hidden;
+  place-items: center;
+  border-radius: 18px;
+  background: #1c2d21;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.reward-validator-camera video {
+  width: 100%;
+  min-height: 220px;
+  object-fit: cover;
+}
+
+.reward-validator-camera:not(.active) video {
+  display: none;
+}
+
+.reward-validator-reticle {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: min(52%, 210px);
+  aspect-ratio: 1;
+  border: 2px solid rgba(225, 235, 170, 0.92);
+  border-radius: 20px;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 999px rgba(8, 15, 10, 0.25);
+  pointer-events: none;
+}
+
+.reward-validator-camera:not(.active) .reward-validator-reticle {
+  opacity: 0.3;
+}
+
+.reward-validator-scan-card label {
+  display: grid;
+  gap: 7px;
+  font-weight: 750;
+}
+
+.reward-validator-scan-card textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px;
+  resize: vertical;
+  border: 1px solid rgba(44, 80, 50, 0.2);
+  border-radius: 13px;
+  background: #fbfcf8;
+  color: #1d3423;
+  font: 0.88rem/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.reward-validator-primary {
+  width: 100%;
+  margin-top: 12px;
+  padding: 13px 16px;
+  background: #365f39;
+  color: #fff;
+}
+
+.reward-validator-primary:disabled,
+.reward-validator-confirm-zone button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.reward-validator-empty {
+  display: grid;
+  min-height: 310px;
+  place-items: center;
+  align-content: center;
+  color: #6b766d;
+  text-align: center;
+}
+
+.reward-validator-empty > span {
+  font-size: 3rem;
+  color: #8f9f6a;
+}
+
+.reward-validator-inspection,
+.reward-validator-result {
+  padding: 20px;
+  border-radius: 18px;
+  background: #f3f5ed;
+}
+
+.reward-validator-inspection.status-valid,
+.reward-validator-result.outcome-redeemed {
+  border: 1px solid rgba(48, 112, 56, 0.24);
+  background: #eff7e7;
+}
+
+.reward-validator-inspection.status-expired,
+.reward-validator-inspection.status-redeemed,
+.reward-validator-inspection.status-revoked,
+.reward-validator-inspection.status-inactive,
+.reward-validator-result.outcome-expired {
+  border: 1px solid rgba(150, 68, 48, 0.2);
+  background: #faede7;
+}
+
+.reward-validator-status {
+  display: inline-flex;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+.reward-validator-inspection h3,
+.reward-validator-result h3 {
+  margin: 14px 0;
+  font-size: 1.55rem;
+}
+
+.reward-validator-inspection dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.reward-validator-inspection dl > div {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(44, 80, 50, 0.1);
+}
+
+.reward-validator-inspection dt {
+  color: #718071;
+}
+
+.reward-validator-inspection dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.reward-validator-confirm-zone {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 18px;
+}
+
+.reward-validator-confirm-zone button {
+  padding: 15px 18px;
+  background: #2f6938;
+  color: #fff;
+  font-size: 1.02rem;
+}
+
+.reward-validator-do-not-deliver {
+  margin: 20px 0 0;
+  padding: 13px;
+  border-radius: 12px;
+  background: #a44136;
+  color: white;
+  font-weight: 900;
+  text-align: center;
+}
+
+.reward-validator-result button {
+  margin-top: 12px;
+  padding: 11px 14px;
+  background: #385e3c;
+  color: #fff;
+}
+
+.reward-validator-state {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+}
+
+.reward-validator-state-card {
+  width: min(560px, 100%);
+  text-align: center;
+}
+
+.reward-validator-state-card a {
+  display: inline-flex;
+  margin-top: 12px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: #365f39;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+@media (max-width: 820px) {
+  .reward-validator-hero,
+  .reward-validator-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reward-validator-topbar {
+    grid-template-columns: auto 1fr;
+  }
+
+  .reward-validator-role {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reward-validator-page *,
+  .reward-validator-page *::before,
+  .reward-validator-page *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}

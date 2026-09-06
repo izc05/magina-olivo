@@ -1,33 +1,51 @@
 # Design QA — Mágina Olivo visual convergence
 
-## Scope and references
+## Comparison targets
 
-- Primary home reference: `/tmp/codex-clipboard-f0f01b2d-6906-40c7-bcb1-feda79051a31.png`.
-- Primary Mi Campo reference: `/tmp/codex-clipboard-ef90b227-9663-494c-8e02-00300bdbf198.png`.
-- Supporting references: the complete set of supplied onboarding, Mágina, cooperative, weather, market, profile, task and document screens.
-- Prototype reviewed at 430 × 764 against normalized reference captures. Side-by-side artifacts are kept in the ignored `.tmp/reference-qa/` folder.
+- Home source truth: `/tmp/codex-clipboard-4b0a6e3c-e15a-4c57-9995-c7cacd3a1640.png` (941 × 1672 px).
+- Loyalty source truth: `/tmp/codex-clipboard-b476e97b-9fd5-4a5b-8516-b3c2505d03d9.png` (941 × 1672 px).
+- Supporting truth: the supplied Mi Campo, parcel, notebook, tasks, weather, news, cooperatives, market, rewards, onboarding, login, profile and administration screens in the same conversation.
+- Home comparison: `docs/design/qa/home-reference-comparison.png`.
+- Loyalty comparison: `docs/design/qa/loyalty-reference-comparison.png`.
+- Implementation: `http://127.0.0.1:5173/` and `http://127.0.0.1:5173/tu-olivo`.
+- Browser viewport: 430 × 764 CSS px, device scale factor 1. The browser capture was 415 × 737 px after browser insets and was aspect-fitted and padded to 430 × 764. Each 941 × 1672 source was aspect-fitted and padded to the same 430 × 764 comparison frame. Final side-by-side artifacts are 860 × 764 px.
+- States: public home without a session; authenticated loyalty account with 150 pending and 0 available olives; reward catalog with zero active stock.
 
-## Visual review
+## Findings
 
-- Passed: ivory canvas, olive palette, serif display hierarchy, restrained borders, soft cards and rounded controls match the supplied visual language.
-- Passed: real photographic Sierra Mágina hero treatment is used on Inicio, Mi Campo, Mágina, Descubre and Tiempo, with visible source/license attribution.
-- Passed: persistent five-destination mobile navigation, Lucide iconography, segmented controls, compact plot cards and detached primary action reproduce the reference hierarchy.
-- Passed: responsive review at 320, 430, 768 and 1280 px found no horizontal overflow on the core routes.
-- Accepted intentional difference: live farm, weather and account content can change text length and vertical rhythm relative to the static references.
-- Accepted intentional difference: mock-only prices, queues, cooperative states and operational alerts are not invented when the application has no verified source.
+- No remaining P0, P1 or P2 mismatch.
+- Fonts and typography: Georgia display faces and Inter UI text reproduce the serif/sans hierarchy, optical weight and compact olive labels from the references. Dynamic titles wrap without clipping at 430 px.
+- Spacing and layout rhythm: the 16 px mobile gutter, restrained 16–20 px radii, low-elevation cards and five-item fixed navigation match the reference family. The loyalty hero was reduced to a compact two-column image/content card so the level and next reward remain visible in the initial scroll.
+- Colors and tokens: ivory paper, deep olive actions, muted sage surfaces and neutral borders are mapped to shared tokens. No unverified price, stock, queue or cooperative state is colored as though it were live.
+- Image quality and asset fidelity: the approved Mágina Olivo mark remains the single brand mark. The loyalty tree is a dedicated 1820 × 864 raster illustration matching the supplied botanical art direction; the former CSS/SVG tree substitute is no longer rendered. Sierra Mágina photography remains sharp and correctly cropped.
+- Copy and content: app copy remains Spanish, concise and consistent with the references. Mock-only figures are deliberately replaced by live, unavailable or empty states.
+- Icons: visible controls use one line-icon family with consistent stroke weight and accessible labels. The generated tree is not reproduced with code-native shapes.
+- Accessibility and responsiveness: focus styles, semantic buttons/links, alt text, reduced-motion behavior, tap targets and current-page semantics are preserved. No horizontal overflow was observed at 430 px.
 
-## Interaction and accessibility review
+## Comparison history
 
-- Passed: Inicio, Mi Campo, Mágina, Descubre and Perfil destinations remain functional.
-- Passed: plot creation, notebook/map disclosures, campaign delivery action, login and account controls preserve their existing real workflows.
-- Passed: keyboard focus, current-page semantics, update prompt dismissal and authenticated-route protections are covered by source tests.
-- Passed: the main delivery CTA opens the existing delivery workflow without submitting data implicitly.
+1. Home pass: the visual hierarchy matched, but live AEMET and authenticated farm data were unavailable in the production preview. Kept explicit unavailable/sign-in states instead of copying the mock's 22 °C, 5.35 €/kg or parcel values. Post-fix evidence: `docs/design/qa/home-reference-comparison.png`.
+2. Loyalty pass 1: the imported branch used a very tall CSS/SVG tree scene and the level card shrank inside its grid. This was a P1 density/layout mismatch and an asset-fidelity failure.
+3. Fix: replaced the rendered CSS/SVG tree with the dedicated raster asset, compacted the hero into the reference's left-image/right-content composition and forced loyalty summary cards to the full mobile width.
+4. Loyalty pass 2: no actionable P0/P1/P2 issue remained. The reference's daily challenge list is intentionally not invented because the integrated backend currently exposes balances, levels, collection, catalog, reservations and validation, but not a challenge-history feed. Post-fix evidence: `docs/design/qa/loyalty-reference-comparison.png`.
 
-## Verification
+## Interaction and runtime checks
 
-- `npm run build --workspace apps/web`: passed with Node 24.20.
-- `node --test apps/web/src/*test.ts`: 64 passed, 0 failed.
-- `git diff --check`: passed.
-- Production preview: `http://127.0.0.1:4190/`.
+- Main Inicio → Mágina navigation: passed.
+- Authenticated `/tu-olivo` bootstrap and balance load: passed after additive migrations 0040–0044.
+- `/recompensas` catalog, verified empty-stock state and navigation: passed.
+- PWA update prompt dismissal: passed.
+- Mutation controls were verified enabled/disabled from live state but were not clicked, avoiding alteration of the user's olive balance.
+- Browser console errors/warnings on the reviewed route: none.
+- Web build: passed.
+- Web tests: 60 passed, 0 failed.
+- API tests: 41 passed, 0 failed.
+- Worker tests: 12 passed, 0 failed.
+- API typecheck and `git diff --check`: passed.
+
+## Follow-up polish
+
+- P3: once a real challenge/history API exists, add the daily-retos and recent-activity blocks from the reference rather than supplying static rewards.
+- P3: the administration visuals are represented by separate repository branches and should be converged in a dedicated secure admin pass instead of being merged into the grower navigation.
 
 final result: passed

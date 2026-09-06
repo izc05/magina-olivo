@@ -216,7 +216,7 @@ summary { cursor: pointer; }
 .loyalty-harvest-button { width: calc(100% - 32px); min-height: 50px; margin: 14px 16px 16px; border-radius: 25px; background: var(--olive-950); box-shadow: none; }
 .loyalty-harvest-button svg { width: 21px; height: 21px; }
 .loyalty-grid { max-width: 1080px; margin: 14px auto 0; gap: 12px; }
-.loyalty-card, .loyalty-how-card { border-radius: 17px; padding: 16px; }
+.loyalty-card, .loyalty-how-card { width: 100%; margin-left: 0; margin-right: 0; border-radius: 17px; padding: 16px; }
 .loyalty-card h2, .loyalty-how-card h2 { color: var(--ink); }
 .loyalty-progress { background: #e3e5df; }
 .loyalty-progress > span { background: var(--olive-650); }

@@ -15,13 +15,23 @@ Este índice registra el avance ordenado del catálogo visual PWA. Las capturas 
 7. ✅ Inicio público
 8. ✅ Inicio autenticado
 
-## Siguiente pantalla
+## Mi Campo
 
-9. ⏭️ Mi Campo · resumen de explotación
+9. ✅ Mi Campo · resumen de explotación
+10. ✅ Parcelas · mapa / SIGPAC
+11. ⏭️ Ficha de parcela
+12. ⬜ Cuaderno de campo
+13. ⬜ Nueva labor / tarea
+14. ⬜ Riegos
+15. ⬜ Tratamientos
+16. ⬜ Campaña actual
+17. ⬜ Entrega
+18. ⬜ Rendimiento
+19. ⬜ Documentos
 
 ## Módulos posteriores
 
-Después del flujo inicial se continuará sin duplicados por: Mi Campo, parcelas, Catastro/SIGPAC, cuaderno, tareas, riegos, campaña, documentos, meteorología/radar, Mágina/noticias, cooperativas, mercado, Descubre/rutas, servicios, recompensas/Mi Olivo, perfil y administración.
+Después de Mi Campo se continuará sin duplicados por: meteorología/radar, Mágina/noticias, cooperativas, mercado, Descubre/rutas, servicios, recompensas/Mi Olivo, perfil y administración.
 
 ## Restricciones
 

@@ -47,6 +47,7 @@ import './magina-hub.css';
 import './magina-market.css';
 import './magina-field-alerts.css';
 import './local-services.css';
+import './discover-territory.css';
 import './integration-v2.css';
 import './field-v2-integration.css';
 import './journal-v2-integration.css';
@@ -141,7 +142,7 @@ createRoot(root).render(
       ) : path === '/mi-magina' ? (
         <App initialTab="more" />
       ) : path === '/descubre' ? (
-        <PublicScreen><LocalServicesPage /></PublicScreen>
+        <PublicScreen><DiscoverPage /></PublicScreen>
       ) : path === '/descubre/servicios' ? (
         <PublicScreen><LocalServicesPage directory /></PublicScreen>
       ) : path.startsWith('/descubre/servicios/') ? (

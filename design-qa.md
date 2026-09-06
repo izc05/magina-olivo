@@ -52,6 +52,39 @@ final result: passed
 
 ---
 
+# Design QA — Descubre Sierra Mágina
+
+## Evidence
+
+- Source visual truth: `/tmp/codex-clipboard-a8590475-5916-4a72-8355-6a2665488180.png` (portada territorial) y `/tmp/codex-clipboard-b56d20d2-9604-44d2-9892-0f489ce6bb9a.png` (mapa de pantallas del bloque).
+- Rendered implementation: captura de `/descubre` a 634 px en el navegador integrado, comparada en contenido con la referencia móvil.
+- Assets: fotografía existente de Sierra Mágina y la composición editorial `/apps/web/public/photos/discover-experiences-triptych.png`, sin marcas ni texto que puedan confundirse con material o negocios verificados.
+
+## Full-view comparison
+
+- La portada ahora respeta la jerarquía de la referencia: titular editorial fuera del hero, paisaje de Sierra Mágina, cuatro entradas temáticas, rutas destacadas y dos experiencias territoriales.
+- Se mantuvieron los márgenes amplios, tarjetas de borde fino, título Georgia, etiquetas verdes e iconografía lineal de la familia visual existente.
+- El directorio de servicios se mantiene como pantalla independiente en `/descubre/servicios`, evitando mezclar experiencias turísticas y datos de comercios.
+
+## Comparison history
+
+1. P1: el título sobre la fotografía no tenía suficiente contraste por una regla global. Se forzó el color blanco y se verificó de nuevo en navegador.
+2. P2: el contenido turístico aún no dispone de catálogo ni fuentes verificadas. Se muestra como contenido de experiencia en preparación en vez de presentar reservas, horarios o rutas como datos reales.
+
+## Primary interactions checked
+
+- La portada y el enlace a Servicios locales cargan como rutas separadas.
+- Producción compila sin errores: `npm --prefix apps/web run build`.
+
+## Expected follow-up
+
+- Las doce pantallas del mapa maestro se implementarán sobre un catálogo territorial con procedencia: rutas/GPX, miradores, pueblos, gastronomía, agenda y guardados.
+- No se activarán navegación GPS, reservas o favoritos sincronizados hasta disponer de proveedores y cuentas autorizadas.
+
+final result: passed
+
+---
+
 # Design QA — Servicios locales
 
 ## Evidence

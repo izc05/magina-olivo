@@ -78,4 +78,14 @@ test('notification preferences use a protected route and persist existing server
   assert.match(notifications, /role="switch"/);
 });
 
+test('privacy permissions are private, gesture-driven and never prompt on mount', async () => {
+  const main = await read('./main.tsx');
+  const privacy = await read('./PrivacyPermissionsPage.tsx');
+  assert.match(main, /path === '\/perfil\/privacidad'/);
+  assert.match(privacy, /Notification\.requestPermission\(\)/);
+  assert.match(privacy, /navigator\.geolocation\.getCurrentPosition/);
+  assert.match(privacy, /navigator\.mediaDevices\.getUserMedia/);
+  assert.match(privacy, /onClick=\{action\}/);
+});
+
 // Keep this source gate in the CI-triggering slice so portability changes always re-run both repository gates.

@@ -19,6 +19,7 @@ import { NotificationPreferencesPage } from './NotificationPreferencesPage';
 import { OnboardingPage } from './OnboardingPage';
 import { PwaUpdatePrompt } from './PwaUpdatePrompt';
 import { PrivateRoute } from './PrivateRoute';
+import { PrivacyPermissionsPage } from './PrivacyPermissionsPage';
 import { PublicHomePage } from './PublicHomePage';
 import { PublicNavigation } from './PublicNavigation';
 import { RegisterPage } from './RegisterPage';
@@ -112,6 +113,8 @@ createRoot(root).render(
         <PrivateRoute returnTo={returnTo}><EditProfilePage /></PrivateRoute>
       ) : path === '/perfil/notificaciones' ? (
         <PrivateRoute returnTo={returnTo}><NotificationPreferencesPage /></PrivateRoute>
+      ) : path === '/perfil/privacidad' ? (
+        <PrivateRoute returnTo={returnTo}><PrivacyPermissionsPage /></PrivateRoute>
       ) : path === '/calendario' ? (
         <PrivateRoute returnTo={returnTo}><CalendarPage /></PrivateRoute>
       ) : path === '/tu-olivo' ? (

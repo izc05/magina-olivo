@@ -538,7 +538,7 @@ function MoreTab({ user, holding, busy, onSignOut }: { user: User; holding: Hold
     { href: '/cuenta#cooperativa', icon: MapPin, title: 'Municipio y cooperativa', copy: 'Tu ubicación y entidad de referencia' },
     { href: '/cuenta#preferencias', icon: Settings, title: 'Preferencias', copy: 'Umbrales y configuración de la aplicación' },
     { href: '/perfil/notificaciones', icon: Bell, title: 'Notificaciones', copy: 'Gestiona tus alertas y avisos' },
-    { href: '/cuenta#privacidad', icon: ShieldCheck, title: 'Privacidad', copy: 'Consulta y descarga tus datos' },
+    { href: '/perfil/privacidad', icon: ShieldCheck, title: 'Privacidad', copy: 'Controla tus datos y permisos' },
     { href: 'mailto:soporte@maginaolivo.es', icon: CircleHelp, title: 'Soporte', copy: 'Ayuda, contacto y preguntas frecuentes' },
   ];
   return (

@@ -223,6 +223,22 @@
 .profile-switch.is-on { background: var(--olive-900); }
 .profile-switch.is-on span { transform: translateX(22px); }
 
+.privacy-permission-list { display: grid; gap: 12px; }
+.privacy-permission-row { width: 100%; display: grid; grid-template-columns: 62px minmax(0, 1fr) auto; align-items: center; gap: 16px; min-height: 112px; padding: 15px 18px; color: inherit; text-align: left; text-decoration: none; }
+button.privacy-permission-row { font: inherit; cursor: pointer; }
+button.privacy-permission-row:disabled { cursor: default; opacity: 1; }
+.privacy-permission-row strong, .privacy-permission-row small { display: block; }
+.privacy-permission-row strong { color: var(--ink); font-size: 1.06rem; }
+.privacy-permission-row small { max-width: 430px; margin-top: 5px; color: var(--muted); line-height: 1.4; }
+.permission-status { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; color: #896000; background: #fff3cf; font-weight: 700; white-space: nowrap; }
+.permission-status svg { width: 18px; height: 18px; }
+.permission-status.is-allowed { color: var(--olive-900); background: #e7f0df; }
+.permission-status.is-blocked { color: #8b3b31; background: #f8e4e0; }
+.privacy-note { display: flex; align-items: center; gap: 15px; padding: 18px; border-radius: 18px; color: var(--olive-950); background: #eaf0e3; }
+.privacy-note > svg { flex: 0 0 30px; width: 30px; height: 30px; }
+.privacy-note strong, .privacy-note small { display: block; }
+.privacy-note small { margin-top: 4px; color: var(--muted); line-height: 1.45; }
+
 @media (max-width: 640px) {
   .account-entry {
     right: 4.1rem;
@@ -240,6 +256,8 @@
   .notification-important-icon { width: 60px; height: 60px; }
   .notification-important-card > .profile-switch { grid-column: 1 / -1; justify-self: end; margin-top: -6px; }
   .notification-setting-row { grid-template-columns: 48px minmax(0, 1fr) auto; padding: 11px 13px; }
+  .privacy-permission-row { grid-template-columns: 52px minmax(0, 1fr); gap: 12px; }
+  .privacy-permission-row .permission-status { grid-column: 2; justify-self: start; }
 }
 
 @media (max-width: 520px) {

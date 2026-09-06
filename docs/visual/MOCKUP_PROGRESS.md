@@ -19,8 +19,8 @@ Este índice registra el avance ordenado del catálogo visual PWA. Las capturas 
 
 9. ✅ Mi Campo · resumen de explotación
 10. ✅ Parcelas · mapa / SIGPAC
-11. ⏭️ Ficha de parcela
-12. ⬜ Cuaderno de campo
+11. ✅ Ficha de parcela
+12. ⏭️ Cuaderno de campo
 13. ⬜ Nueva labor / tarea
 14. ⬜ Riegos
 15. ⬜ Tratamientos

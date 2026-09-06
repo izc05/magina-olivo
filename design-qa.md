@@ -52,6 +52,48 @@ final result: passed
 
 ---
 
+# Design QA — Meteorología, ajuste de fidelidad móvil
+
+## Evidence
+
+- Source visual truth:
+  - `/tmp/codex-clipboard-037e5336-120a-4f44-931f-371c586d35eb.png` — Previsión por horas.
+  - `/tmp/codex-clipboard-c107e598-a8c0-4c3c-8e93-5a4abcb45be6.png` — Previsión semanal.
+  - `/tmp/codex-clipboard-16080873-1bc6-49a4-8c92-b721e2388205.png` — Configurar alertas.
+  - `/tmp/codex-clipboard-d8e36e86-9c34-4c24-bbc5-8a2dd876b1a3.png` — Detalle de alerta y radar.
+- Rendered implementation: capturas completas en el navegador integrado de Codex de `/magina/tiempo`, `/magina/tiempo/horas`, `/magina/alertas/configurar` y `/magina/alerta`.
+- Capture surface: 634 px de ancho. Se comparó el contenido de las referencias móviles, no las barras de estado del dispositivo.
+
+## Full-view comparison
+
+- La previsión semanal se compactó en una tarjeta de tres áreas y filas meteorológicas densas, manteniendo los datos devueltos por AEMET.
+- La previsión por horas muestra ocho intervalos visibles, una selección de ubicación y el resumen actual dividido entre temperatura y métricas, como en la composición de referencia.
+- La configuración de parcelas usa interruptores oliva, canales, selector segmentado de antelación y controles de intensidad/horario en dos columnas.
+- El detalle de alerta conserva sus bloques de impacto, recomendaciones y acciones; el fondo de radar es ahora una imagen cartográfica creada para esta vista y se etiqueta expresamente como `Mapa ilustrativo para la vista demo`.
+
+## Comparison history
+
+1. P1: los interruptores activados heredaban una variable de color inexistente y parecían desactivados. Se fijó su estado activo en oliva oscuro.
+2. P1: la franja horaria sólo dejaba leer parte de los intervalos en móvil. Se recalibró a ocho columnas compactas sin scroll horizontal.
+3. P2: el radar de demostración parecía un marcador técnico. Se sustituyó por una composición cartográfica visual, sin afirmar que sea un fotograma en tiempo real.
+
+## Primary interactions checked
+
+- Navegación semanal → por horas, configuración de avisos y detalle de alerta.
+- Cambios de interruptor, canales, antelación, intensidad y franja horaria permanecen operables en la vista privada.
+- Los avisos y la previsión continúan obteniéndose de sus rutas de datos; el navegador no recibe credenciales de AEMET.
+- `npm --prefix apps/web run build` pasa después de los cambios.
+
+## Expected deviations
+
+- Los valores conectados corresponden a Huelma cuando ese es el municipio del entorno actual; no se sustituyen por los ejemplos estáticos de Bedmar de las referencias.
+- El radar visual no pretende sustituir un servicio de radar operativo: queda claramente señalado como ilustrativo hasta conectar ese proveedor.
+- Los avisos privados piloto pueden cubrir parte inferior de una pantalla en demo cuando existe una alerta real; son notificaciones de cuenta ajenas a la composición meteorológica.
+
+final result: passed
+
+---
+
 # Design QA — Afinado visual de Campaña
 
 ## Evidence

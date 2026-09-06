@@ -1,3 +1,4 @@
+import { PhotoCredit, VisualHeader } from './VisualChrome';
 import { useEffect, useMemo, useState } from 'react';
 import { WeatherRainAlertSummary } from './WeatherRainAlertSummary';
 import './weather-radar.css';
@@ -242,13 +243,17 @@ export function MaginaWeatherPage() {
 
   return (
     <main className="weather-shell" id="main-content">
-      <header className="directory-header">
-        <a className="directory-brand" href="/" aria-label="Volver a Mágina Olivo">
-          <img src="/brand/magina-olivo-mark.svg" alt="" />
-          <span><strong>Mágina Olivo</strong><small>Sierra Mágina · Jaén</small></span>
-        </a>
-        <a className="directory-back" href="/">Volver a la aplicación</a>
-      </header>
+      <VisualHeader />
+
+      <section className="weather-reference-hero" aria-label="Resumen de la previsión municipal">
+        <div className="public-home-weather-card" aria-live="polite">
+          <span>{weather?.municipality.name ?? selectedMunicipality?.name ?? 'Sierra Mágina'}</span>
+          <strong>{valueOrDash(weather?.forecast.days[0]?.temperatureMaxC ?? null, '°')}</strong>
+          <small>Máxima prevista · AEMET</small>
+          <small>Mínima: {valueOrDash(weather?.forecast.days[0]?.temperatureMinC ?? null, '°')}</small>
+          {!weather ? <small>{loadingWeather ? 'Consultando previsión…' : 'Previsión no disponible'}</small> : null}
+        </div>
+      </section>
 
       <section className="weather-hero" aria-labelledby="weather-title">
         <p className="eyebrow">Mágina · Tiempo</p>
@@ -392,6 +397,7 @@ export function MaginaWeatherPage() {
           )}
         </div>
       </section>
+      <PhotoCredit />
     </main>
   );
 }

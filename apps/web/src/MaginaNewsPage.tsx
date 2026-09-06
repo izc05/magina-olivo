@@ -1,3 +1,4 @@
+import { VisualHeader } from './VisualChrome';
 import { useEffect, useState } from 'react';
 
 type NewsFreshness = {
@@ -81,13 +82,7 @@ export function MaginaNewsPage() {
 
   return (
     <main className="magina-hub-shell" id="main-content">
-      <header className="directory-header">
-        <a className="directory-brand" href="/magina" aria-label="Volver a Mágina">
-          <img src="/brand/magina-olivo-mark.svg" alt="" />
-          <span><strong>Mágina Olivo</strong><small>Sierra Mágina · Jaén</small></span>
-        </a>
-        <a className="directory-back" href="/magina">Mágina</a>
-      </header>
+      <VisualHeader />
 
       <section className="magina-hub-hero" aria-labelledby="magina-news-title">
         <p className="eyebrow">Noticias</p>

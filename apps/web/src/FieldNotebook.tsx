@@ -229,10 +229,13 @@ export function FieldNotebook({
             </div>
           </div>
 
-          <div className="notebook-map-context" aria-label={`Mapa de ${selectedPlot?.name ?? 'la parcela activa'}`}>
+          <details className="notebook-map-context visual-disclosure" aria-label={`Mapa de ${selectedPlot?.name ?? 'la parcela activa'}`}>
+            <summary>Mapa, SIGPAC y Catastro</summary>
             <PlotMapPanel farmId={farmId} />
-          </div>
+          </details>
 
+          <details className="visual-disclosure">
+          <summary>Añadir registro al cuaderno</summary>
           <form className="form-grid notebook-form" onSubmit={submit}>
             <div className="inline-fields">
               <div className="field">
@@ -295,6 +298,7 @@ export function FieldNotebook({
               <button className="primary-button" type="submit" disabled={busy}>{busy ? 'Guardando…' : 'Guardar labor'}</button>
             </div>
           </form>
+          </details>
         </div>
 
         <div className="notebook-summary-grid" aria-label={`Resumen de ${selectedPlot?.name ?? 'la parcela'}`}>

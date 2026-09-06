@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
+import { Plus } from 'lucide-react';
+import { navigationIcons } from './VisualChrome';
 
 type Destination = { href: string; label: string; icon: 'home' | 'field' | 'magina' | 'discover' | 'profile' };
 
@@ -10,22 +12,9 @@ const anonymousDestinations: Destination[] = [
   { href: '/descubre', label: 'Descubre', icon: 'discover' },
   { href: '/mi-magina', label: 'Mi Mágina', icon: 'profile' },
 ];
-const signedInDestinations: Destination[] = [
-  { href: '/', label: 'Inicio', icon: 'home' },
-  { href: '/mi-campo', label: 'Mi Campo', icon: 'field' },
-  { href: '/magina', label: 'Mágina', icon: 'magina' },
-  { href: '/mi-magina', label: 'Mi Mágina', icon: 'profile' },
-];
-
 function LineIcon({ name }: { name: Destination['icon'] }) {
-  const paths = {
-    home: <><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10Z" /><path d="M9 21v-6h6v6" /></>,
-    field: <><path d="M4 20c7 0 13-4 16-14-8 1-14 6-16 14Z" /><path d="M4 20c3-5 7-8 12-11" /></>,
-    magina: <><path d="m3 19 6-8 4 5 3-4 5 7H3Z" /><path d="M14 5h.01" /></>,
-    discover: <><circle cx="12" cy="12" r="8" /><path d="m10 9 5 2-3 4-2-6Z" /></>,
-    profile: <><circle cx="12" cy="8" r="3" /><path d="M5 21c.7-4 3-6 7-6s6.3 2 7 6" /></>,
-  }[name];
-  return <svg className="nav-line-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths}</svg>;
+  const Icon = navigationIcons[name];
+  return <Icon className="nav-line-icon" aria-hidden="true" strokeWidth={1.7} />;
 }
 
 export function PublicNavigation({ activePath }: { activePath: string }) {
@@ -36,14 +25,11 @@ export function PublicNavigation({ activePath }: { activePath: string }) {
     return () => { cancelled = true; };
   }, []);
 
-  const destinations = signedIn ? signedInDestinations : anonymousDestinations;
-  const beforeContextual = signedIn ? destinations.slice(0, 2) : destinations;
-  const afterContextual = signedIn ? destinations.slice(2) : [];
+  const isActive = (href: string) => activePath === href || (href === '/magina' && activePath.startsWith('/magina/'));
   return (
     <nav className="public-navigation" aria-label="Navegación principal">
-      {beforeContextual.map((destination) => <a className={activePath === destination.href ? 'active' : ''} href={destination.href} key={destination.href} aria-current={activePath === destination.href ? 'page' : undefined}><LineIcon name={destination.icon} /><span>{destination.label}</span></a>)}
-      {signedIn ? <a className="public-nav-action" href="/campana" aria-label="Registrar una entrega"><span aria-hidden="true">+</span></a> : null}
-      {afterContextual.map((destination) => <a className={activePath === destination.href ? 'active' : ''} href={destination.href} key={destination.href} aria-current={activePath === destination.href ? 'page' : undefined}><LineIcon name={destination.icon} /><span>{destination.label}</span></a>)}
+      {anonymousDestinations.map((destination) => <a className={isActive(destination.href) ? 'active' : ''} href={destination.href} key={destination.href} aria-label={destination.label} aria-current={isActive(destination.href) ? 'page' : undefined}><LineIcon name={destination.icon} /><span>{destination.icon === 'profile' ? 'Perfil' : destination.label}</span></a>)}
+      {signedIn ? <a className="public-nav-action" href="/campana" aria-label="Registrar una entrega"><Plus aria-hidden="true" /></a> : null}
     </nav>
   );
 }

@@ -1,3 +1,4 @@
+import { VisualHeader } from './VisualChrome';
 import { useEffect, useMemo, useState } from 'react';
 
 type EntityType = 'cooperative' | 'sat' | 'company' | 'other';
@@ -101,13 +102,7 @@ export function MaginaDirectoryPage() {
 
   return (
     <main className="directory-shell" id="main-content">
-      <header className="directory-header">
-        <a className="directory-brand" href="/" aria-label="Volver a Mágina Olivo">
-          <img src="/brand/magina-olivo-mark.svg" alt="" />
-          <span><strong>Mágina Olivo</strong><small>Sierra Mágina · Jaén</small></span>
-        </a>
-        <a className="directory-back" href="/">Volver a la aplicación</a>
-      </header>
+      <VisualHeader />
 
       <section className="directory-hero" aria-labelledby="directory-title">
         <p className="eyebrow">Mágina · Directorio público</p>

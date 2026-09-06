@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, type Holding } from './api.ts';
+import { ChevronRight, Sprout } from 'lucide-react';
+import { PhotoCredit, VisualHeader, quickIcons } from './VisualChrome';
 
 type PublicSource = { key: string; provider: string; hasError: boolean };
 type WeatherDay = { temperatureMinC: number | null; temperatureMaxC: number | null };
@@ -21,8 +23,8 @@ function sourceStatus(source: PublicSource | undefined): string {
 }
 
 function QuickIcon({ kind }: { kind: 'book' | 'calendar' | 'alert' | 'weather' }) {
-  const content = kind === 'book' ? <><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M8 20V7a3 3 0 0 1 3-3"/></> : kind === 'calendar' ? <><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></> : kind === 'alert' ? <><path d="m12 4 9 16H3z"/><path d="M12 9v5M12 17h.01"/></> : <><path d="M7 18h10a4 4 0 0 0 .5-8A5.5 5.5 0 0 0 7 9a4.5 4.5 0 0 0 0 9Z"/><path d="M12 3v3M5 6l2 2M19 6l-2 2"/></>;
-  return <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{content}</svg>;
+  const Icon = quickIcons[kind];
+  return <Icon aria-hidden="true" strokeWidth={1.7} />;
 }
 
 export function PublicHomePage() {
@@ -49,12 +51,13 @@ export function PublicHomePage() {
 
   return (
     <main className="public-home public-home-v2" id="main-content">
-      <header className="public-home-topbar"><a className="public-home-brand" href="/" aria-label="Mágina Olivo, Inicio"><img src="/brand/magina-olivo-mark.svg" alt="" /><span><strong>Mágina Olivo</strong><small>La herramienta digital del olivar</small></span></a><a className="public-home-profile" href={holding ? '/mi-magina' : '/login'} aria-label={holding ? 'Abrir Mi Mágina' : 'Iniciar sesión'}>{holding ? (holding.name[0] ?? 'M') : 'M'}</a></header>
-      <section className="public-home-v2-hero" aria-labelledby="public-home-title"><div className="public-home-v2-photo" role="img" aria-label="Olivar de Sierra Mágina" /><div className="public-home-weather-card" aria-live="polite"><span>{weatherTitle}</span><strong>{weatherTemperature}</strong><small>{weatherRange}</small>{weather ? <small>Fuente: AEMET</small> : null}</div></section>
-      <section className="public-home-v2-section" aria-labelledby="public-home-title"><div className="section-heading"><div><p className="eyebrow">Hoy en tu campo</p><h1 id="public-home-title">Tu olivar, de un vistazo</h1></div><a className="text-button" href={holding ? '/mi-campo' : '/login?next=%2Fmi-campo'}>Ver todo</a></div><a className="public-home-field-card card" href={holding ? '/mi-campo' : '/login?next=%2Fmi-campo'}><span className="public-home-field-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20c7 0 13-4 16-14-8 1-14 6-16 14Z"/><path d="M4 20c3-5 7-8 12-11"/></svg></span><span><strong>{holding ? holding.name : 'Gestiona tu olivar'}</strong><small>{holding ? `${holding.municipality ?? 'Tu comarca'} · Datos privados` : 'Inicia sesión o crea una cuenta para gestionar tu olivar.'}</small></span><span className="public-home-open">Abrir</span></a></section>
+      <VisualHeader />
+      <section className="public-home-v2-hero" aria-label="Nuestra tierra"><div className="public-home-v2-photo" role="img" aria-label="Olivar de Sierra Mágina" /><a href="/magina/tiempo" className="public-home-weather-card" aria-live="polite"><span>{weatherTitle}</span><strong>{weatherTemperature}</strong><small>{weatherRange}</small>{weather ? <small>Máxima prevista · Fuente: AEMET</small> : <small>Consultar previsión <ChevronRight size={14} aria-hidden="true" /></small>}</a><div className="home-territory-caption"><p>Nuestra tierra,<br />tu mejor cosecha</p><small>Sierra Mágina</small></div></section>
+      <section className="public-home-v2-section" aria-labelledby="public-home-title"><div className="section-heading"><div><p className="eyebrow">Hoy en tu campo</p><h1 id="public-home-title">Tu olivar, de un vistazo</h1></div><a className="text-button" href={holding ? '/mi-campo' : '/login?next=%2Fmi-campo'}>Ver todo</a></div><a className="public-home-field-card card" href={holding ? '/mi-campo' : '/login?next=%2Fmi-campo'}><span className="public-home-field-icon" aria-hidden="true"><Sprout /></span><span><strong>{holding ? holding.name : 'Gestiona tu olivar'}</strong><small>{holding ? `${holding.municipality ?? 'Tu comarca'} · Datos privados` : 'Inicia sesión o crea una cuenta para gestionar tu olivar.'}</small></span><ChevronRight className="row-chevron" aria-hidden="true" /></a></section>
       <section className="public-home-v2-quick" aria-label="Accesos rápidos"><a href={holding ? '/mi-campo' : '/login?next=%2Fmi-campo'}><QuickIcon kind="book" />Cuaderno</a><a href={holding ? '/calendario' : '/login?next=%2Fcalendario'}><QuickIcon kind="calendar" />Tareas</a><a href="/magina/campo"><QuickIcon kind="alert" />Alertas</a><a href="/magina/tiempo"><QuickIcon kind="weather" />Meteorología</a></section>
       <section className="public-home-v2-section"><div className="section-heading"><div><p className="eyebrow">Aceite y mercado</p><h2>Referencia AOVE</h2></div><a className="text-button" href="/magina/mercado">Mercado</a></div><a className="public-home-market-card card" href="/magina/mercado"><strong>Información pública</strong><span>Consulta contexto de mercado con fecha y procedencia.</span><span className="public-home-open">Abrir</span></a></section>
       <section className="public-service-section" aria-labelledby="public-services-title"><div><p className="eyebrow">Información pública</p><h2 id="public-services-title">Hoy en Sierra Mágina</h2></div><div className="public-service-grid">{services.map(([title, copy, href, sourceKey]) => <a className="card public-service-card" href={href} key={title}><p className="eyebrow">{sourceStatus(sources.find((source) => source.key.includes(sourceKey)))}</p><h3>{title}</h3><p>{copy}</p><span>Ver información</span></a>)}</div></section>
+      <PhotoCredit />
     </main>
   );
 }

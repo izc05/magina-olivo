@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { ApiError, api } from './api';
 import { safeReturnTo } from './private-access';
+import { PhotoCredit } from './VisualChrome';
 
 function Field({ name, label, type, autoComplete, value, onChange }: { name: string; label: string; type: string; autoComplete: string; value: string; onChange: (value: string) => void }) {
   return <div className="field"><label htmlFor={name}>{label}</label><input id={name} name={name} type={type} required autoComplete={autoComplete} value={value} onChange={(event) => onChange(event.target.value)} /></div>;
@@ -51,9 +52,9 @@ export function LoginPage({ returnTo }: { returnTo: string }) {
   return (
     <main className="login-shell" id="main-content">
       <section className="login-card" aria-labelledby="login-title">
-        <div className="login-brand"><span className="brand-title">Mágina Olivo</span><span className="brand-kicker">Sierra Mágina · Jaén</span></div>
+        <div className="login-brand"><span className="brand-title">Mágina Olivo</span><span className="brand-kicker">La herramienta digital del olivar</span></div>
         <p className="eyebrow">Área privada</p>
-        <h1 id="login-title" className="login-title">Bienvenido de nuevo</h1>
+        <h1 id="login-title" className="login-title">Accede a tu cuenta</h1>
         <p className="login-copy">Accede a tus fincas, entregas y rendimientos. Después volverás justo donde estabas.</p>
         <form className="form-grid" onSubmit={submit}>
           <Field name="email" label="Correo electrónico" type="email" autoComplete="email" value={email} onChange={setEmail} />
@@ -63,6 +64,8 @@ export function LoginPage({ returnTo }: { returnTo: string }) {
           <button className="primary-button" type="submit" disabled={busy}>{busy ? 'Entrando…' : 'Entrar'}</button>
         </form>
         <div className="login-footer"><button className="text-button" type="button" onClick={() => void resetPassword()} disabled={busy}>He olvidado mi contraseña</button><a className="text-button" href="/register">Crear cuenta</a></div>
+        <a className="login-explore" href="/">Explorar sin cuenta</a>
+        <PhotoCredit />
       </section>
     </main>
   );

@@ -45,6 +45,10 @@ import './offline-v2-integration.css';
 import './auth-onboarding.css';
 import './pilot-alerts.css';
 import './calendar.css';
+import '@fontsource/inter/latin-400.css';
+import '@fontsource/inter/latin-500.css';
+import '@fontsource/inter/latin-600.css';
+import './visual-reference.css';
 
 installDemoPreview();
 installWeatherDemoPreview();

@@ -19,6 +19,8 @@ import { MaginaPrivateHub } from './MaginaPrivateHub.tsx';
 import { OfflineColdStart } from './OfflineColdStart.tsx';
 import { listPendingOperations } from './offline/outbox.ts';
 import { PrivateAccessGate } from './PrivateAccessGate.tsx';
+import { ChevronRight, Compass, House, Mountain, Plus, Sprout } from 'lucide-react';
+import { PhotoCredit, VisualHeader, navigationIcons } from './VisualChrome';
 
 type Tab = 'home' | 'field' | 'campaign' | 'magina' | 'more';
 type SessionState = 'checking' | 'signed_out' | 'signed_in' | 'offline_locked';
@@ -37,6 +39,11 @@ function formatPercent(value: string | null | undefined): string {
   return Number.isFinite(number)
     ? `${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 }).format(number)} %`
     : '—';
+}
+
+function formatHa(value: string | number): string {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? `${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 4 }).format(numeric)} ha` : 'Superficie pendiente';
 }
 
 function messageFrom(error: unknown): string {
@@ -215,13 +222,7 @@ export function App({ initialTab = 'home' }: { initialTab?: Tab }) {
 
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <div className="brand-lockup" aria-label="Mágina Olivo">
-          <span className="brand-title">Mágina Olivo</span>
-          <span className="brand-kicker">Sierra Mágina · Jaén</span>
-        </div>
-        <button type="button" className="user-chip" onClick={() => setTab('more')} aria-label="Abrir perfil" aria-current={tab === 'more' ? 'page' : undefined}>{initials}</button>
-      </header>
+      <VisualHeader><button type="button" className="visual-header-action" onClick={() => setTab('more')} aria-label="Abrir perfil" aria-current={tab === 'more' ? 'page' : undefined}>{initials}</button></VisualHeader>
 
       <main className="page" ref={pageRef} tabIndex={-1}>
         {error ? <div className="alert" role="alert">{error}</div> : null}
@@ -269,24 +270,20 @@ export function App({ initialTab = 'home' }: { initialTab?: Tab }) {
       </main>
 
       <nav className="bottom-nav bottom-nav-v2" aria-label="Navegación principal">
-        <NavButton active={tab === 'home'} icon="home" label="Inicio" onClick={() => setTab('home')} />
-        <NavButton active={tab === 'field'} icon="field" label="Mi Campo" onClick={() => setTab('field')} />
-        <button type="button" className="nav-plus" onClick={() => { setTab('campaign'); window.setTimeout(() => { const entry = document.querySelector<HTMLElement>('.delivery-entry-card'); entry?.scrollIntoView({ behavior: 'smooth', block: 'start' }); entry?.focus({ preventScroll: true }); }, 0); }} aria-label="Registrar una entrega"><span aria-hidden="true">+</span></button>
-        <NavButton active={tab === 'magina'} icon="magina" label="Mágina" onClick={() => setTab('magina')} />
-        <NavButton active={tab === 'more'} icon="profile" label="Mi Mágina" onClick={() => setTab('more')} />
+        <a className="nav-button" href="/"><House aria-hidden="true" />Inicio</a>
+        <NavButton active={tab === 'field' || tab === 'campaign'} icon="field" label="Mi Campo" onClick={() => setTab('field')} />
+        <a className="nav-button" href="/magina"><Mountain aria-hidden="true" />Mágina</a>
+        <a className="nav-button" href="/descubre"><Compass aria-hidden="true" />Descubre</a>
+        <NavButton active={tab === 'more'} icon="profile" label="Perfil" onClick={() => setTab('more')} />
+        <button type="button" className="nav-plus" onClick={() => { setTab('campaign'); window.setTimeout(() => { const entry = document.querySelector<HTMLElement>('.delivery-entry-card'); entry?.scrollIntoView({ behavior: 'smooth', block: 'start' }); entry?.focus({ preventScroll: true }); }, 0); }} aria-label="Registrar una entrega"><Plus aria-hidden="true" /></button>
       </nav>
     </div>
   );
 }
 
 function NavButton({ active, icon, label, onClick }: { active: boolean; icon: 'home' | 'field' | 'magina' | 'profile'; label: string; onClick: () => void }) {
-  const paths = {
-    home: <><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10Z" /><path d="M9 21v-6h6v6" /></>,
-    field: <><path d="M4 20c7 0 13-4 16-14-8 1-14 6-16 14Z" /><path d="M4 20c3-5 7-8 12-11" /></>,
-    magina: <><path d="m3 19 6-8 4 5 3-4 5 7H3Z" /><path d="M14 5h.01" /></>,
-    profile: <><circle cx="12" cy="8" r="3" /><path d="M5 21c.7-4 3-6 7-6s6.3 2 7 6" /></>,
-  }[icon];
-  return <button type="button" className={`nav-button${active ? ' active' : ''}`} onClick={onClick} aria-current={active ? 'page' : undefined}><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths}</svg>{label}</button>;
+  const Icon = navigationIcons[icon];
+  return <button type="button" className={`nav-button${active ? ' active' : ''}`} onClick={onClick} aria-current={active ? 'page' : undefined}><Icon aria-hidden="true" strokeWidth={1.7} />{label}</button>;
 }
 
 function HomeTab({ holding, campaign, summary, coverage, onNavigate }: { holding: Holding | null; campaign: Campaign | null; summary: CampaignSummary | null; coverage: number; onNavigate: (tab: Tab) => void }) {
@@ -337,12 +334,9 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
     setSelectedPlotId((current) => plots.some((plot) => plot.id === current) ? current : (plots[0]?.id ?? ''));
   }, [plots]);
 
-  return (
-    <>
-      <PageIntro eyebrow="Mi Campo" title="Mis fincas" copy="Gestiona tus fincas, parcelas y campañas desde un único lugar." />
-      {holdings.length === 0 ? <CreateHoldingCard busy={busy} runAction={runAction} onCreated={reloadHoldings} /> : null}
-      {selectedHolding ? (
-        <>
+  const fieldManagement = selectedHolding ? (
+        <details id="field-management" className="field-management visual-disclosure" open={!selectedFarm}>
+          <summary>Mis fincas · {selectedHolding.name}</summary>
           <section className="card field-holding-context" aria-label="Explotación activa">
             <div>
               <p className="eyebrow">Explotación activa</p>
@@ -354,46 +348,55 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
             <div className="section-heading"><div><h2 className="section-title">Mis fincas</h2><p className="section-copy">Selecciona una finca para continuar con sus parcelas.</p></div></div>
             {farms.map((farm) => (
               <button key={farm.id} type="button" className="card list-card interactive farm-list-card" onClick={() => setSelectedFarmId(farm.id)} aria-pressed={farm.id === selectedFarmId}>
-                <div className="list-card-main"><p className="list-card-title">{farm.name}</p><p className="list-card-meta">{farm.areaHa != null ? `${farm.areaHa} ha` : 'Superficie pendiente'}</p></div>
+                <div className="list-card-main"><p className="list-card-title">{farm.name}</p><p className="list-card-meta">{farm.areaHa != null ? formatHa(farm.areaHa) : 'Superficie pendiente'}</p></div>
                 <span className={`badge${farm.id === selectedFarmId ? ' gold' : ''}`}>{farm.id === selectedFarmId ? 'Seleccionada' : 'Ver finca'}</span>
               </button>
             ))}
             {!farms.length ? <EmptyState title="Aún no has añadido ninguna finca.">Crea tu primera finca para empezar a organizar tus parcelas.</EmptyState> : null}
           </section>
           <CreateFarmCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} firstFarm={farms.length === 0} />
-        </>
-      ) : null}
+        </details>
+      ) : null;
+
+  return (
+    <>
+      {!selectedFarm ? <PageIntro eyebrow="Mi Campo" title="Mis fincas" copy="Gestiona tus fincas, parcelas y campañas desde un único lugar." /> : null}
+      {holdings.length === 0 ? <CreateHoldingCard busy={busy} runAction={runAction} onCreated={reloadHoldings} /> : null}
+      {!selectedFarm ? fieldManagement : null}
 
       {selectedFarm && selectedHolding ? (
         <>
           <section className="farm-detail-card" aria-labelledby="selected-farm-title">
             <div>
-              <p className="eyebrow">Finca seleccionada</p>
-              <h2 id="selected-farm-title">{selectedFarm.name}</h2>
+              <p className="eyebrow">Finca activa</p>
+              <h1 id="selected-farm-title">{selectedFarm.name}</h1>
               <p>{selectedHolding.name}{selectedHolding.municipality ? ` · ${selectedHolding.municipality}` : ''}</p>
             </div>
             <div className="farm-detail-metrics" aria-label={`Resumen de ${selectedFarm.name}`}>
-              <div><span>Superficie</span><strong>{selectedFarm.areaHa != null ? `${selectedFarm.areaHa} ha` : 'Pendiente'}</strong></div>
+              <div><span>Superficie</span><strong>{selectedFarm.areaHa != null ? formatHa(selectedFarm.areaHa) : 'Pendiente'}</strong></div>
               <div><span>Parcelas</span><strong>{plots.length}</strong></div>
             </div>
           </section>
-          <section className="section">
-            <div className="section-heading"><div><p className="eyebrow page-eyebrow">Finca · {selectedFarm.name}</p><h2 className="section-title">Parcelas</h2><p className="section-copy">Selecciona una parcela para ver su información disponible.</p></div></div>
+          <nav className="visual-segments field-section-links" aria-label="Secciones de Mi Campo"><a href="#parcelas">Campo</a><a href="#cuaderno">Cuaderno</a><a href="/campana">Campaña</a><a href="#field-management" onClick={() => { const panel = document.querySelector<HTMLDetailsElement>('#field-management'); if (panel) panel.open = true; }}>Gestión</a></nav>
+          <section className="section" id="parcelas">
+            <div className="section-heading"><div><p className="eyebrow page-eyebrow">Mi Campo</p><h2 className="section-title">Parcelas</h2></div><a className="text-button" href="#gestion-parcelas" onClick={() => { const panel = document.querySelector<HTMLDetailsElement>('#gestion-parcelas details'); if (panel) panel.open = true; }}>Añadir</a></div>
             {plots.map((plot) => (
               <button type="button" className="card list-card interactive plot-list-card" key={plot.id} onClick={() => setSelectedPlotId(plot.id)} aria-pressed={plot.id === selectedPlotId}>
-                <div className="list-card-main"><p className="list-card-title">{plot.name}</p><p className="list-card-meta">{[plot.areaHa != null ? `${plot.areaHa} ha` : null, plot.oliveTreeCount != null ? `${plot.oliveTreeCount} olivos` : null, plot.irrigationType ? irrigationLabel(plot.irrigationType) : null].filter(Boolean).join(' · ') || 'Información pendiente'}</p></div>
+                <span className="visual-icon-tile"><Sprout aria-hidden="true" /></span>
+                <div className="list-card-main"><p className="list-card-title">{plot.name}</p><p className="list-card-meta">{[plot.areaHa != null ? formatHa(plot.areaHa) : null, plot.oliveTreeCount != null ? `${plot.oliveTreeCount} olivos` : null, plot.irrigationType ? irrigationLabel(plot.irrigationType) : null].filter(Boolean).join(' · ') || 'Información pendiente'}</p></div>
                 <span className={`badge${plot.id === selectedPlotId ? ' gold' : ''}`}>{plot.id === selectedPlotId ? 'Seleccionada' : plot.sigpacReference ? 'SIGPAC' : 'Ver parcela'}</span>
+                <ChevronRight className="row-chevron" aria-hidden="true" />
               </button>
             ))}
             {!plots.length ? <EmptyState title="Aún no has añadido parcelas a esta finca.">Crea la primera parcela para empezar a registrar su información.</EmptyState> : null}
-            <CreatePlotCard farmId={selectedFarm.id} busy={busy} runAction={runAction} onCreated={reloadPlots} />
+            <div id="gestion-parcelas"><details className="visual-disclosure" open={!plots.length}><summary>Añadir parcela</summary><CreatePlotCard farmId={selectedFarm.id} busy={busy} runAction={runAction} onCreated={reloadPlots} /></details></div>
           </section>
           {selectedPlot ? (
             <section className="card plot-detail-card" aria-labelledby="selected-plot-title">
               <p className="eyebrow">Parcela seleccionada</p>
               <h3 id="selected-plot-title">{selectedPlot.name}</h3>
               <dl>
-                {selectedPlot.areaHa != null ? <div><dt>Superficie</dt><dd>{selectedPlot.areaHa} ha</dd></div> : null}
+                {selectedPlot.areaHa != null ? <div><dt>Superficie</dt><dd>{formatHa(selectedPlot.areaHa)}</dd></div> : null}
                 {selectedPlot.oliveTreeCount != null ? <div><dt>Olivos</dt><dd>{selectedPlot.oliveTreeCount}</dd></div> : null}
                 {selectedPlot.irrigationType ? <div><dt>Riego</dt><dd>{irrigationLabel(selectedPlot.irrigationType)}</dd></div> : null}
                 {selectedPlot.sigpacReference ? <div><dt>Referencia SIGPAC</dt><dd>{selectedPlot.sigpacReference}</dd></div> : null}
@@ -401,7 +404,9 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
               <p className="plot-detail-map-note">El mapa y el perímetro de esta parcela se gestionan en el cuaderno de campo.</p>
             </section>
           ) : null}
-          <FieldNotebook holdingId={selectedHolding.id} farmId={selectedFarm.id} plots={plots} />
+          {fieldManagement}
+          <div id="cuaderno"><FieldNotebook holdingId={selectedHolding.id} farmId={selectedFarm.id} plots={plots} /></div>
+          <PhotoCredit field />
         </>
       ) : null}
     </>
@@ -478,6 +483,7 @@ function MoreTab({ user, holding, busy, onSignOut }: { user: User; holding: Hold
     <>
       <PageIntro eyebrow="MI MÁGINA" title="Cuenta y ajustes" copy="Tu espacio privado para revisar la cuenta, organizar tareas y cuidar tus datos." />
       <section className="section card card-body more-profile-card" aria-labelledby="more-profile-title">
+        <span className="profile-initials" aria-hidden="true">{(user.name || user.email).trim().slice(0, 2).toUpperCase()}</span>
         <h2 id="more-profile-title" className="section-title more-card-title">Tu perfil</h2>
         <p className="list-card-title">{user.name || 'Agricultor'}</p>
         <p className="list-card-meta">{user.email}</p>

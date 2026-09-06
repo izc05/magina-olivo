@@ -17,7 +17,8 @@ test('primary SPA navigation keeps programmatic focus and current-page semantics
   assert.match(app, /entry\?\.scrollIntoView\(\{ behavior: 'smooth', block: 'start' \}\)/);
   assert.match(app, /entry\?\.focus\(\{ preventScroll: true \}\)/);
   assert.doesNotMatch(app, /nav-plus[^\n]*aria-current/);
-  assert.match(app, /<svg viewBox="0 0 24 24" aria-hidden="true"/);
+  assert.match(app, /const Icon = navigationIcons\[icon\]/);
+  assert.match(app, /<Icon aria-hidden="true"/);
   assert.match(app, /aria-pressed=\{farm\.id === selectedFarmId\}/);
   assert.match(app, /aria-pressed=\{plot\.id === selectedPlotId\}/);
 });
@@ -58,4 +59,5 @@ test('PWA updates are announced and can only be applied through an accessible us
   assert.match(prompt, /aria-live="polite"/);
   assert.match(prompt, /type="button"/);
   assert.match(prompt, /Actualizar ahora/);
+  assert.match(prompt, /aria-label="Cerrar aviso de actualización" onClick=\{\(\) => setState\('idle'\)\}/);
 });

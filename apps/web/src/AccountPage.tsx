@@ -1,3 +1,5 @@
+import { VisualHeader } from './VisualChrome';
+import { PublicNavigation } from './PublicNavigation';
 import { useEffect, useMemo, useState } from 'react';
 
 type User = { id: string; name?: string | null; email: string };
@@ -190,13 +192,8 @@ export function AccountPage() {
 
   return (
     <main className="account-shell">
-      <header className="account-topbar">
-        <a className="text-button" href="/">← Volver</a>
-        <div className="brand-lockup">
-          <span className="brand-title">Mágina Olivo</span>
-          <span className="brand-kicker">Mi Cuenta</span>
-        </div>
-      </header>
+      <VisualHeader />
+      <PublicNavigation activePath="/mi-magina" />
 
       <div className="account-page">
         <section>

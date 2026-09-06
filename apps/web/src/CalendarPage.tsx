@@ -1,3 +1,5 @@
+import { VisualHeader } from './VisualChrome';
+import { PublicNavigation } from './PublicNavigation';
 import { useEffect, useMemo, useState } from 'react';
 
 type Holding = {
@@ -217,14 +219,8 @@ export function CalendarPage() {
 
   return (
     <main className="calendar-shell">
-      <header className="account-topbar calendar-topbar">
-        <a className="text-button" href="/">← Volver</a>
-        <div className="brand-lockup">
-          <span className="brand-title">Mágina Olivo</span>
-          <span className="brand-kicker">Calendario</span>
-        </div>
-        <a className="text-button" href="/cuenta">Mi cuenta</a>
-      </header>
+      <VisualHeader />
+      <PublicNavigation activePath="/mi-campo" />
 
       <div className="calendar-page">
         <section className="calendar-heading">

@@ -1,0 +1,223 @@
+/* Reference family: September 2026, ivory / olive, serif titles, five destinations.
+ * Presentation only. Figures, alerts and availability still come from the core.
+ */
+:root {
+  --ivory: #faf8f1;
+  --paper: #fffefa;
+  --ink: #1d241a;
+  --muted: #71746e;
+  --line: #e0e2db;
+  --olive-950: #2e3a22;
+  --olive-800: #435637;
+  --olive-650: #526d40;
+  --v2-ivory: var(--ivory);
+  --v2-paper: var(--paper);
+  --v2-olive-deep: var(--olive-950);
+  --v2-olive: var(--olive-650);
+  --v2-line: var(--line);
+  --v2-shadow: 0 8px 24px #2e3a2208;
+  --shadow: var(--v2-shadow);
+}
+html, body { background: var(--ivory); color: var(--ink); }
+body { font-family: Inter, system-ui, sans-serif; font-weight: 400; }
+h1, h2, h3, .section-title, .brand-title { font-family: Georgia, 'Times New Roman', serif; letter-spacing: -.025em; color: var(--ink); }
+h1 { font-size: clamp(2rem, 6vw, 3rem); line-height: 1.06; }
+h2 { line-height: 1.13; }
+p { line-height: 1.5; }
+.eyebrow, .page-eyebrow { color: var(--olive-650); font-weight: 500; font-size: .75rem; letter-spacing: .09em; }
+.section-copy { color: var(--muted); font-size: .93rem; line-height: 1.5; }
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; box-shadow: none; }
+.primary-button { min-height: 48px; border-radius: 28px; background: var(--olive-950); color: white; box-shadow: none; font-weight: 500; }
+.ghost-button, .secondary-button { border-radius: 24px; background: var(--paper); box-shadow: none; }
+.text-button { color: var(--olive-650); font-weight: 500; }
+.field input, .field select, .field textarea, .selector { background: var(--paper); border: 1px solid #cfd3c7; border-radius: 12px; min-height: 46px; }
+.field label { color: var(--ink); font-weight: 500; }
+.badge, .badge.gold { background: #e9eedf; color: #455d33; border: 0; font-weight: 500; }
+:where(main, section, div)[id] { scroll-margin-top: 20px; }
+:where(a, button, summary) { -webkit-tap-highlight-color: transparent; }
+summary { cursor: pointer; }
+
+/* A single brand lockup across public and private screens. */
+.visual-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 71px; padding: 10px 0 12px; }
+.visual-brand { display: flex; min-width: 0; align-items: center; gap: 10px; text-decoration: none; }
+.visual-brand img { width: 38px; height: 46px; object-fit: contain; flex-shrink: 0; }
+.visual-brand span { min-width: 0; }
+.visual-brand strong { display: block; font: 700 clamp(1.3rem, 5.2vw, 1.75rem)/1.12 Georgia, serif; letter-spacing: -.02em; white-space: nowrap; }
+.visual-brand small { display: block; margin-top: 4px; font-size: clamp(.46rem, 1.8vw, .63rem); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.visual-header-action { display: grid; place-items: center; flex-shrink: 0; width: 46px; height: 46px; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); color: var(--olive-950); text-decoration: none; }
+.visual-header-action svg { width: 23px; height: 23px; stroke-width: 1.7; }
+.app-shell > .visual-header { max-width: 920px; margin: auto; padding-left: 16px; padding-right: 16px; }
+.page, .public-home, .discover-shell, .directory-shell, .weather-shell, .magina-hub-shell, .market-shell, .field-alert-shell { width: 100%; max-width: 920px; margin: 0 auto; padding: 0 16px 120px; }
+.app-shell .page { padding-top: 0; }
+.app-shell { padding-bottom: 0; }
+
+/* Five stable destinations. Creation is an independent, labelled action. */
+.public-navigation, .bottom-nav.bottom-nav-v2 {
+  position: fixed; z-index: 50; top: auto; bottom: max(8px, env(safe-area-inset-bottom)); left: 50%; right: auto;
+  transform: translateX(-50%); width: calc(100% - 20px); max-width: 880px; margin: 0;
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center;
+  padding: 8px 5px; min-height: 66px; border: 1px solid var(--line); border-radius: 23px;
+  background: #fcfaf5f5; backdrop-filter: blur(12px); box-shadow: 0 8px 30px #2e3a2210;
+}
+.public-navigation > a:not(.public-nav-action), .bottom-nav-v2 .nav-button {
+  min-width: 0; min-height: 48px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px;
+  padding: 2px; border: 0; background: transparent; color: #757870; font-size: .68rem; font-weight: 400; text-decoration: none;
+}
+.public-navigation > a.active:not(.public-nav-action), .bottom-nav-v2 .nav-button.active { color: var(--olive-950); background: transparent; box-shadow: none; font-weight: 600; }
+.public-navigation .nav-line-icon, .bottom-nav-v2 .nav-button svg { width: 24px; height: 24px; }
+.public-navigation .public-nav-action, .bottom-nav-v2 .nav-plus {
+  position: absolute; top: -43px; left: 50%; transform: translateX(-50%); width: 54px; height: 54px;
+  display: grid; place-items: center; padding: 0; border: 3px solid var(--ivory); border-radius: 50%; background: var(--olive-950); color: white;
+  box-shadow: 0 9px 18px #2e3a2226;
+}
+.public-nav-action svg, .nav-plus svg { width: 30px; height: 30px; stroke-width: 1.7; }
+
+/* Home reference: photograph, forecast, field shortcut, four quick actions. */
+.public-home-v2-hero { position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 12px; min-height: 0; height: 254px; padding: 16px; border-radius: 20px; overflow: hidden; isolation: isolate; margin: 0 0 23px; }
+.public-home-v2-photo { position: absolute; inset: 0; z-index: -2; background: url('/photos/home-sierra-magina.webp') center 58% / cover; }
+.public-home-v2-hero::after { content: ''; position: absolute; inset: 0; z-index: -1; background: #1820131a; pointer-events: none; }
+.public-home-weather-card { position: static; display: flex; flex-direction: column; gap: 3px; width: fit-content; max-width: 86%; min-width: 165px; padding: 12px 16px; border: 1px solid white; border-radius: 17px; background: #faf9f2f5; color: var(--ink); text-decoration: none; box-shadow: 0 6px 20px #11111116; }
+.public-home-weather-card > span { color: var(--muted); font-size: .85rem; }
+.public-home-weather-card strong { font: 700 2.9rem/1.05 Georgia, serif; }
+.public-home-weather-card small { display: flex; align-items: center; gap: 5px; font-size: .65rem; line-height: 1.4; }
+.home-territory-caption { color: white; text-shadow: 0 2px 10px #000; }
+.home-territory-caption p { margin: 0 0 10px; font: 400 1.5rem/1.05 Georgia, serif; }
+.home-territory-caption small { font-size: .62rem; text-transform: uppercase; letter-spacing: .2em; }
+.public-home-v2-section { margin: 0 0 10px; }
+.section-heading { align-items: center; gap: 12px; }
+.public-home-v2-section .section-heading { margin-bottom: 10px; }
+.public-home-v2-section .eyebrow { margin: 0 0 5px; }
+.public-home-v2-section h1, .public-home-v2-section h2 { max-width: none; margin: 0; font-size: clamp(1.45rem, 5.9vw, 2.2rem); line-height: 1.1; }
+.public-home-v2-section .text-button { flex-shrink: 0; padding: 9px 0 9px 5px; font-size: .75rem; }
+.public-home-field-card { display: flex; align-items: center; gap: 14px; padding: 10px; min-height: 72px; }
+.public-home-field-card > span:nth-child(2) { flex: 1; min-width: 0; }
+.public-home-field-card strong { font-size: 1rem; font-weight: 500; }
+.public-home-field-card small { display: block; margin-top: 5px; font-size: .8rem; color: var(--muted); line-height: 1.4; }
+.public-home-field-icon, .visual-icon-tile { display: grid; place-items: center; width: 51px; height: 51px; flex: 0 0 51px; border-radius: 13px; background: #e4e8dc; color: var(--olive-950); }
+.public-home-field-icon svg, .visual-icon-tile svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.row-chevron { width: 20px; height: 20px; flex-shrink: 0; }
+.public-home-v2-quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0 0 23px; }
+.public-home-v2-quick a { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70px; gap: 8px; padding: 10px 2px; border-radius: 14px; border: 1px solid var(--line); background: var(--paper); box-shadow: none; color: var(--ink); font-size: .7rem; font-weight: 400; text-decoration: none; }
+.public-home-v2-quick svg { width: 26px; height: 26px; color: var(--olive-950); stroke-width: 1.7; }
+.public-home-market-card { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; padding: 15px; background: var(--paper); }
+.public-home-market-card strong { font: 700 1.45rem/1.1 Georgia, serif; }
+.public-home-market-card > span { font-size: .8rem; color: var(--muted); }
+.public-service-section { margin-top: 30px; }
+.public-service-card { padding: 18px; }
+.public-service-card h3 { font-size: 1.5rem; }
+
+/* Plain headings and segmented links shared by territory screens. */
+.magina-hub-hero, .market-hero, .weather-hero, .directory-hero, .field-alert-hero { margin: 12px 0 20px; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; color: var(--ink); }
+.magina-hub-hero h1, .market-hero h1, .weather-hero h1, .directory-hero h1, .field-alert-hero h1 { max-width: none; font-size: clamp(2rem, 7vw, 3rem); color: var(--ink); }
+.magina-hub-hero p, .market-hero p, .weather-hero p, .directory-hero p, .field-alert-hero p { max-width: none; color: var(--muted); font-size: .95rem; }
+.magina-hub-hero .eyebrow, .market-hero .eyebrow, .weather-hero .eyebrow, .directory-hero .eyebrow, .field-alert-hero .eyebrow { color: var(--olive-650); font-size: .75rem; }
+.visual-segments { display: flex; gap: 4px; padding: 4px; margin: 12px 0; background: var(--paper); border: 1px solid var(--line); border-radius: 17px; }
+.visual-segments a { flex: 1; display: grid; place-items: center; min-height: 42px; padding: 5px 3px; border-radius: 13px; color: #60675a; font-size: .75rem; text-decoration: none; }
+.visual-segments a:hover, .visual-segments a:focus-visible { background: #e9eedf; color: var(--olive-950); }
+.field-section-links a:first-child { background: var(--olive-950); color: white; }
+.territory-feature, .discover-hero { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; min-height: 240px; padding: 22px 18px; border-radius: 20px; margin: 14px 0 22px; background: url('/photos/home-sierra-magina.webp') center / cover; color: white; text-decoration: none; text-shadow: 0 1px 5px #000; }
+.territory-feature h2, .discover-hero h1 { color: white; font-size: clamp(1.8rem, 6.5vw, 2.8rem); line-height: 1.1; margin: 10px 0; }
+.territory-feature .eyebrow, .discover-hero .eyebrow { color: white; padding: 5px 9px; border: 1px solid #ffffff80; border-radius: 20px; background: #26321cbf; }
+.territory-feature p, .discover-hero > p:last-child { margin: 0; font-size: .9rem; color: white; max-width: 600px; background: #26321cbf; border-radius: 7px; padding: 4px 7px; }
+.discover-hero { min-height: 300px; }
+.discover-grid { margin: 22px 0; gap: 14px; }
+.discover-grid .card { padding: 18px; text-decoration: none; }
+.discover-grid h2 { font-size: 1.6rem; }
+.magina-hub-card, .magina-hub-card.ready, .market-card, .weather-card, .directory-card, .field-alert-card { background: var(--paper); border: 1px solid var(--line); box-shadow: none; }
+.magina-hub-card h2 { font-size: 1.5rem; }
+.magina-source-row { border-radius: 15px; }
+.directory-footer { color: var(--muted); font-size: .75rem; }
+
+/* Field / notebook: photographic context, compact rows, progressive forms. */
+.visual-disclosure { margin: 0 0 14px; padding: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); }
+.visual-disclosure > summary { padding: 13px 15px; color: var(--olive-650); font-size: .85rem; min-height: 46px; }
+.visual-disclosure[open] { padding: 0 14px 14px; }
+.visual-disclosure[open] > summary { margin: 0 -14px; }
+.farm-detail-card { min-height: 265px; padding: 54px 14px 12px; border: 0; border-radius: 20px; color: white; background: url('/photos/home-sierra-magina.webp') center / cover; box-shadow: none; }
+.farm-detail-card > div:first-child { text-shadow: 0 2px 5px #000; }
+.farm-detail-card .eyebrow { width: fit-content; color: white; padding: 5px 10px; border-radius: 20px; background: #26321cc9; font-size: .75rem; text-shadow: none; }
+.farm-detail-card h1 { font-size: clamp(2.2rem, 8vw, 3.4rem); color: white; margin: 7px 0; }
+.farm-detail-card p { color: white; margin: 5px 0 12px; font-size: .85rem; }
+.farm-detail-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 14px; padding: 12px 0; border-radius: 15px; background: #fbfaf5f5; color: var(--ink); gap: 0; }
+.farm-detail-metrics > div { border: 0; border-radius: 0; background: none; text-align: center; padding: 0 10px; }
+.farm-detail-metrics > div + div { border-left: 1px solid var(--line); }
+.farm-detail-metrics span { color: var(--muted); font-size: .75rem; }
+.farm-detail-metrics strong { font: 700 1.7rem/1.2 Georgia, serif; color: var(--ink); }
+.page > .section:has(button.card.list-card.interactive) { padding: 0; background: none; border: 0; box-shadow: none; }
+.page .section-title { font-size: 1.8rem; }
+.page .section-copy { font-size: .9rem; }
+.page button.card.list-card.interactive { min-height: 76px; padding: 10px; display: flex; gap: 12px; background: var(--paper); box-shadow: none; }
+.page button.card.list-card.interactive::before, .page button.card.list-card.interactive::after { content: none; }
+.page button.card.list-card.interactive[aria-pressed="true"] { background: #f3f5ed; border-color: #a7b497; }
+.page .section .card.list-card .list-card-title { font-size: 1rem; font-weight: 500; color: var(--ink); }
+.page .section .card.list-card .list-card-meta { font-size: .82rem; margin-top: 5px; }
+.page .plot-list-card .badge { font-size: .65rem; max-width: 94px; text-align: center; padding: 5px 8px; white-space: normal; }
+.field-holding-context, .page > .section.card.card-body, .notebook-shell, .notebook-header, .campaign-detail-card, .delivery-entry-card, .campaign-documents, .more-profile-card { background: var(--paper); border: 1px solid var(--line); color: var(--ink); box-shadow: none; }
+.page > .section.card.card-body::before, .notebook-shell::before, .notebook-header::before { content: none; }
+.notebook-shell { border-radius: 18px; }
+.campaign-detail-card { border-radius: 18px; }
+.campaign-detail-card h2 { color: var(--ink); }
+.campaign-summary-grid > div { background: none; border: 0; border-left: 1px solid var(--line); border-radius: 0; }
+.campaign-summary-grid strong { font-family: Georgia, serif; color: var(--ink); }
+.campaign-summary-grid span, .campaign-coverage { color: var(--muted); }
+.more-profile-card { position: relative; padding-left: 90px; min-height: 120px; background: #f0f1e7; border-radius: 20px; }
+.profile-initials { position: absolute; top: 22px; left: 15px; display: grid; place-items: center; width: 60px; height: 60px; border: 3px solid #d7ddce; border-radius: 50%; color: white; background: var(--olive-950); font: 700 1.6rem Georgia, serif; }
+.more-profile-card .list-card-title { font: 700 2rem Georgia, serif; }
+
+/* Account access: the same quiet, spacious ivory composition. */
+.login-shell { background: var(--ivory) url('/photos/home-sierra-magina.webp') center bottom / auto 260px no-repeat; align-items: flex-start; padding: 30px 20px 270px; }
+.login-card { max-width: 530px; padding: 0; border: 0; background: transparent; box-shadow: none; }
+.login-brand { display: flex; align-items: center; padding: 78px 0 0; text-align: center; margin-bottom: 35px; }
+.login-brand::before { width: 66px; height: 74px; top: 0; left: 50%; transform: translateX(-50%); }
+.login-brand .brand-title { font-size: 2rem; }
+.login-brand .brand-kicker { font-size: .6rem; letter-spacing: .12em; margin-top: 8px; }
+.login-title { font-size: 2.3rem; line-height: 1.08; }
+.login-copy { font-size: .95rem; }
+.login-card .field input { min-height: 53px; }
+.login-card .primary-button { margin-top: 6px; font: 700 1.4rem Georgia, serif; }
+.login-explore { display: block; padding: 18px; text-align: center; color: var(--olive-650); font-size: .9rem; }
+.pwa-update-prompt { bottom: calc(116px + env(safe-area-inset-bottom)); }
+.pwa-update-prompt .pwa-update-dismiss { position: absolute; top: -16px; right: 5px; display: grid; place-items: center; min-height: 32px; width: 32px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); color: var(--olive-950); }
+.territory-feature, .discover-hero, .farm-detail-card { background-color: #849078; background-blend-mode: multiply; }
+.territory-feature h2, .discover-hero h1, .farm-detail-card > div:first-child { text-shadow: 0 1px 3px #0008; }
+.photo-credit { display: block; margin: 10px 2px; color: var(--muted); font-size: .61rem; line-height: 1.5; }
+.farm-detail-card { background-image: url('/photos/field-olivares-magina.webp'); }
+.account-shell, .calendar-shell { max-width: 920px; margin: auto; padding: 0 16px 120px; }
+.account-page, .calendar-page { padding: 10px 0; }
+.account-shell > .visual-header { padding-left: 0; padding-right: 0; }
+.account-shell .section-title { font-size: 2rem; }
+.account-shell .account-section-title { font-size: 1.5rem; }
+.weather-reference-hero { display: flex; align-items: center; min-height: 210px; padding: 20px; border-radius: 20px; background: url('/photos/home-sierra-magina.webp') center / cover; margin-bottom: 24px; }
+.notebook-card, .notebook-summary-grid article, .timeline-item, .notebook-disclaimer { background: var(--paper); box-shadow: none; }
+.notebook-shell .section-title { color: var(--ink); }
+.notebook-summary-grid strong { font-family: Georgia, serif; }
+.delivery-entry-card::before { content: none; }
+
+@media (min-width: 720px) {
+  .visual-header { min-height: 94px; }
+  .visual-brand img { width: 50px; height: 56px; }
+  .visual-brand strong { font-size: 2rem; }
+  .public-home-v2-hero { height: 400px; padding: 28px; }
+  .public-home-weather-card { padding: 18px 22px; min-width: 230px; }
+  .public-home-weather-card strong { font-size: 3.8rem; }
+  .public-home-weather-card small { font-size: .8rem; }
+  .home-territory-caption p { font-size: 2.4rem; }
+  .public-home-v2-quick a { min-height: 92px; font-size: .9rem; }
+  .public-navigation > a:not(.public-nav-action), .bottom-nav-v2 .nav-button { font-size: .8rem; }
+  .farm-detail-card { min-height: 370px; padding: 130px 24px 20px; }
+  .territory-feature, .discover-hero { min-height: 370px; padding: 28px; }
+  .visual-segments a { font-size: .9rem; }
+}
+@media (max-width: 359px) {
+  .visual-brand { gap: 6px; }
+  .visual-brand img { width: 33px; }
+  .visual-header-action { width: 40px; height: 40px; }
+  .visual-brand strong { font-size: 1.2rem; }
+  .public-home-v2-quick { gap: 5px; }
+  .public-home-v2-quick a { font-size: .62rem; }
+  .visual-icon-tile { flex-basis: 42px; width: 42px; height: 46px; }
+  .page button.card.list-card.interactive { gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+}

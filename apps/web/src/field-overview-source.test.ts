@@ -92,7 +92,7 @@ test('notebook and private hub keep real contracts while presenting the V2 hiera
   assert.match(notebook, /Labor guardada en este móvil/);
   assert.match(app, /MI PERFIL/);
   assert.match(app, /Tu información y preferencias en un solo lugar/);
-  assert.match(app, /href: '\/cuenta#perfil'/);
+  assert.match(app, /href: '\/perfil\/editar'/);
   assert.match(app, /href: '\/cuenta#notificaciones'/);
   assert.match(app, /onSignOut/);
   assert.doesNotMatch(app, /Biblia Visual V2/);

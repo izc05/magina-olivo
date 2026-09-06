@@ -534,7 +534,7 @@ function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelect
 function MoreTab({ user, holding, busy, onSignOut }: { user: User; holding: Holding | null; busy: boolean; onSignOut: () => void }) {
   const initials = (user.name || user.email).trim().split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
   const profileLinks = [
-    { href: '/cuenta#perfil', icon: UserRound, title: 'Datos personales', copy: 'Nombre, contacto e información de tu cuenta' },
+    { href: '/perfil/editar', icon: UserRound, title: 'Datos personales', copy: 'Nombre, contacto e información de tu cuenta' },
     { href: '/cuenta#cooperativa', icon: MapPin, title: 'Municipio y cooperativa', copy: 'Tu ubicación y entidad de referencia' },
     { href: '/cuenta#preferencias', icon: Settings, title: 'Preferencias', copy: 'Umbrales y configuración de la aplicación' },
     { href: '/cuenta#notificaciones', icon: Bell, title: 'Notificaciones', copy: 'Gestiona tus alertas y avisos' },
@@ -552,7 +552,7 @@ function MoreTab({ user, holding, busy, onSignOut }: { user: User; holding: Hold
           <p className="list-card-meta"><Building2 aria-hidden="true" />{holding ? `Explotación · ${holding.name}` : 'Sin explotación activa'}</p>
           <p className="list-card-meta profile-email">{user.email}</p>
         </div>
-        <a className="profile-edit-button" href="/cuenta#perfil"><Pencil aria-hidden="true" /> Editar perfil</a>
+        <a className="profile-edit-button" href="/perfil/editar"><Pencil aria-hidden="true" /> Editar perfil</a>
       </section>
       <section className="section more-links profile-reference-links" aria-label="Opciones del perfil">
         {profileLinks.map(({ href, icon: Icon, title, copy }) => (

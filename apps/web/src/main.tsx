@@ -6,6 +6,7 @@ import { App } from './App';
 import { CalendarPage } from './CalendarPage';
 import { installDemoPreview } from './demoPreview';
 import { DiscoverPage } from './DiscoverPage';
+import { EditProfilePage } from './EditProfilePage';
 import { LoginPage } from './LoginPage';
 import { LoyaltyOlivePage } from './LoyaltyOlivePage';
 import { MaginaDirectoryPage } from './MaginaDirectoryPage';
@@ -106,6 +107,8 @@ createRoot(root).render(
         <OnboardingPage />
       ) : path === '/cuenta' ? (
         <PrivateRoute returnTo={returnTo}><AccountPage /></PrivateRoute>
+      ) : path === '/perfil/editar' ? (
+        <PrivateRoute returnTo={returnTo}><EditProfilePage /></PrivateRoute>
       ) : path === '/calendario' ? (
         <PrivateRoute returnTo={returnTo}><CalendarPage /></PrivateRoute>
       ) : path === '/tu-olivo' ? (

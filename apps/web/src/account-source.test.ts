@@ -55,4 +55,16 @@ test('the official supplied brand mark is used by the shared web chrome', async 
   assert.doesNotMatch(chrome, /magina-olivo-mark\.svg/);
 });
 
+test('edit profile is private and saves only fields backed by real services', async () => {
+  const main = await read('./main.tsx');
+  const profile = await read('./EditProfilePage.tsx');
+
+  assert.match(main, /path === '\/perfil\/editar'/);
+  assert.match(main, /<PrivateRoute returnTo=\{returnTo\}><EditProfilePage \/><\/PrivateRoute>/);
+  assert.match(profile, /\/api\/auth\/update-user/);
+  assert.match(profile, /\/api\/v1\/account\/preferences/);
+  assert.match(profile, /El correo de acceso no se cambia desde esta pantalla/);
+  assert.doesNotMatch(profile, /name="phone"|name="surname"/);
+});
+
 // Keep this source gate in the CI-triggering slice so portability changes always re-run both repository gates.

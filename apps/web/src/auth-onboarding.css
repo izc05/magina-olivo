@@ -206,6 +206,23 @@
 .edit-profile-actions .primary-button { width: 100%; }
 .edit-profile-actions a { color: var(--olive-800); font-weight: 700; text-decoration: none; }
 
+.notification-important-card { display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 20px; border-color: rgba(214, 165, 42, .55); background: linear-gradient(105deg, rgba(255, 247, 215, .88), rgba(255, 253, 248, .96)); }
+.notification-important-icon { display: grid; place-items: center; width: 74px; height: 74px; border-radius: 18px; color: #b57d00; background: rgba(255, 231, 151, .45); }
+.notification-important-icon svg { width: 36px; height: 36px; }
+.notification-important-card small, .notification-important-card strong { display: block; }
+.notification-important-card small { color: var(--olive-800); font-weight: 800; letter-spacing: .04em; }
+.notification-important-card strong { margin-top: 4px; color: var(--ink); font-size: 1.08rem; }
+.notification-important-card p { margin: 5px 0 0; color: var(--muted); line-height: 1.4; }
+.notification-settings { display: grid; gap: 10px; }
+.notification-setting-row { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; align-items: center; gap: 14px; min-height: 82px; padding: 12px 16px; }
+.notification-setting-row strong, .notification-setting-row small { display: block; }
+.notification-setting-row strong { color: var(--ink); font-size: 1rem; }
+.notification-setting-row small { margin-top: 4px; color: var(--muted); line-height: 1.35; }
+.profile-switch { position: relative; width: 52px; height: 30px; padding: 0; border: 0; border-radius: 999px; background: #d8dad8; transition: background .18s ease; }
+.profile-switch span { position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: white; box-shadow: 0 1px 4px rgba(0,0,0,.22); transition: transform .18s ease; }
+.profile-switch.is-on { background: var(--olive-900); }
+.profile-switch.is-on span { transform: translateX(22px); }
+
 @media (max-width: 640px) {
   .account-entry {
     right: 4.1rem;
@@ -219,6 +236,10 @@
   .edit-profile-photo { grid-template-columns: 70px 1fr; padding: 16px; }
   .edit-profile-avatar { width: 70px; height: 70px; }
   .edit-profile-photo button { display: none; }
+  .notification-important-card { grid-template-columns: 60px minmax(0, 1fr); }
+  .notification-important-icon { width: 60px; height: 60px; }
+  .notification-important-card > .profile-switch { grid-column: 1 / -1; justify-self: end; margin-top: -6px; }
+  .notification-setting-row { grid-template-columns: 48px minmax(0, 1fr) auto; padding: 11px 13px; }
 }
 
 @media (max-width: 520px) {

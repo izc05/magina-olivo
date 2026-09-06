@@ -67,4 +67,15 @@ test('edit profile is private and saves only fields backed by real services', as
   assert.doesNotMatch(profile, /name="phone"|name="surname"/);
 });
 
+test('notification preferences use a protected route and persist existing server fields', async () => {
+  const main = await read('./main.tsx');
+  const notifications = await read('./NotificationPreferencesPage.tsx');
+  assert.match(main, /path === '\/perfil\/notificaciones'/);
+  assert.match(notifications, /\/api\/v1\/account\/preferences/);
+  assert.match(notifications, /notifyWeather/);
+  assert.match(notifications, /notifyTasks/);
+  assert.match(notifications, /notifyPendingYield/);
+  assert.match(notifications, /role="switch"/);
+});
+
 // Keep this source gate in the CI-triggering slice so portability changes always re-run both repository gates.

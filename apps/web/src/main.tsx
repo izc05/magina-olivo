@@ -15,6 +15,7 @@ import { MaginaHubPage } from './MaginaHubPage';
 import { MaginaMarketPage } from './MaginaMarketPage';
 import { MaginaNewsPage } from './MaginaNewsPage';
 import { MaginaWeatherPage } from './MaginaWeatherPage';
+import { NotificationPreferencesPage } from './NotificationPreferencesPage';
 import { OnboardingPage } from './OnboardingPage';
 import { PwaUpdatePrompt } from './PwaUpdatePrompt';
 import { PrivateRoute } from './PrivateRoute';
@@ -109,6 +110,8 @@ createRoot(root).render(
         <PrivateRoute returnTo={returnTo}><AccountPage /></PrivateRoute>
       ) : path === '/perfil/editar' ? (
         <PrivateRoute returnTo={returnTo}><EditProfilePage /></PrivateRoute>
+      ) : path === '/perfil/notificaciones' ? (
+        <PrivateRoute returnTo={returnTo}><NotificationPreferencesPage /></PrivateRoute>
       ) : path === '/calendario' ? (
         <PrivateRoute returnTo={returnTo}><CalendarPage /></PrivateRoute>
       ) : path === '/tu-olivo' ? (

@@ -52,6 +52,54 @@ final result: passed
 
 ---
 
+# Design QA — Comparativas e informes de campaña
+
+## Evidence
+
+- Source visual truth:
+  - `/tmp/codex-clipboard-a7df8dd3-5c82-406b-966b-81678c477074.png` — comparativa de producción por campaña.
+  - `/tmp/codex-clipboard-69cec3a0-28ed-4692-bd7e-7c2be2ab311a.png` — informes de campaña y exportaciones.
+- Rendered implementation: capture from `http://127.0.0.1:5175/campana` in the Codex in-app browser, captured after selecting the active demo campaign. The capture is available in the active browser session; CUA does not return a filesystem path for the image.
+- Viewport: 634 px wide browser capture. The references are 941 px wide device captures with system chrome, so comparison was normalized to app-owned content only; no device status or home bar was judged.
+- State: authenticated demo account, `Campaña 2026/27` selected, three current deliveries and one historical campaign with two deliveries.
+
+## Full-view and focused comparison
+
+- The implementation carries the reference hierarchy into the existing campaign screen: a serif campaign heading, olive/sage cards, compact data rows and persistent bottom navigation.
+- The comparativa uses actual campaign-summary reads. It shows the selected campaign, a prior campaign, production bars rendered by native `meter`, weighted yield and a calculated delta. The reference's regional benchmark is intentionally not imitated because no verified comarca aggregate exists in the product.
+- The informes area keeps the reference's green report action hierarchy, but its actions state exactly what they do: browser-native print/save-as-PDF, real CSV export and real JSON export. Private uploaded documents retain their real empty/loading/error states.
+- Focused card review: both cards retain readable serif labels, 15–18 px internal padding, ivory paper surfaces, low-contrast sage state fills and olive primary action color. At the available width, no text or action overflows.
+
+## Required fidelity surfaces
+
+- Fonts and typography: Georgia is used for editorial headings and numeric emphasis; Inter remains the legible compact data face. Campaign names, kilograms and yield data fit without truncation in the captured state.
+- Spacing and layout rhythm: the new cards align to the 16 px page gutter and existing section rhythm. The comparison uses short rows instead of duplicating the dense reference graph; the report action becomes full-width on small screens.
+- Colors and visual tokens: existing ivory, paper-white, olive, sage and amber tokens are reused. The positive comparison state is green; no unsupported colour is used to imply a data condition.
+- Image quality and asset fidelity: this sub-block adds no new imagery. The existing provided Mágina landscape remains sharp and correctly cropped in the campaign hero; all UI icons continue to come from the installed icon library.
+- Copy and content: all quantities and yield values derive from campaign data. The explicit regional-data note and browser-print wording prevent false claims about comarca benchmarks or a stored PDF generator.
+
+## Findings and comparison history
+
+1. [P1] The reference's “Media Sierra Mágina” value could not be truthfully reproduced. Fixed by implementing campaign-to-campaign history and explicitly deferring the regional comparison until its source is verified.
+2. [P1] The reference's PDF CTA would have implied a server-side document generator that does not exist. Fixed by providing a working browser print/save-as-PDF action plus actual CSV/JSON exports.
+3. [P2] Historical demo data initially returned empty summaries for closed campaigns. Fixed by scoping demo deliveries by campaign, adding a closed-season record and preserving the same API contract returned to the app.
+
+## Primary interactions checked
+
+- Campaign selector continues to choose the active season; the comparison queries the remaining campaign summaries without altering selected campaign data.
+- Browser print action invokes `window.print()` only on the explicit button gesture.
+- CSV and JSON links retain their authenticated campaign export URLs; document downloads and empty state remain intact.
+- `npm --prefix apps/web run build` and `npm --prefix apps/web test -- --run` pass (66 frontend tests).
+
+## Follow-up polish
+
+- Add the Sierra Mágina benchmark only after a documented, freshness-controlled aggregate data source exists.
+- Add persistent server-generated PDF reports only after the document-generation and storage flow exists.
+
+final result: passed
+
+---
+
 # Design QA — Campaña y entregas
 
 ## Evidence

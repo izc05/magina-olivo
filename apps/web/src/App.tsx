@@ -514,10 +514,74 @@ function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelect
             ))}
             {!deliveries.length ? <EmptyState title="Aún no hay entregas.">Registra la primera cuando lleves aceituna a la almazara.</EmptyState> : null}
           </section>
+          <CampaignComparisons campaigns={campaigns} selectedCampaignId={selectedCampaign.id} selectedSummary={summary} />
           {selectedHolding ? <CampaignDocuments holdingId={selectedHolding.id} campaignId={selectedCampaign.id} deliveries={deliveries} /> : null}
         </>
       ) : null}
     </>
+  );
+}
+
+function CampaignComparisons({ campaigns, selectedCampaignId, selectedSummary }: { campaigns: Campaign[]; selectedCampaignId: string; selectedSummary: CampaignSummary | null }) {
+  const [summaries, setSummaries] = useState<Record<string, CampaignSummary>>({});
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const otherCampaigns = campaigns.filter((campaign) => campaign.id !== selectedCampaignId);
+    if (!otherCampaigns.length) return undefined;
+
+    setIsLoading(true);
+    void Promise.all(otherCampaigns.map(async (campaign) => [campaign.id, await api.campaignSummary(campaign.id)] as const))
+      .then((items) => {
+        if (!active) return;
+        setSummaries((current) => ({ ...current, ...Object.fromEntries(items) }));
+      })
+      .catch(() => {
+        // A campaign can still be used without a historical comparison while offline.
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+
+    return () => { active = false; };
+  }, [campaigns, selectedCampaignId]);
+
+  const comparableCampaigns = useMemo(() => campaigns
+    .filter((campaign) => campaign.id === selectedCampaignId || summaries[campaign.id])
+    .map((campaign) => ({ campaign, summary: campaign.id === selectedCampaignId ? selectedSummary : summaries[campaign.id] }))
+    .filter((item): item is { campaign: Campaign; summary: CampaignSummary } => item.summary != null)
+    .sort((a, b) => b.campaign.seasonStartYear - a.campaign.seasonStartYear)
+    .slice(0, 3), [campaigns, selectedCampaignId, selectedSummary, summaries]);
+  const previous = comparableCampaigns.find((item) => item.campaign.id !== selectedCampaignId) ?? null;
+  const currentKg = Number(selectedSummary?.totalKilograms ?? 0);
+  const previousKg = Number(previous?.summary.totalKilograms ?? 0);
+  const deltaKg = currentKg - previousKg;
+  const maxKilograms = Math.max(1, ...comparableCampaigns.map((item) => Number(item.summary.totalKilograms)));
+
+  return (
+    <section className="section campaign-comparison-section" aria-labelledby="campaign-comparison-title">
+      <div className="section-heading">
+        <div><p className="eyebrow page-eyebrow">COMPARATIVAS</p><h2 id="campaign-comparison-title" className="section-title">Evolución de tu explotación</h2><p className="section-copy">Producción y rendimiento por campaña, a partir de tus entregas registradas.</p></div>
+      </div>
+      <div className="card campaign-comparison-card">
+        <div className="campaign-comparison-head"><div><p className="eyebrow">Producción entregada</p><strong>{formatKg(selectedSummary?.totalKilograms)}</strong><span>Campaña seleccionada</span></div><span className="campaign-comparison-chip">Datos propios</span></div>
+        {comparableCampaigns.map(({ campaign, summary: campaignSummary }) => {
+          const kilograms = Number(campaignSummary.totalKilograms);
+          const hasYield = campaignSummary.weightedYieldPercent != null;
+          return (
+            <div className="campaign-comparison-row" key={campaign.id}>
+              <div className="campaign-comparison-label"><strong>{campaign.name}</strong><span>{formatKg(kilograms)} · {hasYield ? `${formatPercent(campaignSummary.weightedYieldPercent)} rendimiento` : 'Rendimiento pendiente'}</span></div>
+              <meter min="0" max={maxKilograms} value={kilograms} aria-label={`${campaign.name}: ${formatKg(kilograms)}`} />
+            </div>
+          );
+        })}
+        {isLoading ? <p className="campaign-comparison-loading" role="status">Calculando el histórico de campañas…</p> : null}
+        {previous ? <div className={`campaign-comparison-insight${deltaKg < 0 ? ' is-negative' : ''}`}><strong>{deltaKg >= 0 ? '↑' : '↓'} {formatKg(Math.abs(deltaKg))}</strong><span>frente a {previous.campaign.name}</span></div> : null}
+        {!previous && !isLoading ? <p className="campaign-comparison-empty">Registra al menos una campaña cerrada para ver la evolución entre temporadas.</p> : null}
+        <p className="campaign-comparison-note">La comparación con la media de Sierra Mágina se mostrará cuando dispongamos de una fuente comarcal verificada.</p>
+      </div>
+    </section>
   );
 }
 

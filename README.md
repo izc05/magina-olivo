@@ -1,12 +1,24 @@
 # Mágina Olivo
 
-Plataforma web/PWA orientada al olivarero para centralizar la gestión de fincas, campañas, entregas, rendimientos, labores, documentación e información útil de cooperativas.
+Plataforma web/PWA orientada al olivarero para centralizar la gestión de fincas, campañas, entregas, rendimientos, labores, documentación e información útil de cooperativas y Sierra Mágina.
+
+## Antes de desarrollar
+
+**Codex y cualquier agente deben leer primero:**
+
+1. `AGENTS.md`
+2. `docs/APP_MASTER_MAP.md`
+3. `MASTER_PLAN.md`
+4. `ARCHITECTURE.md`
+5. documentación específica del módulo y los issues/PRs activos
+
+`docs/APP_MASTER_MAP.md` contiene el mapa completo de bloques de la app, prioridades P0–P5, mejoras previstas y reglas para no ampliar alcance fuera de orden.
 
 ## Objetivo
 
 Mágina Olivo nace con una idea sencilla: reunir en una sola herramienta la información diaria que un agricultor necesita para gestionar su olivar, sin depender de que una cooperativa concreta ofrezca integración.
 
-La primera versión priorizará:
+La primera versión prioriza:
 
 - Explotaciones, fincas y parcelas.
 - Campañas agrícolas.
@@ -17,13 +29,16 @@ La primera versión priorizará:
 - Avisos y automatizaciones útiles.
 - Experiencia PWA instalable en móvil.
 
-La IA será una capa opcional para interpretación de lenguaje natural, documentos y consultas avanzadas. El funcionamiento principal de la plataforma no dependerá de una API de IA.
+La IA será una capa opcional para interpretación de lenguaje natural, documentos, contenido asistido y consultas avanzadas. El funcionamiento principal de la plataforma no dependerá de una API de IA.
 
-## Estado
+## Estado operativo
 
-Proyecto en fase de definición funcional y arquitectura inicial.
+La integración usada como base de aceptación está congelada en el candidato de staging V11:
 
-La documentación de producto se desarrollará primero en una rama de trabajo antes de iniciar la implementación.
+- rama: `staging/candidate-v11-2026-09-05`
+- SHA: `063767560fe824c3415f200e0314dc5b2e8f4122`
+
+El issue **#7 — P0: Ejecutar staging real antes del piloto** es el gate vigente. Mientras permanezca abierto, no deben incorporarse grandes áreas nuevas al candidato ni iniciarse el piloto con datos reales.
 
 ## Desarrollo local
 

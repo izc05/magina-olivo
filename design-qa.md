@@ -1,60 +1,51 @@
-# Design QA — Mágina Olivo visual convergence
+# Design QA — Perfil
 
-## Comparison targets
+## Evidence
 
-- Home source truth: `/tmp/codex-clipboard-4b0a6e3c-e15a-4c57-9995-c7cacd3a1640.png` (941 × 1672 px).
-- Loyalty source truth: `/tmp/codex-clipboard-b476e97b-9fd5-4a5b-8516-b3c2505d03d9.png` (941 × 1672 px).
-- Supporting truth: the supplied Mi Campo, parcel, notebook, tasks, weather, news, cooperatives, market, rewards, onboarding, login, profile and administration screens in the same conversation.
-- Home comparison: `docs/design/qa/home-reference-comparison.png`.
-- Loyalty comparison: `docs/design/qa/loyalty-reference-comparison.png`.
-- Implementation: `http://127.0.0.1:5173/` and `http://127.0.0.1:5173/tu-olivo`.
-- Browser viewport: 430 × 764 CSS px, device scale factor 1. The browser capture was 415 × 737 px after browser insets and was aspect-fitted and padded to 430 × 764. Each 941 × 1672 source was aspect-fitted and padded to the same 430 × 764 comparison frame. Final side-by-side artifacts are 860 × 764 px.
-- States: public home without a session; authenticated loyalty account with 150 pending and 0 available olives; reward catalog with zero active stock.
+- Source visual truth:
+  - `/tmp/codex-clipboard-3fd1432c-3fc0-4686-a2e6-76cdc7d79bc5.png` — Editar perfil, 942 × 1672 px.
+  - `/tmp/codex-clipboard-6072c520-2d37-40f4-b42e-9c9baaecc0e4.png` — Preferencias de Inicio, 942 × 1672 px.
+  - `/tmp/codex-clipboard-f0e54233-e634-4d7d-bd71-0ba81ce94c15.png` — Notificaciones, 942 × 1672 px.
+- Rendered implementation: browser captures from `http://127.0.0.1:5173/perfil/editar`, `/perfil/preferencias` and `/perfil/notificaciones` using the Codex in-app browser.
+- Capture viewport: 634 × 682 CSS px; full-page captures reviewed. The source is a double-density mobile reference (approximately 471 × 836 CSS px). The implementation was compared proportionally because the in-app surface does not expose viewport resizing.
+- State: authenticated demo account; actual saved account/notification values were retained instead of replacing them with screenshot fixtures.
 
-## Findings
+## Full-view comparison
 
-- No remaining P0, P1 or P2 mismatch.
-- Fonts and typography: Georgia display faces and Inter UI text reproduce the serif/sans hierarchy, optical weight and compact olive labels from the references. Dynamic titles wrap without clipping at 430 px.
-- Spacing and layout rhythm: the 16 px mobile gutter, restrained 16–20 px radii, low-elevation cards and five-item fixed navigation match the reference family. The loyalty hero was reduced to a compact two-column image/content card so the level and next reward remain visible in the initial scroll.
-- Colors and tokens: ivory paper, deep olive actions, muted sage surfaces and neutral borders are mapped to shared tokens. No unverified price, stock, queue or cooperative state is colored as though it were live.
-- Image quality and asset fidelity: the approved Mágina Olivo mark remains the single brand mark. The loyalty tree is a dedicated 1820 × 864 raster illustration matching the supplied botanical art direction; the former CSS/SVG tree substitute is no longer rendered. Sierra Mágina photography remains sharp and correctly cropped.
-- Copy and content: app copy remains Spanish, concise and consistent with the references. Mock-only figures are deliberately replaced by live, unavailable or empty states.
-- Icons: visible controls use one line-icon family with consistent stroke weight and accessible labels. The generated tree is not reproduced with code-native shapes.
-- Accessibility and responsiveness: focus styles, semantic buttons/links, alt text, reduced-motion behavior, tap targets and current-page semantics are preserved. No horizontal overflow was observed at 430 px.
+- Typography: Georgia display headings and Inter UI text preserve the reference hierarchy, weights and compact wrapping.
+- Spacing/layout: single-column mobile rhythm, 16–20 px cards, rounded field containers, section labels and full-width actions now follow the reference composition.
+- Colors: ivory page, dark olive primary actions, sage icon tiles, amber alert and restrained borders match the supplied palette.
+- Assets/icons: the supplied official logo is used; interface pictograms come from the existing icon library rather than approximated drawings.
+- Copy/content: the three screens now include the reference groups, explanations and seven notification categories. Account values remain live.
+
+## Focused comparison
+
+- Edit profile: verified split name/surname inputs, email, telephone capability state, real holding municipality, cooperative selector, avatar/camera treatment and actions.
+- Preferences: verified the two-line information panel, six cards, visible switches/grips and save action.
+- Notifications: verified important-alert card, four general rows, three exploitation rows, switches and persistence action.
 
 ## Comparison history
 
-1. Home pass: the visual hierarchy matched, but live AEMET and authenticated farm data were unavailable in the production preview. Kept explicit unavailable/sign-in states instead of copying the mock's 22 °C, 5.35 €/kg or parcel values. Post-fix evidence: `docs/design/qa/home-reference-comparison.png`.
-2. Loyalty pass 1: the imported branch used a very tall CSS/SVG tree scene and the level card shrank inside its grid. This was a P1 density/layout mismatch and an asset-fidelity failure.
-3. Fix: replaced the rendered CSS/SVG tree with the dedicated raster asset, compacted the hero into the reference's left-image/right-content composition and forced loyalty summary cards to the full mobile width.
-4. Loyalty pass 2: no actionable P0/P1/P2 issue remained. The reference's daily challenge list is intentionally not invented because the integrated backend currently exposes balances, levels, collection, catalog, reservations and validation, but not a challenge-history feed. Post-fix evidence: `docs/design/qa/loyalty-reference-comparison.png`.
+1. Earlier P1: notification screen exposed only three rows and lacked the `TU EXPLOTACIÓN` group. Fixed with the complete seven-row hierarchy and persistence for every switch. Post-fix browser capture shows both groups.
+2. Earlier P2: edit profile lacked surname, phone capability and municipality. Fixed by safely splitting the real account name, showing the phone capability state, and reading municipality from the real holding. Post-fix accessibility tree and full-page capture contain all fields.
+3. Earlier P2: mobile alert switch and preference grips collapsed or disappeared. Fixed responsive grid tracks so controls remain aligned on one row. Post-fix captures show the intended density.
+4. Earlier P2: off switches and camera treatment were too faint. Increased off-state contrast and restored the overlapping camera control.
 
-## Interaction and runtime checks
+## Remaining P3 polish
 
-- Main Inicio → Mágina navigation: passed.
-- Authenticated `/tu-olivo` bootstrap and balance load: passed after additive migrations 0040–0044.
-- `/recompensas` catalog, verified empty-stock state and navigation: passed.
-- PWA update prompt dismissal: passed.
-- Mutation controls were verified enabled/disabled from live state but were not clicked, avoiding alteration of the user's olive balance.
-- Browser console errors/warnings on the reviewed route: none.
-- Web build: passed.
-- Web tests: 60 passed, 0 failed.
-- API tests: 41 passed, 0 failed.
-- Worker tests: 12 passed, 0 failed.
-- API typecheck and `git diff --check`: passed.
+- Telephone remains read-only until verified phone storage exists; this is an intentional product constraint rather than fabricated persistence.
+- Device status bar and Android system controls belong to the reference capture, not to the web application.
 
-## Follow-up polish
+## Primary interactions checked
 
-- P3: once a real challenge/history API exists, add the daily-retos and recent-activity blocks from the reference rather than supplying static rewards.
-- P3: the administration visuals are represented by separate repository branches and should be converged in a dedicated secure admin pass instead of being merged into the grower navigation.
+- Protected routes render with authenticated data.
+- Switches are real accessible `role="switch"` controls.
+- Name/surname recombine into the supported account name on save.
+- Home and supplemental notification choices persist locally; server-backed notification choices keep the existing API contract.
+- Build and 65 frontend tests pass.
 
-## Profile refinement — 6 September 2026
+## Findings
 
-- Sources: six supplied mobile references for profile overview, editing, notifications, privacy, home preferences and support.
-- Reviewed implementation routes: `/mi-magina`, `/perfil/editar`, `/perfil/notificaciones`, `/perfil/privacidad`, `/perfil/preferencias` and `/perfil/soporte`.
-- Profile overview now follows the reference hierarchy and uses live farm, delivery and campaign-kilogram values instead of copying sample figures.
-- Home preferences and support complete the visible route family. Preferences persist locally for the current device; unsupported server fields and an unconfigured support email are not fabricated.
-- Mobile visual inspection found no clipped headings, horizontal overflow or inaccessible primary controls. Switch-track contrast was corrected during the pass.
-- Web build: passed. Web tests: 65 passed, 0 failed.
+No actionable P0, P1 or P2 visual differences remain for these three screens. The remaining deviations are expected product/runtime constraints listed above.
 
 final result: passed

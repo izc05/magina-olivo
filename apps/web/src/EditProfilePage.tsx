@@ -4,6 +4,7 @@ import { PublicNavigation } from './PublicNavigation';
 import { VisualHeader } from './VisualChrome';
 
 type User = { id: string; name?: string | null; email: string };
+type Holding = { id: string; municipality: string | null };
 type Destination = { id: string; officialName: string; brandName: string | null; municipality: string | null };
 type Preferences = {
   preferredCooperativeId: string | null;
@@ -30,7 +31,9 @@ async function jsonRequest<T>(url: string, init: RequestInit = {}): Promise<T> {
 export function EditProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [name, setName] = useState('');
+  const [surname, setSurname] = useState('');
   const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [municipality, setMunicipality] = useState('');
   const [preferredCooperativeId, setPreferredCooperativeId] = useState<string | null>(null);
   const [preferences, setPreferences] = useState<Preferences | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,13 +47,17 @@ export function EditProfilePage() {
       jsonRequest<{ user: User }>('/api/v1/me'),
       jsonRequest<Preferences>('/api/v1/account/preferences'),
       jsonRequest<{ items: Destination[] }>('/api/v1/public/destinations'),
-    ]).then(([session, preferences, directory]) => {
+      jsonRequest<{ items: Holding[] }>('/api/v1/holdings'),
+    ]).then(([session, preferences, directory, holdings]) => {
       if (cancelled) return;
       setUser(session.user);
-      setName(session.user.name || '');
+      const [firstName = '', ...lastNames] = (session.user.name || '').trim().split(/\s+/);
+      setName(firstName);
+      setSurname(lastNames.join(' '));
       setPreferredCooperativeId(preferences.preferredCooperativeId);
       setPreferences(preferences);
       setDestinations(directory.items);
+      setMunicipality(holdings.items.find((holding) => holding.municipality)?.municipality || 'Sin municipio indicado');
     }).catch((reason) => {
       if (!cancelled) setError(reason instanceof Error ? reason.message : 'No se ha podido cargar el perfil.');
     }).finally(() => {
@@ -59,11 +66,11 @@ export function EditProfilePage() {
     return () => { cancelled = true; };
   }, []);
 
-  const initials = useMemo(() => (name || user?.email || 'MO').trim().split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase(), [name, user?.email]);
+  const initials = useMemo(() => ([name, surname].filter(Boolean).join(' ') || user?.email || 'MO').trim().split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase(), [name, surname, user?.email]);
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const cleanName = name.trim();
+    const cleanName = [name, surname].map((part) => part.trim()).filter(Boolean).join(' ');
     if (cleanName.length < 2) {
       setError('Escribe un nombre de al menos 2 caracteres.');
       return;
@@ -107,20 +114,23 @@ export function EditProfilePage() {
       <section>
         <p className="eyebrow page-eyebrow">MI PERFIL</p>
         <h1 className="section-title">Editar perfil</h1>
-        <p className="section-copy">Actualiza tus datos personales y tu cooperativa habitual.</p>
+        <p className="section-copy">Actualiza tus datos personales y de contacto.</p>
       </section>
       {error ? <div className="alert section" role="alert">{error}</div> : null}
       {notice ? <div className="alert success section" role="status">{notice}</div> : null}
       <form className="edit-profile-form" onSubmit={save}>
         <section className="section card edit-profile-photo" aria-label="Foto de perfil">
           <span className="edit-profile-avatar" aria-hidden="true">{initials || <UserRound />}</span>
-          <span><strong>Foto de perfil</strong><small>La subida de fotografías estará disponible cuando exista almacenamiento privado para ellas.</small></span>
+          <span><strong>Foto de perfil</strong><small>Añade una foto para personalizar tu cuenta.</small></span>
           <button type="button" disabled aria-label="Añadir foto, próximamente"><Camera aria-hidden="true" /></button>
         </section>
-        <section className="section card card-body edit-profile-fields">
-          <div className="field"><label htmlFor="profile-name">Nombre completo *</label><input id="profile-name" autoComplete="name" minLength={2} maxLength={120} value={name} onChange={(event) => setName(event.target.value)} required /></div>
-          <div className="field"><label htmlFor="profile-email">Correo electrónico</label><input id="profile-email" type="email" value={user?.email || ''} readOnly aria-describedby="profile-email-help" /><small id="profile-email-help">El correo de acceso no se cambia desde esta pantalla.</small></div>
-          <div className="field"><label htmlFor="profile-cooperative">Cooperativa favorita</label><select id="profile-cooperative" value={preferredCooperativeId ?? ''} onChange={(event) => setPreferredCooperativeId(event.target.value || null)}><option value="">Ninguna / decidir en cada entrega</option>{destinations.map((item) => <option key={item.id} value={item.id}>{item.brandName || item.officialName}{item.municipality ? ` · ${item.municipality}` : ''}</option>)}</select></div>
+        <section className="section edit-profile-fields">
+          <div className="field card"><label htmlFor="profile-name">Nombre *</label><input id="profile-name" autoComplete="given-name" minLength={2} maxLength={60} value={name} onChange={(event) => setName(event.target.value)} required /></div>
+          <div className="field card"><label htmlFor="profile-surname">Apellidos *</label><input id="profile-surname" autoComplete="family-name" maxLength={80} value={surname} onChange={(event) => setSurname(event.target.value)} required /></div>
+          <div className="field card"><label htmlFor="profile-email">Correo electrónico *</label><input id="profile-email" type="email" value={user?.email || ''} readOnly aria-describedby="profile-email-help" /><small id="profile-email-help">El correo de acceso no se cambia desde esta pantalla.</small></div>
+          <div className="field card"><label htmlFor="profile-phone">Teléfono</label><input id="profile-phone" type="tel" placeholder="Próximamente" readOnly aria-describedby="profile-phone-help" /><small id="profile-phone-help">El teléfono se habilitará cuando la cuenta admita su verificación.</small></div>
+          <div className="field card"><label htmlFor="profile-municipality">Municipio *</label><input id="profile-municipality" value={municipality} readOnly /></div>
+          <div className="field card"><label htmlFor="profile-cooperative">Cooperativa favorita</label><select id="profile-cooperative" value={preferredCooperativeId ?? ''} onChange={(event) => setPreferredCooperativeId(event.target.value || null)}><option value="">Ninguna / decidir en cada entrega</option>{destinations.map((item) => <option key={item.id} value={item.id}>{item.brandName || item.officialName}{item.municipality ? ` · ${item.municipality}` : ''}</option>)}</select></div>
         </section>
         <div className="section edit-profile-actions"><button className="primary-button" type="submit" disabled={busy}>{busy ? 'Guardando…' : 'Guardar cambios'}</button><a href="/mi-magina">Cancelar</a></div>
       </form>

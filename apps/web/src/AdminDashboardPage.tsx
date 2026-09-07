@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Activity, Bell, Building2, ChartNoAxesCombined, Crown, Database, Leaf, MapPinned, Sprout, Users } from 'lucide-react';
+import { Activity, Bell, Building2, ChartNoAxesCombined, CircleAlert, Crown, Database, Leaf, MapPinned, RefreshCw, Sprout, Users } from 'lucide-react';
 import { VisualHeader } from './VisualChrome';
 
 type AdminRole = 'super_admin' | 'admin' | 'editor' | 'support';
@@ -15,9 +15,28 @@ type Overview = {
     activeCampaigns: number;
   };
 };
+type PublicSource = {
+  key: string;
+  label: string;
+  provider: string;
+  frequency: string | null;
+  active: boolean;
+  status: 'healthy' | 'degraded' | 'pending' | 'paused';
+  lastCheckedAt: string | null;
+  lastSuccessAt: string | null;
+  lastError: string | null;
+  canInspect: boolean;
+};
+type PublicSources = { canManage: boolean; sources: PublicSource[] };
 
 async function readJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { credentials: 'include', headers: { accept: 'application/json' } });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json() as Promise<T>;
+}
+
+async function requestJson<T>(url: string): Promise<T> {
+  const response = await fetch(url, { method: 'POST', credentials: 'include', headers: { accept: 'application/json' } });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return response.json() as Promise<T>;
 }
@@ -33,17 +52,42 @@ function errorMessage(reason: unknown): string {
   return 'No se ha podido cargar el panel ahora. Tus datos de Mi Campo siguen protegidos y no se han modificado.';
 }
 
+function sourceStatusLabel(status: PublicSource['status']): string {
+  return ({ healthy: 'Correcta', degraded: 'Con incidencia', pending: 'Pendiente', paused: 'Pausada' })[status];
+}
+
+function formatSourceTime(value: string | null): string {
+  if (!value) return 'Aún sin comprobación';
+  return new Intl.DateTimeFormat('es-ES', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
+}
+
 export function AdminDashboardPage() {
   const [overview, setOverview] = useState<Overview | null>(null);
+  const [publicSources, setPublicSources] = useState<PublicSources | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [refreshingSource, setRefreshingSource] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     void readJson<Overview>('/api/v1/admin/overview')
       .then((result) => { if (!cancelled) setOverview(result); })
       .catch((reason) => { if (!cancelled) setError(errorMessage(reason)); });
+    void readJson<PublicSources>('/api/v1/admin/public-sources')
+      .then((result) => { if (!cancelled) setPublicSources(result); })
+      .catch(() => { if (!cancelled) setPublicSources({ canManage: false, sources: [] }); });
     return () => { cancelled = true; };
   }, []);
+
+  async function inspectSource(source: PublicSource) {
+    setRefreshingSource(source.key);
+    try {
+      await requestJson(`/api/v1/admin/public-sources/${encodeURIComponent(source.key)}/inspect`);
+      const refreshed = await readJson<PublicSources>('/api/v1/admin/public-sources');
+      setPublicSources(refreshed);
+    } finally {
+      setRefreshingSource(null);
+    }
+  }
 
   if (!overview) {
     if (!error) return <main className="admin-access-gate" role="status">Comprobando acceso de administración…</main>;
@@ -68,5 +112,6 @@ export function AdminDashboardPage() {
       <article className="admin-panel card" aria-labelledby="admin-scope-title"><header><span><Activity aria-hidden="true" /><h2 id="admin-scope-title">Alcance actual</h2></span></header><ul><li><span className="admin-icon"><Database aria-hidden="true" /></span><div><strong>Solo métricas agregadas</strong><small>Sin listado de personas, ubicaciones ni documentos privados.</small></div></li><li><span className="admin-icon"><Crown aria-hidden="true" /></span><div><strong>Permiso separado</strong><small>El rol de plataforma no sustituye los permisos de cada explotación.</small></div></li></ul></article>
       <article className="admin-panel card" aria-labelledby="admin-next-title"><header><span><Building2 aria-hidden="true" /><h2 id="admin-next-title">Siguientes módulos</h2></span></header><ul><li><span className="admin-icon"><Building2 aria-hidden="true" /></span><div><strong>Cooperativas</strong><small>Edición pública con validación y auditoría.</small></div></li><li><span className="admin-icon"><Activity aria-hidden="true" /></span><div><strong>Contenido y avisos</strong><small>Publicación controlada, sin acceso transversal a Mi Campo.</small></div></li></ul></article>
     </section>
+    <section className="admin-panel admin-source-panel card" aria-labelledby="admin-source-title"><header><span><Database aria-hidden="true" /><h2 id="admin-source-title">Fuentes públicas</h2></span><small>Estado y trazabilidad</small></header>{!publicSources ? <p className="admin-source-loading">Consultando fuentes…</p> : <ul>{publicSources.sources.map((source) => <li key={source.key} className="admin-source-row"><span className={`admin-source-status ${source.status}`} aria-label={sourceStatusLabel(source.status)} /><div><strong>{source.label}</strong><small>{source.provider} · {source.frequency ?? 'Sin frecuencia declarada'} · Última comprobación: {formatSourceTime(source.lastCheckedAt)}</small>{source.lastError ? <em><CircleAlert aria-hidden="true" /> {source.lastError}</em> : null}</div><span className="admin-source-actions"><b className={`admin-source-badge ${source.status}`}>{sourceStatusLabel(source.status)}</b>{publicSources.canManage && source.canInspect ? <button type="button" disabled={refreshingSource === source.key} onClick={() => void inspectSource(source)}>{refreshingSource === source.key ? 'En cola…' : <><RefreshCw aria-hidden="true" /> Revisar</>}</button> : null}</span></li>)}</ul>}</section>
   </main>;
 }

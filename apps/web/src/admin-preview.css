@@ -60,6 +60,17 @@
 .admin-panel-system { grid-column: 1 / -1; }
 .admin-panel-system ul { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .admin-panel-system li { border: 0; padding: 13px 0 0; align-items: flex-start; }
+.admin-source-panel { margin-top: 14px; }
+.admin-source-panel header > small { color: var(--muted); font-size: .72rem; font-weight: 700; }
+.admin-source-loading { color: var(--muted); font-size: .8rem; }
+.admin-source-row { align-items: flex-start !important; }
+.admin-source-status { width: 10px; height: 10px; margin: 9px 2px 0 0; border-radius: 50%; background: #9b9b94; }
+.admin-source-status.healthy { background: #2c9b48; box-shadow: 0 0 0 4px rgba(44,155,72,.11); }
+.admin-source-status.degraded { background: #cf5d30; box-shadow: 0 0 0 4px rgba(207,93,48,.1); }
+.admin-source-status.pending { background: #c18a1a; }.admin-source-status.paused { background: #84847d; }
+.admin-source-row > div { flex: 1; }.admin-source-row em { display: flex; align-items: center; gap: 4px; margin-top: 5px; color: #a34e2a; font-size: .68rem; font-style: normal; }.admin-source-row em svg { width: 14px; }
+.admin-source-actions { display: grid; justify-items: end; gap: 7px; }.admin-source-badge { padding: 4px 8px; border-radius: 99px; background: rgba(44,155,72,.11); color: #1b6d32; font-size: .67rem; white-space: nowrap; }.admin-source-badge.degraded { background: #fbe0da; color: #a34e2a; }.admin-source-badge.pending { background: var(--gold-soft); color: #775807; }.admin-source-badge.paused { background: #ecece7; color: #686860; }
+.admin-source-actions button { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); border-radius: 9px; background: var(--paper); color: var(--olive-800); padding: 6px 8px; font-size: .68rem; font-weight: 800; }.admin-source-actions button:disabled { opacity: .65; }.admin-source-actions button svg { width: 14px; }
 .admin-system-dot { width: 9px; height: 9px; margin-top: 5px; border-radius: 50%; background: #2c9b48; }
 .admin-access-gate { display: grid; align-content: start; }
 .admin-access-card { width: min(100%, 560px); margin: 56px auto 0; padding: clamp(28px, 6vw, 54px); }

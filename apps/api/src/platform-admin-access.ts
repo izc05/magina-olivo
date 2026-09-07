@@ -9,3 +9,7 @@ export function isPlatformAdminRole(value: unknown): value is PlatformAdminRole 
 export function canAccessPlatformConsole(role: PlatformAdminRole | null): boolean {
   return role === 'super_admin' || role === 'admin' || role === 'editor' || role === 'support';
 }
+
+export function canManagePlatformSources(role: PlatformAdminRole | null): boolean {
+  return role === 'super_admin' || role === 'admin';
+}

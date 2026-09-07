@@ -640,6 +640,7 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
               <a className="field-shortcut-tasks" href="/calendario"><CalendarDays aria-hidden="true" /><span>Tareas</span><small>Planificación</small><ChevronRight aria-hidden="true" /></a>
               <a className="field-shortcut-irrigation" href="/mi-campo/riegos"><Droplets aria-hidden="true" /><span>Riegos</span><small>Registrar agua</small><ChevronRight aria-hidden="true" /></a>
               <a className="field-shortcut-treatment" href="/mi-campo/tratamientos"><Leaf aria-hidden="true" /><span>Tratamientos</span><small>Cuaderno fitosanitario</small><ChevronRight aria-hidden="true" /></a>
+              <a className="field-shortcut-resources" href="/mi-campo/recursos"><Tractor aria-hidden="true" /><span>Jornales y maquinaria</span><small>Personas, equipos y QR</small><ChevronRight aria-hidden="true" /></a>
               <a className="field-overview-campaign-action" href="/campana"><BarChart3 aria-hidden="true" /><span>Campaña</span><small>{campaign?.name ?? 'Sin campaña activa'} · {formatPercent(summary?.weightedYieldPercent)}</small><ChevronRight aria-hidden="true" /></a>
             </nav>
           </section>

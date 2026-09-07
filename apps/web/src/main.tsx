@@ -55,6 +55,7 @@ const AccountPage = lazy(async () => ({ default: (await import('./AccountPage'))
 const AdminDashboardPage = lazy(async () => ({ default: (await import('./AdminDashboardPage')).AdminDashboardPage }));
 const AdminDashboardPreview = lazy(async () => ({ default: (await import('./AdminDashboardPreview')).AdminDashboardPreview }));
 const App = lazy(async () => ({ default: (await import('./App')).App }));
+const FieldResourcesPage = lazy(async () => ({ default: (await import('./FieldResourcesPage')).FieldResourcesPage }));
 const CalendarPage = lazy(async () => ({ default: (await import('./CalendarPage')).CalendarPage }));
 const DiscoverCollectionPage = lazy(async () => ({ default: (await import('./DiscoverCollectionPage')).DiscoverCollectionPage }));
 const DiscoverPage = lazy(async () => ({ default: (await import('./DiscoverPage')).DiscoverPage }));
@@ -191,6 +192,8 @@ createRoot(root).render(
         <App initialTab="field" initialFieldView="treatments" />
       ) : path === '/mi-campo/riegos' ? (
         <App initialTab="field" initialFieldView="irrigation" />
+      ) : path === '/mi-campo/recursos' ? (
+        <PrivateRoute returnTo={returnTo}><FieldResourcesPage /></PrivateRoute>
       ) : path === '/campana' ? (
         <App initialTab="campaign" />
       ) : path === '/mi-magina' ? (

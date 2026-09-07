@@ -452,6 +452,12 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
 
           <section className="field-overview-portal" aria-labelledby="field-overview-portal-title">
             <div className="section-heading"><div><p className="eyebrow page-eyebrow">Mi Campo</p><h2 id="field-overview-portal-title" className="section-title">Tu explotación, al día</h2></div></div>
+            <div className="field-short-views-tabs" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.4rem', margin: '0.5rem 0 1rem' }}>
+              <button type="button" className="secondary-button" style={{ padding: '0.6rem 0.25rem', fontSize: '0.82rem', textAlign: 'center' }} onClick={() => openFarmSection('parcelas')}>🌱 Parcelas</button>
+              <button type="button" className="secondary-button" style={{ padding: '0.6rem 0.25rem', fontSize: '0.82rem', textAlign: 'center' }} onClick={() => openFarmSection('cuaderno')}>📖 Cuaderno</button>
+              <a className="secondary-button" style={{ padding: '0.6rem 0.25rem', fontSize: '0.82rem', textAlign: 'center', textDecoration: 'none' }} href="/calendario">📅 Tareas</a>
+              <button type="button" className="secondary-button" style={{ padding: '0.6rem 0.25rem', fontSize: '0.82rem', textAlign: 'center' }} onClick={() => openFarmSection('cuaderno')}>🌿 Tratamientos</button>
+            </div>
             <div className="field-overview-actions">
               <button type="button" onClick={openMapWorkspace}><Map aria-hidden="true" /><span><strong>Mapa</strong><small>GPS, SIGPAC y Catastro</small></span><ChevronRight aria-hidden="true" /></button>
               <button type="button" onClick={() => openFarmSection('parcelas')}><Sprout aria-hidden="true" /><span><strong>Parcelas</strong><small>{farmPlotCounts[selectedFarm.id] ?? plots.length} en esta finca</small></span><ChevronRight aria-hidden="true" /></button>

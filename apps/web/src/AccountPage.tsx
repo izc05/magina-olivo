@@ -108,17 +108,19 @@ export function AccountPage() {
       setLoading(true);
       setError(null);
       try {
-        const [session, preferenceResult, directory, exportResult] = await Promise.all([
+        const [sessionResult, preferenceResult, directoryResult, exportResult] = await Promise.allSettled([
           jsonRequest<{ user: User }>('/api/v1/me'),
           jsonRequest<Preferences>('/api/v1/account/preferences'),
           jsonRequest<{ items: Destination[] }>('/api/v1/public/destinations'),
           jsonRequest<{ items: AccountExport[] }>('/api/v1/account/exports'),
         ]);
         if (cancelled) return;
-        setUser(session.user);
-        setPreferences(preferenceResult);
-        setDestinations(directory.items);
-        setExports(exportResult.items);
+        if (sessionResult.status === 'rejected') throw sessionResult.reason;
+        if (preferenceResult.status === 'rejected') throw preferenceResult.reason;
+        setUser(sessionResult.value.user);
+        setPreferences(preferenceResult.value);
+        setDestinations(directoryResult.status === 'fulfilled' ? directoryResult.value.items : []);
+        setExports(exportResult.status === 'fulfilled' ? exportResult.value.items : []);
       } catch (reason) {
         if (!cancelled) setError(accountErrorMessage(reason, 'No se ha podido cargar Mi Cuenta.'));
       } finally {

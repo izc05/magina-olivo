@@ -2,6 +2,7 @@ import { Component, lazy, StrictMode, Suspense } from 'react';
 import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { installDemoPreview } from './demoPreview';
+import { PwaInstallPrompt } from './PwaInstallPrompt';
 import { PwaUpdatePrompt } from './PwaUpdatePrompt';
 import { PrivateRoute } from './PrivateRoute';
 import { PublicHomePage } from './PublicHomePage';
@@ -222,6 +223,7 @@ createRoot(root).render(
         <PublicScreen><PublicHomePage /></PublicScreen>
       )}
       </Suspense></RouteErrorBoundary>
+      <PwaInstallPrompt />
       <PwaUpdatePrompt />
     </>
   </StrictMode>,

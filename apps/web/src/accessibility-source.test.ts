@@ -77,3 +77,16 @@ test('PWA updates are announced and can only be applied through an accessible us
   assert.match(index, /apple-mobile-web-app-capable/);
   assert.match(index, /apple-touch-icon/);
 });
+
+test('PWA installation uses the browser prompt when available and an honest iOS install guide', async () => {
+  const prompt = await source('./PwaInstallPrompt.tsx');
+
+  assert.match(prompt, /beforeinstallprompt/);
+  assert.match(prompt, /event\.preventDefault\(\)/);
+  assert.match(prompt, /deferredPrompt\.prompt\(\)/);
+  assert.match(prompt, /appinstalled/);
+  assert.match(prompt, /Añadir a pantalla de inicio/);
+  assert.match(prompt, /role="dialog"/);
+  assert.match(prompt, /aria-label="Cerrar aviso de instalación"/);
+  assert.match(prompt, /DISMISS_FOR_MS/);
+});

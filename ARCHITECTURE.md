@@ -182,6 +182,7 @@ magina-olivo/
 - `/api/v1/imports`
 - `/api/v1/cooperatives`
 - `/api/v1/alerts`
+- `/api/v1/admin/*` (consola interna agregada y auditada)
 
 El frontend nunca consulta PostgreSQL ni object storage con privilegios administrativos directos.
 
@@ -194,6 +195,8 @@ Roles preparados:
 - admin;
 - collaborator;
 - viewer.
+
+La administración de plataforma se modela aparte de esos roles mediante `platform_admin_members`; no concede acceso implícito a datos privados de una explotación.
 
 Seleccionar una cooperativa como destino no le concede acceso a los datos del agricultor.
 

@@ -52,6 +52,7 @@ import './local-services.css';
 import './discover-territory.css';
 import './discover-routes.css';
 import './admin-preview.css';
+import { AdminDashboardPage } from './AdminDashboardPage';
 import './integration-v2.css';
 import './field-v2-integration.css';
 import './journal-v2-integration.css';
@@ -120,7 +121,9 @@ createRoot(root).render(
       ) : path === '/onboarding' ? (
         <OnboardingPage />
       ) : path === '/admin' ? (
-        <AdminDashboardPreview preview={import.meta.env.DEV && new URLSearchParams(window.location.search).get('preview') === '1'} />
+        import.meta.env.DEV && new URLSearchParams(window.location.search).get('preview') === '1'
+          ? <AdminDashboardPreview preview />
+          : <PrivateRoute returnTo={returnTo}><AdminDashboardPage /></PrivateRoute>
       ) : path === '/cuenta' ? (
         <PrivateRoute returnTo={returnTo}><AccountPage /></PrivateRoute>
       ) : path === '/perfil/editar' ? (

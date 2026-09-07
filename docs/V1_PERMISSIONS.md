@@ -159,6 +159,10 @@ Cada ejecución registra:
 
 No confundir `admin de Mágina Olivo` con `admin de explotación`.
 
+La consola de plataforma usa una membresía global separada (`platform_admin_members`) con roles `super_admin`, `admin`, `editor` y `support`. Ninguno de estos roles salta la autorización que protege holdings, fincas, parcelas, entregas, resultados o documentos.
+
+La V1 del panel se limita a métricas agregadas y a los módulos administrativos que se habiliten explícitamente. Ver `docs/ADMIN_CONSOLE_V1.md`.
+
 El soporte/plataforma no debe tener por defecto una interfaz que permita navegar libremente por datos productivos privados.
 
 Si en el futuro existe acceso de soporte excepcional:

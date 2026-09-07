@@ -6,17 +6,21 @@ async function read(relativePath: string): Promise<string> {
   return readFile(new URL(relativePath, import.meta.url), 'utf8');
 }
 
-test('admin visual preview remains local-only and never claims platform authorization', async () => {
+test('admin preview remains local-only while the real route uses a protected server-backed dashboard', async () => {
   const page = await read('./AdminDashboardPreview.tsx');
   const main = await read('./main.tsx');
+  const dashboard = await read('./AdminDashboardPage.tsx');
 
   assert.match(main, /path === '\/admin'/);
   assert.match(main, /import\.meta\.env\.DEV/);
   assert.match(main, /get\('preview'\) === '1'/);
+  assert.match(main, /<PrivateRoute returnTo=\{returnTo\}><AdminDashboardPage \/><\/PrivateRoute>/);
   assert.match(page, /Vista local de diseño/);
   assert.match(page, /sin acceso administrativo ni escrituras reales/);
   assert.match(page, /rol de plataforma independiente/);
   assert.match(page, /useState\('Resumen'\)/);
   assert.match(page, /setNotice\('Acción de demostración/);
   assert.doesNotMatch(page, /fetch\(|api\./);
+  assert.match(dashboard, /\/api\/v1\/admin\/overview/);
+  assert.match(dashboard, /documentos ni datos productivos/);
 });

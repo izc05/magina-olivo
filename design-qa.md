@@ -52,6 +52,36 @@ final result: passed
 
 ---
 
+# Design QA — Base de administración de plataforma
+
+## Evidence
+
+- Source visual truth: `/tmp/codex-clipboard-6a7f68df-1131-47e2-aa99-e3b057858f79.png` — panel de administración proporcionado, con hero territorial, tarjetas de métricas, actividad y navegación interna.
+- Rendered implementation: `/admin?preview=1` en el navegador interno, inspeccionado con árbol de accesibilidad; conserva hero de Sierra Mágina, cabecera de administradora, tarjetas, actividad, métricas y avisos de sistema.
+- Runtime implementation: `/admin` queda tras autenticación y una comprobación de rol global en servidor; en el entorno local sin API disponible muestra una puerta segura sin exponer datos.
+
+## Required fidelity surfaces
+
+- Fonts and typography: reutiliza la jerarquía editorial y la tipografía existente de Mágina Olivo; el diseño no introduce una familia ni peso incompatible.
+- Spacing and layout rhythm: mantiene el contenedor, hero, tarjetas y paneles del prototipo visual anterior, adaptados al ancho móvil mediante las reglas existentes de `admin-preview.css`.
+- Colors and visual tokens: conserva los tokens marfil, oliva y salvia del sistema compartido.
+- Image quality and asset fidelity: reutiliza la fotografía territorial existente; no añade logos, ilustraciones ni imágenes artificiales.
+- Copy and content: la ruta real utiliza agregados de servidor y explica explícitamente que no permite abrir documentos ni datos productivos privados.
+
+## Findings
+
+- [P1] No se pudo guardar una captura raster de la ruta real autenticada con rol `super_admin`: el navegador interno sólo devolvió el árbol de accesibilidad y el entorno local no tiene la API/usuario administradora configurados. La comparación final a igual viewport queda pendiente de staging.
+
+## Implementation checklist
+
+1. Aplicar migraciones en staging.
+2. Crear/iniciar sesión con la cuenta administradora y ejecutar el bootstrap único desde secretos de entorno.
+3. Capturar `/admin` autenticado frente a la referencia y completar comparación visual antes de declarar el panel listo para publicar.
+
+final result: blocked
+
+---
+
 # Design QA — Mi Campo, portal operativo
 
 ## Evidence

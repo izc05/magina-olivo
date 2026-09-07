@@ -30,8 +30,8 @@ test('public weather UI includes animated precipitation radar controls without e
 });
 
 test('staging worker receives server-side AEMET radar configuration', async () => {
-  const compose = await read('../../../infra/docker/compose.staging.yml');
-  const envExample = await read('../../../infra/docker/staging.env.example');
+  const compose = (await read('../../../infra/docker/compose.staging.yml')).replace(/\r\n/g, '\n');
+  const envExample = (await read('../../../infra/docker/staging.env.example')).replace(/\r\n/g, '\n');
   const workerBlock = compose.match(/\n  worker:\n([\s\S]*?)\n  web:\n/)?.[1] ?? '';
 
   assert.match(workerBlock, /AEMET_API_KEY: \$\{AEMET_API_KEY:\?set AEMET_API_KEY\}/);

@@ -17,10 +17,11 @@ import { DeliveryEntryCard, DeliveryTicketButton } from './DeliveryEntryCard.tsx
 import { FieldNotebook } from './FieldNotebook.tsx';
 import { PlotMapPanel } from './PlotMapPanel.tsx';
 import { MaginaPrivateHub } from './MaginaPrivateHub.tsx';
+import { MaginaAiAssistant } from './MaginaAiAssistant.tsx';
 import { OfflineColdStart } from './OfflineColdStart.tsx';
 import { listPendingOperations } from './offline/outbox.ts';
 import { PrivateAccessGate } from './PrivateAccessGate.tsx';
-import { BarChart3, Bell, BookOpen, Building2, CalendarDays, ChevronLeft, ChevronRight, CircleHelp, Compass, Droplets, FileText, House, Leaf, Map, MapPin, Mountain, PackageCheck, Pencil, Plus, Settings, ShieldCheck, Sprout, Tractor, UserRound } from 'lucide-react';
+import { BarChart3, Bell, BookOpen, Building2, CalendarDays, ChevronLeft, ChevronRight, CircleHelp, Compass, Droplets, FileText, House, Leaf, Map, MapPin, Mountain, PackageCheck, Pencil, Plus, Settings, ShieldCheck, Sparkles, Sprout, Sun, Tractor, UserRound } from 'lucide-react';
 import { PhotoCredit, VisualHeader, navigationIcons } from './VisualChrome';
 
 type Tab = 'home' | 'field' | 'campaign' | 'magina' | 'more';
@@ -68,7 +69,17 @@ export function App({ initialTab = 'home' }: { initialTab?: Tab }) {
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [summary, setSummary] = useState<CampaignSummary | null>(null);
+  const [showAiAssistant, setShowAiAssistant] = useState(false);
+  const [sunMode, setSunMode] = useState(false);
   const pageRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (sunMode) {
+      document.documentElement.setAttribute('data-sun-mode', 'true');
+    } else {
+      document.documentElement.removeAttribute('data-sun-mode');
+    }
+  }, [sunMode]);
 
   const selectedHolding = useMemo(
     () => holdings.find((item) => item.id === selectedHoldingId) ?? null,
@@ -224,9 +235,42 @@ export function App({ initialTab = 'home' }: { initialTab?: Tab }) {
   return (
     <div className="app-shell">
       <a className="skip-link" href="#main-content">Saltar al contenido</a>
-      <VisualHeader><button type="button" className="visual-header-action" onClick={() => setTab('more')} aria-label="Abrir perfil" aria-current={tab === 'more' ? 'page' : undefined}>{initials}</button></VisualHeader>
+      <VisualHeader>
+        <div className="visual-header-tools">
+          <button
+            type="button"
+            className={`visual-header-tool-btn ${sunMode ? 'active' : ''}`}
+            onClick={() => setSunMode((prev) => !prev)}
+            aria-label={sunMode ? 'Desactivar modo a pleno sol' : 'Activar modo a pleno sol'}
+            title="Modo a pleno sol (alto contraste)"
+          >
+            <Sun size={18} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className={`visual-header-tool-btn ai-btn ${showAiAssistant ? 'active' : ''}`}
+            onClick={() => setShowAiAssistant((prev) => !prev)}
+            aria-label="Abrir asistente Mágina IA"
+            title="Mágina IA (Voz y Texto)"
+          >
+            <Sparkles size={18} aria-hidden="true" />
+          </button>
+          <button type="button" className="visual-header-action" onClick={() => setTab('more')} aria-label="Abrir perfil" aria-current={tab === 'more' ? 'page' : undefined}>{initials}</button>
+        </div>
+      </VisualHeader>
 
       <main id="main-content" className="page" ref={pageRef} tabIndex={-1}>
+        {showAiAssistant ? (
+          <MaginaAiAssistant
+            holdingId={selectedHoldingId}
+            campaignId={selectedCampaignId}
+            onSaved={() => {
+              if (selectedCampaignId) void loadCampaign(selectedCampaignId);
+              if (selectedHoldingId) void loadHoldingData(selectedHoldingId);
+            }}
+            onClose={() => setShowAiAssistant(false)}
+          />
+        ) : null}
         {error ? <div className="alert" role="alert">{error}</div> : null}
         {holdings.length > 1 ? (
           <select className="selector" value={selectedHoldingId} onChange={(event) => setSelectedHoldingId(event.target.value)} aria-label="Explotación activa">

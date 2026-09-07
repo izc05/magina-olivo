@@ -246,4 +246,23 @@ export const api = {
   },
 
   plotTimeline: (plotId: string) => cachedGet<{ items: PlotTimelineItem[] }>(`/api/v1/plots/${plotId}/timeline`),
+  parseIntent: (text: string, holdingId?: string) => request<{
+    confidence: number;
+    draft: {
+      kind: 'activity' | 'delivery' | 'query';
+      activityType?: ActivityType;
+      occurredAt?: string;
+      deliveredAt?: string;
+      kilograms?: string;
+      customDestination?: string;
+      farmId?: string;
+      plotId?: string;
+      plotName?: string;
+      productName?: string;
+      quantity?: number;
+      quantityUnit?: string;
+      notes?: string;
+    };
+    humanExplanation: string;
+  }>('/api/v1/ai/parse-intent', { method: 'POST', body: JSON.stringify({ text, holdingId }) }),
 };

@@ -24,6 +24,33 @@
   --focus-ring: #765000;
 }
 
+[data-sun-mode="true"] {
+  --ivory: #ffffff;
+  --paper: #ffffff;
+  --ink: #000000;
+  --muted: #202020;
+  --line: #000000;
+  --olive-950: #0a1f0a;
+  --olive-800: #133313;
+  --gold: #b38600;
+  --gold-soft: #ffea9f;
+  --shadow: 0 4px 0 #000000;
+}
+
+[data-sun-mode="true"] .card {
+  border: 2px solid #000000 !important;
+  box-shadow: 0 4px 0 #000000 !important;
+}
+
+[data-sun-mode="true"] .metric-value,
+[data-sun-mode="true"] strong,
+[data-sun-mode="true"] h1,
+[data-sun-mode="true"] h2,
+[data-sun-mode="true"] h3 {
+  font-weight: 900 !important;
+  color: #000000 !important;
+}
+
 * { box-sizing: border-box; }
 html { background: var(--ivory); }
 body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--ivory); }
@@ -419,3 +446,197 @@ a { color: inherit; }
     outline: 2px solid CanvasText;
   }
 }
+
+/* Visual Header Tools */
+.visual-header-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.visual-header-tool-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--olive-950);
+  transition: all .2s ease;
+}
+
+.visual-header-tool-btn.active {
+  background: var(--gold);
+  color: var(--olive-950);
+  border-color: var(--gold);
+}
+
+.visual-header-tool-btn.ai-btn.active {
+  background: var(--olive-950);
+  color: #fff;
+  border-color: var(--olive-950);
+}
+
+/* Mágina IA Assistant Widget */
+.magina-ai-assistant {
+  margin-bottom: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #fffdf8, #f5f8f0);
+  border: 1px solid rgba(92,122,70,.25);
+  box-shadow: 0 10px 30px rgba(46,58,34,.08);
+}
+
+.magina-ai-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.magina-ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: var(--olive-950);
+  color: #fff;
+  font-size: .75rem;
+  font-weight: 800;
+}
+
+.magina-ai-close {
+  min-height: 32px;
+  padding: 0 8px;
+  font-size: 1.1rem;
+}
+
+.magina-ai-intro {
+  margin: 6px 0 14px;
+  color: var(--muted);
+  font-size: .88rem;
+  line-height: 1.45;
+}
+
+.magina-ai-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 4px 6px 4px 14px;
+}
+
+.magina-ai-input {
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: .92rem;
+  color: var(--ink);
+}
+
+.magina-ai-mic-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 0;
+  background: transparent;
+  color: var(--olive-800);
+}
+
+.magina-ai-mic-btn.listening {
+  background: #ffdede;
+  color: #c92a2a;
+  animation: pulse-mic 1s infinite;
+}
+
+@keyframes pulse-mic {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.magina-ai-submit-btn {
+  display: grid;
+  place-items: center;
+  min-height: 40px;
+  width: 44px;
+  padding: 0;
+  border-radius: 12px;
+}
+
+.magina-ai-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.magina-ai-draft-card {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid rgba(212,160,23,.3);
+  box-shadow: 0 4px 14px rgba(46,58,34,.04);
+}
+
+.magina-ai-draft-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--olive-950);
+  font-size: .92rem;
+}
+
+.magina-ai-draft-explanation {
+  margin: 6px 0 12px;
+  color: var(--olive-800);
+  font-size: .88rem;
+  font-weight: 600;
+}
+
+.magina-ai-draft-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.magina-ai-draft-details div {
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(92,122,70,.06);
+}
+
+.magina-ai-draft-details span {
+  display: block;
+  font-size: .7rem;
+  color: var(--muted);
+}
+
+.magina-ai-draft-details strong {
+  display: block;
+  margin-top: 2px;
+  font-size: .88rem;
+  color: var(--olive-950);
+}
+
+.magina-ai-draft-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.magina-ai-confirm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+

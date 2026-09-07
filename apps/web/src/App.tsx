@@ -474,6 +474,28 @@ function HomeTab({ holding, campaign, summary, coverage, onNavigate }: { holding
         </div>
       </section>
 
+      {/* Tu Olivo Incentive Tree Card */}
+      <section className="card" style={{ padding: '1.2rem', marginBottom: '1rem', background: 'linear-gradient(135deg, rgba(212,160,23,0.12) 0%, rgba(92,122,70,0.15) 100%)', border: '1px solid rgba(212,160,23,0.3)', borderRadius: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+          <div>
+            <span className="badge gold" style={{ fontSize: '0.7rem', marginBottom: '0.3rem' }}>🌳 Tu Olivo de Incentivos</span>
+            <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--olive-950)' }}>Tienes 250 aceitunas para recoger</h3>
+            <p style={{ margin: '0.3rem 0 0.75rem', fontSize: '0.8rem', color: 'var(--muted)' }}>Cada labor y pesada carga frutos en tu árbol virtual. ¡Canjéalos por regalos!</p>
+          </div>
+          <a href="/olivo" style={{ display: 'inline-grid', placeItems: 'center', width: '54px', height: '54px', borderRadius: '50%', background: 'var(--olive-950)', color: '#fff', textDecoration: 'none', flexShrink: 0 }}>
+            <span style={{ fontSize: '1.5rem' }}>🫒</span>
+          </a>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <a className="primary-button" href="/olivo" style={{ textDecoration: 'none', fontSize: '0.8rem', minHeight: '38px', padding: '0 14px', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+            🌿 Recoger Cosecha de Aceitunas
+          </a>
+          <a className="secondary-button" href="/recompensas" style={{ textDecoration: 'none', fontSize: '0.8rem', minHeight: '38px', padding: '0 14px', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+            🎁 Catálogo de Premios
+          </a>
+        </div>
+      </section>
+
       <section className="hero">
         <p className="eyebrow">{campaign ? `Campaña ${campaign.seasonStartYear}/${String(campaign.seasonEndYear).slice(-2)}` : 'Tu campaña'}</p>
         <div className="metrics">

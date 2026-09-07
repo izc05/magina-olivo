@@ -29,6 +29,9 @@ test('Mi Campo keeps the private farm overview wired to real holdings and farms'
   assert.match(app, /setShowFarmDetail\(true\)/);
   assert.match(app, /setShowFarmDetail\(false\)/);
   assert.match(app, /summary\?\.weightedYieldPercent/);
+  assert.match(app, /<CampaignDeliveryTrend deliveries=\{deliveries\} \/>/);
+  assert.match(app, /function CampaignDeliveryTrend/);
+  assert.match(app, /Evolución de entregas/);
   assert.match(app, /Añadir mi primera finca/);
   assert.match(app, /<FieldNotebook holdingId=\{selectedHolding\.id\} farmId=\{selectedFarm\.id\} plots=\{plots\} \/>/);
   assert.ok(vite.includes('urlPattern: /\\/api\\/v1\\/public\\//'));

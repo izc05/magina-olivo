@@ -510,6 +510,8 @@ function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelect
 
           {selectedHolding ? <details className="campaign-create-disclosure"><summary><Plus aria-hidden="true" />Registrar entrega</summary><DeliveryEntryCard holdingId={selectedHolding.id} campaignId={selectedCampaign.id} farms={farms} onSaved={reloadCampaign} /></details> : null}
 
+          <CampaignDeliveryTrend deliveries={deliveries} />
+
           <section className="section campaign-history-section">
             <div className="section-heading"><div><p className="eyebrow page-eyebrow">Campaña · {selectedCampaign.name}</p><h2 className="section-title">Historial de entregas</h2><p className="section-copy">{deliveries.length} registradas con destino y rendimiento.</p></div><a className="text-button" href="#documentos">Documentos</a></div>
             {deliveries.map((delivery) => (
@@ -522,6 +524,33 @@ function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelect
         </>
       ) : null}
     </>
+  );
+}
+
+function CampaignDeliveryTrend({ deliveries }: { deliveries: Delivery[] }) {
+  const trendDeliveries = useMemo(() => deliveries
+    .slice(0, 7)
+    .sort((a, b) => new Date(a.deliveredAt).getTime() - new Date(b.deliveredAt).getTime()), [deliveries]);
+  const maxKilograms = Math.max(1, ...trendDeliveries.map((delivery) => Number(delivery.kilograms)));
+
+  if (!trendDeliveries.length) return null;
+
+  return (
+    <section className="section campaign-delivery-trend" aria-labelledby="campaign-trend-title">
+      <div className="section-heading">
+        <div><p className="eyebrow page-eyebrow">DATOS PROPIOS</p><h2 id="campaign-trend-title" className="section-title">Evolución de entregas</h2><p className="section-copy">Kilogramos registrados en esta campaña.</p></div>
+      </div>
+      <div className="card campaign-trend-card">
+        <ol className="campaign-trend-bars" aria-label="Entregas registradas por fecha">
+          {trendDeliveries.map((delivery) => {
+            const kilograms = Number(delivery.kilograms);
+            const percentage = Math.max(8, Math.round((kilograms / maxKilograms) * 100));
+            const date = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(new Date(delivery.deliveredAt));
+            return <li key={delivery.id} aria-label={`${date}: ${formatKg(delivery.kilograms)}`}><span className="campaign-trend-value">{formatKg(delivery.kilograms)}</span><span className="campaign-trend-bar" style={{ '--delivery-height': `${percentage}%` } as React.CSSProperties} /><span className="campaign-trend-date">{date}</span></li>;
+          })}
+        </ol>
+      </div>
+    </section>
   );
 }
 

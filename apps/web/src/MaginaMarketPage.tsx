@@ -25,6 +25,7 @@ type PublicSource = {
 
 type MarketSeries = {
   series: Array<{ week: string; priceEurKg: number }>;
+  seriesByQuality?: { lampante: Array<{ week: string; priceEurKg: number }>; virgen: Array<{ week: string; priceEurKg: number }>; virgenExtra: Array<{ week: string; priceEurKg: number }> };
   fetchedAt: string;
   source: { label: string; url: string; scope: string };
   freshness: { status: 'fresh' | 'aging' | 'stale'; ageDays: number | null };
@@ -41,6 +42,7 @@ export function MaginaMarketPage() {
   const [marketSeries, setMarketSeries] = useState<MarketSeries | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [quality, setQuality] = useState<'lampante' | 'virgen' | 'virgenExtra'>('virgenExtra');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -71,7 +73,7 @@ export function MaginaMarketPage() {
 
   const metadata = source?.metadata ?? null;
   const structuredVerified = metadata?.currentness === 'verified-current-content';
-  const points = marketSeries?.series ?? [];
+  const points = marketSeries?.seriesByQuality?.[quality] ?? marketSeries?.series ?? [];
   const latestPoint = points.at(-1);
   const low = Math.min(...points.map((point) => point.priceEurKg));
   const high = Math.max(...points.map((point) => point.priceEurKg));
@@ -120,7 +122,8 @@ export function MaginaMarketPage() {
       </section>
 
       {points.length >= 2 ? <section className="card market-chart-card" aria-labelledby="market-chart-title">
-        <div className="market-chart-heading"><div><p className="eyebrow">EVOLUCIÓN PUBLICADA</p><h2 id="market-chart-title">Aceites de oliva</h2><p>Precio público semanal en €/kg.</p></div><div className="market-latest"><small>Última semana</small><strong>{latestPoint?.priceEurKg.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €/kg</strong><span>{latestPoint?.week}</span></div></div>
+        <div className="market-chart-heading"><div><p className="eyebrow">EVOLUCIÓN PUBLICADA</p><h2 id="market-chart-title">Precio por calidad</h2><p>Precio medio semanal en origen · €/kg.</p></div><div className="market-latest"><small>{quality === 'virgenExtra' ? 'Virgen extra' : quality === 'lampante' ? 'Lampante' : 'Virgen'}</small><strong>{latestPoint?.priceEurKg.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €/kg</strong><span>Semana {latestPoint?.week}</span></div></div>
+        <div className="market-quality-tabs" role="tablist" aria-label="Calidad del aceite">{([['lampante', 'Lampante'], ['virgen', 'Virgen'], ['virgenExtra', 'Virgen extra']] as const).map(([value, label]) => <button type="button" role="tab" aria-selected={quality === value} className={quality === value ? 'active' : ''} onClick={() => setQuality(value)} key={value}>{label}</button>)}</div>
         <svg className="market-line-chart" viewBox="0 0 100 100" role="img" aria-label={`Evolución publicada, última semana ${latestPoint?.week}: ${latestPoint?.priceEurKg.toLocaleString('es-ES')} euros por kilogramo`} preserveAspectRatio="none"><path d="M0 90H100" className="market-chart-baseline" /><polyline points={graphPoints} className="market-chart-line" vectorEffect="non-scaling-stroke" />{points.map((point, index) => <circle key={point.week} cx={index * (100 / Math.max(1, points.length - 1))} cy={90 - ((point.priceEurKg - low) / range) * 72} r="1.5" className="market-chart-dot" vectorEffect="non-scaling-stroke" />)}</svg>
         <div className="market-chart-labels">{points.map((point) => <span key={point.week}>{point.week}</span>)}</div>
         <p className={`market-chart-source ${marketSeries?.freshness.status ?? 'stale'}`}>Fuente: <a href={marketSeries?.source.url} target="_blank" rel="noreferrer noopener">{marketSeries?.source.label}</a> · consultada {dateLabel(marketSeries?.fetchedAt)}{marketSeries?.freshness.ageDays != null ? ` · dato de hace ${marketSeries.freshness.ageDays} días` : ''}. {marketSeries?.source.scope}</p>

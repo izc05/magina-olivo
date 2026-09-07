@@ -5,8 +5,11 @@ const CACHE_TTL_MS = 30 * 60_000;
 const MAX_BODY_BYTES = 600_000;
 
 type MarketPoint = { week: string; priceEurKg: number };
+type MarketQuality = 'lampante' | 'virgen' | 'virgenExtra';
+type MarketQualitySeries = Record<MarketQuality, MarketPoint[]>;
 type MarketPayload = {
   series: MarketPoint[];
+  seriesByQuality: MarketQualitySeries;
   fetchedAt: string;
   source: { label: string; url: string; scope: string };
   freshness: { status: 'fresh' | 'aging' | 'stale'; ageDays: number | null };
@@ -46,6 +49,23 @@ export function parseOfficialOliveOilSeries(html: string): MarketPoint[] {
   return labels.map((week, index) => ({ week, priceEurKg: values[index]! }));
 }
 
+export function parseOfficialOliveOilQualitySeries(html: string): MarketQualitySeries {
+  const labels = /labels:\s*\[([^\]]+)\]/.exec(html)?.[1]?.match(/"(\d{1,2}-\d{4})"/g)?.map((value) => value.slice(1, -1)) ?? [];
+  if (labels.length < 2) throw new Error('MARKET_SOURCE_UNRECOGNIZED');
+  const datasets = [...html.matchAll(/data:\s*\[([^\]]+)\],label:\s*"([^"]+)"/g)];
+  const result: MarketQualitySeries = { lampante: [], virgen: [], virgenExtra: [] };
+  for (const match of datasets) {
+    const label = match[2]!.toUpperCase();
+    const quality: MarketQuality | null = label.includes('LAMPANTE') ? 'lampante' : label.includes('VIRGEN-EXTRA') ? 'virgenExtra' : label.endsWith(' VIRGEN') ? 'virgen' : null;
+    if (!quality) continue;
+    const values = parseNumbers(match[1]!);
+    if (values.length !== labels.length) continue;
+    result[quality] = labels.map((week, index) => ({ week, priceEurKg: values[index]! }));
+  }
+  if (Object.values(result).some((series) => series.length < 2)) throw new Error('MARKET_SOURCE_UNRECOGNIZED');
+  return result;
+}
+
 async function loadMarket(): Promise<MarketPayload> {
   if (cache && cache.expiresAt > Date.now()) return cache.value;
   const response = await fetch(MARKET_URL, { headers: { accept: 'text/html', 'user-agent': 'Magina-Olivo/1.0 (+public-market)' }, signal: AbortSignal.timeout(10_000) });
@@ -54,9 +74,11 @@ async function loadMarket(): Promise<MarketPayload> {
   if (Number.isFinite(length) && length > MAX_BODY_BYTES) throw new Error('MARKET_SOURCE_TOO_LARGE');
   const html = await response.text();
   if (html.length > MAX_BODY_BYTES) throw new Error('MARKET_SOURCE_TOO_LARGE');
-  const series = parseOfficialOliveOilSeries(html);
+  const seriesByQuality = parseOfficialOliveOilQualitySeries(html);
+  const series = seriesByQuality.virgenExtra;
   const value: MarketPayload = {
     series,
+    seriesByQuality,
     fetchedAt: new Date().toISOString(),
     source: { label: 'Observatorio de Precios y Mercados · Junta de Andalucía', url: MARKET_URL, scope: 'Precio público de aceites de oliva; no es una liquidación de cooperativa.' },
     freshness: freshnessFor(series.at(-1)?.week ?? ''),

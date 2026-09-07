@@ -57,11 +57,15 @@ export function FieldNotebook({
   farmId,
   plots,
   onOpenMap,
+  initialActivityType,
+  openEntry = false,
 }: {
   holdingId: string;
   farmId: string;
   plots: Plot[];
   onOpenMap?: () => void;
+  initialActivityType?: ActivityType | undefined;
+  openEntry?: boolean;
 }) {
   const [selectedPlotId, setSelectedPlotId] = useState(plots[0]?.id ?? '');
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -97,6 +101,10 @@ export function FieldNotebook({
   useEffect(() => {
     if (!plots.some((plot) => plot.id === selectedPlotId)) setSelectedPlotId(plots[0]?.id ?? '');
   }, [plots, selectedPlotId]);
+
+  useEffect(() => {
+    if (initialActivityType) setActivityType(initialActivityType);
+  }, [initialActivityType]);
 
   useEffect(() => {
     let cancelled = false;
@@ -235,7 +243,7 @@ export function FieldNotebook({
             <span>Consulta el perímetro y la fuente oficial de la parcela activa.</span>
           </a>
 
-          <details className="visual-disclosure">
+          <details className="visual-disclosure" open={openEntry}>
           <summary>Añadir registro al cuaderno</summary>
           <form className="form-grid notebook-form" onSubmit={submit}>
             <div className="inline-fields">

@@ -181,6 +181,16 @@ createRoot(root).render(
         <PrivateRoute returnTo={returnTo}><RewardCatalogPage /></PrivateRoute>
       ) : path === '/mi-campo' ? (
         <App initialTab="field" />
+      ) : path === '/mi-campo/parcelas' ? (
+        <App initialTab="field" initialFieldView="plots" />
+      ) : path === '/mi-campo/cuaderno' ? (
+        <App initialTab="field" initialFieldView="notebook" />
+      ) : path === '/mi-campo/mapa' ? (
+        <App initialTab="field" initialFieldView="map" />
+      ) : path === '/mi-campo/tratamientos' ? (
+        <App initialTab="field" initialFieldView="treatments" />
+      ) : path === '/mi-campo/riegos' ? (
+        <App initialTab="field" initialFieldView="irrigation" />
       ) : path === '/campana' ? (
         <App initialTab="campaign" />
       ) : path === '/mi-magina' ? (

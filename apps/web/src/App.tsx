@@ -19,7 +19,7 @@ import { MaginaPrivateHub } from './MaginaPrivateHub.tsx';
 import { OfflineColdStart } from './OfflineColdStart.tsx';
 import { listPendingOperations } from './offline/outbox.ts';
 import { PrivateAccessGate } from './PrivateAccessGate.tsx';
-import { BarChart3, Bell, Building2, CalendarDays, ChevronLeft, ChevronRight, CircleHelp, Compass, FileText, House, Map, MapPin, Mountain, PackageCheck, Pencil, Plus, Settings, ShieldCheck, Sprout, Tractor, UserRound } from 'lucide-react';
+import { BarChart3, Bell, BookOpen, Building2, CalendarDays, ChevronLeft, ChevronRight, CircleHelp, Compass, Droplets, FileText, House, Leaf, Map, MapPin, Mountain, PackageCheck, Pencil, Plus, Settings, ShieldCheck, Sprout, Tractor, UserRound } from 'lucide-react';
 import { PhotoCredit, VisualHeader, navigationIcons } from './VisualChrome';
 
 type Tab = 'home' | 'field' | 'campaign' | 'magina' | 'more';
@@ -346,6 +346,12 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
     return () => { cancelled = true; };
   }, [farms]);
 
+  const selectedFarmOliveTrees = plots.reduce((total, plot) => total + (plot.oliveTreeCount ?? 0), 0);
+  const openFarmSection = (sectionId: string) => {
+    setShowFarmDetail(true);
+    window.setTimeout(() => document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+  };
+
   const fieldManagement = selectedHolding ? (
         <details id="field-management" className="field-management visual-disclosure" open={!selectedFarm}>
           <summary>Mis fincas · {selectedHolding.name}</summary>
@@ -387,14 +393,21 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
             <div className="field-overview-metrics" aria-label={`Resumen de ${selectedFarm.name}`}>
               <div><span>Superficie</span><strong>{selectedFarm.areaHa != null ? formatHa(selectedFarm.areaHa) : 'Pendiente'}</strong></div>
               <div><span>Parcelas</span><strong>{farmPlotCounts[selectedFarm.id] ?? plots.length}</strong></div>
-              <div><span>Fincas</span><strong>{farms.length}</strong></div>
+              <div><span>Olivos</span><strong>{selectedFarmOliveTrees ? new Intl.NumberFormat('es-ES').format(selectedFarmOliveTrees) : '—'}</strong></div>
             </div>
           </section>
 
-          <section className="field-overview-highlights" aria-label="Estado de Mi Campo">
-            <a href="/campana"><BarChart3 aria-hidden="true" /><span><small>{campaign?.name ?? 'Campaña'}</small><strong>{formatPercent(summary?.weightedYieldPercent)}</strong><em>Rendimiento medio</em></span><ChevronRight aria-hidden="true" /></a>
-            <button type="button" onClick={() => setShowFarmDetail(true)}><CalendarDays aria-hidden="true" /><span><small>Finca seleccionada</small><strong>{selectedFarm.name}</strong><em>{farmPlotCounts[selectedFarm.id] ?? plots.length} parcelas</em></span><ChevronRight aria-hidden="true" /></button>
-            <a href="#field-farms"><Sprout aria-hidden="true" /><span><small>Estado del olivar</small><strong>{farms.length ? 'En seguimiento' : 'Sin fincas'}</strong><em>Datos de tu explotación</em></span><ChevronRight aria-hidden="true" /></a>
+          <section className="field-overview-portal" aria-labelledby="field-overview-portal-title">
+            <div className="section-heading"><div><p className="eyebrow page-eyebrow">Mi Campo</p><h2 id="field-overview-portal-title" className="section-title">Tu explotación, al día</h2></div></div>
+            <div className="field-overview-actions">
+              <button type="button" onClick={() => openFarmSection('field-management')}><Map aria-hidden="true" /><span><strong>Fincas</strong><small>{farms.length} {farms.length === 1 ? 'activa' : 'fincas'}</small></span><ChevronRight aria-hidden="true" /></button>
+              <button type="button" onClick={() => openFarmSection('parcelas')}><Sprout aria-hidden="true" /><span><strong>Parcelas</strong><small>{farmPlotCounts[selectedFarm.id] ?? plots.length} en esta finca</small></span><ChevronRight aria-hidden="true" /></button>
+              <button type="button" onClick={() => openFarmSection('cuaderno')}><BookOpen aria-hidden="true" /><span><strong>Cuaderno</strong><small>Labores e historia</small></span><ChevronRight aria-hidden="true" /></button>
+              <a href="/calendario"><CalendarDays aria-hidden="true" /><span><strong>Tareas</strong><small>Planificación de labores</small></span><ChevronRight aria-hidden="true" /></a>
+              <button type="button" onClick={() => openFarmSection('cuaderno')}><Droplets aria-hidden="true" /><span><strong>Riegos</strong><small>Registro en cuaderno</small></span><ChevronRight aria-hidden="true" /></button>
+              <button type="button" onClick={() => openFarmSection('cuaderno')}><Leaf aria-hidden="true" /><span><strong>Tratamientos</strong><small>Registro en cuaderno</small></span><ChevronRight aria-hidden="true" /></button>
+              <a className="field-overview-campaign-action" href="/campana"><BarChart3 aria-hidden="true" /><span><strong>Campaña</strong><small>{campaign?.name ?? 'Sin campaña activa'} · Rendimiento {formatPercent(summary?.weightedYieldPercent)}</small></span><ChevronRight aria-hidden="true" /></a>
+            </div>
           </section>
 
           <section className="section field-farms-section" id="field-farms">

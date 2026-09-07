@@ -19,6 +19,12 @@ test('Mi Campo keeps the private farm overview wired to real holdings and farms'
   assert.match(app, /api\.createFarm\(holdingId, body\)/);
   assert.match(app, /Aún no has añadido ninguna finca\./);
   assert.match(app, /className="field-overview-hero"/);
+  assert.match(app, /className="field-overview-portal"/);
+  assert.match(app, /Tu explotación, al día/);
+  assert.match(app, /openFarmSection\('cuaderno'\)/);
+  assert.match(app, /href="\/calendario"/);
+  assert.match(app, /href="\/campana"/);
+  assert.match(app, /selectedFarmOliveTrees/);
   assert.match(app, /className="field-farm-card"/);
   assert.match(app, /setShowFarmDetail\(true\)/);
   assert.match(app, /setShowFarmDetail\(false\)/);

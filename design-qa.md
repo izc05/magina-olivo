@@ -52,6 +52,45 @@ final result: passed
 
 ---
 
+# Design QA — Mi Campo, portal operativo
+
+## Evidence
+
+- Source visual truth: `/tmp/codex-clipboard-252420ff-d73b-4fff-88a7-7eeeea6abaa6.png` — 941 × 1672 px, tablero principal de Mi Campo.
+- Complementary references checked: ficha de finca, cuaderno, campaña, tareas y tratamientos facilitadas en esta revisión.
+- Rendered implementation: full-page capture of `http://127.0.0.1:5177/mi-campo` in the Codex in-app browser, with the selected private-demo farm `Las Viñas`.
+- The rendered available browser surface is wider than the phone source; the implementation keeps the source's two-column portal composition and its mobile breakpoint at 430 px.
+
+## Full-view comparison
+
+- The page now follows the reference hierarchy: photographic farm hero, floating three-value summary, `MI CAMPO` eyebrow, two-column operational cards, a full-width campaign row and the existing farm list.
+- Ivory canvas, olive serif headings, sage icon tiles, thin warm borders and rounded white cards are reused from the current product visual system.
+- Hero values are sourced from the selected farm and its plots: area, plot count and olive-tree count. No variety, yield or task value was fabricated for the overview.
+- The source's operational structure is retained while respecting the existing app: `Fincas` and `Parcelas` open the real farm detail; `Cuaderno`, `Riegos` and `Tratamientos` open the real notebook; `Campaña` opens the private campaign history; `Tareas` points to the existing private calendar.
+
+## Comparison history
+
+1. P1: the previous overview reduced the operational choices to three small highlight tiles. Replaced it with the two-column portal and wide campaign action from the reference.
+2. P1: the third hero metric showed the count of farms, which did not describe the selected farm. It now uses the selected farm's actual olive-tree total.
+3. P2: source screenshots show task alert cards, but the hub did not hold verified task data. The card opens the existing calendar rather than displaying invented alerts; in the local demo, that calendar's upstream task feed currently reports `HTTP 502`, while its route and form still load.
+
+## Primary interactions checked
+
+- `Cuaderno` switches to the selected real farm detail and notebook state.
+- `Campaña` resolves to the campaign page, showing registered delivery history and actual demo campaign totals.
+- `Tareas` resolves to `/calendario`; routing and the real calendar UI load. The current local demo task-feed error is recorded above and is outside this visual-hub change.
+- Source-oriented frontend test, full frontend test suite (67 tests) and production build pass.
+
+## Expected deviations
+
+- Farm name, municipality, hectares, plot count and tree count come from the active account/demo data, not the Bedmar sample values in the supplied artwork.
+- The application retains its real profile action rather than adding a fake unread-notification badge.
+- Device chrome and OS status bar from the screenshots are not part of the web UI.
+
+final result: passed
+
+---
+
 # Design QA — Panel de administración (vista local)
 
 ## Evidence

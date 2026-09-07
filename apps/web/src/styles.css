@@ -41,6 +41,22 @@
   --shadow: 0 4px 0 #000000;
 }
 
+[data-theme="dark"] {
+  --ivory: #11170f;
+  --paper: rgba(24, 33, 21, 0.85);
+  --paper-glass: rgba(30, 42, 26, 0.75);
+  --ink: #f2f5ed;
+  --muted: #9baa8f;
+  --line: rgba(255, 255, 255, 0.12);
+  --glass-border: rgba(255, 255, 255, 0.16);
+  --olive-950: #f2f5ed;
+  --olive-800: #a7b797;
+  --olive-650: #7b9e61;
+  --gold: #f5c23b;
+  --gold-soft: rgba(245, 194, 59, 0.2);
+  --shadow: 0 16px 45px rgba(0, 0, 0, 0.45);
+}
+
 [data-sun-mode="true"] .card {
   border: 2px solid #000000 !important;
   box-shadow: 0 4px 0 #000000 !important;

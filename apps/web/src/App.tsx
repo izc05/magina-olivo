@@ -22,7 +22,7 @@ import { FieldCameraModal } from './FieldCameraModal.tsx';
 import { OfflineColdStart } from './OfflineColdStart.tsx';
 import { listPendingOperations } from './offline/outbox.ts';
 import { PrivateAccessGate } from './PrivateAccessGate.tsx';
-import { BarChart3, Bell, BookOpen, Building2, CalendarDays, ChevronLeft, ChevronRight, CircleHelp, Compass, Droplets, FileText, House, Leaf, Map, MapPin, Mountain, PackageCheck, Pencil, Plus, Settings, ShieldCheck, Sparkles, Sprout, Sun, Tractor, UserRound } from 'lucide-react';
+import { BarChart3, Bell, BookOpen, Building2, CalendarDays, ChevronLeft, ChevronRight, CircleHelp, Compass, Droplets, FileText, House, Leaf, Map, MapPin, Moon, Mountain, PackageCheck, Pencil, Plus, Settings, ShieldCheck, Sparkles, Sprout, Sun, Tractor, UserRound } from 'lucide-react';
 import { PhotoCredit, VisualHeader, navigationIcons } from './VisualChrome';
 
 type Tab = 'home' | 'field' | 'campaign' | 'magina' | 'more';
@@ -75,7 +75,16 @@ export function App({ initialTab = 'home', initialFieldView = 'home' }: { initia
   const [showQuickMenu, setShowQuickMenu] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [sunMode, setSunMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
   const pageRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+  }, [darkMode]);
 
   useEffect(() => {
     if (sunMode) {
@@ -241,6 +250,15 @@ export function App({ initialTab = 'home', initialFieldView = 'home' }: { initia
       <a className="skip-link" href="#main-content">Saltar al contenido</a>
       <VisualHeader>
         <div className="visual-header-tools">
+          <button
+            type="button"
+            className={`visual-header-tool-btn ${darkMode ? 'active' : ''}`}
+            onClick={() => setDarkMode((prev) => !prev)}
+            aria-label={darkMode ? 'Modo día' : 'Modo noche agrícola'}
+            title="Modo noche (Dark Olive Glass)"
+          >
+            <Moon size={18} aria-hidden="true" />
+          </button>
           <button
             type="button"
             className={`visual-header-tool-btn ${sunMode ? 'active' : ''}`}
@@ -420,6 +438,38 @@ function HomeTab({ holding, campaign, summary, coverage, onNavigate }: { holding
           <div style={{ textAlign: 'right' }}>
             <span style={{ fontSize: '1.5rem' }}>🌤 22°C</span>
             <small style={{ display: 'block', color: '#d4e1b8', fontSize: '0.75rem' }}>AEMET · Prob. Lluvia 10%</small>
+          </div>
+        </div>
+      </section>
+
+      {/* iOS Style Activity Rings */}
+      <section className="card" style={{ padding: '1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+        <div style={{ position: 'relative', width: '90px', height: '90px', flexShrink: 0 }}>
+          <svg width="90" height="90" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+            {/* Outer Ring: Recolección */}
+            <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(92,122,70,0.2)" strokeWidth="8" />
+            <circle cx="50" cy="50" r="40" fill="none" stroke="#5c7a46" strokeWidth="8" strokeDasharray="251" strokeDashoffset={251 - (251 * Math.min(100, Math.max(10, totalKg / 500))) / 100} strokeLinecap="round" />
+            {/* Middle Ring: Rendimiento */}
+            <circle cx="50" cy="50" r="28" fill="none" stroke="rgba(212,160,23,0.2)" strokeWidth="8" />
+            <circle cx="50" cy="50" r="28" fill="none" stroke="#d4a017" strokeWidth="8" strokeDasharray="175" strokeDashoffset={175 - (175 * coverage) / 100} strokeLinecap="round" />
+            {/* Inner Ring: Cuaderno */}
+            <circle cx="50" cy="50" r="16" fill="none" stroke="rgba(59,130,246,0.2)" strokeWidth="8" />
+            <circle cx="50" cy="50" r="16" fill="none" stroke="#3b82f6" strokeWidth="8" strokeDasharray="100" strokeDashoffset="25" strokeLinecap="round" />
+          </svg>
+        </div>
+        <div style={{ flex: 1, display: 'grid', gap: '0.4rem' }}>
+          <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--olive-950)' }}>Anillos de Salud de la Campaña</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--muted)' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#5c7a46', display: 'inline-block' }}></span>
+            <strong>Recolección</strong>: {formatKg(totalKg)}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--muted)' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#d4a017', display: 'inline-block' }}></span>
+            <strong>Rendimiento</strong>: {formatPercent(summary?.coveragePercent)} analizado
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--muted)' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }}></span>
+            <strong>Cuaderno CUE</strong>: Al día
           </div>
         </div>
       </section>

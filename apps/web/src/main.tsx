@@ -1,4 +1,4 @@
-import { lazy, StrictMode, Suspense } from 'react';
+import { Component, lazy, StrictMode, Suspense } from 'react';
 import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { installDemoPreview } from './demoPreview';
@@ -103,6 +103,28 @@ function RouteLoading() {
   return <main className="route-loading" id="main-content" aria-live="polite"><span className="route-loading-mark" aria-hidden="true" /><p>Cargando Mágina Olivo…</p></main>;
 }
 
+class RouteErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  async recover(): Promise<void> {
+    try {
+      const registrations = await navigator.serviceWorker?.getRegistrations();
+      await Promise.all(registrations?.map((registration) => registration.update()) ?? []);
+    } finally {
+      window.location.reload();
+    }
+  }
+
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return <main className="route-recovery" id="main-content"><section className="card"><p className="eyebrow">Actualización necesaria</p><h1>Esta pantalla necesita recargarse</h1><p>La aplicación ha detectado una versión anterior. Actualízala para volver a cargar la información con seguridad.</p><div><button className="primary-button" type="button" onClick={() => void this.recover()}>Actualizar y reintentar</button><a className="secondary-button" href="/">Volver a Inicio</a></div></section></main>;
+  }
+}
+
 if (basePath) {
   document.addEventListener('click', (event) => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -123,7 +145,7 @@ if (basePath) {
 createRoot(root).render(
   <StrictMode>
     <>
-      <Suspense fallback={<RouteLoading />}>
+      <RouteErrorBoundary><Suspense fallback={<RouteLoading />}>
       {path === '/reset-password' ? (
         <ResetPassword />
       ) : path === '/login' ? (
@@ -199,7 +221,7 @@ createRoot(root).render(
       ) : (
         <PublicScreen><PublicHomePage /></PublicScreen>
       )}
-      </Suspense>
+      </Suspense></RouteErrorBoundary>
       <PwaUpdatePrompt />
     </>
   </StrictMode>,

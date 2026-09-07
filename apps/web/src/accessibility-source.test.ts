@@ -35,6 +35,14 @@ test('global styles preserve visible focus and user motion/contrast preferences'
   assert.match(styles, /\.yield-form button \{[^}]*min-height:\s*44px/s);
 });
 
+test('route failures present an accessible recovery action instead of a blank screen', async () => {
+  const main = await source('./main.tsx');
+
+  assert.match(main, /class RouteErrorBoundary/);
+  assert.match(main, /Actualizar y reintentar/);
+  assert.match(main, /<RouteErrorBoundary><Suspense/);
+});
+
 test('ticket upload after delivery remains a real keyboard-operable button', async () => {
   const delivery = await source('./DeliveryEntryCard.tsx');
 

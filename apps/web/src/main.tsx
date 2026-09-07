@@ -7,6 +7,7 @@ import { App } from './App';
 import { CalendarPage } from './CalendarPage';
 import { installDemoPreview } from './demoPreview';
 import { DiscoverPage } from './DiscoverPage';
+import { DiscoverCollectionPage } from './DiscoverCollectionPage';
 import { DiscoverRouteDetailPage, DiscoverRoutesPage } from './DiscoverRoutesPage';
 import { LocalServiceDetailPage, LocalServicesPage } from './LocalServicesPage';
 import { EditProfilePage } from './EditProfilePage';
@@ -156,6 +157,8 @@ createRoot(root).render(
         <PublicScreen showAction={false}><DiscoverRoutesPage /></PublicScreen>
       ) : path.startsWith('/descubre/rutas/') ? (
         <PublicScreen showAction={false}><DiscoverRouteDetailPage routeId={path.split('/').filter(Boolean).at(-1) ?? ''} /></PublicScreen>
+      ) : ['/descubre/miradores', '/descubre/gastronomia', '/descubre/oleoturismo', '/descubre/pueblos'].includes(path) ? (
+        <PublicScreen showAction={false}><DiscoverCollectionPage slug={path.split('/').filter(Boolean).at(-1) ?? ''} /></PublicScreen>
       ) : path === '/descubre/servicios' ? (
         <PublicScreen><LocalServicesPage directory /></PublicScreen>
       ) : path.startsWith('/descubre/servicios/') ? (

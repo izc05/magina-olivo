@@ -110,7 +110,7 @@ function invalidateCachePrefix(prefix: string): void {
   }
 }
 
-async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
+export async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   if (init.body && !headers.has('content-type')) headers.set('content-type', 'application/json');
   headers.set('accept', 'application/json');

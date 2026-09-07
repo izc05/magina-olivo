@@ -1,4 +1,6 @@
-const DEMO_ENABLED = import.meta.env.VITE_DEMO_MODE === 'true';
+// Local visual previews must remain usable even when a developer has not
+// started the API. Production builds never enable these illustrative values.
+const DEMO_ENABLED = import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true';
 const DEMO_HEADER = 'x-magina-demo-preview';
 
 function json(data: unknown): Response {
@@ -112,7 +114,7 @@ function demoHourlyWeather() {
   const rain = [5, 5, 5, 10, 10, 15, 15, 25, 35, 45, 60, 55, 45, 35, 20, 15];
   const temperatures = [14, 15, 17, 19, 21, 23, 24, 25, 25, 24, 22, 20, 18, 17, 15, 14];
   return {
-    municipality: { slug: 'huelma', name: 'Huelma', province: 'Jaén' },
+    municipality: { slug: 'bedmar-y-garciez', name: 'Bedmar y Garcíez', province: 'Jaén' },
     forecast: {
       elaboratedAt: new Date().toISOString(),
       hours: rain.map((probability, index) => ({
@@ -132,6 +134,29 @@ function demoHourlyWeather() {
   };
 }
 
+function demoDailyWeather() {
+  const temperatures = [29, 31, 28, 27, 30, 32, 31];
+  const minimums = [16, 17, 15, 14, 16, 17, 18];
+  const rain = [10, 25, 70, 55, 20, 10, 5];
+  return {
+    municipality: { slug: 'bedmar-y-garciez', name: 'Bedmar y Garcíez', province: 'Jaén' },
+    forecast: {
+      elaboratedAt: new Date().toISOString(),
+      days: temperatures.map((temperatureMaxC, index) => ({
+        date: isoDateOffset(index),
+        precipitationProbabilityPercent: rain[index],
+        temperatureMinC: minimums[index],
+        temperatureMaxC,
+        windMaxKmh: 8 + index * 2,
+      })),
+    },
+    source: {
+      attribution: 'AEMET OpenData · preview visual',
+      scopeNote: 'Datos ilustrativos solo en desarrollo; la aplicación publicada consulta AEMET.',
+    },
+  };
+}
+
 export function installWeatherDemoPreview(): void {
   if (!DEMO_ENABLED) return;
 
@@ -142,6 +167,12 @@ export function installWeatherDemoPreview(): void {
 
     if (method === 'GET' && url.pathname === '/api/v1/public/weather/radar/frames') {
       return json(demoRadar());
+    }
+    if (method === 'GET' && url.pathname === '/api/v1/public/weather') {
+      return json(demoDailyWeather());
+    }
+    if (method === 'GET' && url.pathname === '/api/v1/public/municipalities') {
+      return json({ items: [{ slug: 'bedmar-y-garciez', name: 'Bedmar y Garcíez', province: 'Jaén' }] });
     }
     if (method === 'GET' && url.pathname === '/api/v1/public/weather/hourly') {
       return json(demoHourlyWeather());

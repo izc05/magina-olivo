@@ -16,7 +16,7 @@ function WeatherIntro({ title, copy, place }: { title: string; copy: string; pla
 
 function useDailyWeather() {
   const [data, setData] = useState<DailyWeather | null>(null); const [error, setError] = useState('');
-  useEffect(() => { const controller = new AbortController(); void fetch('/api/v1/public/weather?municipality=huelma', { signal: controller.signal, headers: { accept: 'application/json' } }).then((r) => { if (!r.ok) throw new Error(); return r.json(); }).then(setData).catch((e) => { if (e.name !== 'AbortError') setError('La previsión no está disponible temporalmente.'); }); return () => controller.abort(); }, []);
+  useEffect(() => { const controller = new AbortController(); void fetch('/api/v1/public/weather?municipality=bedmar-y-garciez', { signal: controller.signal, headers: { accept: 'application/json' } }).then((r) => { if (!r.ok) throw new Error(); return r.json(); }).then(setData).catch((e) => { if (e.name !== 'AbortError') setError('La previsión no está disponible temporalmente.'); }); return () => controller.abort(); }, []);
   return { data, error };
 }
 
@@ -34,7 +34,7 @@ export function WeatherWeeklyPage() {
 
 export function WeatherHourlyPage() {
   const [data, setData] = useState<HourlyWeather | null>(null); const [error, setError] = useState('');
-  useEffect(() => { void fetch('/api/v1/public/weather/hourly?municipality=huelma', { headers: { accept: 'application/json' } }).then((r) => { if (!r.ok) throw new Error(); return r.json(); }).then(setData).catch(() => setError('La previsión horaria de AEMET no está disponible ahora.')); }, []);
+  useEffect(() => { void fetch('/api/v1/public/weather/hourly?municipality=bedmar-y-garciez', { headers: { accept: 'application/json' } }).then((r) => { if (!r.ok) throw new Error(); return r.json(); }).then(setData).catch(() => setError('La previsión horaria de AEMET no está disponible ahora.')); }, []);
   const hours = data?.forecast.hours.filter((_, index) => index % 2 === 0).slice(0, 8) ?? [];
   const selected = hours[0];
   const selectedAt = selected ? new Date(selected.dateTime) : null;

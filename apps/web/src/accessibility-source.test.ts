@@ -54,6 +54,8 @@ test('login keeps its visible form before the fixed registration entry in keyboa
 
 test('PWA updates are announced and can only be applied through an accessible user action', async () => {
   const prompt = await source('./PwaUpdatePrompt.tsx');
+  const vite = await source('../vite.config.ts');
+  const index = await source('../index.html');
 
   assert.match(prompt, /onNeedRefresh/);
   assert.match(prompt, /applyPwaUpdateWhenSafe/);
@@ -62,4 +64,8 @@ test('PWA updates are announced and can only be applied through an accessible us
   assert.match(prompt, /type="button"/);
   assert.match(prompt, /Actualizar ahora/);
   assert.match(prompt, /aria-label="Cerrar aviso de actualización" onClick=\{\(\) => setState\('idle'\)\}/);
+  assert.match(vite, /magina-olivo-official-mark\.png/);
+  assert.match(vite, /purpose: 'any maskable'/);
+  assert.match(index, /apple-mobile-web-app-capable/);
+  assert.match(index, /apple-touch-icon/);
 });

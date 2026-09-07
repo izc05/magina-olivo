@@ -26,6 +26,12 @@ export default defineConfig(({ mode }) => {
           lang: 'es-ES',
           icons: [
             {
+              src: `${base}brand/magina-olivo-official-mark.png`,
+              sizes: '400x400',
+              type: 'image/png',
+              purpose: 'any maskable',
+            },
+            {
               src: `${base}brand/magina-olivo-mark.svg`,
               sizes: 'any',
               type: 'image/svg+xml',

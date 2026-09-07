@@ -56,10 +56,12 @@ export function FieldNotebook({
   holdingId,
   farmId,
   plots,
+  onOpenMap,
 }: {
   holdingId: string;
   farmId: string;
   plots: Plot[];
+  onOpenMap?: () => void;
 }) {
   const [selectedPlotId, setSelectedPlotId] = useState(plots[0]?.id ?? '');
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -228,7 +230,7 @@ export function FieldNotebook({
             </div>
           </div>
 
-          <a className="notebook-map-context notebook-map-link" href="#mapa-parcelas" aria-label={`Abrir mapa de ${selectedPlot?.name ?? 'la parcela activa'}`}>
+          <a className="notebook-map-context notebook-map-link" href="#mapa-parcelas" onClick={(event) => { if (onOpenMap) { event.preventDefault(); onOpenMap(); } }} aria-label={`Abrir mapa de ${selectedPlot?.name ?? 'la parcela activa'}`}>
             <strong>Mapa, SIGPAC y Catastro</strong>
             <span>Consulta el perímetro y la fuente oficial de la parcela activa.</span>
           </a>

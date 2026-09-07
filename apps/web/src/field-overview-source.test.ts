@@ -33,9 +33,24 @@ test('Mi Campo keeps the private farm overview wired to real holdings and farms'
   assert.match(app, /function CampaignDeliveryTrend/);
   assert.match(app, /Evolución de entregas/);
   assert.match(app, /Añadir mi primera finca/);
-  assert.match(app, /<FieldNotebook holdingId=\{selectedHolding\.id\} farmId=\{selectedFarm\.id\} plots=\{plots\} \/>/);
+  assert.match(app, /<FieldNotebook holdingId=\{selectedHolding\.id\} farmId=\{selectedFarm\.id\} plots=\{plots\} onOpenMap=\{openMapWorkspace\} \/>/);
   assert.ok(vite.includes('urlPattern: /\\/api\\/v1\\/public\\//'));
   assert.equal(vite.includes('urlPattern: /\\/api\\/v1\\//,'), false);
+});
+
+test('Mi Campo opens the map as a dedicated workspace instead of placing it after every field form', async () => {
+  const app = await source('./App.tsx');
+  const mapStyles = await source('./plot-map.css');
+
+  assert.match(app, /const \[showMapWorkspace, setShowMapWorkspace\] = useState\(false\)/);
+  assert.match(app, /const openMapWorkspace = \(\) =>/);
+  assert.match(app, /className="field-map-workspace"/);
+  assert.match(app, /id="mapa-parcelas"/);
+  assert.match(app, /<PlotMapPanel farmId=\{selectedFarm\.id\} \/>/);
+  assert.match(app, /onOpenMap=\{openMapWorkspace\}/);
+  assert.doesNotMatch(app, /className="section field-map-section"/);
+  assert.match(mapStyles, /\.field-map-workspace \.plot-map-card \{ order: -1/);
+  assert.match(mapStyles, /\.field-map-workspace \.plot-map-editor \{ min-height: min\(60vh, 590px\)/);
 });
 
 test('farm detail and plots remain a local visual layer over the existing private contract', async () => {
@@ -50,7 +65,7 @@ test('farm detail and plots remain a local visual layer over the existing privat
   assert.match(app, /aria-pressed=\{plot\.id === selectedPlotId\}/);
   assert.match(app, /Aún no has añadido parcelas a esta finca\./);
   assert.match(app, /api\.createPlot\(farmId, body\)/);
-  assert.match(app, /<FieldNotebook holdingId=\{selectedHolding\.id\} farmId=\{selectedFarm\.id\} plots=\{plots\} \/>/);
+  assert.match(app, /<FieldNotebook holdingId=\{selectedHolding\.id\} farmId=\{selectedFarm\.id\} plots=\{plots\} onOpenMap=\{openMapWorkspace\} \/>/);
   assert.doesNotMatch(app, /boundaryGeoJson|<polygon/);
 });
 

@@ -8,7 +8,9 @@ type Day = { date: string; precipitationProbabilityPercent: number | null; tempe
 type DailyWeather = { municipality: { slug: string; name: string; province: string }; forecast: { elaboratedAt: string | null; days: Day[] }; source: { attribution: string; scopeNote: string } };
 type Hour = { dateTime: string; skyDescription: string | null; precipitationProbabilityPercent: number | null; temperatureC: number | null; humidityPercent: number | null; windKmh: number | null; windDirection: string | null };
 type HourlyWeather = { municipality: { slug: string; name: string; province: string }; forecast: { hours: Hour[] }; source: { attribution: string; scopeNote: string } };
+type RadarFrames = { items: Array<{ id: string; capturedAt: string; imageUrl: string }>; source: { attribution: string } };
 const fmt = (value: number | null, suffix = '') => value == null ? '—' : `${Math.round(value)}${suffix}`;
+const radarTimeLabel = (value: string) => { const date = new Date(value); return Number.isNaN(date.getTime()) ? 'Hora no disponible' : date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }); };
 const dateParts = (date: string) => {
   const value = new Date(date);
   if (Number.isNaN(value.getTime())) return { weekday: 'Fecha', date: 'No disponible' };
@@ -20,6 +22,17 @@ const dateParts = (date: string) => {
 function WeatherIcon({ rain = 0, night = false }: { rain?: number | null | undefined; night?: boolean | undefined }) { if (night) return <Moon />; if ((rain ?? 0) >= 55) return <CloudRain />; if ((rain ?? 0) >= 20) return <Cloud />; return <Sun />; }
 function WeatherShell({ children, active = '/magina/tiempo' }: { children: React.ReactNode; active?: string }) { return <><a className="skip-link" href="#main-content">Saltar al contenido</a><main id="main-content" className="weather-experience-shell"><VisualHeader /><div className="weather-experience-page">{children}</div><PublicNavigation activePath={active} /></main></>; }
 function WeatherIntro({ title, copy, place }: { title: string; copy: string; place?: string }) { return <header className="weather-experience-intro"><p className="eyebrow">METEOROLOGÍA</p><h1>{title}</h1>{place ? <h2>{place}</h2> : null}<p>{copy}</p></header>; }
+
+function WeatherRadarPreview() {
+  const [radar, setRadar] = useState<RadarFrames | null>(null);
+  const [index, setIndex] = useState(0);
+  useEffect(() => { const controller = new AbortController(); void fetch('/api/v1/public/weather/radar/frames', { signal: controller.signal, headers: { accept: 'application/json' } }).then((response) => response.ok ? response.json() as Promise<RadarFrames> : Promise.reject()).then(setRadar).catch(() => undefined); return () => controller.abort(); }, []);
+  const frames = radar?.items ?? [];
+  useEffect(() => { if (frames.length < 2) return; const timer = window.setInterval(() => setIndex((current) => (current + 1) % frames.length), 1800); return () => window.clearInterval(timer); }, [frames.length]);
+  const frame = frames[index];
+  if (!frame) return <section className="card weather-radar-mini"><div><p className="eyebrow">RADAR DE LLUVIA</p><strong>Preparando movimiento de precipitación</strong><small>El servidor incorporará nuevos fotogramas AEMET automáticamente.</small></div><a className="text-button" href="/magina/tiempo/radar">Abrir radar <ChevronRight aria-hidden="true" /></a></section>;
+  return <section className="card weather-radar-mini"><div className="weather-radar-mini-heading"><div><p className="eyebrow">RADAR DE LLUVIA · EN MOVIMIENTO</p><strong>Nubes y precipitación recientes</strong></div><a className="text-button" href="/magina/tiempo/radar">Ver mapa <ChevronRight aria-hidden="true" /></a></div><div className="weather-radar-mini-viewport"><img key={frame.id} src={frame.imageUrl} alt="Fotograma reciente del radar de precipitación" /><span>{radar?.source.attribution ?? 'AEMET'} · {radarTimeLabel(frame.capturedAt)}</span></div></section>;
+}
 
 function useDailyWeather() {
   const [data, setData] = useState<DailyWeather | null>(null); const [error, setError] = useState('');
@@ -33,7 +46,7 @@ export function WeatherWeeklyPage() {
     {error ? <div className="alert">{error}</div> : null}
     <section className="card weather-current-card"><WeatherIcon rain={today?.precipitationProbabilityPercent} /><div><strong>{fmt(today?.temperatureMaxC ?? null, '°C')}</strong><p>Previsión municipal</p><small>{data ? `${data.municipality.name} · ${data.municipality.province}` : 'Consultando AEMET…'}</small></div><dl><div><dt><Droplets />Probabilidad de lluvia</dt><dd>{fmt(today?.precipitationProbabilityPercent ?? null, '%')}</dd></div><div><dt><Wind />Viento máximo</dt><dd>{fmt(today?.windMaxKmh ?? null, ' km/h')}</dd></div><div><dt><Thermometer />Mínima</dt><dd>{fmt(today?.temperatureMinC ?? null, '°')}</dd></div></dl></section>
     <section className="card weather-week-list">{data?.forecast.days.map((day) => { const label = dateParts(day.date); const caution = (day.precipitationProbabilityPercent ?? 0) >= 50; return <article key={day.date}><span><strong>{label.weekday}</strong><small>{label.date}</small></span><WeatherIcon rain={day.precipitationProbabilityPercent} /><b>{fmt(day.temperatureMaxC, '°')} <em>/ {fmt(day.temperatureMinC, '°')}</em></b><span className="weather-rain-value"><Droplets />{fmt(day.precipitationProbabilityPercent, '%')}</span><span className={`weather-condition-chip${caution ? ' caution' : ''}`}>{caution ? <AlertTriangle /> : <Sprout />}{caution ? 'Precaución lluvia' : 'Condiciones favorables'}</span></article>; })}</section>
-    <div className="weather-actions"><a className="primary-button" href="/magina/tiempo/horas">Ver previsión por horas</a><a className="secondary-button" href="/magina/alertas/configurar">Configurar alertas</a></div>
+    <div className="weather-actions"><a className="primary-button" href="/magina/tiempo/horas">Ver previsión por horas</a><a className="secondary-button" href="/magina/alertas/configurar">Configurar alertas</a></div><WeatherRadarPreview />
     <section className="card weather-impact-card"><span className="profile-link-icon"><Sprout /></span><div><p className="eyebrow">IMPACTO EN TUS PARCELAS</p><p>Consulta la lluvia, el viento y la temperatura antes de organizar tratamientos, riego o recolección.</p></div><ChevronRight /></section>
     <p className="weather-trust-note">Fuente: {data?.source.attribution ?? 'AEMET'} · {data?.source.scopeNote ?? 'Predicción municipal.'}</p>
   </WeatherShell>;
@@ -56,7 +69,6 @@ export function WeatherHourlyPage() {
 }
 
 type RainAlerts = { items: Array<{ municipalityName: string; forecastDate: string; precipitationProbabilityPercent: number; thresholdPercent: number; provider: string }> };
-type RadarFrames = { items: Array<{ id: string; capturedAt: string; imageUrl: string }>; source: { attribution: string } };
 export function WeatherAlertDetailPage() {
   const [alert, setAlert] = useState<RainAlerts['items'][number] | null>(null);
   const [radar, setRadar] = useState<RadarFrames | null>(null);

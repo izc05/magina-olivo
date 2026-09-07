@@ -19,7 +19,7 @@
   --shadow: var(--v2-shadow);
 }
 html, body { background: var(--ivory); color: var(--ink); }
-body { font-family: Inter, system-ui, sans-serif; font-weight: 400; }
+body { font-family: Inter, system-ui, sans-serif; font-weight: 450; }
 h1, h2, h3, .section-title, .brand-title { font-family: Georgia, 'Times New Roman', serif; letter-spacing: -.025em; color: var(--ink); }
 h1 { font-size: clamp(2rem, 6vw, 3rem); line-height: 1.06; }
 h2 { line-height: 1.13; }
@@ -61,7 +61,7 @@ summary { cursor: pointer; }
 }
 .public-navigation > a:not(.public-nav-action), .bottom-nav-v2 .nav-button {
   min-width: 0; min-height: 48px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px;
-  padding: 2px; border: 0; background: transparent; color: #757870; font-size: .68rem; font-weight: 400; text-decoration: none;
+  padding: 2px; border: 0; background: transparent; color: #757870; font-size: .68rem; font-weight: 500; text-decoration: none;
 }
 .public-navigation > a.active:not(.public-nav-action), .bottom-nav-v2 .nav-button.active { color: var(--olive-950); background: transparent; box-shadow: none; font-weight: 600; }
 .public-navigation .nav-line-icon, .bottom-nav-v2 .nav-button svg { width: 24px; height: 24px; }
@@ -97,7 +97,7 @@ summary { cursor: pointer; }
 .public-home-field-icon svg, .visual-icon-tile svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.7; }
 .row-chevron { width: 20px; height: 20px; flex-shrink: 0; }
 .public-home-v2-quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0 0 23px; }
-.public-home-v2-quick a { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70px; gap: 8px; padding: 10px 2px; border-radius: 14px; border: 1px solid var(--line); background: var(--paper); box-shadow: none; color: var(--ink); font-size: .7rem; font-weight: 400; text-decoration: none; }
+.public-home-v2-quick a { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70px; gap: 8px; padding: 10px 2px; border-radius: 14px; border: 1px solid var(--line); background: var(--paper); box-shadow: none; color: var(--ink); font-size: .7rem; font-weight: 500; text-decoration: none; }
 .public-home-v2-quick svg { width: 26px; height: 26px; color: var(--olive-950); stroke-width: 1.7; }
 .public-home-market-card { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; padding: 15px; background: var(--paper); }
 .public-home-market-card strong { font: 700 1.45rem/1.1 Georgia, serif; }

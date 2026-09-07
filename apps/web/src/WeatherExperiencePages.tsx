@@ -9,7 +9,14 @@ type DailyWeather = { municipality: { slug: string; name: string; province: stri
 type Hour = { dateTime: string; skyDescription: string | null; precipitationProbabilityPercent: number | null; temperatureC: number | null; humidityPercent: number | null; windKmh: number | null; windDirection: string | null };
 type HourlyWeather = { municipality: { slug: string; name: string; province: string }; forecast: { hours: Hour[] }; source: { attribution: string; scopeNote: string } };
 const fmt = (value: number | null, suffix = '') => value == null ? '—' : `${Math.round(value)}${suffix}`;
-const dateParts = (date: string) => { const value = new Date(`${date}T12:00:00`); return { weekday: new Intl.DateTimeFormat('es-ES', { weekday: 'long' }).format(value), date: new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(value) }; };
+const dateParts = (date: string) => {
+  const value = new Date(date);
+  if (Number.isNaN(value.getTime())) return { weekday: 'Fecha', date: 'No disponible' };
+  return {
+    weekday: new Intl.DateTimeFormat('es-ES', { weekday: 'long' }).format(value),
+    date: new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(value),
+  };
+};
 function WeatherIcon({ rain = 0, night = false }: { rain?: number | null | undefined; night?: boolean | undefined }) { if (night) return <Moon />; if ((rain ?? 0) >= 55) return <CloudRain />; if ((rain ?? 0) >= 20) return <Cloud />; return <Sun />; }
 function WeatherShell({ children, active = '/magina/tiempo' }: { children: React.ReactNode; active?: string }) { return <><a className="skip-link" href="#main-content">Saltar al contenido</a><main id="main-content" className="weather-experience-shell"><VisualHeader /><div className="weather-experience-page">{children}</div><PublicNavigation activePath={active} /></main></>; }
 function WeatherIntro({ title, copy, place }: { title: string; copy: string; place?: string }) { return <header className="weather-experience-intro"><p className="eyebrow">METEOROLOGÍA</p><h1>{title}</h1>{place ? <h2>{place}</h2> : null}<p>{copy}</p></header>; }

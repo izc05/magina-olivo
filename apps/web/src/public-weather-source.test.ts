@@ -58,3 +58,11 @@ test('hourly weather remains server-connected and does not expose AEMET credenti
   assert.match(routes, /fetchAemetHourlyForecast/);
   assert.doesNotMatch(page, /AEMET_API_KEY/);
 });
+
+test('weekly forecast accepts AEMET ISO dates with an existing time and never throws on an invalid provider date', async () => {
+  const page = await read('./WeatherExperiencePages.tsx');
+
+  assert.match(page, /const value = new Date\(date\)/);
+  assert.match(page, /Number\.isNaN\(value\.getTime\(\)\)/);
+  assert.doesNotMatch(page, /new Date\(`\$\{date\}T12:00:00`\)/);
+});

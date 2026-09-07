@@ -52,6 +52,45 @@ final result: passed
 
 ---
 
+# Design QA — Panel de administración (vista local)
+
+## Evidence
+
+- Source visual truth:
+  - `/tmp/codex-clipboard-94aca2fb-b66e-48f1-9f38-8f2d10400bf5.png` — panel móvil, 1024 × 1536.
+  - `/tmp/codex-clipboard-1d8e2fd1-1515-4f75-81b6-a3ffe376816f.png` — panel de escritorio, 1448 × 1086.
+- Rendered implementation: `/admin?preview=1` in the Codex in-app browser at a 1265 px wide desktop surface.
+- The implementation only uses existing product assets and Lucide icons. Its large header landscape is the existing local `home-sierra-magina.webp` asset.
+- Safety state: production and `/admin` without the explicit development query show an access-pending gate. The preview announces that its figures are examples and does not call an API or write data.
+
+## Full-view comparison
+
+- The design adopts the supplied ivory canvas, olive palette, photographic Sierra Mágina hero, crown administrator control, compact navigation tiles, rounded white metric cards, activity stream and municipal distribution module.
+- At desktop widths the content resolves into a dense dashboard, matching the horizontal rhythm of the reference rather than scaling a phone composition. At narrower widths the tiles and cards collapse into readable two- and one-column groups.
+- The supplied device frame, OS chrome and full operational sidebars are intentionally not imitated. They are presentation hardware or later-role-specific application surfaces, not part of this safe local preview.
+
+## Comparison history
+
+1. P1: an initially bare header did not convey that this was a platform-admin visual concept. Added the administrator crown, notification button and initials control within the shared brand header.
+2. P1: a visual-only admin dashboard could be mistaken for an authorized control plane. Added a persistent local-design notice plus a non-preview access gate, and kept all actions state-local.
+3. P2: the first state was static. Navigation tiles now select a local dashboard state and the primary action returns an explicit no-write acknowledgement.
+
+## Primary interactions checked
+
+- The six dashboard navigation tiles select an active local state; `Cooperativas` was exercised in the browser.
+- `Acción rápida` reports its demo-only no-write state in the page.
+- `npm --prefix apps/web test -- --run` passes (67 frontend tests).
+- `npm --prefix apps/web run build` and `git diff --check` pass.
+
+## Expected follow-up
+
+- A functional platform-admin area needs its own authenticated platform role, server-side permission checks, audit trail, scope controls and real contracts. It must remain independent from the current farm-level `admin` role.
+- No staging deployment was made for this visual preview.
+
+final result: passed
+
+---
+
 # Design QA — Acceso público y Mi Campo
 
 ## Policy implemented

@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AccountPage } from './AccountPage';
+import { AdminDashboardPreview } from './AdminDashboardPreview';
 import { App } from './App';
 import { CalendarPage } from './CalendarPage';
 import { installDemoPreview } from './demoPreview';
@@ -50,6 +51,7 @@ import './magina-field-alerts.css';
 import './local-services.css';
 import './discover-territory.css';
 import './discover-routes.css';
+import './admin-preview.css';
 import './integration-v2.css';
 import './field-v2-integration.css';
 import './journal-v2-integration.css';
@@ -117,6 +119,8 @@ createRoot(root).render(
         <RegisterPage />
       ) : path === '/onboarding' ? (
         <OnboardingPage />
+      ) : path === '/admin' ? (
+        <AdminDashboardPreview preview={import.meta.env.DEV && new URLSearchParams(window.location.search).get('preview') === '1'} />
       ) : path === '/cuenta' ? (
         <PrivateRoute returnTo={returnTo}><AccountPage /></PrivateRoute>
       ) : path === '/perfil/editar' ? (

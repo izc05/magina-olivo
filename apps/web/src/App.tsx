@@ -482,12 +482,12 @@ function HomeTab({ holding, campaign, summary, coverage, onNavigate }: { holding
             <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--olive-950)' }}>Tienes 250 aceitunas para recoger</h3>
             <p style={{ margin: '0.3rem 0 0.75rem', fontSize: '0.8rem', color: 'var(--muted)' }}>Cada labor y pesada carga frutos en tu árbol virtual. ¡Canjéalos por regalos!</p>
           </div>
-          <a href="/olivo" style={{ display: 'inline-grid', placeItems: 'center', width: '54px', height: '54px', borderRadius: '50%', background: 'var(--olive-950)', color: '#fff', textDecoration: 'none', flexShrink: 0 }}>
+          <a href="/tu-olivo" style={{ display: 'inline-grid', placeItems: 'center', width: '54px', height: '54px', borderRadius: '50%', background: 'var(--olive-950)', color: '#fff', textDecoration: 'none', flexShrink: 0 }}>
             <span style={{ fontSize: '1.5rem' }}>🫒</span>
           </a>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <a className="primary-button" href="/olivo" style={{ textDecoration: 'none', fontSize: '0.8rem', minHeight: '38px', padding: '0 14px', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+          <a className="primary-button" href="/tu-olivo" style={{ textDecoration: 'none', fontSize: '0.8rem', minHeight: '38px', padding: '0 14px', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
             🌿 Recoger Cosecha de Aceitunas
           </a>
           <a className="secondary-button" href="/recompensas" style={{ textDecoration: 'none', fontSize: '0.8rem', minHeight: '38px', padding: '0 14px', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>

@@ -265,4 +265,15 @@ export const api = {
     };
     humanExplanation: string;
   }>('/api/v1/ai/parse-intent', { method: 'POST', body: JSON.stringify({ text, holdingId }) }),
+  parseTicket: (text: string) => request<{
+    confidence: number;
+    kilograms: string;
+    fatYieldPercent?: number;
+    acidityPercent?: number;
+    ticketNumber?: string;
+    cooperativeName?: string;
+    notes?: string;
+    humanExplanation: string;
+  }>('/api/v1/ai/parse-ticket', { method: 'POST', body: JSON.stringify({ text }) }),
 };
+

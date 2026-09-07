@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { parseNaturalLanguageIntent, type ActivityDraft, type DeliveryDraft, type QueryDraft, type ParsedIntentResult } from './ai-parser.ts';
+import { parseAlmazaraTicketText } from './ai-ticket-parser.ts';
 import { getHoldingAccess } from './authorization.ts';
 import { getPool } from './db.ts';
 import { apiError } from './http-errors.ts';
@@ -127,4 +128,28 @@ export function registerAiRoutes(app: FastifyInstance): void {
       return result;
     },
   );
+
+  // 3. Parse ticket / albarán endpoint
+  app.post<{ Body: { text: string } }>(
+    '/api/v1/ai/parse-ticket',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['text'],
+          properties: {
+            text: { type: 'string', minLength: 1, maxLength: 5000 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const session = await getAuthenticatedSession(request);
+      if (!session) return reply.code(401).send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
+
+      return parseAlmazaraTicketText(request.body.text);
+    },
+  );
 }
+

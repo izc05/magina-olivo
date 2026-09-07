@@ -26,7 +26,9 @@ type DraftState = {
 };
 
 export function MaginaAiAssistant({ holdingId, campaignId, onSaved, onClose }: MaginaAiAssistantProps) {
+  const [activeTab, setActiveTab] = useState<'voice' | 'ticket'>('voice');
   const [inputText, setInputText] = useState('');
+  const [ticketText, setTicketText] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [busy, setBusy] = useState(false);
   const [draft, setDraft] = useState<DraftState | null>(null);
@@ -107,6 +109,35 @@ export function MaginaAiAssistant({ holdingId, campaignId, onSaved, onClose }: M
     }
   };
 
+  const handleParseTicket = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const text = ticketText.trim();
+    if (!text) return;
+
+    setBusy(true);
+    setError(null);
+    setDraft(null);
+    setExplanation(null);
+    setSuccessNotice(null);
+
+    try {
+      const res = await api.parseTicket(text);
+      const newDraft: DraftState = {
+        kind: 'delivery',
+        kilograms: res.kilograms,
+      };
+      if (res.cooperativeName) newDraft.customDestination = res.cooperativeName;
+      if (res.notes) newDraft.notes = res.notes;
+
+      setDraft(newDraft);
+      setExplanation(res.humanExplanation);
+    } catch (err: any) {
+      setError(err.message || 'Error al procesar el ticket/albarán.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const handleConfirmDraft = async () => {
     if (!draft) return;
     setBusy(true);
@@ -153,6 +184,7 @@ export function MaginaAiAssistant({ holdingId, campaignId, onSaved, onClose }: M
 
       setDraft(null);
       setInputText('');
+      setTicketText('');
       if (onSaved) onSaved();
     } catch (err: any) {
       setError(err.message || 'No se pudo guardar el registro.');
@@ -166,7 +198,7 @@ export function MaginaAiAssistant({ holdingId, campaignId, onSaved, onClose }: M
       <div className="magina-ai-header">
         <div className="magina-ai-badge">
           <Sparkles aria-hidden="true" size={16} />
-          <span>Mágina IA · Asistente</span>
+          <span>Mágina IA · Diario & Tickets</span>
         </div>
         {onClose ? (
           <button type="button" className="text-button magina-ai-close" onClick={onClose} aria-label="Cerrar asistente">
@@ -175,56 +207,104 @@ export function MaginaAiAssistant({ holdingId, campaignId, onSaved, onClose }: M
         ) : null}
       </div>
 
-      <p className="magina-ai-intro" id="magina-ai-title">
-        Dicta o escribe lo que has hecho o entregado en el olivar y la IA preparará el borrador para que lo confirmes.
-      </p>
+      <div className="magina-ai-tabs" style={{ display: 'flex', gap: '0.5rem', margin: '0.5rem 0 1rem' }}>
+        <button
+          type="button"
+          className={`ghost-button ${activeTab === 'voice' ? 'active' : ''}`}
+          onClick={() => setActiveTab('voice')}
+          style={{ fontWeight: activeTab === 'voice' ? 'bold' : 'normal' }}
+        >
+          🎙 Dictado / Voz
+        </button>
+        <button
+          type="button"
+          className={`ghost-button ${activeTab === 'ticket' ? 'active' : ''}`}
+          onClick={() => setActiveTab('ticket')}
+          style={{ fontWeight: activeTab === 'ticket' ? 'bold' : 'normal' }}
+        >
+          📄 Escáner de Albarán
+        </button>
+      </div>
 
-      <form className="magina-ai-form" onSubmit={handleInterpret}>
-        <div className="magina-ai-input-wrap">
-          <input
-            type="text"
-            className="magina-ai-input"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            placeholder="Ej: Entregados 3400 kg en cooperativa San Sebastián"
-            disabled={busy}
-          />
-          <button
-            type="button"
-            className={`magina-ai-mic-btn ${isListening ? 'listening' : ''}`}
-            onClick={toggleListening}
-            aria-label={isListening ? 'Detener escucha' : 'Hablar por micrófono'}
-            title="Dictar por voz"
-          >
-            {isListening ? <MicOff size={20} /> : <Mic size={20} />}
-          </button>
-          <button
-            type="submit"
-            className="primary-button magina-ai-submit-btn"
-            disabled={busy || !inputText.trim()}
-            aria-label="Interpretar"
-          >
-            <Send size={18} />
-          </button>
-        </div>
-      </form>
+      {activeTab === 'voice' ? (
+        <>
+          <p className="magina-ai-intro" id="magina-ai-title">
+            Dicta o escribe lo que has hecho o entregado en el olivar y la IA preparará el borrador para que lo confirmes.
+          </p>
+
+          <form className="magina-ai-form" onSubmit={handleInterpret}>
+            <div className="magina-ai-input-wrap">
+              <input
+                type="text"
+                className="magina-ai-input"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="Ej: Entregados 3400 kg en cooperativa San Sebastián"
+                disabled={busy}
+              />
+              <button
+                type="button"
+                className={`magina-ai-mic-btn ${isListening ? 'listening' : ''}`}
+                onClick={toggleListening}
+                aria-label={isListening ? 'Detener escucha' : 'Hablar por micrófono'}
+                title="Dictar por voz"
+              >
+                {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+              </button>
+              <button
+                type="submit"
+                className="primary-button magina-ai-submit-btn"
+                disabled={busy || !inputText.trim()}
+                aria-label="Interpretar"
+              >
+                <Send size={18} />
+              </button>
+            </div>
+          </form>
+        </>
+      ) : (
+        <>
+          <p className="magina-ai-intro">
+            Pega o escanea el texto del ticket o albarán de entrega de la almazara para extraer kilos, rendimiento y acidez.
+          </p>
+
+          <form className="magina-ai-form" onSubmit={handleParseTicket}>
+            <textarea
+              className="magina-ai-input"
+              rows={3}
+              value={ticketText}
+              onChange={(e) => setTicketText(e.target.value)}
+              placeholder="Ej: PESADA Nº 124 - KILOS NETO: 4250 - RENDIMIENTO GRASO: 21,5% - ACIDEZ: 0.3°"
+              disabled={busy}
+              style={{ width: '100%', marginBottom: '0.5rem', borderRadius: '0.5rem', padding: '0.5rem' }}
+            />
+            <button
+              type="submit"
+              className="primary-button"
+              disabled={busy || !ticketText.trim()}
+            >
+              Procesar Albarán
+            </button>
+          </form>
+        </>
+      )}
 
       {error ? (
-        <div className="alert magina-ai-alert" role="alert">
+        <div className="alert magina-ai-alert" role="alert" style={{ marginTop: '0.75rem' }}>
           <AlertCircle size={18} />
           <span>{error}</span>
         </div>
       ) : null}
 
       {successNotice ? (
-        <div className="alert success magina-ai-alert" role="status">
+        <div className="alert success magina-ai-alert" role="status" style={{ marginTop: '0.75rem' }}>
           <Check size={18} />
           <span>{successNotice}</span>
         </div>
       ) : null}
 
       {draft && explanation ? (
-        <div className="magina-ai-draft-card">
+        <div className="magina-ai-draft-card" style={{ marginTop: '1rem' }}>
           <div className="magina-ai-draft-head">
             <Bot size={20} />
             <strong>Borrador propuesto por Mágina IA</strong>
@@ -270,3 +350,4 @@ export function MaginaAiAssistant({ holdingId, campaignId, onSaved, onClose }: M
     </section>
   );
 }
+

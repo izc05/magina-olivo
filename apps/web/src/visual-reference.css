@@ -343,3 +343,17 @@ summary { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
 }
+
+/* Premium polish: restrained depth, clear actions and tactile feedback. */
+.card { box-shadow: 0 8px 22px rgba(46,58,34,.055); transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
+a.card:hover, button.card:hover, .public-home-v2-quick a:hover { transform: translateY(-2px); border-color: #c8d5bc; box-shadow: 0 14px 30px rgba(46,58,34,.11); }
+.primary-button { background: linear-gradient(135deg, #2e3a22 0%, #435f32 100%); box-shadow: 0 7px 16px rgba(46,58,34,.18); transition: transform .2s ease, box-shadow .2s ease, filter .2s ease; }
+.primary-button:hover, .primary-button:focus-visible { filter: brightness(1.07); transform: translateY(-1px); box-shadow: 0 10px 22px rgba(46,58,34,.24); }
+.secondary-button, .ghost-button { border-color: #cfd8c6; transition: background .2s ease, border-color .2s ease, transform .2s ease; }
+.secondary-button:hover, .ghost-button:hover { background: #eef4e8; border-color: #aebeaa; transform: translateY(-1px); }
+.public-home-field-icon, .visual-icon-tile { background: linear-gradient(145deg, #edf3e6, #dfe8d7); box-shadow: inset 0 1px 0 #ffffffaa; }
+.badge.gold { background: #fff0c7; color: #8b6200; }
+.public-navigation, .bottom-nav.bottom-nav-v2 { background: rgba(255,254,250,.88); box-shadow: 0 12px 35px rgba(46,58,34,.13); }
+.public-navigation > a.active:not(.public-nav-action)::after, .bottom-nav-v2 .nav-button.active::after { content: ''; width: 20px; height: 3px; margin-top: 1px; border-radius: 99px; background: var(--olive-650); }
+.public-home-v2-quick a { transition: transform .2s ease, box-shadow .2s ease, background .2s ease; }
+@media (prefers-reduced-motion: reduce) { .card, .primary-button, .secondary-button, .ghost-button, .public-home-v2-quick a { transition: none; } }

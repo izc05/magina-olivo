@@ -26,6 +26,11 @@ test('plot map has one primary Mi Campo surface and supports point plus boundary
   assert.match(editor, /Guardar perímetro/);
   assert.match(editor, /Añadir mi posición/);
   assert.match(editor, /tile\.openstreetmap\.org/);
+  assert.match(editor, /OI\.OrthoimageCoverage/);
+  assert.match(editor, /GoogleMapsCompatible/);
+  assert.match(editor, /dir_action=navigate/);
+  assert.match(editor, /Ortofoto PNOA/);
+  assert.match(editor, /Relieve/);
   assert.match(editor, /OpenStreetMap contributors/);
   assert.match(editor, /polygonFromVertices/);
   assert.match(editor, /polygonAreaSquareMeters/);

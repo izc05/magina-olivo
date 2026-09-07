@@ -58,11 +58,8 @@ async function apiRequest<T>(url: string, init: RequestInit = {}): Promise<T> {
 }
 
 export function googleMapsDirectionUrl(latitude: number, longitude: number): string {
-  return `https://www.google.com/maps/dir/?api=1&destination=${latitude.toFixed(6)},${longitude.toFixed(6)}`;
-}
-
-export function appleMapsDirectionUrl(latitude: number, longitude: number): string {
-  return `https://maps.apple.com/?daddr=${latitude.toFixed(6)},${longitude.toFixed(6)}`;
+  const destination = encodeURIComponent(`${latitude.toFixed(6)},${longitude.toFixed(6)}`);
+  return `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=driving&dir_action=navigate`;
 }
 
 function externalMapUrl(latitude: number, longitude: number): string {
@@ -72,7 +69,7 @@ function externalMapUrl(latitude: number, longitude: number): string {
 function getTileUrl(layer: LayerType, zoom: number, x: number, y: number): string {
   if (layer === 'pnoa') {
     // IGN PNOA Ortofoto WMTS EPSG:3857
-    return `https://www.ign.es/wmts/pnoa-ma?request=GetTile&service=WMTS&version=1.0.0&layer=OI.Ortofoto&style=default&format=image/jpeg&TileMatrixSet=GoogleMapsCompatible&TileMatrix=${zoom}&TileRow=${y}&TileCol=${x}`;
+    return `https://www.ign.es/wmts/pnoa-ma?request=GetTile&service=WMTS&version=1.0.0&layer=OI.OrthoimageCoverage&style=default&format=image/jpeg&TileMatrixSet=GoogleMapsCompatible&TileMatrix=${zoom}&TileRow=${y}&TileCol=${x}`;
   }
   if (layer === 'topo') {
     // IGN Mapa Topográfico / Relieve
@@ -680,7 +677,7 @@ export function PlotMapPanel({ farmId }: { farmId: string }) {
                 <div>
                   <strong>{selectedPlot.name}</strong>
                   <small>{mapStatus}</small>
-                  <small>© {layerType === 'pnoa' ? 'PNOA / IGN España' : layerType === 'topo' ? 'MTN / IGN España' : 'OpenStreetMap contributors'}</small>
+                  <small>© {layerType === 'pnoa' ? <a href="https://www.ign.es/web/ign/portal/pnoa-imagen" target="_blank" rel="noreferrer">PNOA / IGN España</a> : layerType === 'topo' ? <a href="https://www.ign.es/web/ign/portal" target="_blank" rel="noreferrer">MTN / IGN España</a> : <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>}</small>
                 </div>
                 <div className="plot-map-directions-actions">
                   <a className="primary-button plot-google-directions-btn" href={googleMapsDirectionUrl(mapCenter.latitude, mapCenter.longitude)} target="_blank" rel="noreferrer">

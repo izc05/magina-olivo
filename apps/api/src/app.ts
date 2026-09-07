@@ -6,6 +6,7 @@ import { registerAdminRoutes } from './admin-routes.ts';
 import { registerActivityRoutes } from './activity-routes.ts';
 import { registerAiRoutes } from './ai-routes.ts';
 import { registerPushRoutes } from './push-routes.ts';
+import { registerCrewRoutes } from './crew-routes.ts';
 import { registerAuthRoutes } from './auth-routes.ts';
 import { registerCampaignExportRoutes } from './campaign-export-routes.ts';
 import { registerCampaignRoutes } from './campaign-routes.ts';
@@ -77,6 +78,7 @@ export function buildApp(): FastifyInstance {
   registerAuthRoutes(app);
   registerAiRoutes(app);
   registerPushRoutes(app);
+  registerCrewRoutes(app);
   registerAdminRoutes(app);
   registerAccountPreferenceRoutes(app);
   registerAccountExportRoutes(app);

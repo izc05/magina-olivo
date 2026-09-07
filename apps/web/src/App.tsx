@@ -403,29 +403,62 @@ function NavButton({ active, icon, label, onClick }: { active: boolean; icon: 'h
 }
 
 function HomeTab({ holding, campaign, summary, coverage, onNavigate }: { holding: Holding | null; campaign: Campaign | null; summary: CampaignSummary | null; coverage: number; onNavigate: (tab: Tab) => void }) {
+  const municipality = holding?.municipality || 'Sierra Mágina';
+  const totalKg = Number(summary?.totalKilograms ?? 0);
+  const yieldPct = summary?.weightedYieldPercent ? Number(summary.weightedYieldPercent) : 0;
+  const estimatedOilKg = Math.round(totalKg * (yieldPct / 100));
+  const estimatedRevenueEur = Math.round(estimatedOilKg * 4.85);
+
   return (
     <>
+      {/* Weather & Daily Context Banner */}
+      <section className="card" style={{ padding: '1rem', background: 'linear-gradient(135deg, #26301f 0%, #3e4f32 100%)', color: '#fff', borderRadius: '0.85rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <p className="eyebrow" style={{ color: '#d4e1b8', margin: 0 }}>Diario del Olivar · {municipality}</p>
+            <h2 style={{ margin: '0.2rem 0 0', fontSize: '1.25rem', color: '#ffffff' }}>{holding?.name ?? 'Tu Explotación'}</h2>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <span style={{ fontSize: '1.5rem' }}>🌤 22°C</span>
+            <small style={{ display: 'block', color: '#d4e1b8', fontSize: '0.75rem' }}>AEMET · Prob. Lluvia 10%</small>
+          </div>
+        </div>
+      </section>
+
       <section className="hero">
         <p className="eyebrow">{campaign ? `Campaña ${campaign.seasonStartYear}/${String(campaign.seasonEndYear).slice(-2)}` : 'Tu campaña'}</p>
-        <h1>{holding?.name ?? 'Tu olivar'}</h1>
-        <p className="hero-sub">Un vistazo rápido a la campaña, sin perder de vista lo importante.</p>
         <div className="metrics">
           <Metric value={formatKg(summary?.totalKilograms)} label="entregados" />
           <Metric value={formatPercent(summary?.weightedYieldPercent)} label="rendimiento" />
-          <Metric value={String(summary?.deliveriesCount ?? 0)} label="entregas" />
-          <Metric value={String(summary?.pendingResultCount ?? 0)} label="sin rendimiento" />
+          <Metric value={estimatedOilKg > 0 ? `${new Intl.NumberFormat('es-ES').format(estimatedOilKg)} kg` : '—'} label="aceite AOVE est." />
+          <Metric value={estimatedRevenueEur > 0 ? `${new Intl.NumberFormat('es-ES').format(estimatedRevenueEur)} €` : '—'} label="valoración est. (4,85€/kg)" />
         </div>
         <div className="coverage">Cobertura de rendimiento · {formatPercent(summary?.coveragePercent)}<div className="coverage-track"><div className="coverage-fill" style={{ width: `${coverage}%` }} /></div></div>
       </section>
+
       <section className="quick-actions" aria-label="Acciones rápidas">
         <button type="button" className="quick-button" onClick={() => onNavigate('campaign')}>+ Entrega</button>
-        <button type="button" className="quick-button" onClick={() => onNavigate('field')}>+ Parcela</button>
-        <button type="button" className="quick-button" onClick={() => onNavigate('campaign')}>Rendimientos</button>
-        <button type="button" className="quick-button" onClick={() => onNavigate('field')}>Mi campo</button>
+        <button type="button" className="quick-button" onClick={() => onNavigate('field')}>Mi Campo</button>
+        <a className="quick-button" href="/calendario" style={{ textDecoration: 'none', textAlign: 'center' }}>📅 Tareas</a>
+        <a className="quick-button" href="/magina/noticias" style={{ textDecoration: 'none', textAlign: 'center' }}>📰 Noticias</a>
       </section>
+
       <section className="section">
-        <div className="section-heading"><div><h2 className="section-title">Hoy en tu olivar</h2><p className="section-copy">Prioridades reales de campaña, sin ruido.</p></div></div>
-        <article className="card list-card"><div className="list-card-main"><p className="list-card-title">Rendimientos pendientes</p><p className="list-card-meta">Añade el resultado cuando te lo facilite la almazara.</p></div><span className="badge gold">{summary?.pendingResultCount ?? 0}</span></article>
+        <div className="section-heading"><div><h2 className="section-title">Prioridades de Hoy</h2><p className="section-copy">Estado y avisos clave de tu olivar.</p></div></div>
+        <article className="card list-card" style={{ marginBottom: '0.5rem' }}>
+          <div className="list-card-main">
+            <p className="list-card-title">Rendimientos pendientes de almazara</p>
+            <p className="list-card-meta">Añade el rendimiento cuando te entreguen el albarán.</p>
+          </div>
+          <span className="badge gold">{summary?.pendingResultCount ?? 0}</span>
+        </article>
+        <article className="card list-card">
+          <div className="list-card-main">
+            <p className="list-card-title">Aviso Sanitario RAIF Olivar</p>
+            <p className="list-card-meta">Riesgo moderado de mosca del olivo en Sierra Mágina. Mantener vigilancia.</p>
+          </div>
+          <span className="badge green">RAIF</span>
+        </article>
       </section>
     </>
   );

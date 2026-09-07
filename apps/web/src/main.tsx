@@ -1,39 +1,12 @@
-import { StrictMode } from 'react';
+import { lazy, StrictMode, Suspense } from 'react';
 import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { AccountPage } from './AccountPage';
-import { AdminDashboardPreview } from './AdminDashboardPreview';
-import { App } from './App';
-import { CalendarPage } from './CalendarPage';
 import { installDemoPreview } from './demoPreview';
-import { DiscoverPage } from './DiscoverPage';
-import { DiscoverCollectionPage } from './DiscoverCollectionPage';
-import { DiscoverRouteDetailPage, DiscoverRoutesPage } from './DiscoverRoutesPage';
-import { VerifiedServicesPage } from './VerifiedServicesPage';
-import { EditProfilePage } from './EditProfilePage';
-import { HomePreferencesPage } from './HomePreferencesPage';
-import { LoginPage } from './LoginPage';
-import { LoyaltyOlivePage } from './LoyaltyOlivePage';
-import { MaginaDirectoryPage } from './MaginaDirectoryPage';
-import { MaginaFieldAlertsPage } from './MaginaFieldAlertsPage';
-import { MaginaHubPage } from './MaginaHubPage';
-import { MaginaMarketPage } from './MaginaMarketPage';
-import { MaginaWeatherPage } from './MaginaWeatherPage';
-import { MaginaNewsPage } from './MaginaNewsPage';
-import { WeatherAlertDetailPage, WeatherAlertSettingsPage, WeatherHourlyPage, WeatherWeeklyPage } from './WeatherExperiencePages';
-import { NotificationPreferencesPage } from './NotificationPreferencesPage';
-import { OnboardingPage } from './OnboardingPage';
 import { PwaUpdatePrompt } from './PwaUpdatePrompt';
 import { PrivateRoute } from './PrivateRoute';
-import { PrivacyPermissionsPage } from './PrivacyPermissionsPage';
 import { PublicHomePage } from './PublicHomePage';
 import { PublicNavigation } from './PublicNavigation';
-import { RegisterPage } from './RegisterPage';
-import { ResetPassword } from './ResetPassword';
 import { currentReturnTo, safeReturnTo } from './private-access';
-import { RewardCatalogPage } from './RewardCatalogPage';
-import { RewardValidatorPage } from './RewardValidatorPage';
-import { SupportPage } from './SupportPage';
 import { installWeatherDemoPreview } from './weatherDemoPreview';
 import './styles.css';
 import './brand.css';
@@ -54,7 +27,6 @@ import './verified-services.css';
 import './discover-territory.css';
 import './discover-routes.css';
 import './admin-preview.css';
-import { AdminDashboardPage } from './AdminDashboardPage';
 import './integration-v2.css';
 import './field-v2-integration.css';
 import './journal-v2-integration.css';
@@ -78,6 +50,39 @@ import './visual-reference.css';
 installDemoPreview();
 installWeatherDemoPreview();
 
+const AccountPage = lazy(async () => ({ default: (await import('./AccountPage')).AccountPage }));
+const AdminDashboardPage = lazy(async () => ({ default: (await import('./AdminDashboardPage')).AdminDashboardPage }));
+const AdminDashboardPreview = lazy(async () => ({ default: (await import('./AdminDashboardPreview')).AdminDashboardPreview }));
+const App = lazy(async () => ({ default: (await import('./App')).App }));
+const CalendarPage = lazy(async () => ({ default: (await import('./CalendarPage')).CalendarPage }));
+const DiscoverCollectionPage = lazy(async () => ({ default: (await import('./DiscoverCollectionPage')).DiscoverCollectionPage }));
+const DiscoverPage = lazy(async () => ({ default: (await import('./DiscoverPage')).DiscoverPage }));
+const DiscoverRouteDetailPage = lazy(async () => ({ default: (await import('./DiscoverRoutesPage')).DiscoverRouteDetailPage }));
+const DiscoverRoutesPage = lazy(async () => ({ default: (await import('./DiscoverRoutesPage')).DiscoverRoutesPage }));
+const EditProfilePage = lazy(async () => ({ default: (await import('./EditProfilePage')).EditProfilePage }));
+const HomePreferencesPage = lazy(async () => ({ default: (await import('./HomePreferencesPage')).HomePreferencesPage }));
+const LoginPage = lazy(async () => ({ default: (await import('./LoginPage')).LoginPage }));
+const LoyaltyOlivePage = lazy(async () => ({ default: (await import('./LoyaltyOlivePage')).LoyaltyOlivePage }));
+const MaginaDirectoryPage = lazy(async () => ({ default: (await import('./MaginaDirectoryPage')).MaginaDirectoryPage }));
+const MaginaFieldAlertsPage = lazy(async () => ({ default: (await import('./MaginaFieldAlertsPage')).MaginaFieldAlertsPage }));
+const MaginaHubPage = lazy(async () => ({ default: (await import('./MaginaHubPage')).MaginaHubPage }));
+const MaginaMarketPage = lazy(async () => ({ default: (await import('./MaginaMarketPage')).MaginaMarketPage }));
+const MaginaNewsPage = lazy(async () => ({ default: (await import('./MaginaNewsPage')).MaginaNewsPage }));
+const MaginaWeatherPage = lazy(async () => ({ default: (await import('./MaginaWeatherPage')).MaginaWeatherPage }));
+const NotificationPreferencesPage = lazy(async () => ({ default: (await import('./NotificationPreferencesPage')).NotificationPreferencesPage }));
+const OnboardingPage = lazy(async () => ({ default: (await import('./OnboardingPage')).OnboardingPage }));
+const PrivacyPermissionsPage = lazy(async () => ({ default: (await import('./PrivacyPermissionsPage')).PrivacyPermissionsPage }));
+const RegisterPage = lazy(async () => ({ default: (await import('./RegisterPage')).RegisterPage }));
+const ResetPassword = lazy(async () => ({ default: (await import('./ResetPassword')).ResetPassword }));
+const RewardCatalogPage = lazy(async () => ({ default: (await import('./RewardCatalogPage')).RewardCatalogPage }));
+const RewardValidatorPage = lazy(async () => ({ default: (await import('./RewardValidatorPage')).RewardValidatorPage }));
+const SupportPage = lazy(async () => ({ default: (await import('./SupportPage')).SupportPage }));
+const VerifiedServicesPage = lazy(async () => ({ default: (await import('./VerifiedServicesPage')).VerifiedServicesPage }));
+const WeatherAlertDetailPage = lazy(async () => ({ default: (await import('./WeatherExperiencePages')).WeatherAlertDetailPage }));
+const WeatherAlertSettingsPage = lazy(async () => ({ default: (await import('./WeatherExperiencePages')).WeatherAlertSettingsPage }));
+const WeatherHourlyPage = lazy(async () => ({ default: (await import('./WeatherExperiencePages')).WeatherHourlyPage }));
+const WeatherWeeklyPage = lazy(async () => ({ default: (await import('./WeatherExperiencePages')).WeatherWeeklyPage }));
+
 const root = document.getElementById('root');
 if (!root) throw new Error('Root element not found');
 
@@ -92,6 +97,10 @@ const loginReturnTo = safeReturnTo(new URLSearchParams(window.location.search).g
 
 function PublicScreen({ children, showAction = true }: { children: ReactNode; showAction?: boolean }) {
   return <><a className="skip-link" href="#main-content">Saltar al contenido</a><PublicNavigation activePath={path} showAction={showAction} />{children}</>;
+}
+
+function RouteLoading() {
+  return <main className="route-loading" id="main-content" aria-live="polite"><span className="route-loading-mark" aria-hidden="true" /><p>Cargando Mágina Olivo…</p></main>;
 }
 
 if (basePath) {
@@ -114,6 +123,7 @@ if (basePath) {
 createRoot(root).render(
   <StrictMode>
     <>
+      <Suspense fallback={<RouteLoading />}>
       {path === '/reset-password' ? (
         <ResetPassword />
       ) : path === '/login' ? (
@@ -189,6 +199,7 @@ createRoot(root).render(
       ) : (
         <PublicScreen><PublicHomePage /></PublicScreen>
       )}
+      </Suspense>
       <PwaUpdatePrompt />
     </>
   </StrictMode>,

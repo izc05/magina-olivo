@@ -386,10 +386,9 @@ export function App({ initialTab = 'home', initialFieldView = 'home' }: { initia
       </main>
 
       <nav className="bottom-nav bottom-nav-v2" aria-label="Navegación principal">
-        <a className="nav-button" href="/"><House aria-hidden="true" />Inicio</a>
+        <NavButton active={tab === 'home'} icon="home" label="Inicio" onClick={() => setTab('home')} />
         <NavButton active={tab === 'field' || tab === 'campaign'} icon="field" label="Mi Campo" onClick={() => setTab('field')} />
         <a className="nav-button" href="/magina"><Mountain aria-hidden="true" />Mágina</a>
-        <a className="nav-button" href="/descubre"><Compass aria-hidden="true" />Descubre</a>
         <NavButton active={tab === 'more'} icon="profile" label="Perfil" onClick={() => setTab('more')} />
         <button type="button" className="nav-plus" onClick={() => setShowQuickMenu((prev) => !prev)} aria-label="Abrir menú de acciones rápidas"><Plus aria-hidden="true" /></button>
       </nav>

@@ -18,6 +18,7 @@ import { FieldNotebook } from './FieldNotebook.tsx';
 import { PlotMapPanel } from './PlotMapPanel.tsx';
 import { MaginaPrivateHub } from './MaginaPrivateHub.tsx';
 import { MaginaAiAssistant } from './MaginaAiAssistant.tsx';
+import { FieldCameraModal } from './FieldCameraModal.tsx';
 import { OfflineColdStart } from './OfflineColdStart.tsx';
 import { listPendingOperations } from './offline/outbox.ts';
 import { PrivateAccessGate } from './PrivateAccessGate.tsx';
@@ -71,6 +72,8 @@ export function App({ initialTab = 'home', initialFieldView = 'home' }: { initia
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [summary, setSummary] = useState<CampaignSummary | null>(null);
   const [showAiAssistant, setShowAiAssistant] = useState(false);
+  const [showQuickMenu, setShowQuickMenu] = useState(false);
+  const [showCameraModal, setShowCameraModal] = useState(false);
   const [sunMode, setSunMode] = useState(false);
   const pageRef = useRef<HTMLElement | null>(null);
 
@@ -272,6 +275,69 @@ export function App({ initialTab = 'home', initialFieldView = 'home' }: { initia
             onClose={() => setShowAiAssistant(false)}
           />
         ) : null}
+        {showCameraModal ? (
+          <FieldCameraModal
+            onClose={() => setShowCameraModal(false)}
+          />
+        ) : null}
+        {showQuickMenu ? (
+          <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: '1rem' }} onClick={() => setShowQuickMenu(false)}>
+            <div className="card" style={{ maxWidth: '24rem', width: '100%', padding: '1rem', background: '#fff', borderRadius: '1rem', marginBottom: '4rem' }} onClick={(e) => e.stopPropagation()}>
+              <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem', textAlign: 'center', color: '#66705c' }}>Acciones Rápidas de Campo</h3>
+              <div style={{ display: 'grid', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  className="primary-button"
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', justifyContent: 'flex-start', padding: '0.75rem 1rem' }}
+                  onClick={() => {
+                    setShowQuickMenu(false);
+                    setTab('campaign');
+                    window.setTimeout(() => {
+                      const entry = document.querySelector<HTMLElement>('.delivery-entry-card');
+                      entry?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      entry?.focus({ preventScroll: true });
+                    }, 0);
+                  }}
+                >
+                  🍇 <strong>Registrar Entrega de Aceituna</strong>
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', justifyContent: 'flex-start', padding: '0.75rem 1rem' }}
+                  onClick={() => {
+                    setShowQuickMenu(false);
+                    setTab('field');
+                  }}
+                >
+                  🌿 <strong>Anotar Tratamiento / Labor</strong>
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', justifyContent: 'flex-start', padding: '0.75rem 1rem' }}
+                  onClick={() => {
+                    setShowQuickMenu(false);
+                    setShowCameraModal(true);
+                  }}
+                >
+                  📸 <strong>Tomar Foto con GPS</strong>
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', justifyContent: 'flex-start', padding: '0.75rem 1rem' }}
+                  onClick={() => {
+                    setShowQuickMenu(false);
+                    setShowAiAssistant(true);
+                  }}
+                >
+                  🎙 <strong>Dictar a Mágina IA</strong>
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
         {error ? <div className="alert" role="alert">{error}</div> : null}
         {holdings.length > 1 ? (
           <select className="selector" value={selectedHoldingId} onChange={(event) => setSelectedHoldingId(event.target.value)} aria-label="Explotación activa">
@@ -325,7 +391,7 @@ export function App({ initialTab = 'home', initialFieldView = 'home' }: { initia
         <a className="nav-button" href="/magina"><Mountain aria-hidden="true" />Mágina</a>
         <a className="nav-button" href="/descubre"><Compass aria-hidden="true" />Descubre</a>
         <NavButton active={tab === 'more'} icon="profile" label="Perfil" onClick={() => setTab('more')} />
-        <button type="button" className="nav-plus" onClick={() => { setTab('campaign'); window.setTimeout(() => { const entry = document.querySelector<HTMLElement>('.delivery-entry-card'); entry?.scrollIntoView({ behavior: 'smooth', block: 'start' }); entry?.focus({ preventScroll: true }); }, 0); }} aria-label="Registrar una entrega"><Plus aria-hidden="true" /></button>
+        <button type="button" className="nav-plus" onClick={() => setShowQuickMenu((prev) => !prev)} aria-label="Abrir menú de acciones rápidas"><Plus aria-hidden="true" /></button>
       </nav>
     </div>
   );

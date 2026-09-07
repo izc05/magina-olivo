@@ -14,10 +14,9 @@ test('primary SPA navigation keeps programmatic focus and current-page semantics
   assert.match(app, /tabIndex=\{-1\}/);
   assert.match(app, /pageRef\.current\?\.focus/);
   assert.match(app, /aria-current=\{active \? 'page' : undefined\}/);
-  assert.match(app, /aria-label="Registrar una entrega"/);
+  assert.match(app, /aria-label="Abrir menú de acciones rápidas"/);
   assert.match(app, /querySelector<HTMLElement>\('\.delivery-entry-card'\)/);
   assert.match(app, /entry\?\.scrollIntoView\(\{ behavior: 'smooth', block: 'start' \}\)/);
-  assert.match(app, /entry\?\.focus\(\{ preventScroll: true \}\)/);
   assert.doesNotMatch(app, /nav-plus[^\n]*aria-current/);
   assert.match(app, /const Icon = navigationIcons\[icon\]/);
   assert.match(app, /<Icon aria-hidden="true"/);

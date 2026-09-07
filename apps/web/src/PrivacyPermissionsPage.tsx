@@ -66,9 +66,9 @@ export function PrivacyPermissionsPage() {
 
   return <main className="account-shell privacy-permissions-shell">
     <VisualHeader />
-    <PublicNavigation activePath="/mi-magina" />
+    <PublicNavigation activePath="/cuenta" />
     <div className="account-page">
-      <a className="profile-back-link" href="/mi-magina">← Perfil</a>
+      <a className="profile-back-link" href="/cuenta">← Perfil</a>
       <section><p className="eyebrow page-eyebrow">MI PERFIL</p><h1 className="section-title">Privacidad y permisos</h1><p className="section-copy">Gestiona el acceso de la aplicación a funciones de tu dispositivo y a tus datos.</p></section>
       {message ? <div className="alert section" role="status">{message}</div> : null}
       <section className="section privacy-permission-list" aria-label="Permisos de la aplicación">

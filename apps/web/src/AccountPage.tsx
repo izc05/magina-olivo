@@ -83,6 +83,14 @@ function formatBytes(value: string | null): string | null {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function accountErrorMessage(reason: unknown, fallback: string): string {
+  if (!(reason instanceof Error)) return fallback;
+  if (/^HTTP 5\d\d$/.test(reason.message)) {
+    return 'No se ha podido cargar tu perfil ahora. Inténtalo de nuevo en unos minutos.';
+  }
+  return reason.message || fallback;
+}
+
 export function AccountPage() {
   const [user, setUser] = useState<User | null>(null);
   const [destinations, setDestinations] = useState<Destination[]>([]);
@@ -112,7 +120,7 @@ export function AccountPage() {
         setDestinations(directory.items);
         setExports(exportResult.items);
       } catch (reason) {
-        if (!cancelled) setError(reason instanceof Error ? reason.message : 'No se ha podido cargar Mi Cuenta.');
+        if (!cancelled) setError(accountErrorMessage(reason, 'No se ha podido cargar Mi Cuenta.'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -165,7 +173,7 @@ export function AccountPage() {
       setPreferences(saved);
       setNotice('Preferencias guardadas.');
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'No se han podido guardar las preferencias.');
+      setError(accountErrorMessage(reason, 'No se han podido guardar las preferencias.'));
     } finally {
       setBusy(false);
     }
@@ -182,7 +190,7 @@ export function AccountPage() {
       setExports((current) => [result.export, ...current.filter((item) => item.id !== result.export.id)]);
       setNotice(result.export.status === 'ready' ? 'Ya tienes una copia preparada y vigente.' : 'Copia solicitada. Puedes seguir usando la aplicación mientras se prepara.');
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'No se ha podido solicitar la copia de tus datos.');
+      setError(accountErrorMessage(reason, 'No se ha podido solicitar la copia de tus datos.'));
     } finally {
       setExportBusy(false);
     }
@@ -193,7 +201,7 @@ export function AccountPage() {
   return (
     <main className="account-shell">
       <VisualHeader />
-      <PublicNavigation activePath="/mi-magina" />
+      <PublicNavigation activePath="/cuenta" />
 
       <div className="account-page">
         <section>

@@ -79,9 +79,9 @@ export function NotificationPreferencesPage() {
 
   return <main className="account-shell notification-preferences-shell">
     <VisualHeader />
-    <PublicNavigation activePath="/mi-magina" />
+    <PublicNavigation activePath="/cuenta" />
     <div className="account-page">
-      <a className="profile-back-link" href="/mi-magina">← Perfil</a>
+      <a className="profile-back-link" href="/cuenta">← Perfil</a>
       <section><p className="eyebrow page-eyebrow">MI PERFIL</p><h1 className="section-title">Notificaciones</h1><p className="section-copy">Elige qué información quieres recibir. Te avisaremos para que no pierdas nada importante de tu olivar.</p></section>
       {error ? <div className="alert section" role="alert">{error}</div> : null}
       {notice ? <div className="alert success section" role="status">{notice}</div> : null}

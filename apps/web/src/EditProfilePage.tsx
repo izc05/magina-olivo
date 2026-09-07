@@ -108,9 +108,9 @@ export function EditProfilePage() {
 
   return <main className="account-shell edit-profile-shell">
     <VisualHeader />
-    <PublicNavigation activePath="/mi-magina" />
+    <PublicNavigation activePath="/cuenta" />
     <div className="account-page">
-      <a className="profile-back-link" href="/mi-magina">← Perfil</a>
+      <a className="profile-back-link" href="/cuenta">← Perfil</a>
       <section>
         <p className="eyebrow page-eyebrow">MI PERFIL</p>
         <h1 className="section-title">Editar perfil</h1>
@@ -132,7 +132,7 @@ export function EditProfilePage() {
           <div className="field card"><label htmlFor="profile-municipality">Municipio *</label><input id="profile-municipality" value={municipality} readOnly /></div>
           <div className="field card"><label htmlFor="profile-cooperative">Cooperativa favorita</label><select id="profile-cooperative" value={preferredCooperativeId ?? ''} onChange={(event) => setPreferredCooperativeId(event.target.value || null)}><option value="">Ninguna / decidir en cada entrega</option>{destinations.map((item) => <option key={item.id} value={item.id}>{item.brandName || item.officialName}{item.municipality ? ` · ${item.municipality}` : ''}</option>)}</select></div>
         </section>
-        <div className="section edit-profile-actions"><button className="primary-button" type="submit" disabled={busy}>{busy ? 'Guardando…' : 'Guardar cambios'}</button><a href="/mi-magina">Cancelar</a></div>
+        <div className="section edit-profile-actions"><button className="primary-button" type="submit" disabled={busy}>{busy ? 'Guardando…' : 'Guardar cambios'}</button><a href="/cuenta">Cancelar</a></div>
       </form>
     </div>
   </main>;

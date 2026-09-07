@@ -21,6 +21,9 @@ test('Mi Cuenta is reachable only through an authenticated session signal', asyn
   assert.match(account, /\/api\/v1\/account\/preferences/);
   assert.match(account, /\/api\/v1\/public\/destinations/);
   assert.match(account, /\/api\/v1\/account\/exports/);
+  assert.match(account, /accountErrorMessage/);
+  assert.match(account, /No se ha podido cargar tu perfil ahora/);
+  assert.match(account, /activePath="\/cuenta"/);
 });
 
 test('account preferences persist user choices and portability does not overpromise destructive or ZIP flows', async () => {

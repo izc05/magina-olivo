@@ -26,7 +26,8 @@ test('public routes are reachable without a session and private destinations use
   assert.match(gate, /\/login\?next=/);
   assert.doesNotMatch(gate, /window\.location/);
   assert.match(navigation, /href: '\/mi-campo', label: 'Mi Campo'/);
-  assert.match(navigation, /href: '\/mi-magina', label: 'Mi Mágina'/);
+  assert.match(navigation, /href: '\/cuenta', label: 'Perfil'/);
+  assert.doesNotMatch(navigation, /href: '\/mi-magina', label: 'Mi Mágina'/);
   assert.match(navigation, /public-nav-action.*href="\/campana"/);
   assert.match(home, /fetch\('\/api\/v1\/public\/sources'/);
   assert.match(styles, /home-sierra-magina\.webp/);

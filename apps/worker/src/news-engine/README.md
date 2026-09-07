@@ -1,23 +1,23 @@
-# News Engine
+# News Engine — precursor del Content Center
 
-Post-staging module boundary for automated editorial ingestion.
+Este directorio conserva el primer scaffold del **Mágina News Engine**.
 
-Current state: **scaffold only**. No scheduler, network fetch, OpenAI integration or autopublishing is active.
+El diseño ha evolucionado a un sistema más amplio y escalable: **Mágina Content Center / Content Engine**, que cubre noticias, eventos, ayudas, avisos agrícolas, mercado, comunicados municipales y novedades de cooperativas.
 
-See:
+Nuevo punto de entrada:
 
-- `docs/post-staging/MAGINA_NEWS_ENGINE.md`
-- `docs/post-staging/NEWS_ENGINE_CODEX_BRIEF.md`
+- `apps/worker/src/content-engine/README.md`
+- `docs/post-staging/MAGINA_CONTENT_CENTER.md`
+- `docs/post-staging/CONTENT_CENTER_CODEX_BRIEF.md`
 
-Planned responsibilities:
+El documento `docs/post-staging/MAGINA_NEWS_ENGINE.md` se mantiene como contexto histórico y como diseño inicial de ingesta editorial.
 
-- source adapters;
-- normalization;
-- deterministic deduplication;
-- relevance/rules;
-- optional AI enrichment;
-- persistence;
-- moderation workflow;
-- idempotent publication.
+## Compatibilidad
 
-This directory intentionally contains no executable integration yet so the V11 acceptance line remains unaffected.
+No borrar ni migrar este scaffold durante staging. Cuando C1 se autorice después del PASS de staging, Codex deberá decidir si los contratos aún útiles de `news-engine/types.ts` se absorben en `content-engine` o se eliminan en una migración limpia.
+
+## Estado actual
+
+**Scaffold only.** No scheduler, network fetch, OpenAI integration, Codex automation, database migration or autopublishing is active.
+
+V11 permanece fuera de esta línea post-staging.

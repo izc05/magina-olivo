@@ -305,3 +305,46 @@
     align-self: flex-start;
   }
 }
+
+.plot-map-layer-selector {
+  display: inline-flex;
+  gap: 0.25rem;
+  background: var(--surface-muted, #f3f5ee);
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+}
+
+.plot-map-layer-selector button {
+  padding: 0.35rem 0.65rem;
+  border: none;
+  background: transparent;
+  border-radius: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted, #66705c);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.plot-map-layer-selector button.active {
+  background: #ffffff;
+  color: var(--text, #1c2415);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.plot-map-directions-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.plot-google-directions-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+

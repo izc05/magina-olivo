@@ -23,6 +23,7 @@ type LocatedPlot = {
 
 type ApiErrorBody = { error?: { message?: string } };
 type EditorMode = 'location' | 'boundary';
+export type LayerType = 'street' | 'pnoa' | 'topo';
 type MapCenter = { latitude: number; longitude: number };
 
 type Tile = {
@@ -56,8 +57,29 @@ async function apiRequest<T>(url: string, init: RequestInit = {}): Promise<T> {
   return await response.json() as T;
 }
 
+export function googleMapsDirectionUrl(latitude: number, longitude: number): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${latitude.toFixed(6)},${longitude.toFixed(6)}`;
+}
+
+export function appleMapsDirectionUrl(latitude: number, longitude: number): string {
+  return `https://maps.apple.com/?daddr=${latitude.toFixed(6)},${longitude.toFixed(6)}`;
+}
+
 function externalMapUrl(latitude: number, longitude: number): string {
   return `https://www.openstreetmap.org/?mlat=${latitude.toFixed(6)}&mlon=${longitude.toFixed(6)}#map=17/${latitude.toFixed(6)}/${longitude.toFixed(6)}`;
+}
+
+function getTileUrl(layer: LayerType, zoom: number, x: number, y: number): string {
+  if (layer === 'pnoa') {
+    // IGN PNOA Ortofoto WMTS EPSG:3857
+    return `https://www.ign.es/wmts/pnoa-ma?request=GetTile&service=WMTS&version=1.0.0&layer=OI.Ortofoto&style=default&format=image/jpeg&TileMatrixSet=GoogleMapsCompatible&TileMatrix=${zoom}&TileRow=${y}&TileCol=${x}`;
+  }
+  if (layer === 'topo') {
+    // IGN Mapa Topográfico / Relieve
+    return `https://www.ign.es/wmts/mapa-raster?request=GetTile&service=WMTS&version=1.0.0&layer=MTN&style=default&format=image/jpeg&TileMatrixSet=GoogleMapsCompatible&TileMatrix=${zoom}&TileRow=${y}&TileCol=${x}`;
+  }
+  // Default OpenStreetMap Street View
+  return `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`;
 }
 
 function normalizeCoordinate(value: string): number | null {
@@ -97,7 +119,7 @@ function worldPixelToLatLon(x: number, y: number, zoom: number): MapCenter {
   return { latitude, longitude };
 }
 
-function buildMapModel(center: MapCenter, zoom: number) {
+function buildMapModel(center: MapCenter, zoom: number, layer: LayerType = 'street') {
   const centerPixel = latLonToWorldPixel(center.latitude, center.longitude, zoom);
   const topLeft = {
     x: centerPixel.x - MAP_VIEW_SIZE / 2,
@@ -115,8 +137,8 @@ function buildMapModel(center: MapCenter, zoom: number) {
     for (let tileX = startTileX; tileX <= endTileX; tileX += 1) {
       const wrappedX = ((tileX % tileCount) + tileCount) % tileCount;
       tiles.push({
-        key: `${zoom}-${tileX}-${tileY}`,
-        href: `https://tile.openstreetmap.org/${zoom}/${wrappedX}/${tileY}.png`,
+        key: `${layer}-${zoom}-${tileX}-${tileY}`,
+        href: getTileUrl(layer, zoom, wrappedX, tileY),
         x: tileX * TILE_SIZE - topLeft.x,
         y: tileY * TILE_SIZE - topLeft.y,
       });
@@ -239,6 +261,7 @@ export function PlotMapPanel({ farmId }: { farmId: string }) {
   const [boundaryDraftSource, setBoundaryDraftSource] = useState<BoundarySource>('manual_map');
   const [mapCenter, setMapCenter] = useState<MapCenter>(DEFAULT_CENTER);
   const [zoom, setZoom] = useState(17);
+  const [layerType, setLayerType] = useState<LayerType>('street');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [locating, setLocating] = useState(false);
@@ -264,7 +287,7 @@ export function PlotMapPanel({ farmId }: { farmId: string }) {
   const draftLongitude = normalizeCoordinate(longitude);
   const canPreviewPoint = validCoordinate(draftLatitude, draftLongitude);
   const boundaryAreaPreviewM2 = useMemo(() => polygonAreaSquareMeters(boundaryVertices), [boundaryVertices]);
-  const mapModel = useMemo(() => buildMapModel(mapCenter, zoom), [mapCenter, zoom]);
+  const mapModel = useMemo(() => buildMapModel(mapCenter, zoom, layerType), [mapCenter, zoom, layerType]);
   const mapBoundaryPoints = useMemo(
     () => boundaryVertices.map((position) => screenPoint(position, zoom, mapModel.topLeft)),
     [boundaryVertices, zoom, mapModel.topLeft],
@@ -616,6 +639,12 @@ export function PlotMapPanel({ farmId }: { farmId: string }) {
             </div>
 
             <div className="card plot-map-card">
+              <div className="plot-map-layer-selector" role="group" aria-label="Capas del mapa">
+                <button type="button" className={layerType === 'street' ? 'active' : ''} onClick={() => setLayerType('street')}>Callejero</button>
+                <button type="button" className={layerType === 'pnoa' ? 'active' : ''} onClick={() => setLayerType('pnoa')}>Ortofoto PNOA</button>
+                <button type="button" className={layerType === 'topo' ? 'active' : ''} onClick={() => setLayerType('topo')}>Relieve</button>
+              </div>
+
               <div className="plot-map-toolbar" aria-label="Controles del mapa">
                 <button type="button" onClick={() => setZoom((value) => Math.min(20, value + 1))} disabled={zoom >= 20} aria-label="Acercar mapa">+</button>
                 <button type="button" onClick={() => setZoom((value) => Math.max(14, value - 1))} disabled={zoom <= 14} aria-label="Alejar mapa">−</button>
@@ -651,9 +680,14 @@ export function PlotMapPanel({ farmId }: { farmId: string }) {
                 <div>
                   <strong>{selectedPlot.name}</strong>
                   <small>{mapStatus}</small>
-                  <small>© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a></small>
+                  <small>© {layerType === 'pnoa' ? 'PNOA / IGN España' : layerType === 'topo' ? 'MTN / IGN España' : 'OpenStreetMap contributors'}</small>
                 </div>
-                <a className="text-button" href={externalMapUrl(mapCenter.latitude, mapCenter.longitude)} target="_blank" rel="noreferrer">Abrir OSM ↗</a>
+                <div className="plot-map-directions-actions">
+                  <a className="primary-button plot-google-directions-btn" href={googleMapsDirectionUrl(mapCenter.latitude, mapCenter.longitude)} target="_blank" rel="noreferrer">
+                    Cómo llegar 🧭
+                  </a>
+                  <a className="text-button" href={externalMapUrl(mapCenter.latitude, mapCenter.longitude)} target="_blank" rel="noreferrer">Abrir OSM ↗</a>
+                </div>
               </div>
             </div>
           </div>

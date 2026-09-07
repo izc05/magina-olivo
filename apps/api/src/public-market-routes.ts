@@ -1,6 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 
-const MARKET_URL = 'https://www.juntadeandalucia.es/agriculturaypesca/observatorio/servlet/FrontController?action=UltimosPrecios&ec=default&subsector=33&posicion=1&producto=33000';
+// Position 2291332 is the official origin table that exposes the three olive-oil
+// qualities used by the UI (lampante, virgen and virgen extra).
+const MARKET_URL = 'https://www.juntadeandalucia.es/agriculturaypesca/observatorio/servlet/FrontController?action=UltimosPrecios&ec=default&subsector=33&posicion=2291332&producto=33000';
 const CACHE_TTL_MS = 30 * 60_000;
 const MAX_BODY_BYTES = 600_000;
 

@@ -561,30 +561,34 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
           <section className="field-overview-portal" aria-labelledby="field-overview-portal-title">
             <div className="section-heading"><div><p className="eyebrow page-eyebrow">Mi Campo</p><h2 id="field-overview-portal-title" className="section-title">Tu explotación, al día</h2></div></div>
             <nav className="field-app-shortcuts" aria-label="Accesos de Mi Campo">
-              <a href="/mi-campo/mapa"><Map aria-hidden="true" /><span>Mapa</span><small>GPS y lindes</small></a>
-              <a href="/mi-campo/parcelas"><Sprout aria-hidden="true" /><span>Parcelas</span><small>{farmPlotCounts[selectedFarm.id] ?? plots.length} activas</small></a>
-              <a href="/mi-campo/cuaderno"><BookOpen aria-hidden="true" /><span>Cuaderno</span><small>Labores e historia</small></a>
-              <a href="/calendario"><CalendarDays aria-hidden="true" /><span>Tareas</span><small>Planificación</small></a>
-              <a href="/mi-campo/riegos"><Droplets aria-hidden="true" /><span>Riegos</span><small>Registrar agua</small></a>
-              <a href="/mi-campo/tratamientos"><Leaf aria-hidden="true" /><span>Tratamientos</span><small>Cuaderno fitosanitario</small></a>
+              <a className="field-shortcut-map" href="/mi-campo/mapa"><Map aria-hidden="true" /><span>Mapa</span><small>GPS y lindes</small><ChevronRight aria-hidden="true" /></a>
+              <a className="field-shortcut-plots" href="/mi-campo/parcelas"><Sprout aria-hidden="true" /><span>Parcelas</span><small>{farmPlotCounts[selectedFarm.id] ?? plots.length} activas</small><ChevronRight aria-hidden="true" /></a>
+              <a className="field-shortcut-notebook" href="/mi-campo/cuaderno"><BookOpen aria-hidden="true" /><span>Cuaderno</span><small>Labores e historia</small><ChevronRight aria-hidden="true" /></a>
+              <a className="field-shortcut-tasks" href="/calendario"><CalendarDays aria-hidden="true" /><span>Tareas</span><small>Planificación</small><ChevronRight aria-hidden="true" /></a>
+              <a className="field-shortcut-irrigation" href="/mi-campo/riegos"><Droplets aria-hidden="true" /><span>Riegos</span><small>Registrar agua</small><ChevronRight aria-hidden="true" /></a>
+              <a className="field-shortcut-treatment" href="/mi-campo/tratamientos"><Leaf aria-hidden="true" /><span>Tratamientos</span><small>Cuaderno fitosanitario</small><ChevronRight aria-hidden="true" /></a>
               <a className="field-overview-campaign-action" href="/campana"><BarChart3 aria-hidden="true" /><span>Campaña</span><small>{campaign?.name ?? 'Sin campaña activa'} · {formatPercent(summary?.weightedYieldPercent)}</small><ChevronRight aria-hidden="true" /></a>
             </nav>
           </section>
 
           <section className="section field-farms-section" id="field-farms">
-            <div className="section-heading"><div><p className="eyebrow page-eyebrow">Mi Campo</p><h2 className="section-title">Mis fincas</h2></div><a className="text-button" href="#field-management" onClick={() => { const panel = document.querySelector<HTMLDetailsElement>('#field-management'); if (panel) panel.open = true; }}>+ Añadir finca</a></div>
-            <div className="field-farm-grid">
-              {farms.map((farm) => (
-                <button key={farm.id} type="button" className="field-farm-card" onClick={() => { setSelectedFarmId(farm.id); setShowFarmDetail(true); }} aria-label={`Abrir ${farm.name}`}>
-                  <span className="field-farm-thumb" aria-hidden="true" />
-                  <span className="field-farm-content"><strong>{farm.name}</strong><small>{[selectedHolding.municipality, selectedHolding.province].filter(Boolean).join(' · ') || 'Ubicación pendiente'}</small><span className="field-farm-stats"><span><Map aria-hidden="true" />{farmPlotCounts[farm.id] ?? '—'} parcelas</span><span>{farm.areaHa != null ? formatHa(farm.areaHa) : 'Superficie pendiente'}</span></span></span>
-                  <span className={`badge${farm.id === selectedFarmId ? ' gold' : ''}`}>{farm.id === selectedFarmId ? 'Activa' : 'Ver finca'}</span>
-                  <ChevronRight className="row-chevron" aria-hidden="true" />
-                </button>
-              ))}
-            </div>
-            {!farms.length ? <EmptyState title="Aún no has añadido ninguna finca.">Crea tu primera finca para empezar a organizar tus parcelas.</EmptyState> : null}
-            <details id="field-management" className="visual-disclosure field-add-farm"><summary><Plus aria-hidden="true" /> Añadir finca</summary><CreateFarmCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} firstFarm={farms.length === 0} /></details>
+            <div className="section-heading"><div><p className="eyebrow page-eyebrow">Contexto de trabajo</p><h2 className="section-title">Finca activa</h2></div></div>
+            <details className="field-farm-switcher" open={farms.length === 1}>
+              <summary>
+                <span className="field-farm-switcher-mark" aria-hidden="true"><Sprout /></span>
+                <span><strong>{selectedFarm.name}</strong><small>{farmPlotCounts[selectedFarm.id] ?? plots.length} parcelas · {selectedFarm.areaHa != null ? formatHa(selectedFarm.areaHa) : 'Superficie pendiente'}</small></span>
+                <span className="badge gold">Cambiar</span>
+              </summary>
+              {farms.length > 1 ? <div className="field-farm-switcher-options" aria-label="Cambiar finca activa">
+                {farms.map((farm) => (
+                  <button key={farm.id} type="button" onClick={() => { setSelectedFarmId(farm.id); }} aria-pressed={farm.id === selectedFarmId}>
+                    <span><strong>{farm.name}</strong><small>{farmPlotCounts[farm.id] ?? '—'} parcelas · {farm.areaHa != null ? formatHa(farm.areaHa) : 'Superficie pendiente'}</small></span>
+                    <span className={`badge${farm.id === selectedFarmId ? ' gold' : ''}`}>{farm.id === selectedFarmId ? 'Activa' : 'Seleccionar'}</span>
+                  </button>
+                ))}
+              </div> : null}
+              <details id="field-management" className="visual-disclosure field-add-farm"><summary><Plus aria-hidden="true" /> Añadir finca</summary><CreateFarmCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} firstFarm={farms.length === 0} /></details>
+            </details>
           </section>
           <PhotoCredit field />
         </>

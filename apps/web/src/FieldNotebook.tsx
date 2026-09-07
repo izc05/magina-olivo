@@ -97,6 +97,22 @@ export function FieldNotebook({
   const lastTimelineDate = timeline[0]?.occurredAt
     ? new Date(timeline[0].occurredAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
     : '—';
+  const focusedWorkspace = initialActivityType === 'treatment' || initialActivityType === 'irrigation';
+  const workspaceTitle = initialActivityType === 'treatment'
+    ? 'Tratamientos'
+    : initialActivityType === 'irrigation'
+      ? 'Riegos'
+      : 'Cuaderno de campo';
+  const workspaceCopy = initialActivityType === 'treatment'
+    ? 'Registra aplicaciones y consulta el historial de la parcela activa.'
+    : initialActivityType === 'irrigation'
+      ? 'Registra el agua aplicada y consulta solo el historial de riego de la parcela activa.'
+      : 'Registra el trabajo realizado y consulta la historia de cada parcela.';
+  const entryLabel = initialActivityType === 'treatment'
+    ? 'Registrar tratamiento'
+    : initialActivityType === 'irrigation'
+      ? 'Registrar riego'
+      : 'Añadir registro al cuaderno';
 
   useEffect(() => {
     if (!plots.some((plot) => plot.id === selectedPlotId)) setSelectedPlotId(plots[0]?.id ?? '');
@@ -212,16 +228,16 @@ export function FieldNotebook({
   return (
     <>
       <section className="section notebook-shell" aria-labelledby="field-notebook-title">
-        <div className="section-heading">
+        <div className="section-heading notebook-workspace-heading">
           <div>
-            <p className="eyebrow page-eyebrow">CUADERNO</p>
-            <h2 id="field-notebook-title" className="section-title">Labores e historia</h2>
-            <p className="section-copy">Registra el trabajo realizado y consulta la historia de cada parcela.</p>
+            <p className="eyebrow page-eyebrow">{focusedWorkspace ? 'MI CAMPO' : 'CUADERNO'}</p>
+            <h2 id="field-notebook-title" className="section-title">{workspaceTitle}</h2>
+            <p className="section-copy">{workspaceCopy}</p>
             <p className="notebook-context"><strong>Parcela activa:</strong> {selectedPlot?.name ?? 'Sin seleccionar'} · <strong>Campaña:</strong> {campaigns.find((campaign) => campaign.id === campaignId)?.name ?? 'Sin campaña'}</p>
           </div>
         </div>
 
-        <div className="card card-body notebook-card">
+        <div className={`card card-body notebook-card${focusedWorkspace ? ' notebook-card-focused' : ''}`}>
           <div className="notebook-selector-row">
             <div className="field">
               <label htmlFor="notebook-plot">Parcela</label>
@@ -229,30 +245,30 @@ export function FieldNotebook({
                 {plots.map((plot) => <option key={plot.id} value={plot.id}>{plot.name}</option>)}
               </select>
             </div>
-            <div className="field">
+            {!focusedWorkspace ? <div className="field">
               <label htmlFor="notebook-campaign">Campaña</label>
               <select id="notebook-campaign" value={campaignId} onChange={(event) => setCampaignId(event.target.value)}>
                 <option value="">Sin campaña</option>
                 {campaigns.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}
               </select>
-            </div>
+            </div> : null}
           </div>
 
           <a className="notebook-map-context notebook-map-link" href="#mapa-parcelas" onClick={(event) => { if (onOpenMap) { event.preventDefault(); onOpenMap(); } }} aria-label={`Abrir mapa de ${selectedPlot?.name ?? 'la parcela activa'}`}>
-            <strong>Mapa, SIGPAC y Catastro</strong>
-            <span>Consulta el perímetro y la fuente oficial de la parcela activa.</span>
+            <strong>{focusedWorkspace ? 'Ver mapa, SIGPAC y Catastro' : 'Mapa, SIGPAC y Catastro'}</strong>
+            <span>{focusedWorkspace ? `Parcela ${selectedPlot?.name ?? 'activa'} · perímetro y fuente oficial` : 'Consulta el perímetro y la fuente oficial de la parcela activa.'}</span>
           </a>
 
-          <details className="visual-disclosure" open={openEntry}>
-          <summary>Añadir registro al cuaderno</summary>
+          <details className={`visual-disclosure notebook-entry-disclosure${focusedWorkspace ? ' is-focused' : ''}`} open={openEntry}>
+          <summary>{entryLabel}</summary>
           <form className="form-grid notebook-form" onSubmit={submit}>
             <div className="inline-fields">
-              <div className="field">
+              {!focusedWorkspace ? <div className="field">
                 <label htmlFor="activity-type">Tipo de labor</label>
                 <select id="activity-type" value={activityType} onChange={(event) => setActivityType(event.target.value as ActivityType)}>
                   {Object.entries(activityLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                 </select>
-              </div>
+              </div> : <div className="notebook-fixed-type"><strong>{activityLabels[activityType]}</strong><small>{initialActivityType === 'treatment' ? 'Registro fitosanitario' : 'Registro de riego'}</small></div>}
               <div className="field">
                 <label htmlFor="activity-occurred-at">Fecha y hora</label>
                 <input id="activity-occurred-at" name="occurredAt" type="datetime-local" defaultValue={localDateTimeValue()} required />
@@ -304,18 +320,21 @@ export function FieldNotebook({
             {notice ? <div className="alert success" role="status">{notice}</div> : null}
 
             <div className="form-actions">
-              <button className="primary-button" type="submit" disabled={busy}>{busy ? 'Guardando…' : 'Guardar labor'}</button>
+              <button className="primary-button" type="submit" disabled={busy}>{busy ? 'Guardando…' : initialActivityType === 'treatment' ? 'Guardar tratamiento' : initialActivityType === 'irrigation' ? 'Guardar riego' : 'Guardar labor'}</button>
             </div>
           </form>
           </details>
         </div>
 
-        <div className="notebook-summary-grid" aria-label={`Resumen de ${selectedPlot?.name ?? 'la parcela'}`}>
+        {focusedWorkspace ? <div className="notebook-focused-summary" aria-label={`Resumen de ${selectedPlot?.name ?? 'la parcela'}`}>
+          <strong>{timelineCounts.all} movimientos en {selectedPlot?.name ?? 'la parcela'}</strong>
+          <span>{timelineCounts.activity} labores · {timelineCounts.delivery} entregas · Último: {lastTimelineDate}</span>
+        </div> : <div className="notebook-summary-grid" aria-label={`Resumen de ${selectedPlot?.name ?? 'la parcela'}`}>
           <article><span>Labores</span><strong>{timelineCounts.activity}</strong><small>registradas</small></article>
           <article><span>Entregas</span><strong>{timelineCounts.delivery}</strong><small>asociadas</small></article>
           <article><span>Rendimientos</span><strong>{timelineCounts.yield_result}</strong><small>resultados</small></article>
           <article><span>Último movimiento</span><strong>{lastTimelineDate}</strong><small>{timelineCounts.all} hitos</small></article>
-        </div>
+        </div>}
 
         <div className="section-heading notebook-history-heading">
           <div>

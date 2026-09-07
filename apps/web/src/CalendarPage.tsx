@@ -218,16 +218,17 @@ export function CalendarPage() {
   if (loading) return <div className="loading-screen" role="status">Cargando calendario…</div>;
 
   return (
-    <main className="calendar-shell">
+    <main id="main-content" className="calendar-shell">
+      <a className="skip-link" href="#calendar-content">Saltar al contenido</a>
       <VisualHeader />
       <PublicNavigation activePath="/mi-campo" />
 
-      <div className="calendar-page">
-        <section className="calendar-heading">
-          <div>
-            <p className="eyebrow page-eyebrow">Organización del campo</p>
-            <h1 className="section-title">Tareas y calendario</h1>
-            <p className="section-copy">Planifica trabajos, fechas y recordatorios sin convertir el cuaderno de campo en una agenda genérica.</p>
+      <div id="calendar-content" className="calendar-page">
+        <section className="calendar-hero" aria-labelledby="calendar-title">
+          <div className="calendar-hero-copy">
+            <p className="eyebrow">Mi Campo</p>
+            <h1 id="calendar-title">Tareas y calendario</h1>
+            <p>Organiza los trabajos del olivar y conserva cada recordatorio dentro de tu explotación.</p>
           </div>
           <label className="field calendar-holding-select">
             <span>Explotación</span>

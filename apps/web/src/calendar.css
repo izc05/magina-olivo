@@ -16,7 +16,6 @@
   padding: 34px 0 80px;
 }
 
-.calendar-heading,
 .calendar-section-heading,
 .calendar-month-toolbar,
 .calendar-task-title-line {
@@ -26,9 +25,70 @@
   gap: 16px;
 }
 
-.calendar-heading {
+.calendar-hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
   align-items: end;
-  margin-bottom: 24px;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 242px;
+  overflow: hidden;
+  margin-bottom: 22px;
+  padding: 28px;
+  border-radius: 24px;
+  color: #fff;
+  background:
+    linear-gradient(90deg, rgba(15, 29, 16, .84) 0%, rgba(18, 37, 20, .57) 52%, rgba(18, 37, 20, .18) 100%),
+    url('/photos/field-olivares-magina.webp') center / cover;
+  box-shadow: 0 15px 36px rgba(35, 46, 27, .16);
+}
+
+.calendar-hero::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: '';
+  background: linear-gradient(0deg, rgba(14, 27, 15, .25), transparent 48%);
+}
+
+.calendar-hero-copy {
+  max-width: 610px;
+}
+
+.calendar-hero .eyebrow {
+  margin: 0 0 6px;
+  color: rgba(255, 255, 255, .84);
+}
+
+.calendar-hero h1 {
+  margin: 0;
+  color: #fff;
+  font-family: var(--font-editorial, Georgia, serif);
+  font-size: clamp(2.25rem, 5vw, 4.25rem);
+  line-height: .98;
+}
+
+.calendar-hero p:not(.eyebrow) {
+  max-width: 540px;
+  margin: 11px 0 0;
+  color: rgba(255, 255, 255, .9);
+  font-size: 1.03rem;
+  line-height: 1.42;
+}
+
+.calendar-hero .calendar-holding-select {
+  flex: 0 1 300px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, .34);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 8px 20px rgba(11, 23, 12, .17);
+}
+
+.calendar-hero .calendar-holding-select span {
+  color: #4a5b45;
 }
 
 .calendar-holding-select {
@@ -279,9 +339,11 @@
     padding-top: 24px;
   }
 
-  .calendar-heading {
+  .calendar-hero {
     display: grid;
     align-items: start;
+    min-height: 260px;
+    padding: 24px;
   }
 
   .calendar-holding-select {
@@ -310,6 +372,22 @@
 }
 
 @media (max-width: 560px) {
+  .calendar-hero {
+    min-height: 242px;
+    padding: 22px;
+    border-radius: 20px;
+    background-position: 58% center;
+  }
+
+  .calendar-hero h1 {
+    font-size: 2.5rem;
+  }
+
+  .calendar-hero p:not(.eyebrow) {
+    max-width: 290px;
+    font-size: .94rem;
+  }
+
   .calendar-summary-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;

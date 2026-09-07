@@ -24,7 +24,7 @@ try {
   );
   const userId = user.rows[0]?.id;
   if (!userId) {
-    throw new Error('The administrator must create and verify their account before bootstrap');
+    throw new Error('The administrator must create their account before bootstrap');
   }
 
   await db.query('begin');

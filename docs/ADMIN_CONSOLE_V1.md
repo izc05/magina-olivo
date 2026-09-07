@@ -19,7 +19,7 @@ Un `owner` o `admin` de una explotación no obtiene acceso a `/admin` por ese he
 
 ## Alta de la primera superadministradora
 
-1. La persona administradora crea e inicia sesión con su cuenta normal.
+1. La persona administradora crea su cuenta normal e inicia sesión al menos una vez.
 2. En el entorno secreto de staging o producción se define temporalmente `PLATFORM_SUPER_ADMIN_EMAIL` y `PLATFORM_SUPER_ADMIN_CONFIRM=GRANT_SUPER_ADMIN`.
 3. Se ejecuta `npm run admin:bootstrap --workspace @magina/api` una sola vez.
 4. Se eliminan ambas variables del entorno secreto.

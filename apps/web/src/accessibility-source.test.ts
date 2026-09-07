@@ -9,6 +9,8 @@ async function source(path: string): Promise<string> {
 test('primary SPA navigation keeps programmatic focus and current-page semantics', async () => {
   const app = await source('./App.tsx');
 
+  assert.match(app, /<a className="skip-link" href="#main-content">Saltar al contenido<\/a>/);
+  assert.match(app, /<main id="main-content" className="page"/);
   assert.match(app, /tabIndex=\{-1\}/);
   assert.match(app, /pageRef\.current\?\.focus/);
   assert.match(app, /aria-current=\{active \? 'page' : undefined\}/);

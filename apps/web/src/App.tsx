@@ -222,9 +222,10 @@ export function App({ initialTab = 'home' }: { initialTab?: Tab }) {
 
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content">Saltar al contenido</a>
       <VisualHeader><button type="button" className="visual-header-action" onClick={() => setTab('more')} aria-label="Abrir perfil" aria-current={tab === 'more' ? 'page' : undefined}>{initials}</button></VisualHeader>
 
-      <main className="page" ref={pageRef} tabIndex={-1}>
+      <main id="main-content" className="page" ref={pageRef} tabIndex={-1}>
         {error ? <div className="alert" role="alert">{error}</div> : null}
         {holdings.length > 1 ? (
           <select className="selector" value={selectedHoldingId} onChange={(event) => setSelectedHoldingId(event.target.value)} aria-label="Explotación activa">

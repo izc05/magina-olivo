@@ -34,6 +34,7 @@ test('public routes are reachable without a session and private destinations use
   assert.match(home, /api\/v1\/public\/weather/);
   assert.match(home, /QuickIcon/);
   assert.match(home, /href="\/mi-campo"/);
+  assert.match(home, /<a href="\/calendario"><QuickIcon kind="calendar" \/>Tareas<\/a>/);
   assert.match(home, /Referencia AOVE/);
   assert.doesNotMatch(home, /22°|26°|14°|Riego pendiente/);
   assert.doesNotMatch(home, /https?:\/\//);

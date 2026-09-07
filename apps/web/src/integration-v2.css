@@ -171,6 +171,10 @@ body {
   border-color: transparent;
 }
 
+.quick-actions .quick-button:nth-child(2) { border-color: rgba(195, 142, 25, .23); background: linear-gradient(145deg, #fff1ca, #fffdfa); color: #875d0a; }
+.quick-actions .quick-button:nth-child(3) { border-color: rgba(54, 107, 130, .2); background: linear-gradient(145deg, #e3eff4, #fffdfa); color: #2f6a82; }
+.quick-actions .quick-button:nth-child(4) { border-color: rgba(68, 107, 57, .2); background: linear-gradient(145deg, #e6f0de, #fffdfa); color: #3d6934; }
+
 .section {
   margin-top: 30px;
 }

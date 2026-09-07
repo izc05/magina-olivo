@@ -45,6 +45,21 @@
   transition: transform .18s ease, box-shadow .18s ease;
 }
 
+.magina-hub-card.ready:nth-child(1) { background: linear-gradient(145deg, #e5f0f4, #fffdf7 68%); border-color: rgba(55, 109, 132, .22); }
+.magina-hub-card.ready:nth-child(1) .badge { background: #d4e9f0; color: #225c73; }
+.magina-hub-card.ready:nth-child(1) > strong { color: #286a84; }
+.magina-hub-card.ready:nth-child(2) { background: linear-gradient(145deg, #fff3d4, #fffdf7 68%); border-color: rgba(183, 128, 22, .24); }
+.magina-hub-card.ready:nth-child(2) .badge { background: #f9e7b7; color: #88610b; }
+.magina-hub-card.ready:nth-child(2) > strong { color: #947016; }
+.magina-hub-card.ready:nth-child(3) { background: linear-gradient(145deg, #e5f0df, #fffdf7 68%); border-color: rgba(66, 110, 53, .22); }
+.magina-hub-card.ready:nth-child(3) .badge { background: #d9ebce; color: #37602d; }
+.magina-hub-card.ready:nth-child(4) { background: linear-gradient(145deg, #f5ead8, #fffdf7 68%); border-color: rgba(151, 104, 38, .2); }
+.magina-hub-card.ready:nth-child(4) .badge { background: #f0dfc5; color: #89531d; }
+.magina-hub-card.ready:nth-child(4) > strong { color: #8d5a20; }
+.magina-hub-card.ready:nth-child(5) { background: linear-gradient(145deg, #fff0c9, #fffdf7 68%); border-color: rgba(177, 119, 17, .24); }
+.magina-hub-card.ready:nth-child(5) .badge { background: #fde5a5; color: #895b06; }
+.magina-hub-card.ready:nth-child(5) > strong { color: #93620a; }
+
 .magina-hub-card.ready:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow);
@@ -76,8 +91,14 @@
 }
 
 .magina-hub-card-territory {
-  background: linear-gradient(145deg, rgba(92,122,70,.16), rgba(212,160,23,.12)), var(--paper);
+  background: linear-gradient(145deg, rgba(92,122,70,.22), rgba(212,160,23,.17)), var(--paper);
 }
+
+.magina-hub-card-territory .badge { background: rgba(73, 105, 58, .14); color: #34562d; }
+
+.visual-segments a { position: relative; overflow: hidden; }
+.visual-segments a::after { position: absolute; right: 12px; bottom: 5px; left: 12px; height: 3px; border-radius: 99px; background: currentColor; content: ''; opacity: .45; }
+.visual-segments a:nth-child(1) { color: #8a5a12; background: #fff2d5; }.visual-segments a:nth-child(2) { color: #3c6432; background: #e8f1e2; }.visual-segments a:nth-child(3) { color: #966306; background: #fff0c8; }.visual-segments a:nth-child(4) { color: #37677c; background: #e5eff3; }
 
 .magina-source-section {
   margin-top: 42px;

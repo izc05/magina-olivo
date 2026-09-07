@@ -24,6 +24,8 @@ const leaseSeconds = Number(process.env.WORKER_LEASE_SECONDS ?? '120');
 const accountExportTtlHours = Number(process.env.ACCOUNT_EXPORT_TTL_HOURS ?? '24');
 const rainAlertScanMinutes = Number(process.env.RAIN_ALERT_SCAN_MINUTES ?? '30');
 const radarCaptureMinutes = Number(process.env.WEATHER_RADAR_CAPTURE_MINUTES ?? '10');
+const raifInspectionMinutes = Number(process.env.RAIF_INSPECTION_MINUTES ?? '1440');
+const marketInspectionMinutes = Number(process.env.MARKET_INSPECTION_MINUTES ?? '360');
 
 if (!Number.isFinite(pollMilliseconds) || pollMilliseconds < 100) {
   throw new Error('WORKER_POLL_MS must be at least 100');
@@ -43,11 +45,19 @@ if (!Number.isFinite(rainAlertScanMinutes) || rainAlertScanMinutes < 5 || rainAl
 if (!Number.isFinite(radarCaptureMinutes) || radarCaptureMinutes < 5 || radarCaptureMinutes > 60) {
   throw new Error('WEATHER_RADAR_CAPTURE_MINUTES must be between 5 and 60');
 }
+if (!Number.isFinite(raifInspectionMinutes) || raifInspectionMinutes < 60 || raifInspectionMinutes > 10_080) {
+  throw new Error('RAIF_INSPECTION_MINUTES must be between 60 and 10080');
+}
+if (!Number.isFinite(marketInspectionMinutes) || marketInspectionMinutes < 30 || marketInspectionMinutes > 10_080) {
+  throw new Error('MARKET_INSPECTION_MINUTES must be between 30 and 10080');
+}
 
 const rainScheduleReconcileMilliseconds = Math.min(rainAlertScanMinutes * 60_000, 60_000);
 const radarScheduleReconcileMilliseconds = Math.min(radarCaptureMinutes * 60_000, 60_000);
+const publicSourceScheduleReconcileMilliseconds = Math.min(Math.min(raifInspectionMinutes, marketInspectionMinutes) * 60_000, 60_000);
 let nextRainScheduleReconcileAt = 0;
 let nextRadarScheduleReconcileAt = 0;
+let nextPublicSourceScheduleReconcileAt = 0;
 
 const pool = new Pool({ connectionString: databaseUrl });
 
@@ -428,6 +438,79 @@ async function scheduleNextRadarCapture(currentJobId: string): Promise<void> {
   );
 }
 
+type PublicSourceSchedule = {
+  kind: 'public.raif.inspect' | 'public.market.inspect';
+  intervalMinutes: number;
+  schedulerKey: string;
+};
+
+const raifPublicSourceSchedule: PublicSourceSchedule = { kind: 'public.raif.inspect', intervalMinutes: raifInspectionMinutes, schedulerKey: 'raif' };
+const marketPublicSourceSchedule: PublicSourceSchedule = { kind: 'public.market.inspect', intervalMinutes: marketInspectionMinutes, schedulerKey: 'market' };
+const publicSourceSchedules: readonly PublicSourceSchedule[] = [raifPublicSourceSchedule, marketPublicSourceSchedule];
+
+async function ensurePublicSourceScheduled(schedule: PublicSourceSchedule): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query('begin');
+    await client.query("select pg_advisory_xact_lock(hashtext($1))", [`magina-public-source-scheduler:${schedule.schedulerKey}`]);
+
+    const active = await client.query<{ count: string }>(
+      `
+        select count(*)::text as count
+        from job_queue
+        where kind = $1
+          and status in ('queued', 'retry', 'running')
+      `,
+      [schedule.kind],
+    );
+
+    if (Number(active.rows[0]?.count ?? '0') === 0) {
+      const dedupeKey = `${schedule.kind}:bootstrap`;
+      const revived = await client.query(
+        `
+          update job_queue
+          set status = 'queued', attempts = 0, run_after = now(), locked_at = null,
+              locked_by = null, last_error = null, completed_at = null, updated_at = now()
+          where dedupe_key = $1 and status in ('succeeded', 'failed')
+          returning id
+        `,
+        [dedupeKey],
+      );
+      if (revived.rowCount === 0) {
+        await client.query(
+          `insert into job_queue (id, kind, payload, dedupe_key, run_after)
+           values ($1, $2, '{}'::jsonb, $3, now()) on conflict (dedupe_key) do nothing`,
+          [randomUUID(), schedule.kind, dedupeKey],
+        );
+      }
+    }
+    await client.query('commit');
+  } catch (error) {
+    await client.query('rollback');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function scheduleNextPublicSourceInspection(currentJobId: string, schedule: PublicSourceSchedule): Promise<void> {
+  await pool.query(
+    `
+      insert into job_queue (id, kind, payload, dedupe_key, run_after)
+      values ($1, $2, '{}'::jsonb, $3, now() + ($4 * interval '1 minute'))
+      on conflict (dedupe_key) do nothing
+    `,
+    [randomUUID(), schedule.kind, `${schedule.kind}:after:${currentJobId}`, schedule.intervalMinutes],
+  );
+}
+
+async function reconcilePublicSourceSchedules(force = false): Promise<void> {
+  const now = Date.now();
+  if (!force && now < nextPublicSourceScheduleReconcileAt) return;
+  for (const schedule of publicSourceSchedules) await ensurePublicSourceScheduled(schedule);
+  nextPublicSourceScheduleReconcileAt = now + publicSourceScheduleReconcileMilliseconds;
+}
+
 async function executeJob(job: JobRow): Promise<void> {
   switch (job.kind) {
     case 'spike.noop':
@@ -438,12 +521,22 @@ async function executeJob(job: JobRow): Promise<void> {
       await augmentAccountExportWithTasks(pool, payload.exportId, payload.userId);
       return;
     }
-    case 'public.raif.inspect':
-      await inspectRaifPublicSource();
+    case 'public.raif.inspect': {
+      try {
+        await inspectRaifPublicSource();
+      } finally {
+        await scheduleNextPublicSourceInspection(job.id, raifPublicSourceSchedule);
+      }
       return;
-    case 'public.market.inspect':
-      await inspectMarketPublicSource();
+    }
+    case 'public.market.inspect': {
+      try {
+        await inspectMarketPublicSource();
+      } finally {
+        await scheduleNextPublicSourceInspection(job.id, marketPublicSourceSchedule);
+      }
       return;
+    }
     case 'weather.rain.scan': {
       try {
         const result = await withJobLeaseHeartbeat(job.id, () => scanRainAlerts(pool));
@@ -538,6 +631,7 @@ async function bootstrapWeatherSchedules(): Promise<void> {
   while (true) {
     let rainReady = true;
     let radarReady = true;
+    let publicSourcesReady = true;
 
     try {
       await reconcileRainAlertSchedule(true);
@@ -553,7 +647,14 @@ async function bootstrapWeatherSchedules(): Promise<void> {
       logLoopFailure('radar_scheduler_bootstrap_failed', error);
     }
 
-    if (rainReady && radarReady) return;
+    try {
+      await reconcilePublicSourceSchedules(true);
+    } catch (error) {
+      publicSourcesReady = false;
+      logLoopFailure('public_source_scheduler_bootstrap_failed', error);
+    }
+
+    if (rainReady && radarReady && publicSourcesReady) return;
     await sleep(Math.max(pollMilliseconds, 1000));
   }
 }
@@ -569,6 +670,12 @@ async function reconcileWeatherSchedules(): Promise<void> {
     await reconcileRadarCaptureSchedule();
   } catch (error) {
     logLoopFailure('radar_scheduler_reconcile_failed', error);
+  }
+
+  try {
+    await reconcilePublicSourceSchedules();
+  } catch (error) {
+    logLoopFailure('public_source_scheduler_reconcile_failed', error);
   }
 }
 

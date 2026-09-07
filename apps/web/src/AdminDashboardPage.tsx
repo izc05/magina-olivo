@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Activity, Bell, Building2, ChartNoAxesCombined, CircleAlert, Crown, Database, Leaf, MapPinned, RefreshCw, Sprout, Users } from 'lucide-react';
+import { Activity, Bell, Building2, ChartNoAxesCombined, CircleAlert, Crown, Database, ExternalLink, Leaf, MapPinned, Newspaper, RefreshCw, Sprout, Users } from 'lucide-react';
 import { VisualHeader } from './VisualChrome';
 
 type AdminRole = 'super_admin' | 'admin' | 'editor' | 'support';
@@ -28,6 +28,8 @@ type PublicSource = {
   canInspect: boolean;
 };
 type PublicSources = { canManage: boolean; sources: PublicSource[] };
+type AdminNewsItem = { id: string; sourceKey: string; sourceLabel: string; title: string; sourceUrl: string; publishedAt: string; topic: string | null; active: boolean };
+type AdminNews = { canManage: boolean; items: AdminNewsItem[] };
 
 async function readJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { credentials: 'include', headers: { accept: 'application/json' } });
@@ -35,8 +37,14 @@ async function readJson<T>(url: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-async function requestJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, { method: 'POST', credentials: 'include', headers: { accept: 'application/json' } });
+async function requestJson<T>(url: string, body?: unknown): Promise<T> {
+  const options: RequestInit = {
+    method: 'POST',
+    credentials: 'include',
+    headers: { accept: 'application/json', ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
+  };
+  if (body !== undefined) options.body = JSON.stringify(body);
+  const response = await fetch(url, options);
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return response.json() as Promise<T>;
 }
@@ -64,8 +72,10 @@ function formatSourceTime(value: string | null): string {
 export function AdminDashboardPage() {
   const [overview, setOverview] = useState<Overview | null>(null);
   const [publicSources, setPublicSources] = useState<PublicSources | null>(null);
+  const [news, setNews] = useState<AdminNews | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshingSource, setRefreshingSource] = useState<string | null>(null);
+  const [savingNewsId, setSavingNewsId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +85,9 @@ export function AdminDashboardPage() {
     void readJson<PublicSources>('/api/v1/admin/public-sources')
       .then((result) => { if (!cancelled) setPublicSources(result); })
       .catch(() => { if (!cancelled) setPublicSources({ canManage: false, sources: [] }); });
+    void readJson<AdminNews>('/api/v1/admin/news')
+      .then((result) => { if (!cancelled) setNews(result); })
+      .catch(() => { if (!cancelled) setNews({ canManage: false, items: [] }); });
     return () => { cancelled = true; };
   }, []);
 
@@ -86,6 +99,16 @@ export function AdminDashboardPage() {
       setPublicSources(refreshed);
     } finally {
       setRefreshingSource(null);
+    }
+  }
+
+  async function setNewsVisibility(item: AdminNewsItem, active: boolean) {
+    setSavingNewsId(item.id);
+    try {
+      const result = await requestJson<{ id: string; active: boolean }>(`/api/v1/admin/news/${encodeURIComponent(item.id)}/visibility`, { active });
+      setNews((current) => current ? { ...current, items: current.items.map((newsItem) => newsItem.id === result.id ? { ...newsItem, active: result.active } : newsItem) } : current);
+    } finally {
+      setSavingNewsId(null);
     }
   }
 
@@ -113,5 +136,6 @@ export function AdminDashboardPage() {
       <article className="admin-panel card" aria-labelledby="admin-next-title"><header><span><Building2 aria-hidden="true" /><h2 id="admin-next-title">Siguientes módulos</h2></span></header><ul><li><span className="admin-icon"><Building2 aria-hidden="true" /></span><div><strong>Cooperativas</strong><small>Edición pública con validación y auditoría.</small></div></li><li><span className="admin-icon"><Activity aria-hidden="true" /></span><div><strong>Contenido y avisos</strong><small>Publicación controlada, sin acceso transversal a Mi Campo.</small></div></li></ul></article>
     </section>
     <section className="admin-panel admin-source-panel card" aria-labelledby="admin-source-title"><header><span><Database aria-hidden="true" /><h2 id="admin-source-title">Fuentes públicas</h2></span><small>Estado y trazabilidad</small></header>{!publicSources ? <p className="admin-source-loading">Consultando fuentes…</p> : <ul>{publicSources.sources.map((source) => <li key={source.key} className="admin-source-row"><span className={`admin-source-status ${source.status}`} aria-label={sourceStatusLabel(source.status)} /><div><strong>{source.label}</strong><small>{source.provider} · {source.frequency ?? 'Sin frecuencia declarada'} · Última comprobación: {formatSourceTime(source.lastCheckedAt)}</small>{source.lastError ? <em><CircleAlert aria-hidden="true" /> {source.lastError}</em> : null}</div><span className="admin-source-actions"><b className={`admin-source-badge ${source.status}`}>{sourceStatusLabel(source.status)}</b>{publicSources.canManage && source.canInspect ? <button type="button" disabled={refreshingSource === source.key} onClick={() => void inspectSource(source)}>{refreshingSource === source.key ? 'En cola…' : <><RefreshCw aria-hidden="true" /> Revisar</>}</button> : null}</span></li>)}</ul>}</section>
+    <section className="admin-panel admin-news-panel card" aria-labelledby="admin-news-title"><header><span><Newspaper aria-hidden="true" /><h2 id="admin-news-title">Noticias verificadas</h2></span><small>Solo referencias y visibilidad</small></header>{!news ? <p className="admin-source-loading">Consultando noticias…</p> : news.items.length === 0 ? <p className="admin-source-loading">No hay referencias disponibles.</p> : <ul>{news.items.map((item) => <li key={item.id} className="admin-news-row"><span className={`admin-source-status ${item.active ? 'healthy' : 'paused'}`} aria-label={item.active ? 'Publicada' : 'Oculta'} /><div><strong>{item.title}</strong><small>{item.sourceLabel} · {new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' }).format(new Date(item.publishedAt))}{item.topic ? ` · ${item.topic}` : ''}</small></div><span className="admin-news-actions"><a href={item.sourceUrl} target="_blank" rel="noreferrer" aria-label={`Abrir fuente de ${item.title}`}><ExternalLink aria-hidden="true" /></a>{news.canManage ? <button type="button" disabled={savingNewsId === item.id} onClick={() => void setNewsVisibility(item, !item.active)}>{savingNewsId === item.id ? 'Guardando…' : item.active ? 'Ocultar' : 'Publicar'}</button> : <b className={`admin-source-badge ${item.active ? 'healthy' : 'paused'}`}>{item.active ? 'Publicada' : 'Oculta'}</b>}</span></li>)}</ul>}<p className="admin-news-policy">No se edita el titular ni el enlace: se conserva la fuente oficial y se audita cada cambio de visibilidad.</p></section>
   </main>;
 }

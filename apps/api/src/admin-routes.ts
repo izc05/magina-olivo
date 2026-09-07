@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { randomUUID } from 'node:crypto';
 import { apiError } from './http-errors.ts';
-import { canAccessPlatformConsole, canManagePlatformSources } from './platform-admin-access.ts';
+import { canAccessPlatformConsole, canManagePlatformSources, canManagePublicContent } from './platform-admin-access.ts';
 import { getActivePlatformAdminRole, writePlatformAdminAudit } from './platform-admin.ts';
 import { getAuthenticatedSession } from './session.ts';
 import { getPool } from './db.ts';
@@ -16,6 +16,16 @@ type PublicSourceRow = {
   last_checked_at: string | null;
   last_success_at: string | null;
   last_error: string | null;
+};
+type AdminNewsRow = {
+  id: string;
+  source_key: string;
+  source_label: string;
+  title: string;
+  source_url: string;
+  published_at: Date;
+  topic: string | null;
+  active: boolean;
 };
 
 const inspectablePublicSources = {
@@ -127,6 +137,72 @@ export function registerAdminRoutes(app: FastifyInstance): void {
         canInspect: Object.hasOwn(inspectablePublicSources, source.source_key),
       })),
     };
+  });
+
+  app.get('/api/v1/admin/news', async (request, reply) => {
+    const access = await requirePlatformAdmin(request, reply);
+    if (!access) return reply;
+
+    const result = await getPool().query<AdminNewsRow>(
+      `
+        select n.id, n.source_key, s.label as source_label, n.title, n.source_url,
+               n.published_at, n.topic, n.active
+        from public_news_items n
+        join public_data_sources s on s.source_key = n.source_key
+        order by n.published_at desc, n.external_id desc
+        limit 50
+      `,
+    );
+
+    await writePlatformAdminAudit({
+      actorUserId: access.session.user.id,
+      action: 'admin.news.read',
+      requestId: request.id,
+      metadata: { role: access.role },
+    });
+
+    return {
+      canManage: canManagePublicContent(access.role),
+      items: result.rows.map((item) => ({
+        id: item.id,
+        sourceKey: item.source_key,
+        sourceLabel: item.source_label,
+        title: item.title,
+        sourceUrl: item.source_url,
+        publishedAt: item.published_at,
+        topic: item.topic,
+        active: item.active,
+      })),
+    };
+  });
+
+  app.post<{ Params: { newsId: string }; Body: { active?: unknown } }>('/api/v1/admin/news/:newsId/visibility', async (request, reply) => {
+    const access = await requirePlatformAdmin(request, reply);
+    if (!access) return reply;
+    if (!canManagePublicContent(access.role)) {
+      return reply.code(403).send(apiError(request, 'PLATFORM_ADMIN_CONTENT_REQUIRED', 'Platform content editor access required'));
+    }
+    if (typeof request.body?.active !== 'boolean') {
+      return reply.code(400).send(apiError(request, 'INVALID_NEWS_VISIBILITY', 'active must be a boolean'));
+    }
+
+    const result = await getPool().query<{ id: string; active: boolean }>(
+      `update public_news_items set active = $2, updated_at = now() where id = $1 returning id, active`,
+      [request.params.newsId, request.body.active],
+    );
+    const item = result.rows[0];
+    if (!item) return reply.code(404).send(apiError(request, 'PUBLIC_NEWS_NOT_FOUND', 'Public news item was not found'));
+
+    await writePlatformAdminAudit({
+      actorUserId: access.session.user.id,
+      action: 'admin.news.visibility.updated',
+      requestId: request.id,
+      targetType: 'public_news_item',
+      targetId: item.id,
+      metadata: { role: access.role, active: item.active },
+    });
+
+    return { id: item.id, active: item.active };
   });
 
   app.post<{ Params: { sourceKey: string } }>('/api/v1/admin/public-sources/:sourceKey/inspect', async (request, reply) => {

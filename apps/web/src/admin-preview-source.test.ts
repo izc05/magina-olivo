@@ -15,6 +15,10 @@ test('admin preview remains local-only while the real route uses a protected ser
   assert.match(main, /import\.meta\.env\.DEV/);
   assert.match(main, /get\('preview'\) === '1'/);
   assert.match(main, /<PrivateRoute returnTo=\{returnTo\}><AdminDashboardPage \/><\/PrivateRoute>/);
+  assert.match(dashboard, /\/api\/v1\/admin\/news/);
+  assert.match(dashboard, /Noticias verificadas/);
+  assert.match(dashboard, /setNewsVisibility/);
+  assert.match(dashboard, /No se edita el titular ni el enlace/);
   assert.match(page, /Vista local de diseño/);
   assert.match(page, /sin acceso administrativo ni escrituras reales/);
   assert.match(page, /rol de plataforma independiente/);

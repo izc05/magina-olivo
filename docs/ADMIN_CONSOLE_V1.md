@@ -4,7 +4,9 @@
 
 La consola `/admin` permite supervisar la plataforma Mágina Olivo sin convertir al soporte en propietario de los datos de agricultores.
 
-La primera entrega muestra únicamente métricas agregadas: cuentas, explotaciones, fincas, parcelas, cooperativas públicas y campañas activas. No lista documentos, entregas, rendimientos, ubicaciones ni perfiles de agricultores.
+La primera entrega muestra métricas agregadas: cuentas, explotaciones, fincas, parcelas, cooperativas públicas y campañas activas. No lista documentos, entregas, rendimientos, ubicaciones ni perfiles de agricultores.
+
+También permite a roles de contenido revisar la visibilidad de las referencias de noticias oficiales ya verificadas. Esta acción solo publica u oculta una referencia existente: no permite alterar titulares, URLs ni copiar artículos de terceros. Cada cambio queda en `platform_admin_audit_log`.
 
 ## Roles de plataforma
 
@@ -16,6 +18,8 @@ Los roles globales se almacenan en `platform_admin_members` y son independientes
 - `support`: soporte limitado y basado en solicitudes identificadas.
 
 Un `owner` o `admin` de una explotación no obtiene acceso a `/admin` por ese hecho.
+
+Los roles `super_admin`, `admin` y `editor` pueden gestionar la visibilidad del contenido público verificado. `support` solo lo consulta.
 
 ## Alta de la primera superadministradora
 

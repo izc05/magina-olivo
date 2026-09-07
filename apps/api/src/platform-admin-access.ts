@@ -13,3 +13,7 @@ export function canAccessPlatformConsole(role: PlatformAdminRole | null): boolea
 export function canManagePlatformSources(role: PlatformAdminRole | null): boolean {
   return role === 'super_admin' || role === 'admin';
 }
+
+export function canManagePublicContent(role: PlatformAdminRole | null): boolean {
+  return role === 'super_admin' || role === 'admin' || role === 'editor';
+}

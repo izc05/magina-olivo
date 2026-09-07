@@ -404,10 +404,11 @@ export function App({ initialTab = 'home', initialFieldView = 'home' }: { initia
       </main>
 
       <nav className="bottom-nav bottom-nav-v2" aria-label="Navegación principal">
-        <NavButton active={tab === 'home'} icon="home" label="Inicio" onClick={() => setTab('home')} />
-        <NavButton active={tab === 'field' || tab === 'campaign'} icon="field" label="Mi Campo" onClick={() => setTab('field')} />
+        <a className="nav-button" href="/"><House aria-hidden="true" />Inicio</a>
+        <a className={`nav-button${tab === 'field' || tab === 'campaign' ? ' active' : ''}`} href="/mi-campo" aria-current={tab === 'field' || tab === 'campaign' ? 'page' : undefined}><Sprout aria-hidden="true" />Mi Campo</a>
         <a className="nav-button" href="/magina"><Mountain aria-hidden="true" />Mágina</a>
-        <NavButton active={tab === 'more'} icon="profile" label="Perfil" onClick={() => setTab('more')} />
+        <a className="nav-button" href="/descubre"><Compass aria-hidden="true" />Descubre</a>
+        <a className={`nav-button${tab === 'more' ? ' active' : ''}`} href="/cuenta" aria-current={tab === 'more' ? 'page' : undefined}><UserRound aria-hidden="true" />Perfil</a>
         <button type="button" className="nav-plus" onClick={() => setShowQuickMenu((prev) => !prev)} aria-label="Abrir menú de acciones rápidas"><Plus aria-hidden="true" /></button>
       </nav>
     </div>
@@ -872,6 +873,7 @@ function CampaignComparisons({ campaigns, selectedCampaignId, selectedSummary }:
 function MoreTab({ user, holding, farms, deliveries, summary, busy, onSignOut }: { user: User; holding: Holding | null; farms: Farm[]; deliveries: Delivery[]; summary: CampaignSummary | null; busy: boolean; onSignOut: () => void }) {
   const initials = (user.name || user.email).trim().split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
   const profileLinks = [
+    { href: '/tu-olivo', icon: Leaf, title: 'Tu Olivo', copy: 'Cuida tu árbol virtual y consulta tus recompensas' },
     { href: '/perfil/editar', icon: UserRound, title: 'Datos personales', copy: 'Nombre, contacto e información de tu cuenta' },
     { href: '/cuenta#cooperativa', icon: MapPin, title: 'Municipio y cooperativa', copy: 'Tu ubicación y entidad de referencia' },
     { href: '/perfil/preferencias', icon: Settings, title: 'Preferencias', copy: 'Configura la información de tu inicio' },

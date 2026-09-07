@@ -23,7 +23,7 @@ type LocatedPlot = {
 
 type ApiErrorBody = { error?: { message?: string } };
 type EditorMode = 'location' | 'boundary';
-export type LayerType = 'street' | 'pnoa' | 'topo';
+export type LayerType = 'street' | 'pnoa' | 'topo' | 'radar';
 type MapCenter = { latitude: number; longitude: number };
 
 type Tile = {
@@ -74,6 +74,10 @@ function getTileUrl(layer: LayerType, zoom: number, x: number, y: number): strin
   if (layer === 'topo') {
     // IGN Mapa Topográfico / Relieve
     return `https://www.ign.es/wmts/mapa-raster?request=GetTile&service=WMTS&version=1.0.0&layer=MTN&style=default&format=image/jpeg&TileMatrixSet=GoogleMapsCompatible&TileMatrix=${zoom}&TileRow=${y}&TileCol=${x}`;
+  }
+  if (layer === 'radar') {
+    // OpenStreetMap + AEMET Radar Overlay
+    return `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`;
   }
   // Default OpenStreetMap Street View
   return `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`;
@@ -640,6 +644,7 @@ export function PlotMapPanel({ farmId }: { farmId: string }) {
                 <button type="button" className={layerType === 'street' ? 'active' : ''} onClick={() => setLayerType('street')}>Callejero</button>
                 <button type="button" className={layerType === 'pnoa' ? 'active' : ''} onClick={() => setLayerType('pnoa')}>Ortofoto PNOA</button>
                 <button type="button" className={layerType === 'topo' ? 'active' : ''} onClick={() => setLayerType('topo')}>Relieve</button>
+                <button type="button" className={layerType === 'radar' ? 'active' : ''} onClick={() => setLayerType('radar')}>🌧 Radar AEMET</button>
               </div>
 
               <div className="plot-map-toolbar" aria-label="Controles del mapa">

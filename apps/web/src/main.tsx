@@ -9,7 +9,7 @@ import { installDemoPreview } from './demoPreview';
 import { DiscoverPage } from './DiscoverPage';
 import { DiscoverCollectionPage } from './DiscoverCollectionPage';
 import { DiscoverRouteDetailPage, DiscoverRoutesPage } from './DiscoverRoutesPage';
-import { LocalServiceDetailPage, LocalServicesPage } from './LocalServicesPage';
+import { VerifiedServicesPage } from './VerifiedServicesPage';
 import { EditProfilePage } from './EditProfilePage';
 import { HomePreferencesPage } from './HomePreferencesPage';
 import { LoginPage } from './LoginPage';
@@ -50,6 +50,7 @@ import './magina-hub.css';
 import './magina-market.css';
 import './magina-field-alerts.css';
 import './local-services.css';
+import './verified-services.css';
 import './discover-territory.css';
 import './discover-routes.css';
 import './admin-preview.css';
@@ -160,9 +161,9 @@ createRoot(root).render(
       ) : ['/descubre/miradores', '/descubre/gastronomia', '/descubre/oleoturismo', '/descubre/pueblos'].includes(path) ? (
         <PublicScreen showAction={false}><DiscoverCollectionPage slug={path.split('/').filter(Boolean).at(-1) ?? ''} /></PublicScreen>
       ) : path === '/descubre/servicios' ? (
-        <PublicScreen><LocalServicesPage directory /></PublicScreen>
+        <PublicScreen showAction={false}><VerifiedServicesPage /></PublicScreen>
       ) : path.startsWith('/descubre/servicios/') ? (
-        <PublicScreen><LocalServiceDetailPage slug={path.split('/').filter(Boolean).at(-1) ?? ''} /></PublicScreen>
+        <PublicScreen showAction={false}><VerifiedServicesPage /></PublicScreen>
       ) : path === '/descubre/sierra-magina' ? (
         <PublicScreen><DiscoverPage /></PublicScreen>
       ) : path === '/magina' ? (

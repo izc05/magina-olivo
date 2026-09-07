@@ -93,7 +93,10 @@ test('notebook and private hub keep real contracts while presenting the V2 hiera
   assert.match(notebook, /CUADERNO/);
   assert.match(notebook, /Registra el trabajo realizado y consulta la historia de cada parcela\./);
   assert.match(notebook, /Parcela activa:/);
-  assert.match(notebook, /<PlotMapPanel farmId=\{farmId\}/);
+  assert.match(notebook, /href="#mapa-parcelas"/);
+  assert.match(notebook, /Mapa, SIGPAC y Catastro/);
+  assert.match(app, /<PlotMapPanel farmId=\{selectedFarm\.id\}/);
+  assert.match(app, /Mapa de parcelas/);
   assert.match(notebook, /api\.createActivity\(holdingId, body\)/);
   assert.match(notebook, /offlineQueued/);
   assert.match(notebook, /api\.plotTimeline\(plotId\)/);

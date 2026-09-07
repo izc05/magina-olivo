@@ -24,6 +24,22 @@
   margin: 0 -4px 16px;
 }
 
+.notebook-map-link {
+  display: grid;
+  gap: 3px;
+  margin: 14px 0 2px;
+  padding: 13px 15px;
+  border: 1px solid rgba(47, 90, 68, .18);
+  border-radius: 16px;
+  color: #284a37;
+  text-decoration: none;
+  background: linear-gradient(125deg, #e5f0e7, #fdfbf3 68%);
+}
+
+.notebook-map-link strong { font-size: .92rem; }
+.notebook-map-link span { color: var(--muted); font-size: .8rem; }
+.notebook-map-link:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+
 .notebook-map-context > * {
   margin-top: 0 !important;
 }

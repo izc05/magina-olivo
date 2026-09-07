@@ -8,7 +8,6 @@ import {
   type Plot,
   type PlotTimelineItem,
 } from './api.ts';
-import { PlotMapPanel } from './PlotMapPanel.tsx';
 
 const activityLabels: Record<ActivityType, string> = {
   treatment: 'Tratamiento',
@@ -229,10 +228,10 @@ export function FieldNotebook({
             </div>
           </div>
 
-          <details className="notebook-map-context visual-disclosure" aria-label={`Mapa de ${selectedPlot?.name ?? 'la parcela activa'}`}>
-            <summary>Mapa, SIGPAC y Catastro</summary>
-            <PlotMapPanel farmId={farmId} />
-          </details>
+          <a className="notebook-map-context notebook-map-link" href="#mapa-parcelas" aria-label={`Abrir mapa de ${selectedPlot?.name ?? 'la parcela activa'}`}>
+            <strong>Mapa, SIGPAC y Catastro</strong>
+            <span>Consulta el perímetro y la fuente oficial de la parcela activa.</span>
+          </a>
 
           <details className="visual-disclosure">
           <summary>Añadir registro al cuaderno</summary>

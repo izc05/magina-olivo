@@ -15,6 +15,7 @@ import {
 import { CampaignDocuments } from './CampaignDocuments.tsx';
 import { DeliveryEntryCard, DeliveryTicketButton } from './DeliveryEntryCard.tsx';
 import { FieldNotebook } from './FieldNotebook.tsx';
+import { PlotMapPanel } from './PlotMapPanel.tsx';
 import { MaginaPrivateHub } from './MaginaPrivateHub.tsx';
 import { OfflineColdStart } from './OfflineColdStart.tsx';
 import { listPendingOperations } from './offline/outbox.ts';
@@ -444,7 +445,7 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
               <div><span>Parcelas</span><strong>{plots.length}</strong></div>
             </div>
           </section>
-          <nav className="visual-segments field-section-links" aria-label="Secciones de Mi Campo"><a href="#parcelas">Campo</a><a href="#cuaderno">Cuaderno</a><a href="/campana">Campaña</a><a href="#field-management" onClick={() => { const panel = document.querySelector<HTMLDetailsElement>('#field-management'); if (panel) panel.open = true; }}>Gestión</a></nav>
+          <nav className="visual-segments field-section-links" aria-label="Secciones de Mi Campo"><a href="#parcelas">Campo</a><a href="#mapa-parcelas">Mapa</a><a href="#cuaderno">Cuaderno</a><a href="/campana">Campaña</a><a href="#field-management" onClick={() => { const panel = document.querySelector<HTMLDetailsElement>('#field-management'); if (panel) panel.open = true; }}>Gestión</a></nav>
           <section className="section" id="parcelas">
             <div className="section-heading"><div><p className="eyebrow page-eyebrow">Mi Campo</p><h2 className="section-title">Parcelas</h2></div><a className="text-button" href="#gestion-parcelas" onClick={() => { const panel = document.querySelector<HTMLDetailsElement>('#gestion-parcelas details'); if (panel) panel.open = true; }}>Añadir</a></div>
             {plots.map((plot) => (
@@ -468,10 +469,14 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
                 {selectedPlot.irrigationType ? <div><dt>Riego</dt><dd>{irrigationLabel(selectedPlot.irrigationType)}</dd></div> : null}
                 {selectedPlot.sigpacReference ? <div><dt>Referencia SIGPAC</dt><dd>{selectedPlot.sigpacReference}</dd></div> : null}
               </dl>
-              <p className="plot-detail-map-note">El mapa y el perímetro de esta parcela se gestionan en el cuaderno de campo.</p>
+              <a className="text-button plot-detail-map-note" href="#mapa-parcelas">Abrir mapa, GPS, SIGPAC y Catastro</a>
             </section>
           ) : null}
           {fieldManagement}
+          <section className="section field-map-section" id="mapa-parcelas" aria-labelledby="field-map-title">
+            <div className="section-heading"><div><p className="eyebrow page-eyebrow">Mi Campo · ubicación</p><h2 id="field-map-title" className="section-title">Mapa de parcelas</h2><p className="section-copy">Sitúa la finca con GPS, dibuja el perímetro y contrasta la parcela con SIGPAC y Catastro antes de guardarla.</p></div></div>
+            <PlotMapPanel farmId={selectedFarm.id} />
+          </section>
           <div id="cuaderno"><FieldNotebook holdingId={selectedHolding.id} farmId={selectedFarm.id} plots={plots} /></div>
           <PhotoCredit field />
         </>

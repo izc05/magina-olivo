@@ -37,7 +37,7 @@ export function PublicHomePage() {
     void fetch('/api/v1/public/sources', { headers: { accept: 'application/json' }, signal: controller.signal })
       .then(async (response) => response.ok ? response.json() as Promise<{ items: PublicSource[] }> : Promise.reject(new Error('sources')))
       .then((result) => setSources(result.items)).catch(() => undefined);
-    void fetch('/api/v1/public/weather?municipality=huelma', { headers: { accept: 'application/json' }, signal: controller.signal })
+    void fetch('/api/v1/public/weather?municipality=bedmar-y-garciez', { headers: { accept: 'application/json' }, signal: controller.signal })
       .then(async (response) => response.ok ? response.json() as Promise<Weather> : Promise.reject(new Error('weather')))
       .then(setWeather).catch(() => undefined);
     void api.me().then(() => api.holdings()).then((result) => setHolding(result.items[0] ?? null)).catch(() => setHolding(null));

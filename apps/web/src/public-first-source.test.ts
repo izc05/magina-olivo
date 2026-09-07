@@ -32,6 +32,7 @@ test('public routes are reachable without a session and private destinations use
   assert.match(home, /fetch\('\/api\/v1\/public\/sources'/);
   assert.match(styles, /home-sierra-magina\.webp/);
   assert.match(home, /api\/v1\/public\/weather/);
+  assert.match(home, /municipality=bedmar-y-garciez/);
   assert.match(home, /QuickIcon/);
   assert.match(home, /href="\/mi-campo"/);
   assert.match(home, /<a href="\/calendario"><QuickIcon kind="calendar" \/>Tareas<\/a>/);

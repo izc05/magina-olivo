@@ -10,6 +10,7 @@ test('public routes are reachable without a session and private destinations use
   const main = await source('./main.tsx');
   const home = await source('./PublicHomePage.tsx');
   const gate = await source('./PrivateAccessGate.tsx');
+  const app = await source('./App.tsx');
   const navigation = await source('./PublicNavigation.tsx');
   const styles = await source('./styles.css');
 
@@ -17,9 +18,11 @@ test('public routes are reachable without a session and private destinations use
     assert.match(main, new RegExp(`path === '${route}'`));
   }
   assert.match(main, /<PublicScreen><PublicHomePage \/><\/PublicScreen>/);
+  assert.match(main, /path === '\/mi-magina' \? \(\s*<PublicScreen><MaginaHubPage \/><\/PublicScreen>/s);
   assert.match(main, /<PrivateRoute returnTo=\{returnTo\}><AccountPage \/><\/PrivateRoute>/);
   assert.match(main, /<App initialTab="field" \/>/);
-  assert.match(gate, /Inicia sesión o crea una cuenta para gestionar tu olivar\./);
+  assert.match(gate, /Puedes recorrer toda Mágina sin cuenta/);
+  assert.match(app, /area="field"/);
   assert.match(gate, /\/login\?next=/);
   assert.doesNotMatch(gate, /window\.location/);
   assert.match(navigation, /href: '\/mi-campo', label: 'Mi Campo'/);
@@ -29,7 +32,7 @@ test('public routes are reachable without a session and private destinations use
   assert.match(styles, /home-sierra-magina\.webp/);
   assert.match(home, /api\/v1\/public\/weather/);
   assert.match(home, /QuickIcon/);
-  assert.match(home, /href=\{holding \? '\/calendario' : '\/login\?next=%2Fcalendario'\}/);
+  assert.match(home, /href="\/mi-campo"/);
   assert.match(home, /Referencia AOVE/);
   assert.doesNotMatch(home, /22°|26°|14°|Riego pendiente/);
   assert.doesNotMatch(home, /https?:\/\//);

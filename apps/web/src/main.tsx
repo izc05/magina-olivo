@@ -142,7 +142,7 @@ createRoot(root).render(
       ) : path === '/campana' ? (
         <App initialTab="campaign" />
       ) : path === '/mi-magina' ? (
-        <App initialTab="more" />
+        <PublicScreen><MaginaHubPage /></PublicScreen>
       ) : path === '/descubre' ? (
         <PublicScreen showAction={false}><DiscoverPage /></PublicScreen>
       ) : path === '/descubre/rutas' ? (

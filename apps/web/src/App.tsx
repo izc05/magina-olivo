@@ -215,7 +215,7 @@ export function App({ initialTab = 'home' }: { initialTab?: Tab }) {
 
   if (sessionState === 'checking') return <div className="loading-screen" role="status" aria-live="polite">Abriendo Mágina Olivo…</div>;
   if (sessionState === 'offline_locked') return <OfflineColdStart onRetry={() => void checkSession()} />;
-  if (sessionState === 'signed_out' || !user) return <PrivateAccessGate returnTo={window.location.pathname} />;
+  if (sessionState === 'signed_out' || !user) return <PrivateAccessGate returnTo={window.location.pathname} area="field" />;
 
   const initials = (user.name || user.email).trim().slice(0, 1).toUpperCase();
   const coverage = Math.min(100, Math.max(0, Number(summary?.coveragePercent ?? 0)));

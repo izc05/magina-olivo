@@ -10,7 +10,7 @@ test('Mi Campo keeps the private farm overview wired to real holdings and farms'
   const app = await source('./App.tsx');
   const vite = await source('../vite.config.ts');
 
-  assert.match(app, /<PrivateAccessGate returnTo=\{window\.location\.pathname\} \/>/);
+  assert.match(app, /<PrivateAccessGate returnTo=\{window\.location\.pathname\} area="field" \/>/);
   assert.match(app, /api\.farms\(holdingId\)/);
   assert.match(app, /Promise\.all\(farms\.map\(async \(farm\) => \[farm\.id, \(await api\.plots\(farm\.id\)\)\.items\.length\]/);
   assert.match(app, /farms\.map\(\(farm\) =>/);

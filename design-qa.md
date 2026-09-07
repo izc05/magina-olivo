@@ -52,6 +52,26 @@ final result: passed
 
 ---
 
+# Design QA — Acceso público y Mi Campo
+
+## Policy implemented
+
+- Las rutas de información territorial, Descubre, meteorología, directorio, noticias, mercado y el hub de Mágina se navegan sin sesión.
+- `Mi Campo` concentra las operaciones personales: fincas, parcelas, cuaderno, tareas, alertas personalizadas, entregas, campaña y documentos. Es la única zona que pide acceso para mostrar o modificar esos datos.
+- El perfil mantiene su protección técnica cuando contiene datos de cuenta; la navegación pública ya no usa `/mi-magina` para presentar ese contenido privado y muestra el hub público de Mágina.
+
+## QA performed
+
+- Se comprobó en el navegador integrado que `/mi-magina` abre el hub público y conserva enlaces a los contenidos abiertos sin mostrar fincas, entregas ni documentos.
+- El control de sesión de `App` conserva la comprobación `api.me()` antes de cargar holdings, farms, plots, campaigns, deliveries o resúmenes.
+- Sin sesión, la puerta de Mi Campo explica con claridad qué información queda protegida y ofrece continuar explorando, iniciar sesión o crear cuenta.
+- Los accesos desde Inicio a cuaderno y tareas pasan por `/mi-campo`, evitando saltos opacos al login y haciendo visible el único límite de acceso.
+- `npm --prefix apps/web test -- --run`, `npm --prefix apps/web run build` y `git diff --check` pasaron. El build conserva solo el aviso conocido de tamaño de bundle.
+
+final result: passed
+
+---
+
 # Design QA — Descubre, rutas
 
 ## Evidence

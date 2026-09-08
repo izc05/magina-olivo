@@ -8,11 +8,12 @@ import {
   validateCatastroBbox,
   validateCatastroPoint,
   type CatastroBbox,
+  type CatastroGeometry,
   type CatastroPoint,
 } from './catastro-client.ts';
 import { getPool } from './db.ts';
 import { apiError } from './http-errors.ts';
-import { validateBoundary, type GeoJsonPolygon } from './plot-boundary-geometry.ts';
+import { validateBoundary, type GeoJsonBoundary } from './plot-boundary-geometry.ts';
 import { getAuthenticatedSession } from './session.ts';
 
 type CatastroQuery = {
@@ -28,6 +29,7 @@ type CatastroIdentifyQuery = {
   nearby?: string | number | boolean;
 };
 
+type CatastroReferenceParams = { reference: string };
 type PlotParams = { plotId: string };
 type ImportCatastroBody = { cadastralReference: string };
 
@@ -51,11 +53,10 @@ function sourceMetadata(service: string) {
   };
 }
 
-function simplePolygon(geometry: { type: 'Polygon' | 'MultiPolygon'; coordinates: number[][][] | number[][][][] }): GeoJsonPolygon | null {
-  if (geometry.type !== 'Polygon') return null;
-  const coordinates = geometry.coordinates as number[][][];
-  if (coordinates.length !== 1 || !Array.isArray(coordinates[0]) || coordinates[0].length < 4) return null;
-  return { type: 'Polygon', coordinates };
+function normalizeOfficialBoundary(geometry: CatastroGeometry): GeoJsonBoundary {
+  return geometry.type === 'Polygon'
+    ? { type: 'Polygon', coordinates: geometry.coordinates as number[][][] }
+    : { type: 'MultiPolygon', coordinates: geometry.coordinates as number[][][][] };
 }
 
 export function registerCatastroMapRoutes(app: FastifyInstance): void {
@@ -93,6 +94,32 @@ export function registerCatastroMapRoutes(app: FastifyInstance): void {
       } catch (error) {
         request.log.warn({ err: error }, 'Catastro point identification failed');
         return reply.code(502).send(apiError(request, 'CATASTRO_UNAVAILABLE', 'Catastro no está disponible temporalmente'));
+      }
+    },
+  );
+
+  app.get<{ Params: CatastroReferenceParams }>(
+    '/api/v1/maps/catastro/reference/:reference',
+    async (request, reply) => {
+      const session = await getAuthenticatedSession(request);
+      if (!session) {
+        return reply.code(401).send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
+      }
+      const reference = request.params.reference.trim().toUpperCase();
+      if (!validateCadastralReference(reference)) {
+        return reply.code(400).send(apiError(request, 'INVALID_CADASTRAL_REFERENCE', 'La referencia catastral debe tener 14 caracteres alfanuméricos'));
+      }
+
+      try {
+        const item = await fetchCatastroParcelByReference(reference);
+        reply.header('cache-control', 'private, max-age=300');
+        return {
+          item,
+          source: sourceMetadata('INSPIRE WFS GetParcel'),
+        };
+      } catch (error) {
+        request.log.warn({ err: error, cadastralReference: reference }, 'Catastro reference lookup failed');
+        return reply.code(502).send(apiError(request, 'CATASTRO_UNAVAILABLE', 'No se ha podido consultar esa referencia en Catastro'));
       }
     },
   );
@@ -179,10 +206,7 @@ export function registerCatastroMapRoutes(app: FastifyInstance): void {
         return reply.code(502).send(apiError(request, 'CATASTRO_UNAVAILABLE', 'No se ha podido verificar la parcela en Catastro'));
       }
 
-      const boundary = simplePolygon(official.geometry);
-      if (!boundary) {
-        return reply.code(409).send(apiError(request, 'CATASTRO_GEOMETRY_UNSUPPORTED', 'La parcela catastral tiene una geometría compleja no importable en esta versión'));
-      }
+      const boundary = normalizeOfficialBoundary(official.geometry);
       const validation = validateBoundary(boundary);
       if (!validation.ok) {
         return reply.code(409).send(apiError(request, 'CATASTRO_GEOMETRY_INVALID', 'La geometría oficial no supera la validación privada de Mágina Olivo'));
@@ -190,46 +214,93 @@ export function registerCatastroMapRoutes(app: FastifyInstance): void {
 
       const areaHa = Number(validation.areaHa.toFixed(4));
       const checkedAt = new Date();
-      const updated = await getPool().query<{
-        id: string;
-        cadastral_reference: string | null;
-        boundary_area_ha: string | null;
-        boundary_external_id: string | null;
-        boundary_source_checked_at: Date | null;
-      }>(
-        `update plots
-         set boundary_geojson = $1::jsonb,
-             boundary_area_ha = $2,
-             boundary_source = 'catastro',
-             boundary_external_id = $3,
-             boundary_updated_at = $4,
-             boundary_source_checked_at = $4,
-             cadastral_reference = $3,
-             version = version + 1,
-             updated_at = now()
-         where id = $5 and holding_id = $6 and active = true
-         returning id, cadastral_reference, boundary_area_ha, boundary_external_id, boundary_source_checked_at`,
-        [JSON.stringify(boundary), areaHa, official.nationalCadastralReference, checkedAt, request.params.plotId, access.holdingId],
-      );
-      const row = updated.rows[0];
-      if (!row) {
-        return reply.code(404).send(apiError(request, 'PLOT_NOT_FOUND', 'Plot not found'));
+      const pool = getPool();
+      const client = await pool.connect();
+      try {
+        await client.query('begin');
+        await client.query(
+          `insert into plot_official_boundary_sources (
+             plot_id, source, external_id, reference, geometry_geojson, calculated_area_ha,
+             provider_area_m2, provider, dataset, service, source_version, checked_at, metadata_json
+           ) values ($1, 'catastro', $2, $2, $3::jsonb, $4, $5, $6, $7, $8, $9, $10, $11::jsonb)
+           on conflict (plot_id, source) do update set
+             external_id = excluded.external_id,
+             reference = excluded.reference,
+             geometry_geojson = excluded.geometry_geojson,
+             calculated_area_ha = excluded.calculated_area_ha,
+             provider_area_m2 = excluded.provider_area_m2,
+             provider = excluded.provider,
+             dataset = excluded.dataset,
+             service = excluded.service,
+             source_version = excluded.source_version,
+             checked_at = excluded.checked_at,
+             metadata_json = excluded.metadata_json,
+             updated_at = now()`,
+          [
+            request.params.plotId,
+            official.nationalCadastralReference,
+            JSON.stringify(boundary),
+            areaHa,
+            official.areaM2,
+            'Dirección General del Catastro',
+            'INSPIRE Cadastral Parcel (CP)',
+            'INSPIRE WFS GetParcel',
+            official.beginLifespanVersion,
+            checkedAt,
+            JSON.stringify({ label: official.label, geometryType: boundary.type }),
+          ],
+        );
+        const updated = await client.query<{
+          id: string;
+          cadastral_reference: string | null;
+          boundary_area_ha: string | null;
+          boundary_external_id: string | null;
+          boundary_source_checked_at: Date | null;
+        }>(
+          `update plots
+           set boundary_geojson = $1::jsonb,
+               boundary_area_ha = $2,
+               boundary_source = 'catastro',
+               boundary_external_id = $3,
+               boundary_updated_at = $4,
+               boundary_source_checked_at = $4,
+               cadastral_reference = $3,
+               version = version + 1,
+               updated_at = now()
+           where id = $5 and holding_id = $6 and active = true
+           returning id, cadastral_reference, boundary_area_ha, boundary_external_id, boundary_source_checked_at`,
+          [JSON.stringify(boundary), areaHa, official.nationalCadastralReference, checkedAt, request.params.plotId, access.holdingId],
+        );
+        const row = updated.rows[0];
+        if (!row) throw new Error('Plot disappeared during Catastro import');
+        await client.query('commit');
+        return {
+          id: row.id,
+          cadastralReference: row.cadastral_reference,
+          boundaryAreaHa: row.boundary_area_ha,
+          boundarySource: 'catastro' as const,
+          boundaryExternalId: row.boundary_external_id,
+          boundarySourceCheckedAt: row.boundary_source_checked_at,
+          geometryType: boundary.type,
+          geometryStats: {
+            polygons: validation.polygons,
+            rings: validation.rings,
+            positions: validation.positions,
+          },
+          catastro: {
+            nationalCadastralReference: official.nationalCadastralReference,
+            label: official.label,
+            areaM2: official.areaM2,
+            beginLifespanVersion: official.beginLifespanVersion,
+          },
+        };
+      } catch (error) {
+        await client.query('rollback');
+        request.log.error({ err: error, cadastralReference: reference }, 'Catastro import transaction failed');
+        return reply.code(500).send(apiError(request, 'CATASTRO_IMPORT_FAILED', 'No se ha podido guardar la parcela verificada'));
+      } finally {
+        client.release();
       }
-
-      return {
-        id: row.id,
-        cadastralReference: row.cadastral_reference,
-        boundaryAreaHa: row.boundary_area_ha,
-        boundarySource: 'catastro' as const,
-        boundaryExternalId: row.boundary_external_id,
-        boundarySourceCheckedAt: row.boundary_source_checked_at,
-        catastro: {
-          nationalCadastralReference: official.nationalCadastralReference,
-          label: official.label,
-          areaM2: official.areaM2,
-          beginLifespanVersion: official.beginLifespanVersion,
-        },
-      };
     },
   );
 }

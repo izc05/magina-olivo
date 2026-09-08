@@ -124,6 +124,7 @@ export function App() {
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [summary, setSummary] = useState<CampaignSummary | null>(null);
+  const [showActionCenter, setShowActionCenter] = useState(false);
   const pageRef = useRef<HTMLElement | null>(null);
 
   const selectedHolding = useMemo(
@@ -330,16 +331,70 @@ export function App() {
             reloadCampaign={() => loadCampaign(selectedCampaignId)}
           />
         ) : null}
-        {tab === 'magina' ? <MaginaPrivateHub /> : null}
         {tab === 'more' ? <MoreTab user={user} holding={selectedHolding} busy={busy} onSignOut={() => void signOut()} /> : null}
       </main>
+
+      {showActionCenter ? (
+        <div className="action-center-overlay" role="dialog" aria-modal="true" aria-label="Centro de acciones">
+          <div className="action-center-backdrop" onClick={() => setShowActionCenter(false)} />
+          <div className="action-center-sheet">
+            <header className="action-center-header">
+              <h2>Centro de acciones</h2>
+              <p>¿Qué quieres añadir a tu campo?</p>
+              <button type="button" className="action-center-close" onClick={() => setShowActionCenter(false)} aria-label="Cerrar centro de acciones">×</button>
+            </header>
+            <div className="action-center-grid">
+              <button type="button" className="action-center-item" onClick={() => { setShowActionCenter(false); setTab('field'); }}>
+                <span className="action-icon">🚜</span>
+                <span>Trabajo</span>
+              </button>
+              <button type="button" className="action-center-item" onClick={() => { setShowActionCenter(false); setTab('field'); }}>
+                <span className="action-icon">📋</span>
+                <span>Tarea</span>
+              </button>
+              <button type="button" className="action-center-item" onClick={() => { setShowActionCenter(false); setTab('field'); }}>
+                <span className="action-icon">💧</span>
+                <span>Riego</span>
+              </button>
+              <button type="button" className="action-center-item" onClick={() => { setShowActionCenter(false); setTab('field'); }}>
+                <span className="action-icon">🌱</span>
+                <span>Tratamiento</span>
+              </button>
+              <button type="button" className="action-center-item" onClick={() => { setShowActionCenter(false); setTab('field'); }}>
+                <span className="action-icon">👨‍🌾</span>
+                <span>Jornal</span>
+              </button>
+              <button type="button" className="action-center-item" onClick={() => { setShowActionCenter(false); setTab('field'); }}>
+                <span className="action-icon">⚙️</span>
+                <span>Maquinaria</span>
+              </button>
+              <button type="button" className="action-center-item" onClick={() => { setShowActionCenter(false); setTab('campaign'); }}>
+                <span className="action-icon">📦</span>
+                <span>Entrega</span>
+              </button>
+              <button type="button" className="action-center-item" onClick={() => { setShowActionCenter(false); setTab('field'); }}>
+                <span className="action-icon">📝</span>
+                <span>Observación</span>
+              </button>
+              <button type="button" className="action-center-item" onClick={() => { setShowActionCenter(false); setTab('more'); }}>
+                <span className="action-icon">📄</span>
+                <span>Documento</span>
+              </button>
+              <button type="button" className="action-center-item" onClick={() => { setShowActionCenter(false); setTab('field'); }}>
+                <span className="action-icon">🏞️</span>
+                <span>Finca / Parcela</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <nav className="bottom-nav bottom-nav-v2" aria-label="Navegación principal">
         <NavButton active={tab === 'home'} icon="⌂" label="Inicio" onClick={() => setTab('home')} />
         <NavButton active={tab === 'field'} icon="◒" label="Mi Campo" onClick={() => setTab('field')} />
-        <button type="button" className={`nav-plus${tab === 'campaign' ? ' active' : ''}`} onClick={() => setTab('campaign')} aria-label="Campaña y nueva entrega" aria-current={tab === 'campaign' ? 'page' : undefined}><span aria-hidden="true">+</span></button>
-        <NavButton active={tab === 'magina'} icon="◇" label="Mágina" onClick={() => setTab('magina')} />
-        <NavButton active={tab === 'more'} icon="•••" label="Mi Mágina" onClick={() => setTab('more')} />
+        <button type="button" className={`nav-plus${showActionCenter ? ' active' : ''}`} onClick={() => setShowActionCenter((prev) => !prev)} aria-label="Centro de acciones" aria-expanded={showActionCenter}><span aria-hidden="true">+</span></button>
+        <NavButton active={tab === 'campaign'} icon="⚡" label="Campaña" onClick={() => setTab('campaign')} />
+        <NavButton active={tab === 'more'} icon="•••" label="Más" onClick={() => setTab('more')} />
       </nav>
     </div>
   );

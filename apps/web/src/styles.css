@@ -5,23 +5,32 @@
   background: #f4f1e6;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --olive-950: #2e3a22;
+  --olive-950: #203D2A;
   --olive-800: #435637;
   --olive-650: #5c7a46;
   --olive-300: #a7b497;
-  --ivory: #f4f1e6;
+  --ivory: #F6F3E8;
   --paper: #fffdf7;
-  --gold: #d4a017;
+  --gold: #B8892D;
   --gold-soft: #f4e4ad;
-  --ink: #20261f;
+  --ink: #1A221C;
   --muted: #6d7668;
   --line: rgba(46, 58, 34, 0.13);
-  --danger: #9a3d2f;
+  --danger: #9A3D2F;
   --shadow: 0 14px 40px rgba(46, 58, 34, 0.09);
   --radius-lg: 24px;
   --radius-md: 16px;
   --safe-bottom: max(16px, env(safe-area-inset-bottom));
   --focus-ring: #765000;
+  /* V4.1 Campo Claro Tokens */
+  --verde-magina: #203D2A;
+  --piedra: #F6F3E8;
+  --tinta: #1A221C;
+  --verde-hoja: #4E6A55;
+  --aceite: #B8892D;
+  --rojo-tierra: #9A3D2F;
+  --superficie: #FFFFFF;
+  --verde-palido: #DDE6DD;
 }
 
 * { box-sizing: border-box; }

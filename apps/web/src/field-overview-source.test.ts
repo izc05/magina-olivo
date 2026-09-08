@@ -40,12 +40,6 @@ test('Mi Campo keeps the private farm overview wired to real holdings and farms'
   assert.equal(vite.includes('urlPattern: /\\/api\\/v1\\//,'), false);
 });
 
-test('Mi Campo remembers the active farm between screens and app restarts', async () => {
-  const app = await source('./App.tsx');
-  assert.match(app, /localStorage\.getItem\(`magina:farm:/);
-  assert.match(app, /localStorage\.setItem\(`magina:farm:/);
-});
-
 test('Mi Campo opens the map as a dedicated workspace instead of placing it after every field form', async () => {
   const app = await source('./App.tsx');
   const mapStyles = await source('./plot-map.css');

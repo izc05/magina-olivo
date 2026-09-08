@@ -145,7 +145,7 @@ export function App({ initialTab = 'home', initialFieldView = 'home' }: { initia
     setFarms(farmResult.items);
     setCampaigns(campaignResult.items);
     let rememberedFarm = '';
-    try { rememberedFarm = localStorage.getItem(`magina:farm:${cachedOwnerUserId()}:${holdingId}`) ?? ''; } catch { /* Storage may be unavailable. */ }
+    try { rememberedFarm = sessionStorage.getItem(`magina:farm:${cachedOwnerUserId()}:${holdingId}`) ?? ''; } catch { /* Storage may be unavailable. */ }
     setSelectedFarmId((current) => {
       const candidate = current || rememberedFarm;
       return farmResult.items.some((item) => item.id === candidate) ? candidate : (farmResult.items[0]?.id ?? '');
@@ -164,7 +164,7 @@ export function App({ initialTab = 'home', initialFieldView = 'home' }: { initia
 
   useEffect(() => {
     if (!user || !selectedHoldingId || !selectedFarmId) return;
-    try { localStorage.setItem(`magina:farm:${user.id}:${selectedHoldingId}`, selectedFarmId); } catch { /* Navigation remains available without storage. */ }
+    try { sessionStorage.setItem(`magina:farm:${user.id}:${selectedHoldingId}`, selectedFarmId); } catch { /* Navigation remains available without storage. */ }
   }, [user, selectedHoldingId, selectedFarmId]);
 
   const loadCampaign = useCallback(async (campaignId: string) => {

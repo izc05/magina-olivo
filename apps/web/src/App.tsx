@@ -287,7 +287,7 @@ export function App({ initialTab = 'home', initialFieldView = 'home' }: { initia
           >
             <Sparkles size={18} aria-hidden="true" />
           </button>
-          <button type="button" className="visual-header-action" onClick={() => setTab('more')} aria-label="Abrir perfil" aria-current={tab === 'more' ? 'page' : undefined}>{initials}</button>
+          <a className="visual-header-action" href="/cuenta" aria-label="Abrir perfil">{initials}</a>
         </div>
       </VisualHeader>
 

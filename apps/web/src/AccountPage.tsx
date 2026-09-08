@@ -109,6 +109,15 @@ export function AccountPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [preferencesReady, setPreferencesReady] = useState(false);
   const [retry, setRetry] = useState(0);
+  const [adminAccess, setAdminAccess] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void jsonRequest<{ role: string }>('/api/v1/admin/overview')
+      .then(({ role }) => { if (!cancelled) setAdminAccess(['super_admin', 'admin', 'editor', 'support'].includes(role)); })
+      .catch(() => { if (!cancelled) setAdminAccess(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   async function signOut() {
     setBusy(true);
@@ -256,6 +265,7 @@ export function AccountPage() {
         </section>
 
         <nav className="section more-links" aria-label="Opciones de tu cuenta">
+          {adminAccess ? <a className="card list-card" href="/admin">Panel de administración →</a> : null}
           <a className="card list-card" href="/perfil/preferencias">Preferencias de Inicio →</a>
           <a className="card list-card" href="/perfil/privacidad">Privacidad y permisos →</a>
           <a className="card list-card" href="/perfil/soporte">Ayuda y soporte →</a>

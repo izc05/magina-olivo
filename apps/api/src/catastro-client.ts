@@ -5,6 +5,8 @@ const CATASTRO_MAX_FEATURES = 80;
 const CATASTRO_MAX_POINT_REFERENCES = 12;
 const MAX_XML_BYTES = 2_000_000;
 const MAX_JSON_BYTES = 512_000;
+const MAX_XML_NODES = 100_000;
+const MAX_XML_DEPTH = 64;
 const WEB_MERCATOR_RADIUS = 6_378_137;
 
 export type CatastroBbox = {
@@ -21,33 +23,172 @@ export type CatastroPoint = {
 
 export type CatastroPointMatch = 'exact' | 'nearby' | 'none';
 
+export type CatastroGeometry = {
+  type: 'Polygon' | 'MultiPolygon';
+  coordinates: number[][][] | number[][][][];
+};
+
 export type CatastroParcel = {
   id: string;
   nationalCadastralReference: string;
   label: string | null;
   areaM2: number | null;
   beginLifespanVersion: string | null;
-  geometry: {
-    type: 'Polygon' | 'MultiPolygon';
-    coordinates: number[][][] | number[][][][];
-  };
+  geometry: CatastroGeometry;
 };
 
-function xmlText(value: string): string {
+type XmlElement = {
+  qName: string;
+  localName: string;
+  text: string[];
+  children: XmlElement[];
+};
+
+function decodeXmlText(value: string): string {
   return value
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&apos;/g, "'")
-    .replace(/&amp;/g, '&')
-    .trim();
+    .replace(/&amp;/g, '&');
 }
 
-function tagValue(xml: string, localName: string): string | null {
-  const expression = new RegExp(`<(?:(?:[A-Za-z0-9_-]+):)?${localName}\\b[^>]*>([\\s\\S]*?)<\\/(?:(?:[A-Za-z0-9_-]+):)?${localName}>`, 'i');
-  const match = expression.exec(xml);
-  if (!match?.[1]) return null;
-  return xmlText(match[1].replace(/<[^>]+>/g, ''));
+function localName(qName: string): string {
+  const separator = qName.indexOf(':');
+  return separator >= 0 ? qName.slice(separator + 1) : qName;
+}
+
+function findMarkupEnd(xml: string, start: number): number {
+  let quote: '"' | "'" | null = null;
+  for (let index = start; index < xml.length; index += 1) {
+    const character = xml[index];
+    if (quote) {
+      if (character === quote) quote = null;
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      quote = character;
+      continue;
+    }
+    if (character === '>') return index;
+  }
+  return -1;
+}
+
+function parseElementName(markup: string): string {
+  const trimmed = markup.trim();
+  let end = 0;
+  while (end < trimmed.length && !/\s|\//.test(trimmed[end]!)) end += 1;
+  return trimmed.slice(0, end);
+}
+
+function parseXml(xml: string): XmlElement {
+  const root: XmlElement = { qName: '#document', localName: '#document', text: [], children: [] };
+  const stack: XmlElement[] = [root];
+  let nodes = 0;
+  let index = 0;
+
+  while (index < xml.length) {
+    const nextMarkup = xml.indexOf('<', index);
+    if (nextMarkup < 0) {
+      const tail = decodeXmlText(xml.slice(index));
+      if (tail) stack[stack.length - 1]!.text.push(tail);
+      break;
+    }
+    if (nextMarkup > index) {
+      const text = decodeXmlText(xml.slice(index, nextMarkup));
+      if (text) stack[stack.length - 1]!.text.push(text);
+    }
+
+    if (xml.startsWith('<!--', nextMarkup)) {
+      const end = xml.indexOf('-->', nextMarkup + 4);
+      if (end < 0) throw new Error('Catastro returned malformed XML comment');
+      index = end + 3;
+      continue;
+    }
+    if (xml.startsWith('<![CDATA[', nextMarkup)) {
+      const end = xml.indexOf(']]>', nextMarkup + 9);
+      if (end < 0) throw new Error('Catastro returned malformed CDATA');
+      stack[stack.length - 1]!.text.push(xml.slice(nextMarkup + 9, end));
+      index = end + 3;
+      continue;
+    }
+    if (xml.startsWith('<?', nextMarkup)) {
+      const end = xml.indexOf('?>', nextMarkup + 2);
+      if (end < 0) throw new Error('Catastro returned malformed XML declaration');
+      index = end + 2;
+      continue;
+    }
+    if (xml.startsWith('<!', nextMarkup)) {
+      const end = findMarkupEnd(xml, nextMarkup + 2);
+      if (end < 0) throw new Error('Catastro returned malformed XML directive');
+      index = end + 1;
+      continue;
+    }
+    if (xml.startsWith('</', nextMarkup)) {
+      const end = findMarkupEnd(xml, nextMarkup + 2);
+      if (end < 0) throw new Error('Catastro returned malformed closing tag');
+      const closingName = parseElementName(xml.slice(nextMarkup + 2, end));
+      const current = stack[stack.length - 1];
+      if (!current || current.qName !== closingName) throw new Error('Catastro returned mismatched XML tags');
+      stack.pop();
+      index = end + 1;
+      continue;
+    }
+
+    const end = findMarkupEnd(xml, nextMarkup + 1);
+    if (end < 0) throw new Error('Catastro returned malformed opening tag');
+    const rawMarkup = xml.slice(nextMarkup + 1, end);
+    const selfClosing = rawMarkup.trimEnd().endsWith('/');
+    const qName = parseElementName(rawMarkup);
+    if (!qName) throw new Error('Catastro returned an unnamed XML element');
+    const element: XmlElement = { qName, localName: localName(qName), text: [], children: [] };
+    stack[stack.length - 1]!.children.push(element);
+    nodes += 1;
+    if (nodes > MAX_XML_NODES) throw new Error('Catastro XML contains too many elements');
+    if (!selfClosing) {
+      stack.push(element);
+      if (stack.length > MAX_XML_DEPTH) throw new Error('Catastro XML exceeds maximum nesting depth');
+    }
+    index = end + 1;
+  }
+
+  if (stack.length !== 1) throw new Error('Catastro returned unclosed XML tags');
+  return root;
+}
+
+function descendants(element: XmlElement, wantedLocalName: string): XmlElement[] {
+  const result: XmlElement[] = [];
+  const queue = [...element.children];
+  while (queue.length) {
+    const current = queue.shift()!;
+    if (current.localName === wantedLocalName) result.push(current);
+    queue.push(...current.children);
+  }
+  return result;
+}
+
+function firstDescendant(element: XmlElement, wantedLocalName: string): XmlElement | null {
+  const queue = [...element.children];
+  while (queue.length) {
+    const current = queue.shift()!;
+    if (current.localName === wantedLocalName) return current;
+    queue.push(...current.children);
+  }
+  return null;
+}
+
+function elementText(element: XmlElement): string {
+  let value = element.text.join('');
+  for (const child of element.children) value += elementText(child);
+  return value.trim();
+}
+
+function firstDescendantText(element: XmlElement, wantedLocalName: string): string | null {
+  const found = firstDescendant(element, wantedLocalName);
+  if (!found) return null;
+  const value = elementText(found);
+  return value || null;
 }
 
 function finiteNumber(value: string | null): number | null {
@@ -144,47 +285,61 @@ function parsePosList(text: string): number[][] | null {
     const longitudeLatitude = webMercatorToLonLat(values[index]!, values[index + 1]!);
     if (!longitudeLatitude.every(Number.isFinite)) return null;
     ring.push(longitudeLatitude);
-    if (ring.length > 10_000) return null;
+    if (ring.length > 20_000) return null;
   }
   return ring;
 }
 
-function extractRings(memberXml: string): number[][][] {
-  const rings: number[][][] = [];
-  const expression = /<(?:(?:[A-Za-z0-9_-]+):)?posList\b[^>]*>([\s\S]*?)<\/(?:(?:[A-Za-z0-9_-]+):)?posList>/gi;
-  let match: RegExpExecArray | null;
-  while ((match = expression.exec(memberXml)) !== null) {
-    if (!match[1]) continue;
-    const ring = parsePosList(xmlText(match[1]));
-    if (ring) rings.push(ring);
-    if (rings.length > 64) break;
+function ringFromBoundaryElement(element: XmlElement): number[][] | null {
+  const posList = firstDescendant(element, 'posList');
+  return posList ? parsePosList(elementText(posList)) : null;
+}
+
+function geometryFromParcel(parcel: XmlElement): CatastroGeometry | null {
+  const patchContainers = descendants(parcel, 'PolygonPatch');
+  const polygonContainers = patchContainers.length ? patchContainers : descendants(parcel, 'Polygon');
+  const polygons: number[][][][] = [];
+
+  for (const container of polygonContainers) {
+    const exterior = firstDescendant(container, 'exterior');
+    const exteriorRing = exterior ? ringFromBoundaryElement(exterior) : null;
+    if (!exteriorRing) continue;
+    const rings: number[][][] = [exteriorRing];
+    for (const interior of descendants(container, 'interior')) {
+      const hole = ringFromBoundaryElement(interior);
+      if (hole) rings.push(hole);
+    }
+    polygons.push(rings);
   }
-  return rings;
+
+  if (!polygons.length) {
+    const exterior = firstDescendant(parcel, 'exterior');
+    const ring = exterior ? ringFromBoundaryElement(exterior) : null;
+    if (ring) polygons.push([ring]);
+  }
+  if (!polygons.length) return null;
+  if (polygons.length === 1) return { type: 'Polygon', coordinates: polygons[0]! };
+  return { type: 'MultiPolygon', coordinates: polygons };
 }
 
 export function parseCatastroGml(xml: string): CatastroParcel[] {
   if (!xml || Buffer.byteLength(xml, 'utf8') > MAX_XML_BYTES) throw new Error('Catastro response exceeds safe XML size');
-  if (/<(?:ows:)?ExceptionReport\b/i.test(xml)) throw new Error('Catastro WFS returned an exception');
+  const document = parseXml(xml);
+  if (firstDescendant(document, 'ExceptionReport')) throw new Error('Catastro WFS returned an exception');
 
-  const memberExpression = /<(?:(?:[A-Za-z0-9_-]+):)?member\b[^>]*>([\s\S]*?)<\/(?:(?:[A-Za-z0-9_-]+):)?member>/gi;
   const items: CatastroParcel[] = [];
-  let memberMatch: RegExpExecArray | null;
-  while ((memberMatch = memberExpression.exec(xml)) !== null && items.length < CATASTRO_MAX_FEATURES) {
-    const member = memberMatch[1] ?? '';
-    if (!/(?:CadastralParcel)/i.test(member)) continue;
-    const reference = tagValue(member, 'nationalCadastralReference')?.toUpperCase() ?? null;
+  for (const parcel of descendants(document, 'CadastralParcel')) {
+    if (items.length >= CATASTRO_MAX_FEATURES) break;
+    const reference = firstDescendantText(parcel, 'nationalCadastralReference')?.toUpperCase() ?? null;
     if (!reference || !validateCadastralReference(reference)) continue;
-    const rings = extractRings(member);
-    if (!rings.length) continue;
-    const geometry = rings.length === 1
-      ? { type: 'Polygon' as const, coordinates: [rings[0]!] }
-      : { type: 'MultiPolygon' as const, coordinates: rings.map((ring) => [ring]) };
+    const geometry = geometryFromParcel(parcel);
+    if (!geometry) continue;
     items.push({
       id: reference,
       nationalCadastralReference: reference,
-      label: tagValue(member, 'label'),
-      areaM2: finiteNumber(tagValue(member, 'areaValue')),
-      beginLifespanVersion: tagValue(member, 'beginLifespanVersion'),
+      label: firstDescendantText(parcel, 'label'),
+      areaM2: finiteNumber(firstDescendantText(parcel, 'areaValue')),
+      beginLifespanVersion: firstDescendantText(parcel, 'beginLifespanVersion'),
       geometry,
     });
   }
@@ -231,7 +386,9 @@ async function fetchCatastroXml(url: string): Promise<string> {
   if (!response.ok) throw new Error(`Catastro upstream HTTP ${response.status}`);
   const contentLength = Number(response.headers.get('content-length') ?? 0);
   if (Number.isFinite(contentLength) && contentLength > MAX_XML_BYTES) throw new Error('Catastro response exceeds safe XML size');
-  return response.text();
+  const xml = await response.text();
+  if (Buffer.byteLength(xml, 'utf8') > MAX_XML_BYTES) throw new Error('Catastro response exceeds safe XML size');
+  return xml;
 }
 
 async function fetchCatastroJson(url: string): Promise<unknown> {

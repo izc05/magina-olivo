@@ -7,6 +7,7 @@ import { AdminFinancePage } from './AdminFinancePage';
 import { AdminPage } from './AdminPage';
 import { AdminRoleEntry } from './AdminRoleEntry';
 import { AdminRolesPage } from './AdminRolesPage';
+import { AdminTerritoryPage } from './AdminTerritoryPage';
 import { App } from './App';
 import { CalendarPage } from './CalendarPage';
 import { ConnectivityStatus } from './ConnectivityStatus';
@@ -56,6 +57,7 @@ import './admin-content.css';
 import './admin-finance-roles.css';
 import './admin-command-shortcuts.css';
 import './admin-delegated.css';
+import './admin-territory.css';
 import './platform-announcements.css';
 import './support-legal-system.css';
 
@@ -112,6 +114,8 @@ createRoot(root).render(
         <AdminContentPage />
       ) : path === '/admin/operaciones' ? (
         <AdminRoleEntry kind="operations" />
+      ) : path === '/admin/territorio' ? (
+        <AdminTerritoryPage />
       ) : path === '/admin/finanzas' ? (
         <AdminFinancePage />
       ) : path === '/admin/roles' ? (

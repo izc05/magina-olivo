@@ -6,31 +6,46 @@ async function read(relativePath: string): Promise<string> {
   return readFile(new URL(relativePath, import.meta.url), 'utf8');
 }
 
-test('Catastro INSPIRE consultation is wired behind our authenticated backend adapter', async () => {
+test('Catastro consultation supports manual map selection and GPS identification behind our backend', async () => {
   const app = await read('../../api/src/app.ts');
   const routes = await read('../../api/src/catastro-map-routes.ts');
   const client = await read('../../api/src/catastro-client.ts');
   const panel = await read('./CatastroParcelPanel.tsx');
+  const mapPanel = await read('./PlotMapPanel.tsx');
+  const notebook = await read('./FieldNotebook.tsx');
 
   assert.match(app, /registerCatastroMapRoutes/);
-  assert.match(routes, /\/api\/v1\/maps\/catastro\/parcelas/);
+  assert.match(routes, /\/api\/v1\/maps\/catastro\/identify/);
+  assert.match(routes, /identifyCatastroParcelsAtPoint/);
   assert.match(routes, /getAuthenticatedSession/);
-  assert.match(routes, /INVALID_CATASTRO_BBOX/);
+  assert.match(routes, /INVALID_CATASTRO_POINT/);
   assert.match(routes, /CATASTRO_UNAVAILABLE/);
-  assert.match(routes, /private, max-age=300/);
+  assert.match(routes, /private, max-age=120/);
 
+  assert.match(client, /COVCCoordenadas\.svc\/json/);
+  assert.match(client, /Consulta_RCCOOR/);
+  assert.match(client, /Consulta_RCCOOR_Distancia/);
   assert.match(client, /ovc\.catastro\.meh\.es\/INSPIRE\/wfsCP\.aspx/);
   assert.match(client, /EPSG::3857/);
   assert.match(client, /CATASTRO_TIMEOUT_MS = 8_000/);
   assert.match(client, /MAX_XML_BYTES = 2_000_000/);
+  assert.match(client, /MAX_JSON_BYTES = 512_000/);
   assert.match(client, /AbortSignal\.timeout/);
 
-  assert.match(panel, /Buscar parcelas catastrales cercanas/);
-  assert.match(panel, /\/api\/v1\/maps\/catastro\/parcelas/);
+  assert.match(panel, /Añadir parcela desde Catastro/);
+  assert.match(panel, /selectionMode.*manual/);
+  assert.match(panel, /selectionMode.*gps/);
+  assert.match(panel, /Toca tu finca/);
+  assert.match(panel, /Localizar mi parcela/);
+  assert.match(panel, /navigator\.geolocation|getCurrentPosition/);
+  assert.match(panel, /\/api\/v1\/maps\/catastro\/identify/);
   assert.match(panel, /Catastro y SIGPAC no son equivalentes/);
-  assert.match(panel, /Usar como perímetro/);
-  assert.match(panel, /Confirmar perímetro Catastro/);
+  assert.match(panel, /Esta es mi parcela/);
+  assert.match(panel, /Confirmar: esta es mi parcela/);
   assert.match(panel, /Dirección General del Catastro|DGC/);
+
+  assert.match(mapPanel, /CatastroParcelPanel/);
+  assert.match(notebook, /PlotMapPanel/);
 });
 
 test('Catastro import is re-fetched and verified server-side by cadastral reference', async () => {

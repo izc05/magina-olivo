@@ -25,8 +25,10 @@ test('Mi Campo keeps the private farm overview wired to real holdings and farms'
   assert.match(app, /href="\/calendario"/);
   assert.match(app, /href="\/campana"/);
   assert.match(app, /selectedFarmOliveTrees/);
-  assert.match(app, /className="field-farm-switcher"/);
-  assert.match(app, /Contexto de trabajo/);
+  assert.match(app, /className="field-hero-farm-picker"/);
+  assert.match(app, /<select value=\{selectedFarmId\}/);
+  assert.match(app, /Gestionar o añadir finca/);
+  assert.doesNotMatch(app, /Contexto de trabajo/);
   assert.match(app, /backHref="\/mi-campo"/);
   assert.match(app, /summary\?\.weightedYieldPercent/);
   assert.match(app, /<CampaignDeliveryTrend deliveries=\{deliveries\} \/>/);

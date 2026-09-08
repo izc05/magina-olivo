@@ -19,6 +19,11 @@ test('admin preview remains local-only while the real route uses a protected ser
   assert.match(dashboard, /Noticias verificadas/);
   assert.match(dashboard, /setNewsVisibility/);
   assert.match(dashboard, /No se edita el titular ni el enlace/);
+  assert.match(dashboard, /className="admin-workspace-nav"/);
+  assert.match(dashboard, /href="#admin-sources"/);
+  assert.match(dashboard, /href="#admin-news"/);
+  assert.match(dashboard, /Acciones rápidas/);
+  assert.match(dashboard, /Fuentes correctas/);
   assert.match(page, /Vista local de diseño/);
   assert.match(page, /sin acceso administrativo ni escrituras reales/);
   assert.match(page, /rol de plataforma independiente/);

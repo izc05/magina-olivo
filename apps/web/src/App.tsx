@@ -632,6 +632,7 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
               <h1 id="field-overview-title">{selectedFarm.name}</h1>
               <p>{[selectedHolding.municipality, selectedHolding.province].filter(Boolean).join(' · ') || 'Ubicación pendiente'}</p>
             </div>
+            {farms.length > 1 ? <label className="field-hero-farm-picker"><span>Cambiar finca</span><select value={selectedFarmId} onChange={(event) => setSelectedFarmId(event.currentTarget.value)} aria-label="Finca activa">{farms.map((farm) => <option key={farm.id} value={farm.id}>{farm.name}</option>)}</select></label> : null}
             <div className="field-overview-metrics" aria-label={`Resumen de ${selectedFarm.name}`}>
               <div><span>Superficie</span><strong>{selectedFarm.areaHa != null ? formatHa(selectedFarm.areaHa) : 'Pendiente'}</strong></div>
               <div><span>Parcelas</span><strong>{farmPlotCounts[selectedFarm.id] ?? plots.length}</strong></div>
@@ -653,25 +654,7 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
             </nav>
           </section>
 
-          <section className="section field-farms-section" id="field-farms">
-            <div className="section-heading"><div><p className="eyebrow page-eyebrow">Contexto de trabajo</p><h2 className="section-title">Finca activa</h2></div></div>
-            <details className="field-farm-switcher" open={farms.length === 1}>
-              <summary>
-                <span className="field-farm-switcher-mark" aria-hidden="true"><Sprout /></span>
-                <span><strong>{selectedFarm.name}</strong><small>{farmPlotCounts[selectedFarm.id] ?? plots.length} parcelas · {selectedFarm.areaHa != null ? formatHa(selectedFarm.areaHa) : 'Superficie pendiente'}</small></span>
-                <span className="badge gold">Cambiar</span>
-              </summary>
-              {farms.length > 1 ? <div className="field-farm-switcher-options" aria-label="Cambiar finca activa">
-                {farms.map((farm) => (
-                  <button key={farm.id} type="button" onClick={() => { setSelectedFarmId(farm.id); }} aria-pressed={farm.id === selectedFarmId}>
-                    <span><strong>{farm.name}</strong><small>{farmPlotCounts[farm.id] ?? '—'} parcelas · {farm.areaHa != null ? formatHa(farm.areaHa) : 'Superficie pendiente'}</small></span>
-                    <span className={`badge${farm.id === selectedFarmId ? ' gold' : ''}`}>{farm.id === selectedFarmId ? 'Activa' : 'Seleccionar'}</span>
-                  </button>
-                ))}
-              </div> : null}
-              <details id="field-management" className="visual-disclosure field-add-farm"><summary><Plus aria-hidden="true" /> Añadir finca</summary><CreateFarmCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} firstFarm={farms.length === 0} /></details>
-            </details>
-          </section>
+          <details className="field-home-management visual-disclosure"><summary><Plus aria-hidden="true" /> Gestionar o añadir finca</summary><CreateFarmCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} firstFarm={farms.length === 0} /></details>
           <PhotoCredit field />
         </>
       ) : null}

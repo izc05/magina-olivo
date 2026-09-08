@@ -19,12 +19,19 @@
 .admin-preview-nav button { min-height: 90px; display: grid; place-content: center; gap: 7px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); color: var(--olive-950); font-size: .75rem; font-weight: 750; }
 .admin-preview-nav button svg { width: 25px; height: 25px; margin: 0 auto; }
 .admin-preview-nav button.active { background: var(--olive-950); color: #fff; box-shadow: var(--shadow); }
+.admin-workspace-nav { position: sticky; z-index: 12; top: 8px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 14px 0 4px; padding: 8px; border: 1px solid rgba(69,87,54,.14); border-radius: 18px; background: rgba(250,249,242,.93); box-shadow: 0 8px 26px rgba(30,43,23,.1); backdrop-filter: blur(14px); }
+.admin-workspace-nav a { min-height: 58px; display: grid; place-items: center; align-content: center; gap: 4px; border-radius: 12px; color: var(--olive-950); text-decoration: none; font-size: .71rem; font-weight: 800; }
+.admin-workspace-nav a:hover, .admin-workspace-nav a:focus-visible { background: rgba(92,122,70,.13); }
+.admin-workspace-nav svg { width: 20px; height: 20px; }
 .admin-preview-heading { display: flex; justify-content: space-between; align-items: end; gap: 18px; margin: 26px 0 14px; }
 .admin-preview-heading h2 { font-size: clamp(1.75rem, 4vw, 2.5rem); color: var(--olive-950); }
 .admin-preview-heading p:last-child { margin: 7px 0 0; color: var(--muted); }
 .admin-preview-notice { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 0 0 14px; padding: 12px 14px; border-radius: 13px; background: rgba(92,122,70,.13); color: var(--olive-800); font-size: .82rem; font-weight: 700; }
 .admin-preview-notice button { border: 0; background: transparent; color: inherit; font-size: 1.35rem; }
 .admin-preview-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.admin-operational-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.admin-operational-strip article { display: flex; align-items: center; gap: 11px; min-height: 78px; padding: 12px 14px; border: 1px solid rgba(69,87,54,.14); border-radius: 16px; background: linear-gradient(135deg, rgba(229,236,219,.82), rgba(255,253,248,.96)); }
+.admin-operational-strip div { display: grid; gap: 3px; }.admin-operational-strip small { color: var(--muted); font-size: .7rem; }.admin-operational-strip strong { color: var(--olive-950); font-size: .92rem; }
 .admin-metric-card { display: flex; gap: 13px; min-height: 130px; padding: 17px; border: 1px solid var(--line); border-radius: 18px; background: var(--paper); box-shadow: 0 8px 25px rgba(46,58,34,.045); }
 .admin-icon { flex: 0 0 auto; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; background: rgba(92,122,70,.12); color: var(--olive-800); }
 .admin-icon svg { width: 24px; height: 24px; }
@@ -53,6 +60,7 @@
 .admin-panel li strong { color: var(--olive-950); font-size: .78rem; }
 .admin-panel li small { margin-top: 2px; color: var(--muted); font-size: .7rem; }
 .admin-panel time { margin-left: auto; color: var(--muted); font-size: .68rem; white-space: nowrap; }
+.admin-quick-actions { display: grid; gap: 7px; padding-top: 10px; }.admin-quick-actions a { display: flex; align-items: center; gap: 10px; min-height: 58px; padding: 9px 11px; border-radius: 12px; color: var(--ink); background: rgba(92,122,70,.08); text-decoration: none; }.admin-quick-actions a > svg { width: 20px; color: var(--olive-800); }.admin-quick-actions a span { display: grid; }.admin-quick-actions small { color: var(--muted); }
 .admin-bar-list { display: grid; gap: 12px; padding-top: 16px; }
 .admin-bar-list > div { display: grid; grid-template-columns: 90px minmax(0, 1fr) 34px; align-items: center; gap: 9px; color: var(--olive-950); font-size: .74rem; }
 .admin-bar-list meter { width: 100%; height: 14px; accent-color: var(--olive-650); }
@@ -80,5 +88,5 @@
 .admin-access-card h1 { margin-top: 18px; color: var(--olive-950); font-size: clamp(2rem, 6vw, 3.4rem); }
 .admin-access-card p:not(.eyebrow) { margin: 16px 0 24px; color: var(--muted); line-height: 1.55; }
 .admin-access-card .primary-button { display: inline-grid; place-items: center; text-decoration: none; }
-@media (max-width: 780px) { .admin-preview-nav { grid-template-columns: repeat(3, minmax(0, 1fr)); } .admin-preview-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .admin-preview-grid { grid-template-columns: 1fr; } .admin-panel-system { grid-column: auto; } .admin-panel-system ul { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 520px) { .admin-preview, .admin-access-gate { width: min(100% - 22px, 1160px); } .admin-preview-header-actions > span { width: 38px; padding: 0; font-size: 0; } .admin-preview-header-actions > span svg { width: 19px; } .admin-preview-hero { min-height: 245px; align-items: flex-start; flex-direction: column; justify-content: space-between; } .admin-preview-heading { align-items: flex-start; flex-direction: column; } .admin-preview-heading .primary-button { width: 100%; } .admin-preview-metrics { grid-template-columns: 1fr; } .admin-preview-nav { gap: 7px; } .admin-preview-nav button { min-height: 80px; font-size: .67rem; } .admin-preview-nav button svg { width: 21px; height: 21px; } }
+@media (max-width: 780px) { .admin-preview-nav { grid-template-columns: repeat(3, minmax(0, 1fr)); } .admin-preview-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .admin-operational-strip { grid-template-columns: 1fr; } .admin-preview-grid { grid-template-columns: 1fr; } .admin-panel-system { grid-column: auto; } .admin-panel-system ul { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .admin-preview, .admin-access-gate { width: min(100% - 22px, 1160px); } .admin-preview-header-actions > span { width: 38px; padding: 0; font-size: 0; } .admin-preview-header-actions > span svg { width: 19px; } .admin-preview-hero { min-height: 245px; align-items: flex-start; flex-direction: column; justify-content: space-between; } .admin-workspace-nav { top: 5px; gap: 3px; padding: 5px; }.admin-workspace-nav a { min-height: 52px; font-size: .61rem; }.admin-workspace-nav svg { width: 18px; }.admin-preview-heading { align-items: flex-start; flex-direction: column; } .admin-preview-heading .primary-button { width: 100%; } .admin-preview-metrics { grid-template-columns: 1fr; } .admin-preview-nav { gap: 7px; } .admin-preview-nav button { min-height: 80px; font-size: .67rem; } .admin-preview-nav button svg { width: 21px; height: 21px; } }

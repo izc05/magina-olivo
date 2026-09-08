@@ -198,6 +198,7 @@ img { content-visibility: auto; contain-intrinsic-size: 320px 180px; }
 .field-overview-hero { position: relative; min-height: 360px; margin: 14px 0 16px; padding: 150px 20px 18px; overflow: hidden; border-radius: 26px; color: #fff; background: #667459 url('/photos/field-olivares-magina.webp') center / cover; }
 .field-overview-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 24%, rgba(18,27,13,.78) 100%); }
 .field-overview-copy, .field-overview-metrics { position: relative; z-index: 1; }
+.field-hero-farm-picker { position: absolute; z-index: 2; top: 16px; right: 16px; display: grid; gap: 2px; min-width: 150px; padding: 8px 11px; border: 1px solid rgba(255,255,255,.7); border-radius: 14px; background: rgba(250,249,242,.9); color: var(--olive-950); box-shadow: 0 7px 22px rgba(12,24,10,.15); backdrop-filter: blur(10px); }.field-hero-farm-picker span { font-size: .62rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }.field-hero-farm-picker select { min-height: 28px; padding: 0 22px 0 0; border: 0; background: transparent; color: inherit; font-weight: 800; }
 .field-overview-copy .eyebrow { width: fit-content; margin: 0 0 8px; padding: 5px 10px; border-radius: 99px; color: #fff; background: rgba(34,47,25,.68); }
 .field-overview-copy h1 { margin: 0; color: #fff; font: 700 clamp(2.7rem, 12vw, 4.5rem)/.98 Georgia, serif; letter-spacing: -.035em; text-shadow: 0 2px 7px rgba(0,0,0,.45); }
 .field-overview-copy > p:last-child { margin: 8px 0 16px; color: rgba(255,255,255,.94); font-size: 1.05rem; }
@@ -208,6 +209,7 @@ img { content-visibility: auto; contain-intrinsic-size: 320px 180px; }
 .field-overview-metrics span { color: var(--muted); font-size: .7rem; }
 .field-overview-metrics strong { margin-top: 3px; font: 700 clamp(.95rem, 4vw, 1.25rem)/1.1 Georgia, serif; }
 .field-overview-portal { margin: 28px 0 26px; }
+.field-home-management { margin: -10px 0 22px; }
 .field-overview-portal .section-heading { margin-bottom: 12px; }
 .field-app-shortcuts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
 .field-app-shortcuts > a { position: relative; display: grid; grid-template-columns: 38px minmax(0, 1fr) 16px; grid-template-rows: auto auto; align-items: center; gap: 2px 9px; min-height: 78px; padding: 12px; border: 1px solid var(--line); border-radius: 18px; background: var(--paper); color: var(--ink); text-align: left; text-decoration: none; box-shadow: 0 8px 24px rgba(47,59,39,.035); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }

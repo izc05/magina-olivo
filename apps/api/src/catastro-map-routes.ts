@@ -3,9 +3,12 @@ import { canWrite, getFarmAccess } from './authorization.ts';
 import {
   fetchCatastroParcelByReference,
   fetchCatastroParcels,
+  identifyCatastroParcelsAtPoint,
   validateCadastralReference,
   validateCatastroBbox,
+  validateCatastroPoint,
   type CatastroBbox,
+  type CatastroPoint,
 } from './catastro-client.ts';
 import { getPool } from './db.ts';
 import { apiError } from './http-errors.ts';
@@ -19,11 +22,33 @@ type CatastroQuery = {
   maxLat?: string | number;
 };
 
+type CatastroIdentifyQuery = {
+  lon?: string | number;
+  lat?: string | number;
+  nearby?: string | number | boolean;
+};
+
 type PlotParams = { plotId: string };
 type ImportCatastroBody = { cadastralReference: string };
 
 function toNumber(value: string | number | undefined): number {
   return typeof value === 'number' ? value : Number(value);
+}
+
+function toBoolean(value: string | number | boolean | undefined): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  return value === '1' || value === 'true';
+}
+
+function sourceMetadata(service: string) {
+  return {
+    provider: 'Dirección General del Catastro',
+    dataset: 'Catastro + INSPIRE Cadastral Parcel (CP)',
+    service,
+    status: 'continuously-updated',
+    checkedAt: new Date().toISOString(),
+  };
 }
 
 function simplePolygon(geometry: { type: 'Polygon' | 'MultiPolygon'; coordinates: number[][][] | number[][][][] }): GeoJsonPolygon | null {
@@ -34,6 +59,44 @@ function simplePolygon(geometry: { type: 'Polygon' | 'MultiPolygon'; coordinates
 }
 
 export function registerCatastroMapRoutes(app: FastifyInstance): void {
+  app.get<{ Querystring: CatastroIdentifyQuery }>(
+    '/api/v1/maps/catastro/identify',
+    async (request, reply) => {
+      const session = await getAuthenticatedSession(request);
+      if (!session) {
+        return reply.code(401).send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
+      }
+
+      const point: CatastroPoint = {
+        longitude: toNumber(request.query.lon),
+        latitude: toNumber(request.query.lat),
+      };
+      const validation = validateCatastroPoint(point);
+      if (validation) {
+        return reply.code(400).send(apiError(request, 'INVALID_CATASTRO_POINT', validation));
+      }
+
+      const includeNearby = toBoolean(request.query.nearby);
+      try {
+        const result = await identifyCatastroParcelsAtPoint(point, includeNearby);
+        reply.header('cache-control', 'private, max-age=120');
+        return {
+          items: result.items,
+          match: result.match,
+          query: {
+            latitude: point.latitude,
+            longitude: point.longitude,
+            nearby: includeNearby,
+          },
+          source: sourceMetadata('Coordinates JSON + INSPIRE WFS'),
+        };
+      } catch (error) {
+        request.log.warn({ err: error }, 'Catastro point identification failed');
+        return reply.code(502).send(apiError(request, 'CATASTRO_UNAVAILABLE', 'Catastro no está disponible temporalmente'));
+      }
+    },
+  );
+
   app.get<{ Querystring: CatastroQuery }>(
     '/api/v1/maps/catastro/parcelas',
     async (request, reply) => {
@@ -58,13 +121,7 @@ export function registerCatastroMapRoutes(app: FastifyInstance): void {
         reply.header('cache-control', 'private, max-age=300');
         return {
           items,
-          source: {
-            provider: 'Dirección General del Catastro',
-            dataset: 'INSPIRE Cadastral Parcel (CP)',
-            service: 'WFS',
-            status: 'continuously-updated',
-            checkedAt: new Date().toISOString(),
-          },
+          source: sourceMetadata('INSPIRE WFS'),
         };
       } catch (error) {
         request.log.warn({ err: error }, 'Catastro INSPIRE parcel query failed');

@@ -29,6 +29,15 @@ test('public home uses one municipality context for selector, weather and hero',
   assert.doesNotMatch(home, /weather\?municipality=bedmar-y-garciez/);
 });
 
+test('weather detail inherits and updates the same municipality preference', async () => {
+  const weather = await read('./MaginaWeatherPage.tsx');
+
+  assert.match(weather, /readPreferredMunicipality\(\) \?\? DEFAULT_MUNICIPALITY_SLUG/);
+  assert.match(weather, /writePreferredMunicipality\(slug\)/);
+  assert.match(weather, /onChange=\{\(event\) => selectMunicipality\(event\.target\.value\)\}/);
+  assert.doesNotMatch(weather, /useState\('huelma'\)/);
+});
+
 test('municipality assets are gated behind reviewed readiness', async () => {
   const registry = await read('./municipality-visuals.ts');
   const readme = await read('../public/municipalities/README.md');

@@ -38,11 +38,27 @@ Si la implementación contradice una decisión aprobada en documentación, no oc
 Para cualquier trabajo de **interfaz, navegación, jerarquía visual, flujo de Mi Campo, parcela, botón `+`, Inicio o Campaña posterior a la aceptación de staging**, leer además obligatoriamente y en este orden:
 
 1. `docs/design/UX_INFORMATION_ARCHITECTURE_V3.md`
-2. `docs/design/UX_V3_MIGRATION_MAP.md`
-3. `docs/CODEX_UX_V3_BRIEF.md`
-4. `docs/design/PARCEL_MAP_FIRST_V1.md`
+2. `docs/design/UX_V3_MASTER_FUNCTION_MAP.md`
+3. `docs/design/UX_V3_WIREFRAMES.md`
+4. `docs/design/UX_V3_MIGRATION_MAP.md`
+5. `docs/design/UX_V3_STATES_AND_ACCEPTANCE.md`
+6. `docs/CODEX_UX_V3_BRIEF.md`
+7. `docs/UX_V3_IMPLEMENTATION_BACKLOG.md`
+8. `docs/design/PARCEL_MAP_FIRST_V1.md`
 
 Estos documentos son una **extensión explícita de la visión y principios de `MASTER_PLAN.md` para la evolución UX post-staging**. `docs/V1_SCREEN_MAP.md` y `docs/V1_WIREFRAMES.md` continúan como referencia funcional/histórica, pero no deben usarse para reintroducir una navegación V1 que contradiga la convergencia V3 aprobada.
+
+### Regla de arquitectura de información
+
+Ninguna nueva función obtiene automáticamente una nueva pestaña o pantalla principal.
+
+Antes de crear un destino nuevo, comprobar si la capacidad pertenece a:
+
+```text
+Inicio | Mi Campo | + | Campaña | Más | Mágina pública | Admin
+```
+
+Si una idea no encaja, justificar por escrito la necesidad de una nueva pantalla y actualizar `docs/design/UX_V3_MASTER_FUNCTION_MAP.md` antes de implementar.
 
 ### Guardarraíl de staging
 
@@ -63,7 +79,7 @@ En particular, mientras `staging/candidate-v11-2026-09-05` sea la referencia de 
 - Correcciones: ramas `fix/*`.
 - Documentación importante puede convivir en la rama funcional correspondiente.
 - Evitar merges directos de trabajo incompleto.
-- Para UX V3, preferir PRs pequeños y secuenciales (`shell`, `Mi Campo`, `parcela`, `quick actions`, `Inicio`, `Campaña`) en lugar de una convergencia gigante.
+- Para UX V3, seguir `docs/UX_V3_IMPLEMENTATION_BACKLOG.md` y preferir PRs pequeños y secuenciales (`shell`, `Mi Campo`, `parcela`, `quick actions`, `Inicio`, `Campaña`, `Más`) en lugar de una convergencia gigante.
 
 ## Criterios antes de merge
 
@@ -76,6 +92,8 @@ En particular, mientras `staging/candidate-v11-2026-09-05` sea la referencia de 
 - Se ha considerado aislamiento entre usuarios/explotaciones.
 - En cambios UX V3, se han comprobado también estados loading/empty/error/offline, teclado, foco y móvil estrecho.
 - No se ha eliminado una capacidad V11 únicamente para simplificar navegación: debe conservarse, converger o documentarse su sustitución.
+- La pantalla afectada cumple `docs/design/UX_V3_STATES_AND_ACCEPTANCE.md`.
+- La función afectada conserva un único hogar principal coherente con `docs/design/UX_V3_MASTER_FUNCTION_MAP.md`.
 
 ## IA
 

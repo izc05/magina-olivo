@@ -37,6 +37,7 @@ import './field-notebook.css';
 import './delivery-entry.css';
 import './offline-cold-start.css';
 import './magina-directory.css';
+import './magina-directory-media.css';
 import './magina-weather.css';
 import './magina-hub.css';
 import './magina-market.css';

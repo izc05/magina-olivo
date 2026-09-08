@@ -37,6 +37,14 @@ type DestinationRow = {
   source_url: string | null;
   source_checked_at: Date | null;
   verification_status: 'unverified' | 'verified' | 'stale';
+  description: string | null;
+  image_url: string | null;
+  image_source_url: string | null;
+  image_credit: string | null;
+  image_alt: string | null;
+  image_license: string;
+  image_status: string;
+  featured: boolean;
   advertising_category: AdvertisingCategory | null;
   advertising_description: string | null;
   advertising_phone: string | null;
@@ -60,6 +68,11 @@ function advertisingIsEnabled(): boolean {
   return process.env.MAGINA_ADVERTISING_ENABLED?.trim().toLowerCase() === 'true';
 }
 
+function canPublishEditorialImage(row: DestinationRow): boolean {
+  return row.image_status === 'approved'
+    && ['owned', 'licensed', 'official_reusable'].includes(row.image_license);
+}
+
 export function registerPublicDestinationRoutes(app: FastifyInstance): void {
   app.get<{ Querystring: DestinationQuery }>(
     '/api/v1/public/destinations',
@@ -81,7 +94,7 @@ export function registerPublicDestinationRoutes(app: FastifyInstance): void {
     },
     async (request) => {
       const values: unknown[] = [];
-      const filters = ["c.verification_status <> 'stale'"];
+      const filters = ["c.verification_status <> 'stale'", 'c.public_visible = true'];
       const q = request.query.q?.trim();
       const municipality = request.query.municipality?.trim();
       const advertisingEnabled = advertisingIsEnabled();
@@ -157,11 +170,13 @@ export function registerPublicDestinationRoutes(app: FastifyInstance): void {
             select
               c.id, c.official_name, c.brand_name, c.entity_type, c.municipality, c.province,
               c.website_url, c.source_url, c.source_checked_at, c.verification_status,
+              c.description, c.image_url, c.image_source_url, c.image_credit, c.image_alt,
+              c.image_license, c.image_status, c.featured,
               ${commercialSelect}
             from cooperatives c
             ${commercialJoins}
             where ${filters.join(' and ')}
-            order by sponsorship_priority desc, c.municipality nulls last, c.official_name
+            order by sponsorship_priority desc, c.featured desc, c.municipality nulls last, c.official_name
           `,
           values,
         ),
@@ -171,6 +186,7 @@ export function registerPublicDestinationRoutes(app: FastifyInstance): void {
             from cooperatives
             where municipality is not null
               and verification_status <> 'stale'
+              and public_visible = true
             order by municipality
           `,
         ),
@@ -194,35 +210,48 @@ export function registerPublicDestinationRoutes(app: FastifyInstance): void {
 
       return {
         advertisingEnabled,
-        items: result.rows.map((row) => ({
-          id: row.id,
-          officialName: row.official_name,
-          brandName: row.brand_name,
-          entityType: row.entity_type,
-          municipality: row.municipality,
-          province: row.province,
-          websiteUrl: normalizePublicHttpsUrl(row.website_url),
-          sourceUrl: normalizePublicHttpsUrl(row.source_url),
-          sourceCheckedAt: row.source_checked_at,
-          verificationStatus: effectiveDirectoryVerificationStatus(
-            row.verification_status,
-            row.source_checked_at,
-          ),
-          commercial: advertisingEnabled && row.advertising_category ? {
-            category: row.advertising_category,
-            description: row.advertising_description,
-            phone: row.advertising_phone,
-            whatsappPhone: row.advertising_whatsapp_phone,
-            logoUrl: normalizePublicHttpsUrl(row.advertising_logo_url),
-            heroImageUrl: normalizePublicHttpsUrl(row.advertising_hero_image_url),
-          } : null,
-          sponsorship: advertisingEnabled && row.sponsored ? {
-            sponsored: true,
-            label: row.sponsorship_label ?? 'Patrocinado',
-            planCode: row.sponsorship_plan_code,
-            priority: row.sponsorship_priority,
-          } : null,
-        })),
+        items: result.rows.map((row) => {
+          const publishEditorialImage = canPublishEditorialImage(row);
+          return {
+            id: row.id,
+            officialName: row.official_name,
+            brandName: row.brand_name,
+            entityType: row.entity_type,
+            municipality: row.municipality,
+            province: row.province,
+            websiteUrl: normalizePublicHttpsUrl(row.website_url),
+            sourceUrl: normalizePublicHttpsUrl(row.source_url),
+            sourceCheckedAt: row.source_checked_at,
+            verificationStatus: effectiveDirectoryVerificationStatus(
+              row.verification_status,
+              row.source_checked_at,
+            ),
+            editorial: {
+              description: row.description,
+              featured: row.featured,
+              image: publishEditorialImage ? {
+                imageUrl: normalizePublicHttpsUrl(row.image_url),
+                sourceUrl: normalizePublicHttpsUrl(row.image_source_url),
+                credit: row.image_credit,
+                alt: row.image_alt || row.brand_name || row.official_name,
+              } : null,
+            },
+            commercial: advertisingEnabled && row.advertising_category ? {
+              category: row.advertising_category,
+              description: row.advertising_description,
+              phone: row.advertising_phone,
+              whatsappPhone: row.advertising_whatsapp_phone,
+              logoUrl: normalizePublicHttpsUrl(row.advertising_logo_url),
+              heroImageUrl: normalizePublicHttpsUrl(row.advertising_hero_image_url),
+            } : null,
+            sponsorship: advertisingEnabled && row.sponsored ? {
+              sponsored: true,
+              label: row.sponsorship_label ?? 'Patrocinado',
+              planCode: row.sponsorship_plan_code,
+              priority: row.sponsorship_priority,
+            } : null,
+          };
+        }),
         municipalities: municipalities.rows.map((row) => row.municipality),
         source: {
           label: source?.label ?? 'Directorio público de Sierra Mágina',

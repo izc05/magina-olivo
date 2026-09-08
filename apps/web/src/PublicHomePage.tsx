@@ -56,7 +56,10 @@ export function PublicHomePage() {
       setHolding(nextHolding);
       if (!selectionIsExplicit.current) {
         const holdingMunicipality = resolveMunicipalitySlug(nextHolding?.municipality);
-        if (holdingMunicipality) setSelectedMunicipality(holdingMunicipality);
+        if (holdingMunicipality) {
+          setSelectedMunicipality(holdingMunicipality);
+          writePreferredMunicipality(holdingMunicipality);
+        }
       }
     }).catch(() => setHolding(null));
     return () => controller.abort();
@@ -130,7 +133,7 @@ export function PublicHomePage() {
       <section className="public-home-nearby" aria-labelledby="nearby-title"><div className="section-heading"><div><p className="eyebrow">A tu alrededor</p><h2 id="nearby-title">Cerca de {weatherTitle}</h2></div><a className="text-button" href="/descubre/servicios">Ver mapa <MapPin size={15} aria-hidden="true" /></a></div><div className="public-home-nearby-grid">{nearby.map(({ title, copy, href, icon: Icon, tone }) => <a className={`public-home-nearby-card ${tone}`} href={href} key={title}><span className="nearby-icon"><Icon aria-hidden="true" /></span><span><strong>{title}</strong><small>{copy}</small></span><ChevronRight aria-hidden="true" /></a>)}</div></section>
       <section className="public-home-v2-section"><div className="section-heading"><div><p className="eyebrow">Aceite y mercado</p><h2>Referencia AOVE</h2></div><a className="text-button" href="/magina/mercado">Mercado</a></div><a className="public-home-market-card card" href="/magina/mercado"><strong>Información pública</strong><span>Consulta contexto de mercado con fecha y procedencia.</span><span className="public-home-open">Abrir</span></a></section>
       <section className="public-service-section" aria-labelledby="public-services-title"><div><p className="eyebrow">Información pública</p><h2 id="public-services-title">Hoy en Sierra Mágina</h2></div><div className="public-service-grid">{services.map(([title, copy, href, sourceKey]) => <a className="card public-service-card" href={href} key={title}><p className="eyebrow">{sourceStatus(sources.find((source) => source.key.includes(sourceKey)))}</p><h3>{title}</h3><p>{copy}</p><span>Ver información</span></a>)}</div></section>
-      <PhotoCredit />
+      <PhotoCredit photo={selectedVisual} municipality={selectedVisual.name} />
     </main>
   );
 }

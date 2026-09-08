@@ -85,6 +85,10 @@ function formatBytes(value: string | null): string | null {
 
 function accountErrorMessage(reason: unknown, fallback: string): string {
   if (!(reason instanceof Error)) return fallback;
+  const status = (reason as Error & { status?: number }).status;
+  if (status === 401 || status === 403) {
+    return 'Tu sesión ya no está disponible en este dispositivo. Inicia sesión de nuevo para continuar.';
+  }
   if (/^HTTP 5\d\d$/.test(reason.message)) {
     return 'No se ha podido cargar tu perfil ahora. Inténtalo de nuevo en unos minutos.';
   }
@@ -116,9 +120,15 @@ export function AccountPage() {
         ]);
         if (cancelled) return;
         if (sessionResult.status === 'rejected') throw sessionResult.reason;
-        if (preferenceResult.status === 'rejected') throw preferenceResult.reason;
         setUser(sessionResult.value.user);
-        setPreferences(preferenceResult.value);
+        // The profile and its preferences are separate resources. A temporary
+        // preferences/database issue must not hide the user's account data.
+        if (preferenceResult.status === 'fulfilled') {
+          setPreferences(preferenceResult.value);
+        } else {
+          setPreferences(DEFAULT_PREFERENCES);
+          setNotice('Tus datos básicos están disponibles. Las preferencias se cargarán de nuevo al reintentar.');
+        }
         setDestinations(directoryResult.status === 'fulfilled' ? directoryResult.value.items : []);
         setExports(exportResult.status === 'fulfilled' ? exportResult.value.items : []);
       } catch (reason) {

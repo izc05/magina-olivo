@@ -1,7 +1,10 @@
 const CATASTRO_WFS_URL = 'https://ovc.catastro.meh.es/INSPIRE/wfsCP.aspx';
+const CATASTRO_COORDINATE_JSON_URL = 'https://ovc.catastro.meh.es/OVCServWeb/OVCWcfCallejero/COVCCoordenadas.svc/json';
 const CATASTRO_TIMEOUT_MS = 8_000;
 const CATASTRO_MAX_FEATURES = 80;
+const CATASTRO_MAX_POINT_REFERENCES = 12;
 const MAX_XML_BYTES = 2_000_000;
+const MAX_JSON_BYTES = 512_000;
 const WEB_MERCATOR_RADIUS = 6_378_137;
 
 export type CatastroBbox = {
@@ -10,6 +13,13 @@ export type CatastroBbox = {
   maxLon: number;
   maxLat: number;
 };
+
+export type CatastroPoint = {
+  longitude: number;
+  latitude: number;
+};
+
+export type CatastroPointMatch = 'exact' | 'nearby' | 'none';
 
 export type CatastroParcel = {
   id: string;
@@ -59,6 +69,16 @@ export function validateCatastroBbox(bbox: CatastroBbox): string | null {
   return null;
 }
 
+export function validateCatastroPoint(point: CatastroPoint): string | null {
+  if (!Number.isFinite(point.longitude) || !Number.isFinite(point.latitude)) {
+    return 'Catastro point must contain finite coordinates';
+  }
+  if (point.longitude < -180 || point.longitude > 180 || point.latitude < -85 || point.latitude > 85) {
+    return 'Catastro point is outside supported WGS84 ranges';
+  }
+  return null;
+}
+
 export function validateCadastralReference(reference: string): boolean {
   return /^[A-Z0-9]{14}$/.test(reference.trim().toUpperCase());
 }
@@ -102,6 +122,17 @@ export function buildCatastroReferenceUrl(reference: string): string {
   url.searchParams.set('STOREDQUERY_ID', 'GetParcel');
   url.searchParams.set('refcat', normalized);
   url.searchParams.set('srsName', 'EPSG::3857');
+  return url.toString();
+}
+
+export function buildCatastroPointUrl(point: CatastroPoint, nearby = false): string {
+  const validation = validateCatastroPoint(point);
+  if (validation) throw new Error(validation);
+  const operation = nearby ? 'Consulta_RCCOOR_Distancia' : 'Consulta_RCCOOR';
+  const url = new URL(`${CATASTRO_COORDINATE_JSON_URL}/${operation}`);
+  url.searchParams.set('SRS', 'EPSG:4326');
+  url.searchParams.set('CoorX', String(point.longitude));
+  url.searchParams.set('CoorY', String(point.latitude));
   return url.toString();
 }
 
@@ -160,6 +191,35 @@ export function parseCatastroGml(xml: string): CatastroParcel[] {
   return items;
 }
 
+function collectCadastralReferences(value: unknown, output: Set<string>, depth = 0): void {
+  if (depth > 16 || output.size >= CATASTRO_MAX_POINT_REFERENCES || value == null) return;
+  if (Array.isArray(value)) {
+    for (const child of value) collectCadastralReferences(child, output, depth + 1);
+    return;
+  }
+  if (typeof value !== 'object') return;
+
+  const object = value as Record<string, unknown>;
+  const pc1 = typeof object.pc1 === 'string' ? object.pc1.trim().toUpperCase() : '';
+  const pc2 = typeof object.pc2 === 'string' ? object.pc2.trim().toUpperCase() : '';
+  const combined = `${pc1}${pc2}`;
+  if (validateCadastralReference(combined)) output.add(combined);
+
+  for (const candidate of [object.refcat, object.RefCat, object.rc]) {
+    if (typeof candidate !== 'string') continue;
+    const normalized = candidate.trim().toUpperCase().slice(0, 14);
+    if (validateCadastralReference(normalized)) output.add(normalized);
+  }
+
+  for (const child of Object.values(object)) collectCadastralReferences(child, output, depth + 1);
+}
+
+export function parseCatastroCoordinateJson(value: unknown): string[] {
+  const output = new Set<string>();
+  collectCadastralReferences(value, output);
+  return [...output];
+}
+
 async function fetchCatastroXml(url: string): Promise<string> {
   const response = await fetch(url, {
     headers: {
@@ -174,6 +234,28 @@ async function fetchCatastroXml(url: string): Promise<string> {
   return response.text();
 }
 
+async function fetchCatastroJson(url: string): Promise<unknown> {
+  const response = await fetch(url, {
+    headers: {
+      accept: 'application/json',
+      'user-agent': 'Magina-Olivo/1.0 Catastro-coordinate-adapter',
+    },
+    signal: AbortSignal.timeout(CATASTRO_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`Catastro coordinate upstream HTTP ${response.status}`);
+  const contentLength = Number(response.headers.get('content-length') ?? 0);
+  if (Number.isFinite(contentLength) && contentLength > MAX_JSON_BYTES) throw new Error('Catastro coordinate response exceeds safe JSON size');
+  const text = await response.text();
+  if (Buffer.byteLength(text, 'utf8') > MAX_JSON_BYTES) throw new Error('Catastro coordinate response exceeds safe JSON size');
+  return JSON.parse(text) as unknown;
+}
+
+async function fetchParcelsByReferences(references: string[]): Promise<CatastroParcel[]> {
+  const unique = [...new Set(references)].slice(0, CATASTRO_MAX_POINT_REFERENCES);
+  const results = await Promise.allSettled(unique.map((reference) => fetchCatastroParcelByReference(reference)));
+  return results.flatMap((result) => result.status === 'fulfilled' ? [result.value] : []);
+}
+
 export async function fetchCatastroParcels(bbox: CatastroBbox): Promise<CatastroParcel[]> {
   return parseCatastroGml(await fetchCatastroXml(buildCatastroBboxUrl(bbox)));
 }
@@ -184,4 +266,23 @@ export async function fetchCatastroParcelByReference(reference: string): Promise
   const exact = items.find((item) => item.nationalCadastralReference === normalized);
   if (!exact) throw new Error('Catastro parcel not found');
   return exact;
+}
+
+export async function identifyCatastroParcelsAtPoint(
+  point: CatastroPoint,
+  includeNearby = false,
+): Promise<{ items: CatastroParcel[]; match: CatastroPointMatch }> {
+  const validation = validateCatastroPoint(point);
+  if (validation) throw new Error(validation);
+
+  const exactReferences = parseCatastroCoordinateJson(await fetchCatastroJson(buildCatastroPointUrl(point, false)));
+  if (exactReferences.length) {
+    return { items: await fetchParcelsByReferences(exactReferences), match: 'exact' };
+  }
+
+  if (!includeNearby) return { items: [], match: 'none' };
+
+  const nearbyReferences = parseCatastroCoordinateJson(await fetchCatastroJson(buildCatastroPointUrl(point, true)));
+  if (!nearbyReferences.length) return { items: [], match: 'none' };
+  return { items: await fetchParcelsByReferences(nearbyReferences), match: 'nearby' };
 }

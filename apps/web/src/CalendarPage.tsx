@@ -82,6 +82,7 @@ function buildMonthDays(month: Date): Array<{ iso: string; day: number; weekday:
 }
 
 export function CalendarPage() {
+  const createTaskIntent = new URLSearchParams(window.location.search).get('new') === 'task';
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [holdingId, setHoldingId] = useState('');
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -268,7 +269,7 @@ export function CalendarPage() {
                 <div className="calendar-form-grid">
                   <label className="field calendar-title-field">
                     <span>Tarea</span>
-                    <input value={title} maxLength={160} placeholder="Ej. Revisar riego de la parcela norte" onChange={(event) => setTitle(event.target.value)} />
+                    <input autoFocus={createTaskIntent} value={title} maxLength={160} placeholder="Ej. Revisar riego de la parcela norte" onChange={(event) => setTitle(event.target.value)} />
                   </label>
                   <label className="field">
                     <span>Fecha</span>

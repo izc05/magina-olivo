@@ -24,6 +24,7 @@ import { listPendingOperations } from './offline/outbox.ts';
 import { PrivateAccessGate } from './PrivateAccessGate.tsx';
 import { BarChart3, Bell, BookOpen, Building2, CalendarDays, ChevronLeft, ChevronRight, CircleHelp, Compass, Droplets, FileText, House, Leaf, Map, MapPin, Moon, Mountain, PackageCheck, Pencil, Plus, Settings, ShieldCheck, Sparkles, Sprout, Sun, Tractor, UserRound } from 'lucide-react';
 import { PhotoCredit, VisualHeader, navigationIcons } from './VisualChrome';
+import { FieldActionCenter } from './FieldActionCenter';
 
 type Tab = 'home' | 'field' | 'campaign' | 'magina' | 'more';
 export type FieldInitialView = 'home' | 'plots' | 'notebook' | 'map' | 'treatments' | 'irrigation';
@@ -308,64 +309,7 @@ export function App({ initialTab = 'home', initialFieldView = 'home' }: { initia
             onClose={() => setShowCameraModal(false)}
           />
         ) : null}
-        {showQuickMenu ? (
-          <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: '1rem' }} onClick={() => setShowQuickMenu(false)}>
-            <div className="card" style={{ maxWidth: '24rem', width: '100%', padding: '1rem', background: '#fff', borderRadius: '1rem', marginBottom: '4rem' }} onClick={(e) => e.stopPropagation()}>
-              <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem', textAlign: 'center', color: '#66705c' }}>Acciones Rápidas de Campo</h3>
-              <div style={{ display: 'grid', gap: '0.5rem' }}>
-                <button
-                  type="button"
-                  className="primary-button"
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', justifyContent: 'flex-start', padding: '0.75rem 1rem' }}
-                  onClick={() => {
-                    setShowQuickMenu(false);
-                    setTab('campaign');
-                    window.setTimeout(() => {
-                      const entry = document.querySelector<HTMLElement>('.delivery-entry-card');
-                      entry?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      entry?.focus({ preventScroll: true });
-                    }, 0);
-                  }}
-                >
-                  🍇 <strong>Registrar Entrega de Aceituna</strong>
-                </button>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', justifyContent: 'flex-start', padding: '0.75rem 1rem' }}
-                  onClick={() => {
-                    setShowQuickMenu(false);
-                    setTab('field');
-                  }}
-                >
-                  🌿 <strong>Anotar Tratamiento / Labor</strong>
-                </button>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', justifyContent: 'flex-start', padding: '0.75rem 1rem' }}
-                  onClick={() => {
-                    setShowQuickMenu(false);
-                    setShowCameraModal(true);
-                  }}
-                >
-                  📸 <strong>Tomar Foto con GPS</strong>
-                </button>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', justifyContent: 'flex-start', padding: '0.75rem 1rem' }}
-                  onClick={() => {
-                    setShowQuickMenu(false);
-                    setShowAiAssistant(true);
-                  }}
-                >
-                  🎙 <strong>Dictar a Mágina IA</strong>
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : null}
+        {showQuickMenu ? <FieldActionCenter farmName={selectedFarm?.name ?? null} onClose={() => setShowQuickMenu(false)} onCamera={() => setShowCameraModal(true)} /> : null}
         {error ? <div className="alert" role="alert">{error}</div> : null}
         {holdings.length > 1 ? (
           <select className="selector" value={selectedHoldingId} onChange={(event) => setSelectedHoldingId(event.target.value)} aria-label="Explotación activa">
@@ -419,7 +363,7 @@ export function App({ initialTab = 'home', initialFieldView = 'home' }: { initia
         <a className="nav-button" href="/magina"><Mountain aria-hidden="true" />Mágina</a>
         <a className="nav-button" href="/descubre"><Compass aria-hidden="true" />Descubre</a>
         <a className={`nav-button${tab === 'more' ? ' active' : ''}`} href="/cuenta" aria-current={tab === 'more' ? 'page' : undefined}><UserRound aria-hidden="true" />Perfil</a>
-        <button type="button" className="nav-plus" onClick={() => setShowQuickMenu((prev) => !prev)} aria-label="Abrir menú de acciones rápidas"><Plus aria-hidden="true" /></button>
+        <button type="button" className={`nav-plus${showQuickMenu ? ' active' : ''}`} onClick={() => setShowQuickMenu((prev) => !prev)} aria-label="Centro de acciones" aria-expanded={showQuickMenu}><Plus aria-hidden="true" /></button>
       </nav>
     </div>
   );
@@ -717,7 +661,7 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
           ) : null}
           {fieldManagement}
           </> : null}
-          {fieldView === 'notebook' || fieldView === 'treatments' || fieldView === 'irrigation' ? <div id="cuaderno"><FieldNotebook holdingId={selectedHolding.id} farmId={selectedFarm.id} plots={plots} onOpenMap={openMapWorkspace} initialActivityType={notebookActivityType} openEntry={Boolean(notebookActivityType)} /></div> : null}
+          {fieldView === 'notebook' || fieldView === 'treatments' || fieldView === 'irrigation' ? <div id="cuaderno"><FieldNotebook holdingId={selectedHolding.id} farmId={selectedFarm.id} plots={plots} onOpenMap={openMapWorkspace} initialActivityType={notebookActivityType} openEntry={Boolean(notebookActivityType) || new URLSearchParams(window.location.search).get('new') === 'activity'} /></div> : null}
           <PhotoCredit field />
         </>
       ) : null}
@@ -731,10 +675,26 @@ function FieldFlowNav({ farmName, current, backHref, nextHref, nextLabel }: { fa
 }
 
 function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelectedCampaignId, selectedCampaign, farms, deliveries, summary, busy, runAction, reloadHoldingData, reloadCampaign }: { selectedHolding: Holding | null; campaigns: Campaign[]; selectedCampaignId: string; setSelectedCampaignId: (id: string) => void; selectedCampaign: Campaign | null; farms: Farm[]; deliveries: Delivery[]; summary: CampaignSummary | null; busy: boolean; runAction: ActionRunner; reloadHoldingData: () => Promise<void>; reloadCampaign: () => Promise<void> }) {
+  const quickIntent = new URLSearchParams(window.location.search).get('new');
+  const deliveryDisclosureRef = useRef<HTMLDetailsElement>(null);
   const latestDelivery = deliveries[0] ?? null;
   const latestDeliveryDate = latestDelivery
     ? new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(latestDelivery.deliveredAt))
     : 'Sin entregas';
+
+  useEffect(() => {
+    if (!selectedCampaign) return;
+    if (quickIntent === 'delivery') {
+      deliveryDisclosureRef.current?.setAttribute('open', '');
+      window.requestAnimationFrame(() => {
+        document.querySelector<HTMLElement>('.delivery-entry-card')?.focus({ preventScroll: false });
+      });
+    }
+    if (quickIntent === 'document') {
+      window.requestAnimationFrame(() => document.querySelector('#documentos')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    }
+  }, [quickIntent, selectedCampaign]);
+
   return (
     <>
       {selectedHolding && !campaigns.length ? <><EmptyState title="Aún no tienes una campaña creada.">Crea la campaña para empezar a registrar tus entregas.</EmptyState><CreateCampaignCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} /></> : null}
@@ -758,7 +718,7 @@ function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelect
             <article className="card campaign-destination-metric"><span className="campaign-context-icon"><Building2 /></span><small>Cooperativa</small><strong>{latestDelivery?.customDestination || 'Pendiente'}</strong><em>{summary?.deliveriesCount ?? 0} entregas</em></article>
           </section>
 
-          {selectedHolding ? <details className="campaign-create-disclosure"><summary><Plus aria-hidden="true" />Registrar entrega</summary><DeliveryEntryCard holdingId={selectedHolding.id} campaignId={selectedCampaign.id} farms={farms} onSaved={reloadCampaign} /></details> : null}
+          {selectedHolding ? <details ref={deliveryDisclosureRef} className="campaign-create-disclosure"><summary><Plus aria-hidden="true" />Registrar entrega</summary><DeliveryEntryCard holdingId={selectedHolding.id} campaignId={selectedCampaign.id} farms={farms} onSaved={reloadCampaign} /></details> : null}
 
           <CampaignDeliveryTrend deliveries={deliveries} />
 

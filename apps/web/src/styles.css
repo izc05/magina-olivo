@@ -24,6 +24,14 @@
   --radius-md: 16px;
   --safe-bottom: max(16px, env(safe-area-inset-bottom));
   --focus-ring: #765000;
+  --verde-magina: #203d2a;
+  --piedra: #f6f3e8;
+  --tinta: #1a221c;
+  --verde-hoja: #4e6a55;
+  --aceite: #b8892d;
+  --rojo-tierra: #9a3d2f;
+  --superficie: #fff;
+  --verde-palido: #dde6dd;
 }
 
 [data-sun-mode="true"] {

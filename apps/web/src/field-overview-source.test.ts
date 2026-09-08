@@ -35,7 +35,7 @@ test('Mi Campo keeps the private farm overview wired to real holdings and farms'
   assert.match(app, /function CampaignDeliveryTrend/);
   assert.match(app, /Evolución de entregas/);
   assert.match(app, /Añadir mi primera finca/);
-  assert.match(app, /<FieldNotebook holdingId=\{selectedHolding\.id\} farmId=\{selectedFarm\.id\} plots=\{plots\} onOpenMap=\{openMapWorkspace\} initialActivityType=\{notebookActivityType\} openEntry=\{Boolean\(notebookActivityType\)\} \/>/);
+  assert.match(app, /<FieldNotebook holdingId=\{selectedHolding\.id\} farmId=\{selectedFarm\.id\} plots=\{plots\} onOpenMap=\{openMapWorkspace\} initialActivityType=\{notebookActivityType\} openEntry=\{Boolean\(notebookActivityType\) \|\| new URLSearchParams\(window\.location\.search\)\.get\('new'\) === 'activity'\} \/>/);
   assert.ok(vite.includes('urlPattern: /\\/api\\/v1\\/public\\//'));
   assert.equal(vite.includes('urlPattern: /\\/api\\/v1\\//,'), false);
 });
@@ -91,7 +91,7 @@ test('farm detail and plots remain a local visual layer over the existing privat
   assert.match(app, /aria-pressed=\{plot\.id === selectedPlotId\}/);
   assert.match(app, /Aún no has añadido parcelas a esta finca\./);
   assert.match(app, /api\.createPlot\(farmId, body\)/);
-  assert.match(app, /<FieldNotebook holdingId=\{selectedHolding\.id\} farmId=\{selectedFarm\.id\} plots=\{plots\} onOpenMap=\{openMapWorkspace\} initialActivityType=\{notebookActivityType\} openEntry=\{Boolean\(notebookActivityType\)\} \/>/);
+  assert.match(app, /<FieldNotebook holdingId=\{selectedHolding\.id\} farmId=\{selectedFarm\.id\} plots=\{plots\} onOpenMap=\{openMapWorkspace\} initialActivityType=\{notebookActivityType\} openEntry=\{Boolean\(notebookActivityType\) \|\| new URLSearchParams\(window\.location\.search\)\.get\('new'\) === 'activity'\} \/>/);
   assert.doesNotMatch(app, /boundaryGeoJson|<polygon/);
 });
 
@@ -105,7 +105,7 @@ test('campaign and delivery composition preserves its private and offline workfl
   assert.match(app, /summary\?\.weightedYieldPercent/);
   assert.match(app, /summary\?\.pendingResultCount/);
   assert.match(app, /Aún no tienes una campaña creada\./);
-  assert.match(app, /entry\?\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(app, /document\.querySelector<HTMLElement>\('\.delivery-entry-card'\)\?\.focus\(\{ preventScroll: false \}\)/);
   assert.match(app, /<CampaignDocuments holdingId=\{selectedHolding\.id\} campaignId=\{selectedCampaign\.id\} deliveries=\{deliveries\} \/>/);
   assert.match(delivery, /crypto\.randomUUID\(\)/);
   assert.match(delivery, /api\.createDelivery\(campaignId, body, clientGeneratedId\)/);

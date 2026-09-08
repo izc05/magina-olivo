@@ -19,7 +19,7 @@ function ParcelWorkspace({ farmId }: { farmId: string }) {
   const [loading, setLoading] = useState(true);
   const [dirty, setDirty] = useState(false);
   const [notice, setNotice] = useState('');
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState(() => new URLSearchParams(window.location.search).get('new') === 'plot');
 
   useEffect(() => {
     let cancelled = false;

@@ -78,9 +78,9 @@ function formatDate(value: string | null): string {
   return new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 }
 
-export function ParcelSourceComparisonPanel({ farmId, revision = 0 }: { farmId: string; revision?: number }) {
+export function ParcelSourceComparisonPanel({ farmId, revision = 0, activePlotId }: { farmId: string; revision?: number; activePlotId?: string }) {
   const [plots, setPlots] = useState<PlotComparison[]>([]);
-  const [selectedPlotId, setSelectedPlotId] = useState('');
+  const [selectedPlotId, setSelectedPlotId] = useState(activePlotId ?? '');
   const [refreshRevision, setRefreshRevision] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,7 +92,7 @@ export function ParcelSourceComparisonPanel({ farmId, revision = 0 }: { farmId: 
     void request<{ items: PlotComparison[] }>(`/api/v1/farms/${farmId}/plots`).then((result) => {
       if (cancelled) return;
       setPlots(result.items);
-      setSelectedPlotId((current) => result.items.some((plot) => plot.id === current) ? current : (result.items[0]?.id ?? ''));
+      setSelectedPlotId((current) => result.items.some((plot) => plot.id === current) ? current : (activePlotId ? '' : result.items[0]?.id ?? ''));
     }).catch((reason) => {
       if (cancelled) return;
       setPlots([]);
@@ -131,7 +131,7 @@ export function ParcelSourceComparisonPanel({ farmId, revision = 0 }: { farmId: 
           <div className="parcel-comparison-toolbar">
             <div className="field parcel-comparison-selector">
               <label htmlFor="parcel-comparison-plot">Parcela</label>
-              <select id="parcel-comparison-plot" value={selectedPlotId} onChange={(event) => setSelectedPlotId(event.target.value)}>
+              <select id="parcel-comparison-plot" value={selectedPlotId} disabled={Boolean(activePlotId)} onChange={(event) => setSelectedPlotId(event.target.value)}>
                 {plots.map((plot) => <option key={plot.id} value={plot.id}>{plot.name}</option>)}
               </select>
             </div>

@@ -252,9 +252,9 @@ function geolocationPermissionDenied(reason: unknown): boolean {
   return Number((reason as { code?: unknown }).code) === 1;
 }
 
-export function PlotMapPanel({ farmId }: { farmId: string }) {
+export function PlotMapPanel({ farmId, activePlotId, onSaved, onDirtyChange }: { farmId: string; activePlotId?: string; onSaved?: () => Promise<void>; onDirtyChange?: (dirty: boolean) => void }) {
   const [plots, setPlots] = useState<LocatedPlot[]>([]);
-  const [selectedPlotId, setSelectedPlotId] = useState('');
+  const [selectedPlotId, setSelectedPlotId] = useState(activePlotId ?? '');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   const [editorMode, setEditorMode] = useState<EditorMode>('location');
@@ -310,7 +310,7 @@ export function PlotMapPanel({ farmId }: { farmId: string }) {
     try {
       const result = await apiRequest<{ items: LocatedPlot[] }>(`/api/v1/farms/${farmId}/plots`);
       setPlots(result.items);
-      setSelectedPlotId((current) => result.items.some((plot) => plot.id === current) ? current : (result.items[0]?.id ?? ''));
+      setSelectedPlotId((current) => result.items.some((plot) => plot.id === current) ? current : (activePlotId ? '' : result.items[0]?.id ?? ''));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'No se han podido cargar las parcelas.');
     } finally {
@@ -344,7 +344,17 @@ export function PlotMapPanel({ farmId }: { farmId: string }) {
 
   function replacePlot(updated: LocatedPlot) {
     setPlots((current) => current.map((plot) => plot.id === updated.id ? updated : plot));
+    void onSaved?.();
   }
+
+  const dirty = Boolean(selectedPlot) && (latitude !== (selectedPlot?.latitude == null ? '' : String(selectedPlot.latitude)) || longitude !== (selectedPlot?.longitude == null ? '' : String(selectedPlot.longitude)) || JSON.stringify(boundaryVertices) !== JSON.stringify(verticesFromBoundary(selectedPlot?.boundaryGeoJson ?? null)));
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty, onDirtyChange]);
 
   async function useDeviceLocation() {
     setError(null);
@@ -428,6 +438,7 @@ export function PlotMapPanel({ farmId }: { farmId: string }) {
 
   async function clearLocation() {
     if (!selectedPlot) return;
+    if (!window.confirm(`¿Quitar la ubicación guardada de ${selectedPlot.name}?`)) return;
     setSaving(true);
     setError(null);
     setNotice(null);
@@ -480,6 +491,7 @@ export function PlotMapPanel({ farmId }: { farmId: string }) {
 
   async function clearBoundary() {
     if (!selectedPlot) return;
+    if (!window.confirm(`¿Eliminar el perímetro guardado de ${selectedPlot.name}? La parcela y su historial se conservarán.`)) return;
     setSaving(true);
     setError(null);
     setNotice(null);
@@ -576,7 +588,7 @@ export function PlotMapPanel({ farmId }: { farmId: string }) {
             <div className="card card-body plot-location-card">
               <div className="field">
                 <label htmlFor="map-plot-select">Parcela</label>
-                <select id="map-plot-select" value={selectedPlotId} onChange={(event) => setSelectedPlotId(event.target.value)}>
+              <select id="map-plot-select" value={selectedPlotId} disabled={Boolean(activePlotId)} onChange={(event) => setSelectedPlotId(event.target.value)}>
                   {plots.map((plot) => (
                     <option key={plot.id} value={plot.id}>{plot.name}{plot.boundaryGeoJson ? ' · perímetro' : plot.latitude != null && plot.longitude != null ? ' · localizada' : ' · pendiente'}</option>
                   ))}

@@ -5,6 +5,7 @@ import { getPool } from './db.ts';
 import { apiError } from './http-errors.ts';
 import { type BoundarySource, type GeoJsonPolygon, validateBoundary } from './plot-boundary-geometry.ts';
 import { getAuthenticatedSession } from './session.ts';
+import { fetchCatastroParcelByReference } from './catastro-client.ts';
 
 type FarmParams = { farmId: string };
 type PlotParams = { plotId: string };
@@ -14,6 +15,7 @@ type CreatePlotBody = {
   areaHa?: number;
   sigpacReference?: string;
   cadastralReference?: string;
+  verifyCatastro?: boolean;
   latitude?: number;
   longitude?: number;
   irrigationType?: 'dryland' | 'irrigated' | 'mixed' | 'unknown';
@@ -132,6 +134,7 @@ export function registerPlotRoutes(app: FastifyInstance): void {
             areaHa: { type: 'number', minimum: 0, maximum: 1000000 },
             sigpacReference: { type: 'string', maxLength: 300 },
             cadastralReference: { type: 'string', pattern: '^[A-Za-z0-9]{14}$' },
+            verifyCatastro: { type: 'boolean' },
             latitude: { type: 'number', minimum: -90, maximum: 90 },
             longitude: { type: 'number', minimum: -180, maximum: 180 },
             irrigationType: { type: 'string', enum: ['dryland', 'irrigated', 'mixed', 'unknown'] },
@@ -163,14 +166,33 @@ export function registerPlotRoutes(app: FastifyInstance): void {
         return reply.code(400).send(apiError(request, 'INCOMPLETE_PLOT_LOCATION', 'Latitude and longitude must be provided together'));
       }
 
+      let officialBoundary: GeoJsonPolygon | null = null;
+      let officialAreaHa: number | null = null;
+      let officialReference: string | null = null;
+      if (request.body.verifyCatastro) {
+        if (!request.body.cadastralReference) return reply.code(400).send(apiError(request, 'CATASTRO_REFERENCE_REQUIRED', 'Indica la referencia catastral de la parcela.'));
+        try {
+          const official = await fetchCatastroParcelByReference(request.body.cadastralReference.trim().toUpperCase());
+          if (official.geometry.type !== 'Polygon') return reply.code(409).send(apiError(request, 'CATASTRO_GEOMETRY_UNSUPPORTED', 'Esta parcela tiene varios polígonos; necesita revisión antes de importarla.'));
+          const boundary = { type: 'Polygon' as const, coordinates: official.geometry.coordinates as number[][][] };
+          const validation = validateBoundary(boundary);
+          if (!validation.ok) return reply.code(409).send(apiError(request, 'CATASTRO_GEOMETRY_INVALID', 'No se puede importar este perímetro automáticamente.'));
+          officialBoundary = boundary;
+          officialAreaHa = Number(validation.areaHa.toFixed(4));
+          officialReference = official.nationalCadastralReference;
+        } catch {
+          return reply.code(502).send(apiError(request, 'CATASTRO_UNAVAILABLE', 'Catastro no ha podido verificar la referencia. No se ha creado ninguna parcela; puedes reintentar.'));
+        }
+      }
       const id = randomUUID();
       const row = (
         await getPool().query<PlotRow>(
           `insert into plots (
              id, holding_id, farm_id, name, area_ha, sigpac_reference, cadastral_reference,
-             latitude, longitude, irrigation_type, olive_tree_count, notes
+             latitude, longitude, irrigation_type, olive_tree_count, notes,
+             boundary_geojson, boundary_area_ha, boundary_source, boundary_external_id, boundary_updated_at, boundary_source_checked_at
            )
-           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb, $14, $15, $16, $17, $17)
            returning ${PLOT_COLUMNS}`,
           [
             id,
@@ -185,6 +207,11 @@ export function registerPlotRoutes(app: FastifyInstance): void {
             request.body.irrigationType ?? null,
             request.body.oliveTreeCount ?? null,
             request.body.notes?.trim() || null,
+            officialBoundary ? JSON.stringify(officialBoundary) : null,
+            officialAreaHa,
+            officialBoundary ? 'catastro' : null,
+            officialReference,
+            officialBoundary ? new Date() : null,
           ],
         )
       ).rows[0];

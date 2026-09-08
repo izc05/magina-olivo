@@ -1,0 +1,212 @@
+.admin-territory-shell .admin-sidebar nav button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  padding: .78rem .9rem;
+  border-radius: .8rem;
+}
+
+.admin-territory-shell .admin-sidebar nav button:hover,
+.admin-territory-shell .admin-sidebar nav button.active {
+  background: rgba(255, 255, 255, .1);
+}
+
+.admin-territory-topbar p:last-child {
+  margin: .35rem 0 0;
+  color: var(--admin-muted, #6b7280);
+}
+
+.admin-territory-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .9rem;
+  margin-bottom: 1rem;
+}
+
+.admin-territory-kpis article {
+  min-height: 92px;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(20, 69, 54, .1);
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(20, 69, 54, .05);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.admin-territory-kpis article.warning {
+  border-color: rgba(180, 116, 18, .35);
+  background: #fffaf0;
+}
+
+.admin-territory-kpis strong {
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.admin-territory-kpis span {
+  margin-top: .45rem;
+  color: #68756f;
+  font-size: .83rem;
+}
+
+.admin-territory-toolbar {
+  display: flex;
+  gap: .75rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: .75rem;
+}
+
+.admin-territory-toolbar input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #d9e2de;
+  border-radius: .8rem;
+  padding: .8rem 1rem;
+  background: #fbfdfc;
+}
+
+.admin-territory-workspace {
+  display: grid;
+  grid-template-columns: minmax(260px, .72fr) minmax(440px, 1.5fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.admin-territory-list {
+  max-height: calc(100vh - 280px);
+  min-height: 440px;
+  overflow: auto;
+  padding: .45rem;
+  position: sticky;
+  top: 1rem;
+}
+
+.admin-territory-list > button {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid #edf2ef;
+  background: transparent;
+  display: grid;
+  grid-template-columns: 13px minmax(0, 1fr);
+  gap: .7rem;
+  text-align: left;
+  align-items: center;
+  padding: .78rem .7rem;
+  cursor: pointer;
+  border-radius: .75rem;
+}
+
+.admin-territory-list > button:hover,
+.admin-territory-list > button.active {
+  background: #f1f7f3;
+}
+
+.admin-territory-list > button.create {
+  margin-bottom: .4rem;
+  background: #f7faf8;
+  border: 1px dashed #bfd0c7;
+}
+
+.admin-territory-list strong,
+.admin-territory-list small {
+  display: block;
+}
+
+.admin-territory-list small {
+  margin-top: .22rem;
+  color: #78837e;
+}
+
+.admin-media-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #b9c1bd;
+  box-shadow: 0 0 0 3px rgba(185, 193, 189, .17);
+}
+
+.admin-media-dot.approved {
+  background: #2d7a52;
+  box-shadow: 0 0 0 3px rgba(45, 122, 82, .13);
+}
+
+.admin-media-dot.candidate {
+  background: #c68a23;
+  box-shadow: 0 0 0 3px rgba(198, 138, 35, .13);
+}
+
+.admin-media-dot.blocked {
+  background: #a63e35;
+  box-shadow: 0 0 0 3px rgba(166, 62, 53, .13);
+}
+
+.admin-territory-editor {
+  padding: 1rem;
+}
+
+.admin-territory-preview,
+.admin-territory-placeholder {
+  width: 100%;
+  aspect-ratio: 16 / 7;
+  border-radius: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-territory-preview {
+  display: block;
+  object-fit: cover;
+  background: #e8eeeb;
+}
+
+.admin-territory-placeholder {
+  display: grid;
+  place-items: center;
+  border: 1px dashed #bdcbc4;
+  background: linear-gradient(135deg, #edf3f0, #f9fbfa);
+  color: #6e7974;
+}
+
+.admin-territory-editor textarea {
+  resize: vertical;
+}
+
+.admin-territory-toggles {
+  align-items: center;
+}
+
+.admin-territory-rule {
+  padding: .8rem .9rem;
+  border-radius: .8rem;
+  background: #f6f9f7;
+  border-left: 3px solid #6f8d7c;
+  color: #526159;
+  font-size: .84rem;
+  line-height: 1.45;
+}
+
+.admin-territory-editor .admin-primary-button {
+  margin-top: .25rem;
+}
+
+@media (max-width: 1050px) {
+  .admin-territory-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-territory-workspace { grid-template-columns: 1fr; }
+  .admin-territory-list { position: static; max-height: 360px; min-height: 0; }
+}
+
+@media (max-width: 640px) {
+  .admin-territory-kpis { grid-template-columns: 1fr 1fr; gap: .55rem; }
+  .admin-territory-kpis article { min-height: 80px; padding: .8rem; }
+  .admin-territory-kpis strong { font-size: 1.25rem; }
+  .admin-territory-toolbar { align-items: stretch; flex-direction: column; }
+  .admin-territory-workspace { display: block; }
+  .admin-territory-list { margin-bottom: .8rem; }
+  .admin-territory-preview, .admin-territory-placeholder { aspect-ratio: 4 / 2.15; }
+}

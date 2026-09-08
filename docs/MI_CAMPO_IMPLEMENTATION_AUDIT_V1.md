@@ -88,6 +88,12 @@ MI CAMPO (mapa vivo)
     └── Documentos
 ```
 
+## Comparación útil, sin copiar producto
+
+- OneSoil permite seleccionar límites existentes o dibujar campos directamente sobre el mapa y conserva los campos entre web y móvil.
+- AgriWebb sitúa mapa, parcelas y tareas en una misma superficie móvil, recuerda filtros y usa una acción `+` contextual desde el mapa.
+- La conclusión aplicable a Mágina Olivo es estructural: mapa como entrada, filtro persistente y acción contextual. La identidad, el lenguaje y el modelo olivarero siguen siendo propios.
+
 ## Pantallas y rutas objetivo
 
 | Ruta | Responsabilidad | Acción principal |

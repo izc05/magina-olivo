@@ -10,7 +10,7 @@
 
 .catastro-mode-tabs {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.65rem;
   padding: 0.35rem;
   border-radius: 1rem;
@@ -94,7 +94,8 @@
   cursor: crosshair;
 }
 
-.catastro-map.gps-mode {
+.catastro-map.gps-mode,
+.catastro-map.reference-mode {
   cursor: default;
 }
 
@@ -139,7 +140,7 @@
 }
 
 .catastro-selected-shape {
-  fill: rgba(122, 151, 69, 0.33);
+  fill: rgba(122, 151, 69, 0.25);
   stroke: #f8fff0;
   stroke-width: 4;
   vector-effect: non-scaling-stroke;
@@ -207,6 +208,12 @@
   background: rgba(77, 99, 51, 0.1);
   color: #4d6333;
   font-size: 1.45rem;
+}
+
+.catastro-reference-field input {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
 }
 
 .catastro-plot-status {
@@ -351,14 +358,18 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 760px) {
+  .catastro-mode-tabs {
+    grid-template-columns: 1fr;
+  }
+
   .catastro-mode-tabs button {
-    min-height: 4.35rem;
+    min-height: 4.15rem;
     padding: 0.65rem;
   }
 
   .catastro-mode-tabs button small {
-    font-size: 0.72rem;
+    font-size: 0.74rem;
   }
 
   .catastro-map {

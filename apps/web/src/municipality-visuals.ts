@@ -1,8 +1,11 @@
+export type MunicipalityVisualStatus = 'sourcing' | 'rights_review' | 'crop_review' | 'ready' | 'blocked';
+
 export type MunicipalityVisual = {
   slug: string;
   name: string;
   aliases: readonly string[];
   ready: boolean;
+  reviewStatus: MunicipalityVisualStatus;
   heroDesktop: string;
   heroMobile: string;
   thumbnail: string;
@@ -12,6 +15,7 @@ export type MunicipalityVisual = {
   photoAuthor: string | null;
   photoSource: string | null;
   photoLicense: string | null;
+  photoLicenseUrl: string | null;
 };
 
 export const MUNICIPALITY_PREFERENCE_KEY = 'magina-olivo-public-municipality';
@@ -19,12 +23,15 @@ export const MUNICIPALITY_CHANGE_EVENT = 'magina:municipality-change';
 export const DEFAULT_MUNICIPALITY_SLUG = 'bedmar-y-garciez';
 export const DEFAULT_TERRITORY_HERO = '/photos/home-sierra-magina.webp';
 
-function visual(slug: string, name: string, aliases: readonly string[] = []): MunicipalityVisual {
+type VisualMetadata = Partial<Omit<MunicipalityVisual, 'slug' | 'name' | 'aliases'>>;
+
+function visual(slug: string, name: string, aliases: readonly string[] = [], metadata: VisualMetadata = {}): MunicipalityVisual {
   return {
     slug,
     name,
     aliases,
     ready: false,
+    reviewStatus: 'sourcing',
     heroDesktop: `/municipalities/${slug}/hero.webp`,
     heroMobile: `/municipalities/${slug}/hero-mobile.webp`,
     thumbnail: `/municipalities/${slug}/thumb.webp`,
@@ -34,6 +41,8 @@ function visual(slug: string, name: string, aliases: readonly string[] = []): Mu
     photoAuthor: null,
     photoSource: null,
     photoLicense: null,
+    photoLicenseUrl: null,
+    ...metadata,
   };
 }
 
@@ -46,13 +55,43 @@ export const MUNICIPALITY_VISUALS = [
   visual('campillo-de-arenas', 'Campillo de Arenas'),
   visual('carcheles', 'Cárcheles', ['Carchelejo', 'Cárchel']),
   visual('guardia-de-jaen', 'La Guardia de Jaén', ['Guardia de Jaén']),
-  visual('huelma', 'Huelma', ['Solera', 'Huelma-Solera']),
+  visual('huelma', 'Huelma', ['Solera', 'Huelma-Solera'], {
+    reviewStatus: 'crop_review',
+    photoAuthor: 'José Sánchez Rodríguez y Rafael Palomo López',
+    photoSource: 'https://commons.wikimedia.org/wiki/File:Huelma,_en_Ja%C3%A9n_(Espa%C3%B1a).jpg',
+    photoLicense: 'CC BY-SA 3.0 / GFDL 1.2+',
+    photoLicenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
+  }),
   visual('jimena', 'Jimena'),
-  visual('jodar', 'Jódar'),
+  visual('jodar', 'Jódar', [], {
+    reviewStatus: 'crop_review',
+    photoAuthor: 'Montse Sánchez Navas',
+    photoSource: 'https://commons.wikimedia.org/wiki/File:J%C3%B3dar,_en_Ja%C3%A9n_(Espa%C3%B1a).jpg',
+    photoLicense: 'CC BY-SA 4.0',
+    photoLicenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+  }),
   visual('larva', 'Larva'),
-  visual('mancha-real', 'Mancha Real'),
-  visual('pegalajar', 'Pegalajar'),
-  visual('torres', 'Torres'),
+  visual('mancha-real', 'Mancha Real', [], {
+    reviewStatus: 'crop_review',
+    photoAuthor: 'Veinticuatro de Jahén',
+    photoSource: 'https://commons.wikimedia.org/wiki/File:Mancha_Real,_en_Ja%C3%A9n_(Espa%C3%B1a).jpg',
+    photoLicense: 'CC BY-SA 4.0',
+    photoLicenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+  }),
+  visual('pegalajar', 'Pegalajar', [], {
+    reviewStatus: 'crop_review',
+    photoAuthor: 'Veinticuatro de Jahén',
+    photoSource: 'https://commons.wikimedia.org/wiki/File:Pegalajar,_en_Ja%C3%A9n_(Espa%C3%B1a).jpg',
+    photoLicense: 'CC BY-SA 4.0',
+    photoLicenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+  }),
+  visual('torres', 'Torres', [], {
+    reviewStatus: 'crop_review',
+    photoAuthor: 'Veinticuatro de Jahén',
+    photoSource: 'https://commons.wikimedia.org/wiki/File:Torres,_en_Ja%C3%A9n_(Espa%C3%B1a).jpg',
+    photoLicense: 'CC BY-SA 4.0',
+    photoLicenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+  }),
 ] as const satisfies readonly MunicipalityVisual[];
 
 function normalized(value: string): string {

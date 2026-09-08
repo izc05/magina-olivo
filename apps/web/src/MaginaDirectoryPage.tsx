@@ -27,6 +27,16 @@ type PublicDestination = {
   sourceUrl: string | null;
   sourceCheckedAt: string | null;
   verificationStatus: VerificationStatus;
+  editorial: {
+    description: string | null;
+    featured: boolean;
+    image: {
+      imageUrl: string | null;
+      sourceUrl: string | null;
+      credit: string | null;
+      alt: string;
+    } | null;
+  };
   commercial: {
     category: AdvertisingCategory;
     description: string | null;
@@ -157,6 +167,7 @@ export function MaginaDirectoryPage() {
         item.officialName,
         item.brandName,
         item.municipality,
+        item.editorial.description,
         item.commercial?.description,
         item.commercial?.category ? categoryLabels[item.commercial.category] : null,
       ]
@@ -238,9 +249,18 @@ export function MaginaDirectoryPage() {
             const phone = phoneHref(item.commercial?.phone ?? null);
             const whatsapp = whatsappHref(item.commercial?.whatsappPhone ?? null);
             const sponsored = Boolean(item.sponsorship?.sponsored);
+            const imageUrl = item.editorial.image?.imageUrl ?? item.commercial?.heroImageUrl ?? null;
+            const imageAlt = item.editorial.image?.alt ?? item.brandName ?? item.officialName;
+            const description = item.commercial?.description ?? item.editorial.description;
 
             return (
-              <article className={`card directory-card${sponsored ? ' directory-card-sponsored' : ''}`} key={item.id}>
+              <article className={`card directory-card${sponsored ? ' directory-card-sponsored' : ''}${item.editorial.featured ? ' directory-card-editorial-featured' : ''}`} key={item.id}>
+                {imageUrl ? (
+                  <div className="directory-card-media">
+                    <img src={imageUrl} alt={imageAlt} loading="lazy" />
+                    {item.editorial.image?.credit ? <small>{item.editorial.image.credit}</small> : null}
+                  </div>
+                ) : null}
                 <div className="directory-card-topline">
                   <span className={`directory-type ${item.entityType}`}>
                     {item.commercial?.category ? categoryLabels[item.commercial.category] : entityLabels[item.entityType]}
@@ -260,9 +280,7 @@ export function MaginaDirectoryPage() {
                 {item.brandName ? <p className="directory-brand-name">{item.brandName}</p> : null}
                 <p className="directory-location">{item.municipality ?? 'Municipio pendiente'}{item.province ? ` · ${item.province}` : ''}</p>
 
-                {item.commercial?.description ? (
-                  <p className="directory-description">{item.commercial.description}</p>
-                ) : null}
+                {description ? <p className="directory-description">{description}</p> : null}
 
                 {item.commercial && (phone || whatsapp || item.websiteUrl) ? (
                   <div className="directory-actions" aria-label={`Contactar con ${item.officialName}`}>
@@ -274,15 +292,10 @@ export function MaginaDirectoryPage() {
 
                 <details className="directory-trust">
                   <summary>Procedencia de la ficha</summary>
-                  {itemCheckedAt ? <p>Última comprobación: {itemCheckedAt}.</p> : (
-                    <p>Esta ficha no tiene una fecha de comprobación fiable.</p>
-                  )}
-                  {item.verificationStatus === 'stale' ? (
-                    <p>La última comprobación supera el intervalo de revisión. Confirma los datos en la fuente antes de usarlos.</p>
-                  ) : null}
-                  {item.verificationStatus === 'unverified' ? (
-                    <p>La entidad aparece en el directorio, pero Mágina Olivo no la presenta como verificada todavía.</p>
-                  ) : null}
+                  {itemCheckedAt ? <p>Última comprobación: {itemCheckedAt}.</p> : <p>Esta ficha no tiene una fecha de comprobación fiable.</p>}
+                  {item.verificationStatus === 'stale' ? <p>La última comprobación supera el intervalo de revisión. Confirma los datos en la fuente antes de usarlos.</p> : null}
+                  {item.verificationStatus === 'unverified' ? <p>La entidad aparece en el directorio, pero Mágina Olivo no la presenta como verificada todavía.</p> : null}
+                  {item.editorial.image?.sourceUrl ? <p><a href={item.editorial.image.sourceUrl} target="_blank" rel="noreferrer noopener">Fuente de la imagen</a></p> : null}
                   {item.sourceUrl ? <p><a href={item.sourceUrl} target="_blank" rel="noreferrer noopener">Ver fuente pública</a></p> : null}
                 </details>
               </article>

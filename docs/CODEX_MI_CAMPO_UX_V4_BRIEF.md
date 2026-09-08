@@ -4,6 +4,10 @@ Fecha: 2026-09-08
 Estado: **brief de ejecución post-staging**  
 Documento de producto obligatorio: `docs/design/MI_CAMPO_UX_V4.md`
 
+> **ACTUALIZACIÓN VISUAL OBLIGATORIA V4.1 — CAMPO CLARO**  
+> Antes de tocar UI, Codex debe leer `docs/design/MI_CAMPO_UI_V4_1_CAMPO_CLARO.md`, `docs/design/MI_CAMPO_SCREEN_CONTRACTS_V4_1.md` y `docs/CODEX_MI_CAMPO_UI_V4_1_BRIEF.md`.  
+> V4 sigue mandando en arquitectura funcional. V4.1 manda en presentación visual, patrón de pantallas, barra inferior, tipografía, densidad, iconografía y consistencia. Las imágenes generadas son referencia conceptual, nunca especificación pixel-perfect.
+
 ---
 
 ## 1. Objetivo
@@ -56,16 +60,23 @@ En este orden:
 1. `AGENTS.md`
 2. `MASTER_PLAN.md`
 3. `docs/design/MI_CAMPO_UX_V4.md`
-4. `docs/design/UX_INFORMATION_ARCHITECTURE_V3.md`
-5. `docs/design/PARCEL_MAP_FIRST_V1.md`
-6. `docs/CODEX_UX_V3_BRIEF.md`
-7. `docs/OFFLINE_SYNC_SPEC.md`
-8. `docs/DESIGN_SYSTEM_V1.md`
-9. `docs/V1_LABOR_CATALOG.md`
-10. `docs/mvp/ACCESSIBILITY_GATE_V1.md`
-11. documentación específica de Catastro/SIGPAC/mapa afectada.
+4. `docs/design/MI_CAMPO_UI_V4_1_CAMPO_CLARO.md`
+5. `docs/design/MI_CAMPO_SCREEN_CONTRACTS_V4_1.md`
+6. `docs/CODEX_MI_CAMPO_UI_V4_1_BRIEF.md`
+7. `docs/design/ACTION_CENTER_V1.md`
+8. `docs/design/CATASTRO_LINK_EXISTING_PLOT_V1.md`
+9. `docs/design/UX_INFORMATION_ARCHITECTURE_V3.md`
+10. `docs/design/PARCEL_MAP_FIRST_V1.md`
+11. `docs/CODEX_UX_V3_BRIEF.md`
+12. `docs/OFFLINE_SYNC_SPEC.md`
+13. `docs/DESIGN_SYSTEM_V1.md`
+14. `docs/V1_LABOR_CATALOG.md`
+15. `docs/mvp/ACCESSIBILITY_GATE_V1.md`
+16. documentación específica de Catastro/SIGPAC/mapa afectada.
 
-Si existe contradicción de navegación entre V1 y V4, V4 manda para la evolución post-staging, pero los invariantes funcionales/seguridad de V1 siguen vigentes.
+Si existe contradicción de navegación entre V1/V3 y V4, V4 manda para la evolución post-staging, pero los invariantes funcionales/seguridad de V1 siguen vigentes.
+
+Si existe contradicción visual entre mockups previos y V4.1, **V4.1 manda**.
 
 ---
 
@@ -102,32 +113,22 @@ No borrar esas capacidades. **Separarlas por intención del usuario.**
 Inicio | Mi Campo | + | Campaña | Más
 ```
 
+Esta barra es única en V4.1. No alternar con variantes `Mágina`, `Descubre`, `Perfil` o `Cooperativas` de prototipos anteriores.
+
 ### Mi Campo
 
-Componentes mínimos:
-
-```text
-FieldHubPage
-  ContextHeader
-  Map/List segmented control
-  FieldMap
-  FieldList
-    FarmGroup
-      ParcelCard
-  AddParcelsAction
-```
-
-No montar formularios completos de finca/parcela/labor directamente debajo.
+Debe evolucionar hacia un índice operativo claro, no una página larga de formularios. Consultar `MI_CAMPO_SCREEN_CONTRACTS_V4_1.md` para el orden exacto de módulos.
 
 ### Finca
 
 ```text
 FarmPage
-  CoverPhoto
+  IdentityHero / CoverPhoto
   FarmSummary
-  FarmMap
   ParcelList
   RecentActivity
+  Status/Attention
+  CampaignSummary
   MultiParcelWorkAction
 ```
 
@@ -135,17 +136,30 @@ FarmPage
 
 ```text
 ParcelPage
-  ParcelHeader
-  CoverPhoto / map access
-  TodaySummary
-    Weather
-    RAIF
-    Campaign
+  IdentityHero / CoverPhoto
+  Map/Catastro access
+  ParcelSummary
+  IrrigationSummary
   AttentionCard
   + Register
-  RecentActivity
   Activity | Harvest | Data | Documents
 ```
+
+### Módulos de gestión
+
+Tareas, Riegos, Tratamientos y Jornales siguen el mismo patrón:
+
+```text
+cabecera compacta
+-> contexto
+-> resumen
+-> CTA primario
+-> relevante/pendiente
+-> últimos registros
+-> historial
+```
+
+No repetir una gran fotografía decorativa en esos módulos.
 
 ---
 
@@ -171,24 +185,29 @@ Ocultar el término técnico `holding` al usuario salvo que un nombre equivalent
 
 ---
 
-## 7. Quick Action Sheet
+## 7. Centro de acciones `+`
 
-Crear una acción central contextual:
+El `+` central es un **Centro de acciones**, no Campaña ni una única acción.
+
+Primera versión:
 
 ```text
-¿Qué quieres registrar?
-
 Trabajo
+Tarea
+Riego
+Tratamiento
+Jornal
+Maquinaria
 Entrega
 Observación
-Tarea
-Foto / documento
+Documento
+Finca/parcela
 ```
 
 Contrato de contexto conceptual:
 
 ```ts
-type WorkContext = {
+type ActionContext = {
   holdingId?: string;
   farmId?: string;
   plotId?: string;
@@ -202,7 +221,8 @@ Reglas:
 - permitir cambiarlo cuando sea válido;
 - no persistir accidentalmente un contexto en otro registro;
 - no crear un megaformulario condicional único;
-- cada acción usa su formulario específico.
+- cada acción usa su formulario específico;
+- una acción abierta desde su módulo y desde `+` debe usar el mismo componente/formulario.
 
 ---
 
@@ -228,6 +248,8 @@ Producto, dosis/cantidad, superficie, coste, maquinaria, fotos, notas, etc. seg�
 No recordar silenciosamente valores peligrosos como dosis o productos fitosanitarios.
 
 Objetivo: labor simple <= 30-45 s.
+
+V4.1 exige una sola acción primaria visible por formulario.
 
 ---
 
@@ -261,6 +283,8 @@ Entradas:
 - GPS;
 - referencia catastral;
 - municipio + polígono + parcela.
+
+Para parcelas ya creadas, soportar `Vincular con Catastro` sin recrearlas, según `CATASTRO_LINK_EXISTING_PLOT_V1.md`.
 
 ### Reutilización
 
@@ -302,7 +326,7 @@ SIGPAC: N recintos
 [Ver fuentes]
 ```
 
-### Añadir parcelas
+### Añadir/vincular parcelas
 
 Aquí sí usar el GIS completo.
 
@@ -337,7 +361,7 @@ Plot -> cover photo + gallery
 Activity/Observation -> evidence photos
 ```
 
-La evolución puede requerir ampliar relaciones genéricas y/o introducir semántica de vínculo (`cover`, `attachment`, `evidence`). Si requiere migración DB, aislarla en una PR funcional de media, no mezclarla con layout.
+V4.1: foto grande solo en **Finca/Parcela**, no como hero repetido en Tareas/Riegos/Jornales/Tratamientos.
 
 ### No fingir offline
 
@@ -349,39 +373,40 @@ El upload actual necesita red. Hasta que exista una cola de archivos segura:
 
 ---
 
-## 12. Finca
+## 12. Riego y alertas segmentadas
 
-No eliminar entidad `farm`.
+La ficha de parcela debe poder almacenar, tras inspección del esquema real:
 
-Debe permitir:
+```text
+riego sí/no
+tipo de riego
+red/comunidad de riego
+sector
+días habituales
+preferencia de avisos
+```
 
-- agrupar parcelas;
-- foto principal;
-- mapa conjunto;
-- superficie/resumen;
-- actividad reciente;
-- trabajo multiparcela;
-- documentos relacionados.
+La solución futura de Admin debe poder enviar una alerta a usuarios/parcelas que coincidan por `red/comunidad + sector`, respetando preferencias y permisos.
 
-Pero no ser paso obligatorio para abrir una parcela desde `Mi Campo`.
+Evitar matching frágil por texto libre si se pretende automatizar destinatarios. Estudiar catálogo con IDs estables para red y sector antes de migrar DB.
 
 ---
 
-## 13. Actividad / timeline
+## 13. Actividad / Cuaderno
 
-Reutilizar el timeline existente de parcela.
+Reutilizar el timeline existente y evolucionarlo hacia historia unificada.
 
-Mover su presentación hacia `ParcelPage > Activity`.
-
-Debe reunir según contratos existentes:
+Debe reunir, según contratos reales:
 
 - labores;
 - observaciones;
-- entregas asociadas cuando proceda;
-- rendimientos;
-- tareas/hitos cuando se integren.
+- tratamientos;
+- riegos;
+- tareas completadas;
+- jornales relacionados;
+- entregas asociadas cuando proceda.
 
-No duplicar los mismos datos en una segunda cronología independiente.
+No crear cronologías paralelas con datos duplicados.
 
 ---
 
@@ -410,7 +435,29 @@ No bloquear `Mi Campo` porque una fuente oficial externa falle.
 
 ---
 
-## 15. Accesibilidad
+## 15. Visual V4.1 obligatorio
+
+Cumplir `MI_CAMPO_UI_V4_1_CAMPO_CLARO.md`:
+
+- menos decoración vegetal;
+- menos cards anidadas;
+- fotografía solo cuando identifica territorio;
+- UI operativa en Inter/system;
+- una sola familia de iconos lineales;
+- un CTA primario por pantalla;
+- semántica de color estable;
+- contexto visible;
+- máximo 3–5 registros recientes antes de `Ver todos`;
+- botones/targets grandes para exterior;
+- no copiar mockups pixel-perfect si dañan accesibilidad o consistencia.
+
+Frase de control:
+
+> **Más campo. Menos interfaz.**
+
+---
+
+## 16. Accesibilidad
 
 Objetivo WCAG 2.2 AA.
 
@@ -425,11 +472,12 @@ Obligatorio:
 - no depender solo de color;
 - lista equivalente al mapa;
 - navegación atrás coherente;
-- mensajes de estado anunciables.
+- mensajes de estado anunciables;
+- reduced motion.
 
 ---
 
-## 16. Offline
+## 17. Offline
 
 Conservar `outbox` y políticas existentes.
 
@@ -446,98 +494,65 @@ Parcelas ya guardadas sí deben poder consultarse desde datos cacheados según l
 
 ---
 
-## 17. Estrategia de PRs
+## 18. Estrategia de PRs
 
-### PR 1 — Field Hub
+Seguir `CODEX_MI_CAMPO_UI_V4_1_BRIEF.md` para la secuencia visual detallada.
 
-Objetivo único:
+En términos funcionales, mantener PRs pequeñas y separadas para:
 
-- reemplazar visualmente la página larga de `Mi Campo` por mapa/lista;
-- conservar llamadas existentes;
-- abrir entidades por navegación interna/deep-link compatible.
+1. foundation/shell;
+2. Mi Campo + Fincas/Parcelas;
+3. Finca + Parcela;
+4. Centro de acciones;
+5. Tareas/Riegos/Tratamientos;
+6. Jornales/Maquinaria/Cuaderno;
+7. Map First/Catastro;
+8. media/fotos;
+9. Admin alertas de riego;
+10. convergencia y limpieza.
 
-No modificar DB.
-
-### PR 2 — Parcel Hub
-
-- ficha parcela;
-- resumen;
-- actividad;
-- cosecha;
-- datos;
-- documentos;
-- extraer/reutilizar timeline.
-
-No implementar Map First todavía.
-
-### PR 3 — Farm Hub
-
-- resumen finca;
-- sus parcelas;
-- mapa conjunto;
-- trabajo multiparcela usando contratos existentes o evolución mínima bien probada.
-
-### PR 4 — Quick Actions
-
-- sheet contextual;
-- formularios separados;
-- contexto preseleccionado.
-
-### PR 5 — Map First
-
-- selector GIS;
-- multiselección;
-- validación server-side;
-- asignación posterior a finca;
-- anti-duplicado;
-- accesibilidad mapa/lista.
-
-### PR 6 — Media
-
-- foto de finca/parcela;
-- vínculo privado;
-- cover/gallery;
-- permisos y errores.
-
-### PR 7 — Convergencia
-
-- retirar componentes/paneles de la ruta diaria solo después de demostrar que sus funciones están accesibles en las nuevas rutas;
-- limpiar estilos huérfanos;
-- regresión completa.
+No mezclar migraciones DB con un simple cambio de layout si puede evitarse.
 
 ---
 
-## 18. Pruebas mínimas por fase
+## 19. Pruebas mínimas
 
-### Field Hub
+### Mi Campo/Finca/Parcela
 
 - 0/1/N fincas;
 - 0/1/N parcelas;
-- mapa/lista sincronizados;
-- abrir parcela desde mapa;
-- abrir parcela desde lista;
+- abrir parcela desde lista/mapa/deep-link;
+- fotos ausentes/presentes;
 - varias explotaciones.
 
-### Parcel Hub
+### Centro +
 
-- timeline;
-- campaña inexistente/activa;
-- sin RAIF/weather;
-- offline;
-- fuente antigua.
+- desde Inicio sin contexto;
+- desde Finca;
+- desde Parcela;
+- cambiar contexto;
+- cerrar sin guardar.
 
-### Map First
+### Map First/Catastro
 
 - RC 14/18/20;
-- búsqueda polígono/parcela;
+- polígono/parcela;
 - GPS denegado;
+- GPS impreciso;
 - Catastro 0/1/N;
 - selección múltiple;
 - duplicado;
 - SIGPAC 1:N;
 - PNOA caído;
-- servidor no verifica;
-- volver atrás sin perder selección local razonable.
+- servidor no verifica.
+
+### Riegos
+
+- parcela sin riego;
+- riego configurado;
+- red/sector;
+- avisos on/off;
+- historial vacío/con datos.
 
 ### Media
 
@@ -547,13 +562,11 @@ No implementar Map First todavía.
 - fallo storage;
 - desconexión;
 - cambiar cover;
-- acceso cruzado entre holdings prohibido.
+- aislamiento entre holdings.
 
 ---
 
-## 19. Gates de regresión
-
-Ejecutar todos los gates existentes relevantes del repositorio.
+## 20. Gates de regresión
 
 No aceptar una pantalla bonita si rompe:
 
@@ -568,26 +581,25 @@ No aceptar una pantalla bonita si rompe:
 
 ---
 
-## 20. Definición de terminado
+## 21. Definición de terminado
 
-La convergencia de `Mi Campo` termina cuando una persona que no conoce el sistema puede completar:
+La convergencia termina cuando una persona que no conoce el sistema puede completar:
 
 ```text
 Entrar
 -> Mi Campo
--> localizar parcela en Catastro
--> seleccionarla
--> crear/asignar finca
--> guardar
--> ver parcela en mapa
--> abrir parcela
--> + Registrar trabajo
--> guardar
--> ver trabajo en actividad
+-> Fincas y parcelas
+-> abrir finca/parcela
+-> ver foto/datos/riego
+-> vincular Catastro por GPS o búsqueda manual
+-> pulsar +
+-> registrar tarea/riego/trabajo
+-> ver el nuevo registro en su módulo
+-> verlo también en el Cuaderno
 ```
 
-sin ayuda y sin pasar por paneles técnicos.
+sin ayuda, sin formularios duplicados y sin pasar por paneles técnicos innecesarios.
 
-La frase objetivo es:
+La frase objetivo funcional sigue siendo:
 
 > `Veo mi campo, pulso mi parcela y apunto lo que he hecho.`

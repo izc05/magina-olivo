@@ -52,6 +52,28 @@ final result: passed
 
 ---
 
+# Design QA — municipio, hero y contexto de finca
+
+## Evidence
+
+- Source visual truth: pantallas móviles de Inicio y Mi Campo facilitadas por el usuario.
+- Rendered implementation: `http://127.0.0.1:5177/`, comprobada en el navegador integrado en vista móvil.
+
+## Comparison history
+
+1. P1: el municipio se elegía mediante un selector permanente sobre el hero. Resuelto con una bienvenida inicial dedicada, persistente y editable posteriormente.
+2. P1: el clima aparecía dentro de una tarjeta blanca superpuesta. Resuelto integrando icono, temperatura, rango y acceso a AEMET directamente sobre la fotografía.
+3. P1: la finca activa solo se recordaba durante la pestaña actual. Resuelto persistiendo la selección por usuario y explotación entre rutas y reinicios.
+4. P2: el alta de explotación aceptaba texto libre para el municipio. Resuelto usando el mismo catálogo municipal que personaliza la experiencia pública.
+
+## Remaining P3 polish
+
+- Incorporar fotografías reales, autorizadas y acreditadas de cada municipio. Hasta disponer de esos archivos se conserva la fotografía territorial licenciada; el componente ya admite una imagen distinta por municipio.
+
+final result: passed
+
+---
+
 # Design QA — Base de administración de plataforma
 
 ## Evidence

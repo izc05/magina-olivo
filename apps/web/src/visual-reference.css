@@ -83,14 +83,16 @@ img { content-visibility: auto; contain-intrinsic-size: 320px 180px; }
 @keyframes hero-sun-drift { from { transform: translate3d(-2%, -1%, 0) scale(1); } to { transform: translate3d(2%, 1%, 0) scale(1.06); } }
 .public-home-v2-hero.sunny .public-home-v2-photo { filter: saturate(1.08) contrast(1.03); }
 .public-home-v2-hero.sunny::after { background: linear-gradient(145deg, rgba(255,214,101,.12), rgba(24,32,19,.2) 74%); }
-.public-home-weather-card.sunny { border-color: rgba(255,220,116,.8); box-shadow: 0 8px 26px rgba(255,191,54,.22), 0 6px 20px #11111116; }
+.public-home-weather-card.sunny { border-color: transparent; box-shadow: none; }
 .weather-orb { position: relative; overflow: visible; }
 .weather-orb::after { content: ''; position: absolute; inset: -7px; border-radius: 50%; background: rgba(255,210,72,.28); filter: blur(8px); animation: orb-pulse 3.5s ease-in-out infinite; z-index: -1; }
 @keyframes orb-pulse { 0%, 100% { transform: scale(.92); opacity: .55; } 50% { transform: scale(1.18); opacity: .95; } }
-.public-home-weather-card { position: static; display: flex; flex-direction: column; gap: 3px; width: fit-content; max-width: 86%; min-width: 165px; padding: 12px 16px; border: 1px solid white; border-radius: 17px; background: #faf9f2f5; color: var(--ink); text-decoration: none; box-shadow: 0 6px 20px #11111116; }
-.public-home-weather-card > span { color: var(--muted); font-size: .85rem; }
+.public-home-weather-card { position: static; display: grid; grid-template-columns:auto auto; align-items:center; gap: 2px 10px; width: fit-content; max-width: 90%; min-width: 165px; padding: 4px 2px; border: 0 !important; border-radius: 0; background: transparent !important; color: white; text-decoration: none; text-shadow: 0 2px 12px rgba(0,0,0,.78); box-shadow: none !important; backdrop-filter:none; }
+.public-home-weather-card > span { color: rgba(255,255,255,.94); font-size: .8rem; font-weight:700; }
 .public-home-weather-card strong { font: 700 2.9rem/1.05 Georgia, serif; }
-.public-home-weather-card small { display: flex; align-items: center; gap: 5px; font-size: .65rem; line-height: 1.4; }
+.public-home-weather-card small { grid-column:2; display: flex; align-items: center; gap: 5px; color:rgba(255,255,255,.9); font-size: .65rem; line-height: 1.4; }
+.weather-hero-icon { grid-row:1 / span 3; width:42px; height:42px; color:#ffe080; filter:drop-shadow(0 3px 8px rgba(0,0,0,.35)); }
+.public-home-weather-card.rainy .weather-hero-icon { color:#ccecff; }
 .home-territory-caption { color: white; text-shadow: 0 2px 10px #000; }
 .home-territory-caption p { margin: 0 0 10px; font: 400 1.5rem/1.05 Georgia, serif; }
 .home-territory-caption small { font-size: .62rem; text-transform: uppercase; letter-spacing: .2em; }
@@ -304,7 +306,7 @@ img { content-visibility: auto; contain-intrinsic-size: 320px 180px; }
   .visual-brand img { width: 50px; height: 56px; }
   .visual-brand strong { font-size: 2rem; }
   .public-home-v2-hero { height: 400px; padding: 28px; }
-  .public-home-weather-card { padding: 18px 22px; min-width: 230px; }
+  .public-home-weather-card { padding: 4px 2px; min-width: 230px; }
   .public-home-weather-card strong { font-size: 3.8rem; }
   .public-home-weather-card small { font-size: .8rem; }
   .home-territory-caption p { font-size: 2.4rem; }

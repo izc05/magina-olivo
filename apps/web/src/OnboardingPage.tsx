@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { api, type Campaign, type Farm, type Holding, type Plot } from './api.ts';
+import { DEFAULT_MUNICIPALITY_SLUG, MUNICIPALITY_VISUALS, municipalityVisual, readPreferredMunicipality, writePreferredMunicipality } from './municipality-visuals.ts';
 
 const SKIP_FARM_KEY = 'magina-onboarding-skip-farm';
 const SKIP_PLOT_KEY = 'magina-onboarding-skip-plot';
@@ -12,6 +13,7 @@ function currentYear(): number {
 }
 
 export function OnboardingPage() {
+  const preferredMunicipality = municipalityVisual(readPreferredMunicipality() ?? DEFAULT_MUNICIPALITY_SLUG);
   const [step, setStep] = useState<Step>(1);
   const [holding, setHolding] = useState<Holding | null>(null);
   const [farm, setFarm] = useState<Farm | null>(null);
@@ -106,6 +108,8 @@ export function OnboardingPage() {
         province: 'Jaén',
         ...(municipality ? { municipality } : {}),
       });
+      const municipalitySlug = MUNICIPALITY_VISUALS.find((item) => item.name === municipality)?.slug;
+      if (municipalitySlug) writePreferredMunicipality(municipalitySlug);
       setHolding(created);
       setStep(2);
     });
@@ -195,7 +199,7 @@ export function OnboardingPage() {
             <p className="login-copy">Solo necesitamos un nombre y, si quieres, tu municipio. Provincia queda preseleccionada como Jaén.</p>
             <form className="form-grid" onSubmit={createHolding} aria-busy={busy}>
               <div className="field"><label htmlFor="holding-name">Nombre de la explotación</label><input id="holding-name" name="name" required maxLength={160} placeholder="Mi olivar" /></div>
-              <div className="field"><label htmlFor="holding-municipality">Municipio</label><input id="holding-municipality" name="municipality" maxLength={120} placeholder="Huelma, Bedmar, Cambil…" /></div>
+              <div className="field"><label htmlFor="holding-municipality">Municipio</label><select id="holding-municipality" name="municipality" defaultValue={preferredMunicipality.name}>{MUNICIPALITY_VISUALS.map((item) => <option key={item.slug} value={item.name}>{item.name}</option>)}</select></div>
               <button className="primary-button" type="submit" disabled={busy}>{busy ? 'Guardando…' : 'Continuar'}</button>
             </form>
           </section>

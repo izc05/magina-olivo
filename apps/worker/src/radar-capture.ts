@@ -2,9 +2,9 @@ import { createHash, randomUUID } from 'node:crypto';
 import type pg from 'pg';
 
 const AEMET_RADAR_PRODUCTS = [
-  { url: 'https://opendata.aemet.es/opendata/api/red/radar/nacional', product: 'national-radar-composite' },
-  // AEMET does not always publish the national composite. Malaga covers Sierra Magina.
+  // Malaga covers Sierra Magina and is more reliable than the optional national composite.
   { url: 'https://opendata.aemet.es/opendata/api/red/radar/regional/ml', product: 'regional-radar-malaga' },
+  { url: 'https://opendata.aemet.es/opendata/api/red/radar/nacional', product: 'national-radar-composite' },
 ] as const;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_FRAMES = 18;

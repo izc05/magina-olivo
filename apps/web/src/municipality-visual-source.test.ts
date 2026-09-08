@@ -23,9 +23,11 @@ test('public home uses one municipality context for selector, weather and hero',
   assert.match(home, /value=\{selectedMunicipality\}/);
   assert.match(home, /setSelectedMunicipality\(slug\)/);
   assert.match(home, /writePreferredMunicipality\(slug\)/);
+  assert.match(home, /writePreferredMunicipality\(holdingMunicipality\)/);
   assert.match(home, /weather\?municipality=\$\{encodeURIComponent\(selectedMunicipality\)\}/);
   assert.match(home, /municipalityHeroSources\(selectedVisual\)/);
   assert.match(home, /resolveMunicipalitySlug\(nextHolding\?\.municipality\)/);
+  assert.match(home, /<PhotoCredit photo=\{selectedVisual\} municipality=\{selectedVisual\.name\} \/>/);
   assert.doesNotMatch(home, /weather\?municipality=bedmar-y-garciez/);
 });
 
@@ -36,6 +38,16 @@ test('weather detail inherits and updates the same municipality preference', asy
   assert.match(weather, /writePreferredMunicipality\(slug\)/);
   assert.match(weather, /onChange=\{\(event\) => selectMunicipality\(event\.target\.value\)\}/);
   assert.doesNotMatch(weather, /useState\('huelma'\)/);
+});
+
+test('municipality photo credits switch only when an approved image is ready', async () => {
+  const chrome = await read('./VisualChrome.tsx');
+  const registry = await read('./municipality-visuals.ts');
+
+  assert.match(chrome, /photo\?\.ready && photo\.photoAuthor && photo\.photoSource && photo\.photoLicense && photo\.photoLicenseUrl/);
+  assert.match(chrome, /Adaptación y recorte WebP para Mágina Olivo/);
+  assert.match(registry, /reviewStatus: 'crop_review'/);
+  assert.match(registry, /photoLicenseUrl:/);
 });
 
 test('municipality assets are gated behind reviewed readiness', async () => {

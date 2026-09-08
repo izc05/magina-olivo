@@ -8,6 +8,31 @@
   gap: 0.9rem;
 }
 
+.catastro-reference-row {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.catastro-reference-row .field {
+  min-width: 0;
+}
+
+.catastro-reference-row .ghost-button {
+  align-self: end;
+}
+
+.catastro-search-actions {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.catastro-help {
+  margin: -0.15rem 0 0;
+  color: var(--muted, #66705c);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
 .catastro-plot-status {
   display: flex;
   flex-wrap: wrap;
@@ -133,6 +158,17 @@
   margin: 0;
   font-size: 0.8rem;
   line-height: 1.4;
+}
+
+@media (min-width: 700px) {
+  .catastro-reference-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+  }
+
+  .catastro-search-actions {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
 }
 
 @media (min-width: 860px) {

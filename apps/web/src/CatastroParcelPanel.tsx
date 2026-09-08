@@ -25,18 +25,18 @@ type CatastroParcel = {
   beginLifespanVersion: string | null;
   geometry: CatastroGeometry;
 };
-type CatastroResponse = {
-  items: CatastroParcel[];
-  source: {
-    provider: string;
-    dataset: string;
-    service: string;
-    status: string;
-    checkedAt: string;
-  };
+type CatastroSource = {
+  provider: string;
+  dataset: string;
+  service: string;
+  status: string;
+  checkedAt: string;
 };
+type CatastroResponse = { items: CatastroParcel[]; source: CatastroSource };
+type CatastroSingleResponse = { item: CatastroParcel; source: CatastroSource };
 type ApiErrorBody = { error?: { message?: string } };
 type Bbox = { minLon: number; minLat: number; maxLon: number; maxLat: number };
+type SearchKind = 'nearby' | 'reference' | 'point' | null;
 
 async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
@@ -113,6 +113,14 @@ function bboxFromPlot(plot: PlotSummary): Bbox | null {
   };
 }
 
+function normalizedReference(value: string): string {
+  return value.replace(/\s+/g, '').toUpperCase();
+}
+
+function validReference(value: string): boolean {
+  return /^(?:[A-Z0-9]{14}|[A-Z0-9]{18}|[A-Z0-9]{20})$/.test(normalizedReference(value));
+}
+
 function formatSurface(value: number | null): string {
   if (value == null || !Number.isFinite(value)) return '—';
   return `${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format(value)} m² · ${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 4 }).format(value / 10_000)} ha`;
@@ -154,10 +162,11 @@ function GeometryPreview({ geometry }: { geometry: CatastroGeometry }) {
 export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; onImported: () => Promise<void> }) {
   const [plots, setPlots] = useState<PlotSummary[]>([]);
   const [plotId, setPlotId] = useState('');
+  const [reference, setReference] = useState('');
   const [items, setItems] = useState<CatastroParcel[]>([]);
   const [selectedId, setSelectedId] = useState('');
-  const [source, setSource] = useState<CatastroResponse['source'] | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [source, setSource] = useState<CatastroSource | null>(null);
+  const [searchKind, setSearchKind] = useState<SearchKind>(null);
   const [importing, setImporting] = useState(false);
   const [confirmImportId, setConfirmImportId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -186,7 +195,16 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
     setConfirmImportId(null);
     setNotice(null);
     setError(null);
-  }, [plotId]);
+    setReference(selectedPlot?.cadastralReference ?? '');
+  }, [plotId, selectedPlot?.cadastralReference]);
+
+  function acceptSingleResult(result: CatastroSingleResponse, message: string) {
+    setItems([result.item]);
+    setSelectedId(result.item.id);
+    setSource(result.source);
+    setReference(result.item.nationalCadastralReference);
+    setNotice(message);
+  }
 
   async function searchParcels() {
     if (!selectedPlot) return;
@@ -196,7 +214,7 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
       return;
     }
 
-    setLoading(true);
+    setSearchKind('nearby');
     setError(null);
     setNotice(null);
     setConfirmImportId(null);
@@ -219,7 +237,55 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
       setSelectedId('');
       setError(reason instanceof Error ? reason.message : 'No se ha podido consultar Catastro.');
     } finally {
-      setLoading(false);
+      setSearchKind(null);
+    }
+  }
+
+  async function searchByReference() {
+    const queryReference = normalizedReference(reference);
+    if (!validReference(queryReference)) {
+      setError('Introduce una referencia catastral válida de 14, 18 o 20 caracteres.');
+      return;
+    }
+    setSearchKind('reference');
+    setError(null);
+    setNotice(null);
+    setConfirmImportId(null);
+    try {
+      const params = new URLSearchParams({ reference: queryReference });
+      const result = await request<CatastroSingleResponse>(`/api/v1/maps/catastro/parcela?${params.toString()}`);
+      acceptSingleResult(result, `Parcela ${result.item.nationalCadastralReference} encontrada y verificada en Catastro.`);
+    } catch (reason) {
+      setItems([]);
+      setSelectedId('');
+      setError(reason instanceof Error ? reason.message : 'No se ha podido buscar la referencia catastral.');
+    } finally {
+      setSearchKind(null);
+    }
+  }
+
+  async function searchAtPlotPoint() {
+    if (!selectedPlot || selectedPlot.longitude == null || selectedPlot.latitude == null) {
+      setError('Sitúa primero un punto de la parcela en el mapa de Mi Campo.');
+      return;
+    }
+    setSearchKind('point');
+    setError(null);
+    setNotice(null);
+    setConfirmImportId(null);
+    try {
+      const params = new URLSearchParams({
+        longitude: String(selectedPlot.longitude),
+        latitude: String(selectedPlot.latitude),
+      });
+      const result = await request<CatastroSingleResponse>(`/api/v1/maps/catastro/parcela-en-punto?${params.toString()}`);
+      acceptSingleResult(result, `Catastro identifica el punto de ${selectedPlot.name} dentro de la parcela ${result.item.nationalCadastralReference}.`);
+    } catch (reason) {
+      setItems([]);
+      setSelectedId('');
+      setError(reason instanceof Error ? reason.message : 'No se ha podido identificar la parcela bajo ese punto.');
+    } finally {
+      setSearchKind(null);
     }
   }
 
@@ -253,13 +319,16 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
 
   if (!plots.length) return null;
 
+  const busy = searchKind !== null;
+  const hasPoint = selectedPlot?.longitude != null && selectedPlot?.latitude != null;
+
   return (
     <section className="section catastro-shell" aria-labelledby="catastro-title">
       <div className="section-heading">
         <div>
           <p className="eyebrow page-eyebrow">Cartografía oficial</p>
           <h2 id="catastro-title" className="section-title">Consulta Catastro</h2>
-          <p className="section-copy">Consulta parcelas catastrales INSPIRE y compáralas con tu parcela de trabajo y con SIGPAC.</p>
+          <p className="section-copy">Busca por referencia, por el punto que has situado en el mapa o por la zona de tu parcela. Después podrás verificar y usar el perímetro oficial.</p>
         </div>
         <span className="badge gold">Oficial · DGC</span>
       </div>
@@ -272,11 +341,39 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
           </select>
         </div>
         <div className="catastro-plot-status">
-          <span>{selectedPlot?.boundaryGeoJson ? 'Perímetro disponible' : selectedPlot?.latitude != null ? 'Punto disponible' : 'Sin localización'}</span>
+          <span>{selectedPlot?.boundaryGeoJson ? 'Perímetro disponible' : hasPoint ? 'Punto disponible' : 'Sin localización'}</span>
           {selectedPlot?.cadastralReference ? <span>RC {selectedPlot.cadastralReference}</span> : null}
           {selectedPlot?.boundaryAreaHa ? <span>{selectedPlot.boundaryAreaHa} ha geométricas</span> : null}
         </div>
-        <button className="primary-button" type="button" onClick={() => void searchParcels()} disabled={loading}>{loading ? 'Consultando Catastro…' : 'Buscar parcelas catastrales cercanas'}</button>
+
+        <div className="catastro-reference-row">
+          <div className="field">
+            <label htmlFor="catastro-reference">Referencia catastral</label>
+            <input
+              id="catastro-reference"
+              value={reference}
+              onChange={(event) => setReference(event.target.value.toUpperCase())}
+              placeholder="14, 18 o 20 caracteres"
+              maxLength={20}
+              autoCapitalize="characters"
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </div>
+          <button className="ghost-button" type="button" onClick={() => void searchByReference()} disabled={busy}>
+            {searchKind === 'reference' ? 'Buscando referencia…' : 'Buscar por referencia'}
+          </button>
+        </div>
+
+        <div className="catastro-search-actions">
+          <button className="ghost-button" type="button" onClick={() => void searchAtPlotPoint()} disabled={busy || !hasPoint}>
+            {searchKind === 'point' ? 'Identificando punto…' : 'Buscar parcela bajo el punto'}
+          </button>
+          <button className="primary-button" type="button" onClick={() => void searchParcels()} disabled={busy}>
+            {searchKind === 'nearby' ? 'Consultando Catastro…' : 'Buscar parcelas catastrales cercanas'}
+          </button>
+        </div>
+        <p className="catastro-help">Para la búsqueda por punto, coloca previamente un punto dentro de tu terreno desde el mapa de Mi Campo. Mágina consulta Catastro en servidor y comprueba qué geometría contiene ese punto.</p>
         <p className="catastro-warning"><strong>Catastro y SIGPAC no son equivalentes.</strong> Pueden tener límites o superficies diferentes. Mágina Olivo los mantiene como fuentes independientes.</p>
         {error ? <div className="alert" role="alert">{error}</div> : null}
         {notice ? <div className="alert success" role="status">{notice}</div> : null}
@@ -286,7 +383,7 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
         <div className="catastro-results-grid">
           <div className="catastro-result-list" role="list" aria-label="Parcelas catastrales encontradas">
             {items.map((item) => (
-              <button key={item.id} type="button" role="listitem" className={`card catastro-result${selected?.id === item.id ? ' active' : ''}`} onClick={() => { setSelectedId(item.id); setConfirmImportId(null); }}>
+              <button key={item.id} type="button" role="listitem" className={`card catastro-result${selected?.id === item.id ? ' active' : ''}`} onClick={() => { setSelectedId(item.id); setReference(item.nationalCadastralReference); setConfirmImportId(null); }}>
                 <strong>{item.nationalCadastralReference}</strong>
                 <span>{formatSurface(item.areaM2)}</span>
                 <small>{item.label ? `Parcela ${item.label}` : 'Parcela catastral'} · alta {formatDate(item.beginLifespanVersion)}</small>
@@ -312,7 +409,7 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
                     {importing ? 'Verificando…' : confirmImportId === selected.id ? 'Confirmar perímetro Catastro' : 'Usar como perímetro'}
                   </button>
                 ) : (
-                  <p className="catastro-unsupported">Esta geometría es compleja. Puede consultarse, pero no se importa automáticamente en V1.</p>
+                  <p className="catastro-unsupported">Esta geometría contiene varios polígonos o huecos. Puede consultarse, pero no se importa automáticamente para evitar perder información catastral.</p>
                 )}
               </div>
             </article>

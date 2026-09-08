@@ -1,11 +1,16 @@
 import type { FastifyInstance } from 'fastify';
 import { canWrite, getFarmAccess } from './authorization.ts';
 import {
+  CatastroParcelNotFoundError,
+  fetchCatastroParcelAtPoint,
   fetchCatastroParcelByReference,
   fetchCatastroParcels,
+  normalizeCadastralReference,
   validateCadastralReference,
   validateCatastroBbox,
+  validateCatastroPoint,
   type CatastroBbox,
+  type CatastroPoint,
 } from './catastro-client.ts';
 import { getPool } from './db.ts';
 import { apiError } from './http-errors.ts';
@@ -18,12 +23,23 @@ type CatastroQuery = {
   maxLon?: string | number;
   maxLat?: string | number;
 };
-
+type CatastroReferenceQuery = { reference?: string };
+type CatastroPointQuery = { longitude?: string | number; latitude?: string | number };
 type PlotParams = { plotId: string };
 type ImportCatastroBody = { cadastralReference: string };
 
 function toNumber(value: string | number | undefined): number {
   return typeof value === 'number' ? value : Number(value);
+}
+
+function catastroSource() {
+  return {
+    provider: 'Dirección General del Catastro',
+    dataset: 'INSPIRE Cadastral Parcel (CP)',
+    service: 'WFS',
+    status: 'continuously-updated',
+    checkedAt: new Date().toISOString(),
+  };
 }
 
 function simplePolygon(geometry: { type: 'Polygon' | 'MultiPolygon'; coordinates: number[][][] | number[][][][] }): GeoJsonPolygon | null {
@@ -56,18 +72,64 @@ export function registerCatastroMapRoutes(app: FastifyInstance): void {
       try {
         const items = await fetchCatastroParcels(bbox);
         reply.header('cache-control', 'private, max-age=300');
-        return {
-          items,
-          source: {
-            provider: 'Dirección General del Catastro',
-            dataset: 'INSPIRE Cadastral Parcel (CP)',
-            service: 'WFS',
-            status: 'continuously-updated',
-            checkedAt: new Date().toISOString(),
-          },
-        };
+        return { items, source: catastroSource() };
       } catch (error) {
         request.log.warn({ err: error }, 'Catastro INSPIRE parcel query failed');
+        return reply.code(502).send(apiError(request, 'CATASTRO_UNAVAILABLE', 'Catastro no está disponible temporalmente'));
+      }
+    },
+  );
+
+  app.get<{ Querystring: CatastroReferenceQuery }>(
+    '/api/v1/maps/catastro/parcela',
+    async (request, reply) => {
+      const session = await getAuthenticatedSession(request);
+      if (!session) {
+        return reply.code(401).send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
+      }
+      const rawReference = request.query.reference ?? '';
+      if (!validateCadastralReference(rawReference)) {
+        return reply.code(400).send(apiError(request, 'INVALID_CADASTRAL_REFERENCE', 'La referencia catastral debe tener 14, 18 o 20 caracteres alfanuméricos'));
+      }
+      const reference = normalizeCadastralReference(rawReference);
+      try {
+        const item = await fetchCatastroParcelByReference(reference);
+        reply.header('cache-control', 'private, max-age=300');
+        return { item, source: catastroSource() };
+      } catch (error) {
+        if (error instanceof CatastroParcelNotFoundError) {
+          return reply.code(404).send(apiError(request, 'CATASTRO_PARCEL_NOT_FOUND', 'Catastro no ha encontrado esa parcela'));
+        }
+        request.log.warn({ err: error, cadastralReference: reference }, 'Catastro reference query failed');
+        return reply.code(502).send(apiError(request, 'CATASTRO_UNAVAILABLE', 'Catastro no está disponible temporalmente'));
+      }
+    },
+  );
+
+  app.get<{ Querystring: CatastroPointQuery }>(
+    '/api/v1/maps/catastro/parcela-en-punto',
+    async (request, reply) => {
+      const session = await getAuthenticatedSession(request);
+      if (!session) {
+        return reply.code(401).send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
+      }
+      const point: CatastroPoint = {
+        longitude: toNumber(request.query.longitude),
+        latitude: toNumber(request.query.latitude),
+      };
+      const validation = validateCatastroPoint(point);
+      if (validation) {
+        return reply.code(400).send(apiError(request, 'INVALID_CATASTRO_POINT', validation));
+      }
+      try {
+        const item = await fetchCatastroParcelAtPoint(point);
+        reply.header('cache-control', 'private, max-age=300');
+        return { item, source: catastroSource() };
+      } catch (error) {
+        if (error instanceof CatastroParcelNotFoundError) {
+          return reply.code(404).send(apiError(request, 'CATASTRO_PARCEL_NOT_FOUND', 'No se ha encontrado una parcela catastral bajo ese punto'));
+        }
+        request.log.warn({ err: error, point }, 'Catastro point query failed');
         return reply.code(502).send(apiError(request, 'CATASTRO_UNAVAILABLE', 'Catastro no está disponible temporalmente'));
       }
     },
@@ -82,7 +144,7 @@ export function registerCatastroMapRoutes(app: FastifyInstance): void {
           additionalProperties: false,
           required: ['cadastralReference'],
           properties: {
-            cadastralReference: { type: 'string', pattern: '^[A-Za-z0-9]{14}$' },
+            cadastralReference: { type: 'string', pattern: '^(?:[A-Za-z0-9]{14}|[A-Za-z0-9]{18}|[A-Za-z0-9]{20})$' },
           },
         },
       },
@@ -92,10 +154,10 @@ export function registerCatastroMapRoutes(app: FastifyInstance): void {
       if (!session) {
         return reply.code(401).send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
       }
-      const reference = request.body.cadastralReference.trim().toUpperCase();
-      if (!validateCadastralReference(reference)) {
+      if (!validateCadastralReference(request.body.cadastralReference)) {
         return reply.code(400).send(apiError(request, 'INVALID_CADASTRAL_REFERENCE', 'Invalid cadastral reference'));
       }
+      const reference = normalizeCadastralReference(request.body.cadastralReference);
 
       const plotResult = await getPool().query<{ farm_id: string; holding_id: string }>(
         'select farm_id, holding_id from plots where id = $1 and active = true',
@@ -118,6 +180,9 @@ export function registerCatastroMapRoutes(app: FastifyInstance): void {
       try {
         official = await fetchCatastroParcelByReference(reference);
       } catch (error) {
+        if (error instanceof CatastroParcelNotFoundError) {
+          return reply.code(404).send(apiError(request, 'CATASTRO_PARCEL_NOT_FOUND', 'No se ha podido encontrar la parcela en Catastro'));
+        }
         request.log.warn({ err: error, cadastralReference: reference }, 'Catastro verified import failed');
         return reply.code(502).send(apiError(request, 'CATASTRO_UNAVAILABLE', 'No se ha podido verificar la parcela en Catastro'));
       }
@@ -126,12 +191,12 @@ export function registerCatastroMapRoutes(app: FastifyInstance): void {
       if (!boundary) {
         return reply.code(409).send(apiError(request, 'CATASTRO_GEOMETRY_UNSUPPORTED', 'La parcela catastral tiene una geometría compleja no importable en esta versión'));
       }
-      const validation = validateBoundary(boundary);
-      if (!validation.ok) {
+      const boundaryValidation = validateBoundary(boundary);
+      if (!boundaryValidation.ok) {
         return reply.code(409).send(apiError(request, 'CATASTRO_GEOMETRY_INVALID', 'La geometría oficial no supera la validación privada de Mágina Olivo'));
       }
 
-      const areaHa = Number(validation.areaHa.toFixed(4));
+      const areaHa = Number(boundaryValidation.areaHa.toFixed(4));
       const checkedAt = new Date();
       const updated = await getPool().query<{
         id: string;

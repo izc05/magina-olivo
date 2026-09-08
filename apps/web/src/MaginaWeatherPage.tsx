@@ -1,6 +1,7 @@
 import { PhotoCredit, VisualHeader } from './VisualChrome';
 import { useEffect, useMemo, useState } from 'react';
 import { WeatherRainAlertSummary } from './WeatherRainAlertSummary';
+import { DEFAULT_MUNICIPALITY_SLUG, readPreferredMunicipality, writePreferredMunicipality } from './municipality-visuals';
 import './weather-radar.css';
 
 type Municipality = {
@@ -117,7 +118,7 @@ function freshnessCopy(freshness: WeatherFreshness): { label: string; detail: st
 
 export function MaginaWeatherPage() {
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
-  const [selectedSlug, setSelectedSlug] = useState('huelma');
+  const [selectedSlug, setSelectedSlug] = useState(() => readPreferredMunicipality() ?? DEFAULT_MUNICIPALITY_SLUG);
   const [weather, setWeather] = useState<WeatherResponse | null>(null);
   const [radar, setRadar] = useState<RadarResponse | null>(null);
   const [radarIndex, setRadarIndex] = useState(0);
@@ -127,6 +128,11 @@ export function MaginaWeatherPage() {
   const [loadingMunicipalities, setLoadingMunicipalities] = useState(true);
   const [loadingWeather, setLoadingWeather] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const selectMunicipality = (slug: string) => {
+    setSelectedSlug(slug);
+    writePreferredMunicipality(slug);
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -141,7 +147,7 @@ export function MaginaWeatherPage() {
     }).then((result) => {
       setMunicipalities(result.items);
       if (!result.items.some((item) => item.slug === selectedSlug) && result.items[0]) {
-        setSelectedSlug(result.items[0].slug);
+        selectMunicipality(result.items[0].slug);
       }
     }).catch((reason) => {
       if (reason instanceof DOMException && reason.name === 'AbortError') return;
@@ -268,7 +274,7 @@ export function MaginaWeatherPage() {
             id="weather-municipality"
             value={selectedSlug}
             disabled={loadingMunicipalities || municipalities.length === 0}
-            onChange={(event) => setSelectedSlug(event.target.value)}
+            onChange={(event) => selectMunicipality(event.target.value)}
           >
             {municipalities.map((item) => (
               <option key={item.slug} value={item.slug}>

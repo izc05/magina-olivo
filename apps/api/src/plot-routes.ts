@@ -3,7 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { canWrite, getFarmAccess } from './authorization.ts';
 import { getPool } from './db.ts';
 import { apiError } from './http-errors.ts';
-import { type BoundarySource, type GeoJsonPolygon, validateBoundary } from './plot-boundary-geometry.ts';
+import { type BoundarySource, type GeoJsonBoundary, type GeoJsonPolygon, validateBoundary } from './plot-boundary-geometry.ts';
 import { getAuthenticatedSession } from './session.ts';
 
 type FarmParams = { farmId: string };
@@ -37,7 +37,7 @@ type PlotRow = {
   cadastral_reference: string | null;
   latitude: number | null;
   longitude: number | null;
-  boundary_geojson: GeoJsonPolygon | null;
+  boundary_geojson: GeoJsonBoundary | null;
   boundary_area_ha: string | null;
   boundary_source: BoundarySource | null;
   boundary_updated_at: Date | null;
@@ -47,6 +47,22 @@ type PlotRow = {
   olive_tree_count: number | null;
   notes: string | null;
   created_at: Date;
+  updated_at: Date;
+};
+
+type OfficialBoundarySourceRow = {
+  source: 'catastro' | 'sigpac';
+  external_id: string;
+  reference: string | null;
+  geometry_geojson: GeoJsonBoundary;
+  calculated_area_ha: string;
+  provider_area_m2: string | null;
+  provider: string;
+  dataset: string;
+  service: string;
+  source_version: string | null;
+  checked_at: Date;
+  metadata_json: Record<string, unknown>;
   updated_at: Date;
 };
 
@@ -80,7 +96,25 @@ function serializePlot(row: PlotRow) {
   };
 }
 
-async function getWritablePlotAccess(userId: string, plotId: string) {
+function serializeOfficialBoundarySource(row: OfficialBoundarySourceRow) {
+  return {
+    source: row.source,
+    externalId: row.external_id,
+    reference: row.reference,
+    geometryGeoJson: row.geometry_geojson,
+    calculatedAreaHa: row.calculated_area_ha,
+    providerAreaM2: row.provider_area_m2,
+    provider: row.provider,
+    dataset: row.dataset,
+    service: row.service,
+    sourceVersion: row.source_version,
+    checkedAt: row.checked_at,
+    metadata: row.metadata_json,
+    updatedAt: row.updated_at,
+  };
+}
+
+async function getPlotAccess(userId: string, plotId: string) {
   const plotLookup = await getPool().query<{ farm_id: string; holding_id: string }>(
     'select farm_id, holding_id from plots where id = $1 and active = true',
     [plotId],
@@ -116,6 +150,31 @@ export function registerPlotRoutes(app: FastifyInstance): void {
       );
 
       return { items: result.rows.map(serializePlot) };
+    },
+  );
+
+  app.get<{ Params: PlotParams }>(
+    '/api/v1/plots/:plotId/boundary-sources',
+    async (request, reply) => {
+      const session = await getAuthenticatedSession(request);
+      if (!session) {
+        return reply.code(401).send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
+      }
+      const resolved = await getPlotAccess(session.user.id, request.params.plotId);
+      if (!resolved) {
+        return reply.code(404).send(apiError(request, 'PLOT_NOT_FOUND', 'Plot not found'));
+      }
+
+      const result = await getPool().query<OfficialBoundarySourceRow>(
+        `select source, external_id, reference, geometry_geojson, calculated_area_ha,
+                provider_area_m2, provider, dataset, service, source_version,
+                checked_at, metadata_json, updated_at
+         from plot_official_boundary_sources
+         where plot_id = $1
+         order by source asc`,
+        [request.params.plotId],
+      );
+      return { items: result.rows.map(serializeOfficialBoundarySource) };
     },
   );
 
@@ -219,7 +278,7 @@ export function registerPlotRoutes(app: FastifyInstance): void {
         return reply.code(400).send(apiError(request, 'INCOMPLETE_PLOT_LOCATION', 'Latitude and longitude must be provided together'));
       }
 
-      const resolved = await getWritablePlotAccess(session.user.id, request.params.plotId);
+      const resolved = await getPlotAccess(session.user.id, request.params.plotId);
       if (!resolved) {
         return reply.code(404).send(apiError(request, 'PLOT_NOT_FOUND', 'Plot not found'));
       }
@@ -305,7 +364,7 @@ export function registerPlotRoutes(app: FastifyInstance): void {
         return reply.code(400).send(apiError(request, 'INCOMPLETE_PLOT_BOUNDARY', 'Boundary and source must be provided together'));
       }
 
-      const resolved = await getWritablePlotAccess(session.user.id, request.params.plotId);
+      const resolved = await getPlotAccess(session.user.id, request.params.plotId);
       if (!resolved) {
         return reply.code(404).send(apiError(request, 'PLOT_NOT_FOUND', 'Plot not found'));
       }

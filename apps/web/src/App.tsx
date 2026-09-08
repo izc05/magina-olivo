@@ -670,7 +670,7 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
 
       {selectedFarm && selectedHolding && showMapWorkspace ? (
         <>
-          <button type="button" className="field-back-button" onClick={() => openFieldView('home')}><ChevronLeft aria-hidden="true" /> Mi Campo</button>
+          <FieldFlowNav farmName={selectedFarm.name} current="mapa" backHref="/mi-campo" nextHref="/mi-campo/parcelas" nextLabel="Parcelas" />
           <section className="field-map-workspace" id="mapa-parcelas" aria-labelledby="field-map-workspace-title">
             <div className="field-map-workspace-heading">
               <div><p className="eyebrow">{selectedFarm.name} · Mi Campo</p><h1 id="field-map-workspace-title">Mapa de parcelas</h1><p>Trabaja con GPS, ortofoto PNOA, relieve y fuentes oficiales sin perder el contexto de tu finca.</p></div>
@@ -684,7 +684,7 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
 
       {selectedFarm && selectedHolding && showFarmDetail && !showMapWorkspace ? (
         <>
-          <button type="button" className="field-back-button" onClick={() => openFieldView('home')}><ChevronLeft aria-hidden="true" /> Mi Campo</button>
+          <FieldFlowNav farmName={selectedFarm.name} current={fieldView === 'plots' ? 'parcelas' : fieldView === 'notebook' || fieldView === 'treatments' || fieldView === 'irrigation' ? 'cuaderno' : 'finca'} backHref="/mi-campo" nextHref={fieldView === 'plots' ? '/mi-campo/mapa' : fieldView === 'notebook' || fieldView === 'treatments' || fieldView === 'irrigation' ? '/mi-campo/recursos' : '/mi-campo/parcelas'} nextLabel={fieldView === 'plots' ? 'Mapa' : fieldView === 'notebook' || fieldView === 'treatments' || fieldView === 'irrigation' ? 'Recursos' : 'Parcelas'} />
           <section className="farm-detail-card" aria-labelledby="selected-farm-title">
             <div>
               <p className="eyebrow">Finca activa</p>
@@ -732,6 +732,11 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
       ) : null}
     </>
   );
+}
+
+function FieldFlowNav({ farmName, current, backHref, nextHref, nextLabel }: { farmName: string; current: 'finca' | 'parcelas' | 'mapa' | 'cuaderno'; backHref: string; nextHref: string; nextLabel: string }) {
+  const steps = [{ key: 'finca', label: 'Resumen', href: '/mi-campo' }, { key: 'parcelas', label: 'Parcelas', href: '/mi-campo/parcelas' }, { key: 'mapa', label: 'Mapa', href: '/mi-campo/mapa' }, { key: 'cuaderno', label: 'Cuaderno', href: '/mi-campo/cuaderno' }] as const;
+  return <div className="field-flow-nav"><div className="field-flow-nav-top"><a className="field-back-button" href={backHref}><ChevronLeft aria-hidden="true" /> Mi Campo</a><span className="field-flow-context">Finca · {farmName}</span><a className="field-flow-next" href={nextHref}>Siguiente: {nextLabel}<ChevronRight aria-hidden="true" /></a></div><nav aria-label="Navegación de la finca" className="field-flow-steps">{steps.map((step, index) => <a key={step.key} className={step.key === current ? 'active' : ''} href={step.href}><span>{index + 1}</span>{step.label}</a>)}</nav></div>;
 }
 
 function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelectedCampaignId, selectedCampaign, farms, deliveries, summary, busy, runAction, reloadHoldingData, reloadCampaign }: { selectedHolding: Holding | null; campaigns: Campaign[]; selectedCampaignId: string; setSelectedCampaignId: (id: string) => void; selectedCampaign: Campaign | null; farms: Farm[]; deliveries: Delivery[]; summary: CampaignSummary | null; busy: boolean; runAction: ActionRunner; reloadHoldingData: () => Promise<void>; reloadCampaign: () => Promise<void> }) {

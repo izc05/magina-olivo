@@ -16,10 +16,11 @@ import { CampaignDocuments } from './CampaignDocuments.tsx';
 import { DeliveryEntryCard, DeliveryTicketButton } from './DeliveryEntryCard.tsx';
 import { FieldNotebook } from './FieldNotebook.tsx';
 import { MaginaPrivateHub } from './MaginaPrivateHub.tsx';
+import { LoyaltyOlivePage } from './LoyaltyOlivePage.tsx';
 import { OfflineColdStart } from './OfflineColdStart.tsx';
 import { listPendingOperations } from './offline/outbox.ts';
 
-type Tab = 'home' | 'field' | 'campaign' | 'magina' | 'more';
+type Tab = 'home' | 'field' | 'campaign' | 'magina' | 'loyalty' | 'more';
 type SessionState = 'checking' | 'signed_out' | 'signed_in' | 'offline_locked';
 type ActionRunner = (action: () => Promise<void>) => Promise<void>;
 
@@ -331,6 +332,7 @@ export function App() {
           />
         ) : null}
         {tab === 'magina' ? <MaginaPrivateHub /> : null}
+        {tab === 'loyalty' ? <LoyaltyOlivePage /> : null}
         {tab === 'more' ? <MoreTab user={user} holding={selectedHolding} busy={busy} onSignOut={() => void signOut()} /> : null}
       </main>
 
@@ -339,7 +341,7 @@ export function App() {
         <NavButton active={tab === 'field'} icon="◒" label="Mi Campo" onClick={() => setTab('field')} />
         <button type="button" className={`nav-plus${tab === 'campaign' ? ' active' : ''}`} onClick={() => setTab('campaign')} aria-label="Campaña y nueva entrega" aria-current={tab === 'campaign' ? 'page' : undefined}><span aria-hidden="true">+</span></button>
         <NavButton active={tab === 'magina'} icon="◇" label="Mágina" onClick={() => setTab('magina')} />
-        <NavButton active={tab === 'more'} icon="•••" label="Mi Mágina" onClick={() => setTab('more')} />
+        <NavButton active={tab === 'loyalty'} icon="🫒" label="Mi Olivo" onClick={() => setTab('loyalty')} />
       </nav>
     </div>
   );
@@ -373,6 +375,18 @@ function HomeTab({ holding, campaign, summary, coverage, onNavigate }: { holding
       <section className="section">
         <div className="section-heading"><div><h2 className="section-title">Hoy en tu olivar</h2><p className="section-copy">Prioridades reales de campaña, sin ruido.</p></div></div>
         <article className="card list-card"><div className="list-card-main"><p className="list-card-title">Rendimientos pendientes</p><p className="list-card-meta">Añade el resultado cuando te lo facilite la almazara.</p></div><span className="badge gold">{summary?.pendingResultCount ?? 0}</span></article>
+      </section>
+      <section className="section">
+        <button type="button" className="card list-card interactive" onClick={() => onNavigate('loyalty')} style={{ width: '100%', textAlign: 'left', background: 'linear-gradient(135deg, rgba(32, 61, 42, 0.05), rgba(184, 137, 45, 0.08))', border: '1px solid var(--line)' }}>
+          <div className="list-card-main">
+            <p className="eyebrow" style={{ color: 'var(--olive-650, #5c7a46)', margin: 0 }}>Mágina Olivo · Fidelización</p>
+            <p className="list-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
+              <span>Tu Olivo</span>
+              <span className="badge gold">🫒 Ver progreso</span>
+            </p>
+            <p className="list-card-meta">Carga aceitunas completando labores y entregas en tu olivar.</p>
+          </div>
+        </button>
       </section>
     </>
   );

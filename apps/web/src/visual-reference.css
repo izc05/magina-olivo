@@ -36,6 +36,7 @@ p { line-height: 1.5; }
 :where(main, section, div)[id] { scroll-margin-top: 20px; }
 :where(a, button, summary) { -webkit-tap-highlight-color: transparent; }
 summary { cursor: pointer; }
+img { content-visibility: auto; contain-intrinsic-size: 320px 180px; }
 
 /* A single brand lockup across public and private screens. */
 .visual-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 71px; padding: 10px 0 12px; }

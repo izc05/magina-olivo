@@ -105,7 +105,7 @@ export function parseAemetHourlyForecast(municipalityCode: string, payload: unkn
       const at = (values?: AemetHourlyValue[]) => values?.find((item) => item.periodo === period);
       const wind = day.vientoAndRachaMax?.find((item) => item.periodo === period);
       hours.push({
-        dateTime: `${day.fecha}T${period}:00:00`,
+        dateTime: `${day.fecha.split('T', 1)[0]}T${period}:00:00`,
         skyDescription: at(day.estadoCielo)?.descripcion?.trim() || null,
         precipitationProbabilityPercent: finiteNumber(at(day.probPrecipitacion)?.value),
         temperatureC: finiteNumber(temperature.value),

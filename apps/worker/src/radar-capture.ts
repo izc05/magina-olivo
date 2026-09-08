@@ -1,7 +1,11 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type pg from 'pg';
 
-const AEMET_RADAR_URL = 'https://opendata.aemet.es/opendata/api/red/radar/nacional';
+const AEMET_RADAR_PRODUCTS = [
+  { url: 'https://opendata.aemet.es/opendata/api/red/radar/nacional', product: 'national-radar-composite' },
+  // AEMET does not always publish the national composite. Malaga covers Sierra Magina.
+  { url: 'https://opendata.aemet.es/opendata/api/red/radar/regional/ml', product: 'regional-radar-malaga' },
+] as const;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_FRAMES = 18;
 const ALLOWED_IMAGE_TYPES = new Set(['image/png', 'image/gif', 'image/jpeg', 'image/webp']);
@@ -63,22 +67,23 @@ async function readBodyWithinLimit(response: Response, maxBytes: number): Promis
   return Buffer.concat(chunks, totalBytes);
 }
 
-export async function captureRadarFrame(pool: pg.Pool): Promise<{ inserted: boolean; hash: string }> {
-  const endpoint = new URL(AEMET_RADAR_URL);
-  endpoint.searchParams.set('api_key', aemetApiKey());
-
-  const metadataResponse = await fetchWithTimeout(endpoint);
-  if (!metadataResponse.ok) {
-    throw new Error(`AEMET radar metadata HTTP ${metadataResponse.status}`);
+export async function captureRadarFrame(pool: pg.Pool): Promise<{ inserted: boolean; hash: string; product: string }> {
+  const apiKey = aemetApiKey();
+  let selected: { imageUrl: URL; product: string } | null = null;
+  for (const candidate of AEMET_RADAR_PRODUCTS) {
+    const endpoint = new URL(candidate.url);
+    endpoint.searchParams.set('api_key', apiKey);
+    const metadataResponse = await fetchWithTimeout(endpoint);
+    if (!metadataResponse.ok) continue;
+    const envelope = await metadataResponse.json() as AemetEnvelope;
+    if (Number(envelope.estado) === 200 && typeof envelope.datos === 'string' && envelope.datos) {
+      selected = { imageUrl: validateAemetDataUrl(envelope.datos), product: candidate.product };
+      break;
+    }
   }
+  if (!selected) throw new Error('AEMET radar metadata did not include a usable image URL');
 
-  const envelope = await metadataResponse.json() as AemetEnvelope;
-  if (Number(envelope.estado) !== 200 || typeof envelope.datos !== 'string' || !envelope.datos) {
-    throw new Error('AEMET radar metadata did not include a usable image URL');
-  }
-
-  const imageUrl = validateAemetDataUrl(envelope.datos);
-  const imageResponse = await fetchWithTimeout(imageUrl);
+  const imageResponse = await fetchWithTimeout(selected.imageUrl);
   if (!imageResponse.ok) {
     throw new Error(`AEMET radar image HTTP ${imageResponse.status}`);
   }
@@ -102,11 +107,11 @@ export async function captureRadarFrame(pool: pg.Pool): Promise<{ inserted: bool
       insert into weather_radar_frames (
         id, captured_at, image_sha256, content_type, image_data, provider, source_product
       )
-      values ($1, now(), $2, $3, $4, 'AEMET OpenData', 'national-radar-composite')
+      values ($1, now(), $2, $3, $4, 'AEMET OpenData', $5)
       on conflict (image_sha256) do nothing
       returning id
     `,
-    [randomUUID(), hash, contentType, image],
+    [randomUUID(), hash, contentType, image, selected.product],
   );
 
   await pool.query(
@@ -122,5 +127,5 @@ export async function captureRadarFrame(pool: pg.Pool): Promise<{ inserted: bool
     [MAX_FRAMES],
   );
 
-  return { inserted: inserted.rowCount === 1, hash };
+  return { inserted: inserted.rowCount === 1, hash, product: selected.product };
 }

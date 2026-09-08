@@ -17,6 +17,20 @@ import './municipality-hero.css';
 type PublicSource = { key: string; provider: string; hasError: boolean };
 type WeatherDay = { temperatureMinC: number | null; temperatureMaxC: number | null; precipitationProbabilityPercent: number | null };
 type Weather = { municipality: { slug?: string; name: string }; forecast: { days: WeatherDay[] } };
+type WeatherHour = { dateTime: string; precipitationProbabilityPercent: number | null; temperatureC: number | null };
+type HourlyWeather = { forecast: { elaboratedAt: string | null; hours: WeatherHour[] } };
+
+const WEATHER_REFRESH_MS = 10 * 60 * 1000;
+
+function closestWeatherHour(hours: WeatherHour[]): WeatherHour | null {
+  const now = Date.now();
+  return hours.reduce<WeatherHour | null>((closest, hour) => {
+    const time = new Date(hour.dateTime).getTime();
+    if (!Number.isFinite(time)) return closest;
+    if (!closest) return hour;
+    return Math.abs(time - now) < Math.abs(new Date(closest.dateTime).getTime() - now) ? hour : closest;
+  }, null);
+}
 
 const services = [
   ['Tiempo', 'Predicción AEMET por municipio, radar y ventana útil para planificar.', '/magina/tiempo', 'aemet'],
@@ -47,6 +61,7 @@ export function PublicHomePage() {
   const selectionIsExplicit = useRef(initialMunicipality !== null);
   const [sources, setSources] = useState<PublicSource[]>([]);
   const [weather, setWeather] = useState<Weather | null>(null);
+  const [hourlyWeather, setHourlyWeather] = useState<HourlyWeather | null>(null);
   const [holding, setHolding] = useState<Holding | null>(null);
 
   useEffect(() => {
@@ -72,15 +87,27 @@ export function PublicHomePage() {
   }, []);
 
   useEffect(() => {
-    const controller = new AbortController();
+    let controller = new AbortController();
     setWeather(null);
-    void fetch(`/api/v1/public/weather?municipality=${encodeURIComponent(selectedMunicipality)}`, { headers: { accept: 'application/json' }, signal: controller.signal })
-      .then(async (response) => response.ok ? response.json() as Promise<Weather> : Promise.reject(new Error('weather')))
-      .then((result) => {
-        const responseMunicipality = resolveMunicipalitySlug(result.municipality.slug ?? result.municipality.name);
-        setWeather(responseMunicipality === selectedMunicipality ? result : null);
-      }).catch(() => setWeather(null));
-    return () => controller.abort();
+    setHourlyWeather(null);
+    const loadWeather = () => {
+      controller.abort();
+      controller = new AbortController();
+      const options = { headers: { accept: 'application/json' }, signal: controller.signal, cache: 'no-store' as RequestCache };
+      void Promise.allSettled([
+        fetch(`/api/v1/public/weather?municipality=${encodeURIComponent(selectedMunicipality)}`, options).then((response) => response.ok ? response.json() as Promise<Weather> : Promise.reject()),
+        fetch(`/api/v1/public/weather/hourly?municipality=${encodeURIComponent(selectedMunicipality)}`, options).then((response) => response.ok ? response.json() as Promise<HourlyWeather> : Promise.reject()),
+      ]).then(([daily, hourly]) => {
+        if (daily.status === 'fulfilled') setWeather(daily.value);
+        if (hourly.status === 'fulfilled') setHourlyWeather(hourly.value);
+      });
+    };
+    const refreshWhenVisible = () => { if (document.visibilityState === 'visible') loadWeather(); };
+    loadWeather();
+    const timer = window.setInterval(loadWeather, WEATHER_REFRESH_MS);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    window.addEventListener('online', loadWeather);
+    return () => { controller.abort(); window.clearInterval(timer); document.removeEventListener('visibilitychange', refreshWhenVisible); window.removeEventListener('online', loadWeather); };
   }, [selectedMunicipality]);
 
   const selectedVisual = municipalityVisual(selectedMunicipality);
@@ -90,10 +117,13 @@ export function PublicHomePage() {
     '--municipality-mobile-position': selectedVisual.objectPositionMobile,
   } as CSSProperties;
   const today = weather?.forecast.days[0];
+  const currentHour = closestWeatherHour(hourlyWeather?.forecast.hours ?? []);
   const weatherTitle = selectedVisual.name;
-  const weatherTemperature = today?.temperatureMaxC == null ? '—' : `${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format(today.temperatureMaxC)}°`;
-  const weatherRange = today?.temperatureMinC == null ? 'Predicción no disponible' : `Máx. ${weatherTemperature} · Mín. ${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format(today.temperatureMinC)}°`;
-  const weatherMood = (today?.precipitationProbabilityPercent ?? 0) >= 55 ? 'rainy' : (today?.precipitationProbabilityPercent ?? 0) >= 25 ? 'partly' : 'sunny';
+  const currentTemperature = currentHour?.temperatureC ?? null;
+  const weatherTemperature = currentTemperature == null ? '—' : `${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format(currentTemperature)}°`;
+  const weatherRange = today?.temperatureMinC == null || today.temperatureMaxC == null ? 'Predicción no disponible' : `Máx. ${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format(today.temperatureMaxC)}° · Mín. ${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format(today.temperatureMinC)}°`;
+  const currentRain = currentHour?.precipitationProbabilityPercent ?? today?.precipitationProbabilityPercent ?? 0;
+  const weatherMood = currentRain >= 55 ? 'rainy' : currentRain >= 25 ? 'partly' : 'sunny';
   const nearby = [
     { title: 'Ayuntamiento', copy: `Información y trámites de ${weatherTitle}`, href: '/descubre/servicios', icon: Landmark, tone: 'gold' },
     { title: 'Cooperativas', copy: `Almazaras cercanas a ${weatherTitle}`, href: '/magina/directorio', icon: Building2, tone: 'green' },
@@ -130,11 +160,11 @@ export function PublicHomePage() {
           <MapPin size={16} aria-hidden="true" />
           <span>{selectedVisual.name}</span><small>Cambiar</small>
         </button>
-        <a href="/magina/tiempo" className={`public-home-weather-card ${weatherMood}`} aria-live="polite"><WeatherIcon className="weather-hero-icon" aria-hidden="true" /><span>Ahora en {weatherTitle}</span><strong>{weatherTemperature}</strong><small>{weatherRange}</small>{weather ? <small>AEMET · Ver previsión <ChevronRight size={14} aria-hidden="true" /></small> : <small>Consultar previsión <ChevronRight size={14} aria-hidden="true" /></small>}</a>
+        <a href="/magina/tiempo" className={`public-home-weather-card ${weatherMood}`} aria-live="polite"><WeatherIcon className="weather-hero-icon" aria-hidden="true" /><span>Ahora en {weatherTitle}</span><strong>{weatherTemperature}</strong><small>{weatherRange}</small>{hourlyWeather ? <small>Previsión horaria AEMET · automática <ChevronRight size={14} aria-hidden="true" /></small> : <small>Consultar previsión <ChevronRight size={14} aria-hidden="true" /></small>}</a>
         <div className="home-territory-caption"><p>Nuestra tierra,<br />tu mejor cosecha</p><small>{selectedVisual.name} · Sierra Mágina</small></div>
       </section>
       <section className="home-highlight-grid" aria-label={`Resumen de ${selectedVisual.name}`}>
-        <a className="home-highlight weather" href="/magina/tiempo"><span>Ahora en {weatherTitle}</span><strong>{weatherTemperature}</strong><small>{today?.precipitationProbabilityPercent == null ? 'Consulta la previsión' : `${today.precipitationProbabilityPercent}% prob. lluvia`}</small></a>
+        <a className="home-highlight weather" href="/magina/tiempo"><span>Ahora en {weatherTitle}</span><strong>{weatherTemperature}</strong><small>{currentHour?.precipitationProbabilityPercent == null ? 'Consulta la previsión' : `${currentHour.precipitationProbabilityPercent}% prob. lluvia ahora`}</small></a>
         <a className="home-highlight market" href="/magina/mercado"><span>AOVE y mercado</span><strong>Ver evolución</strong><i aria-hidden="true"><b /><b /><b /><b /><b /></i><small>Datos públicos con fecha</small></a>
         <a className="home-highlight territory" href="/descubre"><span>Descubre</span><strong>{selectedVisual.name}</strong><small>Sierra Mágina, rutas y aceite</small></a>
       </section>

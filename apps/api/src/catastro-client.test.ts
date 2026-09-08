@@ -2,10 +2,13 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   buildCatastroBboxUrl,
+  buildCatastroPointUrl,
   buildCatastroReferenceUrl,
+  parseCatastroCoordinateJson,
   parseCatastroGml,
   validateCadastralReference,
   validateCatastroBbox,
+  validateCatastroPoint,
 } from './catastro-client.ts';
 
 test('Catastro adapter builds a bounded official WFS query in Web Mercator', () => {
@@ -35,9 +38,51 @@ test('Catastro adapter supports verified stored query by 14-character parcel ref
   assert.equal(url.searchParams.get('srsName'), 'EPSG::3857');
 });
 
-test('Catastro adapter rejects oversized or inverted bbox queries', () => {
+test('Catastro point adapter builds exact and nearby official coordinate queries', () => {
+  const point = { longitude: -3.4562418, latitude: 38.6196566 };
+  assert.equal(validateCatastroPoint(point), null);
+
+  const exact = new URL(buildCatastroPointUrl(point));
+  assert.equal(exact.origin, 'https://ovc.catastro.meh.es');
+  assert.match(exact.pathname, /COVCCoordenadas\.svc\/json\/Consulta_RCCOOR$/);
+  assert.equal(exact.searchParams.get('SRS'), 'EPSG:4326');
+  assert.equal(exact.searchParams.get('CoorX'), String(point.longitude));
+  assert.equal(exact.searchParams.get('CoorY'), String(point.latitude));
+
+  const nearby = new URL(buildCatastroPointUrl(point, true));
+  assert.match(nearby.pathname, /Consulta_RCCOOR_Distancia$/);
+});
+
+test('Catastro coordinate JSON parser extracts 14-character parcel references without depending on one response wrapper', () => {
+  const response = {
+    consulta_coordenadas: {
+      coordenadas: {
+        coord: {
+          pc: { pc1: '13077A0', pc2: '1800039' },
+          ldt: 'DS DISEMINADO',
+        },
+      },
+    },
+  };
+  assert.deepEqual(parseCatastroCoordinateJson(response), ['13077A01800039']);
+
+  const nearby = {
+    coordenadas_distancias: {
+      coordd: {
+        lpcd: [
+          { pc: { pc1: '13077A0', pc2: '1800039' } },
+          { refcat: '03065A04600062' },
+        ],
+      },
+    },
+  };
+  assert.deepEqual(parseCatastroCoordinateJson(nearby), ['13077A01800039', '03065A04600062']);
+});
+
+test('Catastro adapter rejects oversized, inverted or invalid point queries', () => {
   assert.match(validateCatastroBbox({ minLon: -3.5, minLat: 37.7, maxLon: -3.4, maxLat: 37.71 }) ?? '', /maximum span/);
   assert.match(validateCatastroBbox({ minLon: -3.4, minLat: 37.7, maxLon: -3.5, maxLat: 37.71 }) ?? '', /inverted/);
+  assert.match(validateCatastroPoint({ longitude: 0, latitude: 90 }) ?? '', /outside/);
 });
 
 test('Catastro GML is normalized to WGS84 geometry and safe public fields', () => {

@@ -47,11 +47,35 @@ function visual(slug: string, name: string, aliases: readonly string[] = [], met
 }
 
 export const MUNICIPALITY_VISUALS = [
-  visual('albanchez-de-magina', 'Albanchez de Mágina'),
-  visual('bedmar-y-garciez', 'Bedmar y Garcíez', ['Bedmar', 'Garcíez']),
-  visual('belmez-de-la-moraleda', 'Bélmez de la Moraleda'),
+  visual('albanchez-de-magina', 'Albanchez de Mágina', [], {
+    reviewStatus: 'crop_review',
+    photoAuthor: 'Veinticuatro de Jahén',
+    photoSource: 'https://commons.wikimedia.org/wiki/File:Albanchez_de_M%C3%A1gina,_en_Ja%C3%A9n_(Espa%C3%B1a).jpg',
+    photoLicense: 'CC BY-SA 4.0',
+    photoLicenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+  }),
+  visual('bedmar-y-garciez', 'Bedmar y Garcíez', ['Bedmar', 'Garcíez'], {
+    reviewStatus: 'crop_review',
+    photoAuthor: 'Feranza',
+    photoSource: 'https://commons.wikimedia.org/wiki/File:Bedmar,_en_el_municipio_de_Bedmar_y_Garc%C3%ADez_(Ja%C3%A9n,_Espa%C3%B1a).jpg',
+    photoLicense: 'CC BY-SA 3.0',
+    photoLicenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
+  }),
+  visual('belmez-de-la-moraleda', 'Bélmez de la Moraleda', [], {
+    reviewStatus: 'crop_review',
+    photoAuthor: 'Veinticuatro de Jahén',
+    photoSource: 'https://commons.wikimedia.org/wiki/File:B%C3%A9lmez_de_la_Moraleda,_en_Ja%C3%A9n_(Espa%C3%B1a).jpg',
+    photoLicense: 'CC BY-SA 4.0',
+    photoLicenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+  }),
   visual('cabra-del-santo-cristo', 'Cabra del Santo Cristo'),
-  visual('cambil', 'Cambil', ['Arbuniel', 'Cambil-Arbuniel']),
+  visual('cambil', 'Cambil', ['Arbuniel', 'Cambil-Arbuniel'], {
+    reviewStatus: 'crop_review',
+    photoAuthor: 'Veinticuatro de Jahén',
+    photoSource: 'https://commons.wikimedia.org/wiki/File:Cambil,_en_Ja%C3%A9n_(Espa%C3%B1a).jpg',
+    photoLicense: 'CC BY-SA 4.0',
+    photoLicenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+  }),
   visual('campillo-de-arenas', 'Campillo de Arenas'),
   visual('carcheles', 'Cárcheles', ['Carchelejo', 'Cárchel']),
   visual('guardia-de-jaen', 'La Guardia de Jaén', ['Guardia de Jaén']),
@@ -59,10 +83,16 @@ export const MUNICIPALITY_VISUALS = [
     reviewStatus: 'crop_review',
     photoAuthor: 'José Sánchez Rodríguez y Rafael Palomo López',
     photoSource: 'https://commons.wikimedia.org/wiki/File:Huelma,_en_Ja%C3%A9n_(Espa%C3%B1a).jpg',
-    photoLicense: 'CC BY-SA 3.0 / GFDL 1.2+',
+    photoLicense: 'CC BY-SA 3.0',
     photoLicenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
   }),
-  visual('jimena', 'Jimena'),
+  visual('jimena', 'Jimena', [], {
+    reviewStatus: 'crop_review',
+    photoAuthor: 'Veinticuatro de Jahén',
+    photoSource: 'https://commons.wikimedia.org/wiki/File:Jimena,_en_Ja%C3%A9n_(Espa%C3%B1a).jpg',
+    photoLicense: 'CC BY-SA 4.0',
+    photoLicenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+  }),
   visual('jodar', 'Jódar', [], {
     reviewStatus: 'crop_review',
     photoAuthor: 'Montse Sánchez Navas',

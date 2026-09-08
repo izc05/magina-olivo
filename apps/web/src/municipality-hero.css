@@ -1,0 +1,83 @@
+.public-home-v2-photo {
+  display: block;
+  background: none;
+}
+
+.public-home-v2-photo img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: var(--municipality-desktop-position, center center);
+}
+
+.public-home-municipality-picker {
+  position: absolute;
+  z-index: 3;
+  top: 14px;
+  left: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 28px);
+  min-height: 40px;
+  padding: 5px 9px 5px 10px;
+  border: 1px solid rgba(255, 255, 255, .78);
+  border-radius: 999px;
+  background: rgba(250, 249, 242, .93);
+  box-shadow: 0 5px 18px rgba(17, 17, 17, .13);
+  color: var(--ink);
+  backdrop-filter: blur(10px);
+}
+
+.public-home-municipality-picker svg {
+  flex: 0 0 auto;
+  color: var(--olive-650);
+}
+
+.public-home-municipality-picker select {
+  min-width: 0;
+  max-width: min(58vw, 250px);
+  min-height: 30px;
+  padding: 0 24px 0 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 600 .76rem/1.2 Inter, system-ui, sans-serif;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.public-home-municipality-picker select:focus {
+  outline: 0;
+}
+
+.public-home-municipality-picker:has(select:focus-visible) {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+@media (max-width: 719px) {
+  .public-home-v2-photo img {
+    object-position: var(--municipality-mobile-position, center center);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .public-home-v2-photo img {
+    animation: municipality-hero-reveal .34s ease both;
+  }
+
+  @keyframes municipality-hero-reveal {
+    from { opacity: .62; transform: scale(1.012); }
+    to { opacity: 1; transform: scale(1); }
+  }
+}
+
+@media (forced-colors: active) {
+  .public-home-municipality-picker {
+    background: Canvas;
+    color: CanvasText;
+    border-color: CanvasText;
+  }
+}

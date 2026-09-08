@@ -24,6 +24,10 @@ test('admin preview remains local-only while the real route uses a protected ser
   assert.match(dashboard, /href="#admin-news"/);
   assert.match(dashboard, /Acciones rápidas/);
   assert.match(dashboard, /Fuentes correctas/);
+  assert.match(dashboard, /\/api\/v1\/admin\/activity/);
+  assert.match(dashboard, /Cerrar sesión/);
+  assert.match(dashboard, /listPendingOperations/);
+  assert.match(dashboard, /api\.signOut\(\)/);
   assert.match(page, /Vista local de diseño/);
   assert.match(page, /sin acceso administrativo ni escrituras reales/);
   assert.match(page, /rol de plataforma independiente/);

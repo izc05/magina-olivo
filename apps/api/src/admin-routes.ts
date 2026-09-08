@@ -27,6 +27,13 @@ type AdminNewsRow = {
   topic: string | null;
   active: boolean;
 };
+type AdminActivityRow = {
+  id: string;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  created_at: Date;
+};
 
 const inspectablePublicSources = {
   'raif-olivar-observations': 'public.raif.inspect',
@@ -172,6 +179,30 @@ export function registerAdminRoutes(app: FastifyInstance): void {
         publishedAt: item.published_at,
         topic: item.topic,
         active: item.active,
+      })),
+    };
+  });
+
+  app.get('/api/v1/admin/activity', async (request, reply) => {
+    const access = await requirePlatformAdmin(request, reply);
+    if (!access) return reply;
+
+    const result = await getPool().query<AdminActivityRow>(
+      `
+        select id, action, target_type, target_id, created_at
+        from platform_admin_audit_log
+        order by created_at desc
+        limit 30
+      `,
+    );
+
+    return {
+      items: result.rows.map((item) => ({
+        id: item.id,
+        action: item.action,
+        targetType: item.target_type,
+        targetId: item.target_id,
+        createdAt: item.created_at,
       })),
     };
   });

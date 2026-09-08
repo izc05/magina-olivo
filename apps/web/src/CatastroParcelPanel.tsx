@@ -3,18 +3,18 @@ import type { MouseEvent } from 'react';
 import './catastro-panel.css';
 
 type Position = [number, number];
-type GeoJsonPolygon = { type: 'Polygon'; coordinates: number[][][] };
-type CatastroGeometry = {
+type GeoJsonBoundary = {
   type: 'Polygon' | 'MultiPolygon';
   coordinates: number[][][] | number[][][][];
 };
+type CatastroGeometry = GeoJsonBoundary;
 type PlotSummary = {
   id: string;
   name: string;
   latitude: number | null;
   longitude: number | null;
   cadastralReference: string | null;
-  boundaryGeoJson: GeoJsonPolygon | null;
+  boundaryGeoJson: GeoJsonBoundary | null;
   boundaryAreaHa: string | null;
   boundarySource?: string | null;
 };
@@ -43,8 +43,9 @@ type CatastroIdentifyResponse = {
   };
   source: CatastroSource;
 };
+type CatastroReferenceResponse = { item: CatastroParcel; source: CatastroSource };
 type ApiErrorBody = { error?: { message?: string } };
-type SelectionMode = 'manual' | 'gps';
+type SelectionMode = 'manual' | 'gps' | 'reference';
 type MapCenter = { latitude: number; longitude: number };
 type Tile = { key: string; href: string; x: number; y: number };
 
@@ -81,22 +82,24 @@ function collectPositions(value: unknown, output: Position[] = []): Position[] {
   return output;
 }
 
-function exteriorRings(geometry: CatastroGeometry): Position[][] {
+function geometryRings(geometry: CatastroGeometry): Position[][] {
   if (geometry.type === 'Polygon') {
-    const coordinates = geometry.coordinates as number[][][];
-    return coordinates[0] ? [collectPositions(coordinates[0])] : [];
+    return (geometry.coordinates as number[][][]).map((ring) => collectPositions(ring));
   }
-  const coordinates = geometry.coordinates as number[][][][];
-  return coordinates.flatMap((polygon) => polygon[0] ? [collectPositions(polygon[0])] : []);
+  return (geometry.coordinates as number[][][][]).flatMap((polygon) => polygon.map((ring) => collectPositions(ring)));
 }
 
-function isSimpleImportablePolygon(geometry: CatastroGeometry): boolean {
-  if (geometry.type !== 'Polygon') return false;
-  const coordinates = geometry.coordinates as number[][][];
-  if (coordinates.length !== 1 || !coordinates[0] || coordinates[0].length < 4) return false;
-  const first = coordinates[0][0];
-  const last = coordinates[0][coordinates[0].length - 1];
-  return Boolean(first && last && first[0] === last[0] && first[1] === last[1]);
+function centerFromGeometry(geometry: CatastroGeometry): MapCenter | null {
+  const positions = collectPositions(geometry.coordinates);
+  if (!positions.length) return null;
+  const totals = positions.reduce(
+    (accumulator, [longitude, latitude]) => ({
+      latitude: accumulator.latitude + latitude,
+      longitude: accumulator.longitude + longitude,
+    }),
+    { latitude: 0, longitude: 0 },
+  );
+  return { latitude: totals.latitude / positions.length, longitude: totals.longitude / positions.length };
 }
 
 function clampMercatorLatitude(latitude: number): number {
@@ -214,6 +217,7 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
   const [plots, setPlots] = useState<PlotSummary[]>([]);
   const [plotId, setPlotId] = useState('');
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('manual');
+  const [referenceQuery, setReferenceQuery] = useState('');
   const [mapCenter, setMapCenter] = useState<MapCenter>(DEFAULT_CENTER);
   const [zoom, setZoom] = useState(17);
   const [probe, setProbe] = useState<MapCenter | null>(null);
@@ -231,9 +235,8 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
 
   const selectedPlot = useMemo(() => plots.find((plot) => plot.id === plotId) ?? null, [plots, plotId]);
   const selected = useMemo(() => items.find((item) => item.id === selectedId) ?? items[0] ?? null, [items, selectedId]);
-  const importable = selected ? isSimpleImportablePolygon(selected.geometry) : false;
   const mapModel = useMemo(() => buildMapModel(mapCenter, zoom), [mapCenter, zoom]);
-  const selectedRings = useMemo(() => selected ? exteriorRings(selected.geometry) : [], [selected]);
+  const selectedRings = useMemo(() => selected ? geometryRings(selected.geometry) : [], [selected]);
   const mapSelectedRings = useMemo(
     () => selectedRings.map((ring) => ring.map((position) => screenPoint(position, zoom, mapModel.topLeft))),
     [selectedRings, zoom, mapModel.topLeft],
@@ -261,12 +264,13 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
     setSource(null);
     setProbe(null);
     setGpsAccuracy(null);
+    setReferenceQuery(selectedPlot?.cadastralReference ?? '');
     setConfirmImportId(null);
     setNotice(null);
     setError(null);
   }, [plotId]);
 
-  async function identifyPoint(latitude: number, longitude: number, nearby: boolean, origin: SelectionMode) {
+  async function identifyPoint(latitude: number, longitude: number, nearby: boolean, origin: 'manual' | 'gps') {
     setLoading(true);
     setError(null);
     setNotice(null);
@@ -302,6 +306,38 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
     }
   }
 
+  async function lookupReference() {
+    const reference = referenceQuery.trim().toUpperCase();
+    if (!/^[A-Z0-9]{14}$/.test(reference)) {
+      setError('La referencia catastral debe contener exactamente 14 caracteres alfanuméricos.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setNotice(null);
+    setProbe(null);
+    setGpsAccuracy(null);
+    setConfirmImportId(null);
+    try {
+      const result = await request<CatastroReferenceResponse>(`/api/v1/maps/catastro/reference/${encodeURIComponent(reference)}`);
+      setReferenceQuery(reference);
+      setItems([result.item]);
+      setSelectedId(result.item.id);
+      setMatch('exact');
+      setSource(result.source);
+      const center = centerFromGeometry(result.item.geometry);
+      if (center) setMapCenter(center);
+      setNotice('Referencia encontrada en Catastro. Revisa la geometría oficial antes de asociarla a tu parcela.');
+    } catch (reason) {
+      setItems([]);
+      setSelectedId('');
+      setMatch('none');
+      setError(reason instanceof Error ? reason.message : 'No se ha podido consultar esa referencia catastral.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function useGps() {
     setLocating(true);
     setError(null);
@@ -332,13 +368,13 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
   }
 
   function recenterOnPlot() {
-    const center = centerFromPlot(selectedPlot);
+    const center = selected ? centerFromGeometry(selected.geometry) : centerFromPlot(selectedPlot);
     if (center) setMapCenter(center);
     else setMapCenter(DEFAULT_CENTER);
   }
 
   async function importSelected() {
-    if (!selectedPlot || !selected || !importable) return;
+    if (!selectedPlot || !selected) return;
     if (confirmImportId !== selected.id) {
       setConfirmImportId(selected.id);
       setNotice('Revisa la referencia y el perímetro. Pulsa “Esta es mi parcela” una segunda vez para que Mágina la verifique de nuevo directamente en Catastro antes de guardarla.');
@@ -354,7 +390,7 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
         body: JSON.stringify({ cadastralReference: selected.nationalCadastralReference }),
       });
       setConfirmImportId(null);
-      setNotice(`Parcela ${selected.nationalCadastralReference} verificada y guardada. El perímetro queda marcado como fuente Catastro.`);
+      setNotice(`Parcela ${selected.nationalCadastralReference} verificada y guardada. Catastro queda conservado además como fuente oficial para compararlo con SIGPAC.`);
       await onImported();
       const refreshed = await request<{ items: PlotSummary[] }>(`/api/v1/farms/${farmId}/plots`);
       setPlots(refreshed.items);
@@ -367,13 +403,17 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
 
   if (!plots.length) return null;
 
+  const matchLabel = selectionMode === 'reference'
+    ? 'Referencia directa'
+    : match === 'exact' ? 'Punto exacto' : match === 'nearby' ? 'Próxima al punto' : '—';
+
   return (
     <section className="section catastro-shell" aria-labelledby="catastro-title">
       <div className="section-heading">
         <div>
           <p className="eyebrow page-eyebrow">Cartografía oficial</p>
           <h2 id="catastro-title" className="section-title">Añadir parcela desde Catastro</h2>
-          <p className="section-copy">Selecciona tu finca tocando el mapa o deja que el GPS te sitúe dentro de ella.</p>
+          <p className="section-copy">Toca el mapa, usa el GPS o introduce una referencia catastral que ya conozcas.</p>
         </div>
         <span className="badge gold">Oficial · DGC</span>
       </div>
@@ -388,14 +428,13 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
 
         <div className="catastro-mode-tabs" role="group" aria-label="Método para localizar la parcela">
           <button type="button" className={selectionMode === 'manual' ? 'active' : ''} aria-pressed={selectionMode === 'manual'} onClick={() => setSelectionMode('manual')}>
-            <span aria-hidden="true">☝</span>
-            <strong>Manual</strong>
-            <small>Toca tu finca en el mapa</small>
+            <span aria-hidden="true">☝</span><strong>Manual</strong><small>Toca tu finca</small>
           </button>
           <button type="button" className={selectionMode === 'gps' ? 'active' : ''} aria-pressed={selectionMode === 'gps'} onClick={() => setSelectionMode('gps')}>
-            <span aria-hidden="true">⌖</span>
-            <strong>GPS</strong>
-            <small>Localízala desde el campo</small>
+            <span aria-hidden="true">⌖</span><strong>GPS</strong><small>Desde el campo</small>
+          </button>
+          <button type="button" className={selectionMode === 'reference' ? 'active' : ''} aria-pressed={selectionMode === 'reference'} onClick={() => setSelectionMode('reference')}>
+            <span aria-hidden="true">#</span><strong>Referencia</strong><small>Si ya la conoces</small>
           </button>
         </div>
 
@@ -408,10 +447,10 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
               <span>z{zoom}</span>
             </div>
             <svg
-              className={`catastro-map ${selectionMode === 'manual' ? 'manual-mode' : 'gps-mode'}`}
+              className={`catastro-map ${selectionMode}-mode`}
               viewBox={`0 0 ${MAP_VIEW_SIZE} ${MAP_VIEW_SIZE}`}
               role="img"
-              aria-label={selectionMode === 'manual' ? 'Mapa para seleccionar manualmente una parcela catastral' : 'Mapa de posición GPS y parcela catastral'}
+              aria-label="Mapa de selección y geometría catastral"
               onClick={handleMapClick}
             >
               {mapModel.tiles.map((tile) => (
@@ -429,10 +468,12 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
               ) : null}
             </svg>
             <div className="catastro-map-caption">
-              <strong>{selectionMode === 'manual' ? 'Selección manual' : 'Selección por GPS'}</strong>
+              <strong>{selectionMode === 'manual' ? 'Selección manual' : selectionMode === 'gps' ? 'Selección por GPS' : 'Búsqueda por referencia'}</strong>
               <small>{selectionMode === 'manual'
                 ? 'Acércate a la zona y toca dentro de tu parcela, evitando el camino o la linde.'
-                : gpsAccuracy != null ? `Última precisión GPS aproximada: ±${Math.round(gpsAccuracy)} m` : 'Pulsa Localizar mi parcela para usar la ubicación del dispositivo.'}</small>
+                : selectionMode === 'gps'
+                  ? gpsAccuracy != null ? `Última precisión GPS aproximada: ±${Math.round(gpsAccuracy)} m` : 'Pulsa Localizar mi parcela para usar la ubicación del dispositivo.'
+                  : selected ? 'La geometría de la referencia encontrada se muestra directamente sobre el mapa.' : 'Introduce la referencia catastral para cargar su geometría oficial.'}</small>
               <small>© OpenStreetMap contributors · Catastro: Dirección General del Catastro</small>
             </div>
           </div>
@@ -442,15 +483,26 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
               <>
                 <span className="catastro-method-icon" aria-hidden="true">☝</span>
                 <h3>Toca tu finca</h3>
-                <p>Mueve y amplía el mapa. Cuando pulses dentro del olivar, Mágina preguntará a Catastro qué parcela corresponde a ese punto.</p>
+                <p>Mueve y amplía el mapa. Al pulsar dentro del olivar, Mágina pregunta a Catastro qué parcela corresponde a ese punto.</p>
                 <button className="ghost-button" type="button" onClick={recenterOnPlot}>Centrar en mi parcela</button>
               </>
-            ) : (
+            ) : selectionMode === 'gps' ? (
               <>
                 <span className="catastro-method-icon" aria-hidden="true">⌖</span>
                 <h3>Estoy en la parcela</h3>
-                <p>Ideal cuando estás físicamente en el olivar. El GPS localiza el punto y Catastro busca la parcela exacta o las más próximas si hay margen de error.</p>
+                <p>El GPS localiza el punto y Catastro busca la parcela exacta o las más próximas si hay margen de error.</p>
                 <button className="primary-button" type="button" onClick={() => void useGps()} disabled={locating || loading}>{locating ? 'Buscando GPS…' : 'Localizar mi parcela'}</button>
+              </>
+            ) : (
+              <>
+                <span className="catastro-method-icon" aria-hidden="true">#</span>
+                <h3>Tengo la referencia catastral</h3>
+                <p>Introduce los 14 caracteres de la referencia de parcela. La consulta se verifica directamente en el servicio INSPIRE de Catastro.</p>
+                <div className="field catastro-reference-field">
+                  <label htmlFor="catastro-reference-query">Referencia catastral</label>
+                  <input id="catastro-reference-query" value={referenceQuery} onChange={(event) => setReferenceQuery(event.target.value.toUpperCase())} maxLength={14} autoCapitalize="characters" autoComplete="off" placeholder="XXXXXXXXXXXXXX" />
+                </div>
+                <button className="primary-button" type="button" onClick={() => void lookupReference()} disabled={loading || referenceQuery.trim().length !== 14}>{loading ? 'Consultando…' : 'Buscar referencia'}</button>
               </>
             )}
 
@@ -465,17 +517,17 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
         {loading ? <div className="catastro-searching" role="status">Consultando Catastro…</div> : null}
         {error ? <div className="alert" role="alert">{error}</div> : null}
         {notice ? <div className="alert success" role="status">{notice}</div> : null}
-        <p className="catastro-warning"><strong>Catastro y SIGPAC no son equivalentes.</strong> Mágina Olivo conserva ambas fuentes por separado y nunca sustituye una por la otra sin que tú lo confirmes.</p>
+        <p className="catastro-warning"><strong>Catastro y SIGPAC no son equivalentes.</strong> Mágina Olivo conserva ambas fuentes verificadas por separado para poder compararlas sin perder información.</p>
       </div>
 
       {items.length ? (
         <div className="catastro-results-grid">
           <div className="catastro-result-list" role="list" aria-label="Parcelas catastrales encontradas">
             {items.map((item) => (
-              <button key={item.id} type="button" role="listitem" className={`card catastro-result${selected?.id === item.id ? ' active' : ''}`} onClick={() => { setSelectedId(item.id); setConfirmImportId(null); }}>
+              <button key={item.id} type="button" role="listitem" className={`card catastro-result${selected?.id === item.id ? ' active' : ''}`} onClick={() => { setSelectedId(item.id); setConfirmImportId(null); const center = centerFromGeometry(item.geometry); if (center) setMapCenter(center); }}>
                 <strong>{item.nationalCadastralReference}</strong>
                 <span>{formatSurface(item.areaM2)}</span>
-                <small>{item.label ? `Parcela ${item.label}` : 'Parcela catastral'} · {match === 'nearby' ? 'próxima al punto' : 'coincidencia en el punto'}</small>
+                <small>{item.label ? `Parcela ${item.label}` : 'Parcela catastral'} · {selectionMode === 'reference' ? 'referencia consultada' : match === 'nearby' ? 'próxima al punto' : 'coincidencia en el punto'}</small>
               </button>
             ))}
           </div>
@@ -491,15 +543,12 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
                   <div><dt>Superficie Catastro</dt><dd>{formatSurface(selected.areaM2)}</dd></div>
                   <div><dt>Parcela / etiqueta</dt><dd>{selected.label ?? '—'}</dd></div>
                   <div><dt>Alta cartográfica</dt><dd>{formatDate(selected.beginLifespanVersion)}</dd></div>
-                  <div><dt>Coincidencia</dt><dd>{match === 'exact' ? 'Punto exacto' : 'Próxima al punto'}</dd></div>
+                  <div><dt>Geometría</dt><dd>{selected.geometry.type}{selected.geometry.type === 'MultiPolygon' ? ' · compleja' : ''}</dd></div>
+                  <div><dt>Localización</dt><dd>{matchLabel}</dd></div>
                 </dl>
-                {importable ? (
-                  <button className="primary-button catastro-confirm-button" type="button" onClick={() => void importSelected()} disabled={importing}>
-                    {importing ? 'Verificando…' : confirmImportId === selected.id ? 'Confirmar: esta es mi parcela' : 'Esta es mi parcela'}
-                  </button>
-                ) : (
-                  <p className="catastro-unsupported">La parcela tiene una geometría compleja. Puede consultarse, pero esta primera versión no la importa automáticamente.</p>
-                )}
+                <button className="primary-button catastro-confirm-button" type="button" onClick={() => void importSelected()} disabled={importing}>
+                  {importing ? 'Verificando…' : confirmImportId === selected.id ? 'Confirmar: esta es mi parcela' : 'Esta es mi parcela'}
+                </button>
               </div>
             </article>
           ) : null}

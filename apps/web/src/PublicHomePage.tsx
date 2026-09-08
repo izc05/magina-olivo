@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { api, type Holding } from './api.ts';
-import { Building2, ChevronRight, Landmark, MapPin, Newspaper, Sprout, Store } from 'lucide-react';
+import { Building2, ChevronRight, CloudRain, CloudSun, Landmark, MapPin, Newspaper, Sprout, Store, Sun, X } from 'lucide-react';
 import { PhotoCredit, VisualHeader, quickIcons } from './VisualChrome';
 import {
   DEFAULT_MUNICIPALITY_SLUG,
@@ -41,6 +41,9 @@ function QuickIcon({ kind }: { kind: 'book' | 'calendar' | 'alert' | 'weather' }
 export function PublicHomePage() {
   const [initialMunicipality] = useState(readPreferredMunicipality);
   const [selectedMunicipality, setSelectedMunicipality] = useState(initialMunicipality ?? DEFAULT_MUNICIPALITY_SLUG);
+  const [municipalityDraft, setMunicipalityDraft] = useState(initialMunicipality ?? DEFAULT_MUNICIPALITY_SLUG);
+  const [showMunicipalitySetup, setShowMunicipalitySetup] = useState(initialMunicipality === null);
+  const [municipalitySetupRequired, setMunicipalitySetupRequired] = useState(initialMunicipality === null);
   const selectionIsExplicit = useRef(initialMunicipality !== null);
   const [sources, setSources] = useState<PublicSource[]>([]);
   const [weather, setWeather] = useState<Weather | null>(null);
@@ -56,7 +59,13 @@ export function PublicHomePage() {
       setHolding(nextHolding);
       if (!selectionIsExplicit.current) {
         const holdingMunicipality = resolveMunicipalitySlug(nextHolding?.municipality);
-        if (holdingMunicipality) setSelectedMunicipality(holdingMunicipality);
+        if (holdingMunicipality) {
+          setSelectedMunicipality(holdingMunicipality);
+          setMunicipalityDraft(holdingMunicipality);
+          writePreferredMunicipality(holdingMunicipality);
+          setShowMunicipalitySetup(false);
+          setMunicipalitySetupRequired(false);
+        }
       }
     }).catch(() => setHolding(null));
     return () => controller.abort();
@@ -96,7 +105,11 @@ export function PublicHomePage() {
     selectionIsExplicit.current = true;
     setSelectedMunicipality(slug);
     writePreferredMunicipality(slug);
+    setShowMunicipalitySetup(false);
+    setMunicipalitySetupRequired(false);
   };
+
+  const WeatherIcon = weatherMood === 'rainy' ? CloudRain : weatherMood === 'partly' ? CloudSun : Sun;
 
   const useHeroFallback = (image: HTMLImageElement) => {
     if (image.src.endsWith(DEFAULT_TERRITORY_HERO)) return;
@@ -113,14 +126,12 @@ export function PublicHomePage() {
           <source media="(max-width: 719px)" srcSet={heroSources.mobile} />
           <img key={selectedVisual.slug} src={heroSources.desktop} alt={heroSources.alt} onError={(event) => useHeroFallback(event.currentTarget)} />
         </picture>
-        <label className="public-home-municipality-picker">
+        <button className="public-home-municipality-picker" type="button" onClick={() => { setMunicipalityDraft(selectedMunicipality); setShowMunicipalitySetup(true); }} aria-label={`Cambiar municipio. Actual: ${selectedVisual.name}`}>
           <MapPin size={16} aria-hidden="true" />
-          <span className="sr-only">Municipio de referencia</span>
-          <select value={selectedMunicipality} onChange={(event) => selectMunicipality(event.currentTarget.value)} aria-label="Municipio de referencia">
-            {MUNICIPALITY_VISUALS.map((municipality) => <option value={municipality.slug} key={municipality.slug}>{municipality.name}</option>)}
-          </select>
-        </label>
-        <a href="/magina/tiempo" className={`public-home-weather-card ${weatherMood}`} aria-live="polite"><span className="weather-orb" aria-hidden="true"><i /></span><span>{weatherTitle}</span><strong>{weatherTemperature}</strong><small>{weatherRange}</small>{weather ? <small>Previsión AEMET · Ver detalle <ChevronRight size={14} aria-hidden="true" /></small> : <small>Consultar previsión <ChevronRight size={14} aria-hidden="true" /></small>}</a>
+          <span>{selectedVisual.name}</span>
+          <small>Cambiar</small>
+        </button>
+        <a href="/magina/tiempo" className={`public-home-weather-card ${weatherMood}`} aria-live="polite"><WeatherIcon className="weather-hero-icon" aria-hidden="true" /><span>Ahora en {weatherTitle}</span><strong>{weatherTemperature}</strong><small>{weatherRange}</small>{weather ? <small>AEMET · Ver previsión <ChevronRight size={14} aria-hidden="true" /></small> : <small>Consultar previsión <ChevronRight size={14} aria-hidden="true" /></small>}</a>
         <div className="home-territory-caption"><p>Nuestra tierra,<br />tu mejor cosecha</p><small>{selectedVisual.name} · Sierra Mágina</small></div>
       </section>
       <section className="home-highlight-grid" aria-label={`Resumen de ${selectedVisual.name}`}>
@@ -134,6 +145,7 @@ export function PublicHomePage() {
       <section className="public-home-v2-section"><div className="section-heading"><div><p className="eyebrow">Aceite y mercado</p><h2>Referencia AOVE</h2></div><a className="text-button" href="/magina/mercado">Mercado</a></div><a className="public-home-market-card card" href="/magina/mercado"><strong>Información pública</strong><span>Consulta contexto de mercado con fecha y procedencia.</span><span className="public-home-open">Abrir</span></a></section>
       <section className="public-service-section" aria-labelledby="public-services-title"><div><p className="eyebrow">Información pública</p><h2 id="public-services-title">Hoy en Sierra Mágina</h2></div><div className="public-service-grid">{services.map(([title, copy, href, sourceKey]) => <a className="card public-service-card" href={href} key={title}><p className="eyebrow">{sourceStatus(sources.find((source) => source.key.includes(sourceKey)))}</p><h3>{title}</h3><p>{copy}</p><span>Ver información</span></a>)}</div></section>
       <PhotoCredit />
+      {showMunicipalitySetup ? <div className="municipality-setup-backdrop" role="presentation"><section className="municipality-setup" role="dialog" aria-modal="true" aria-labelledby="municipality-setup-title">{!municipalitySetupRequired ? <button type="button" className="municipality-setup-close" aria-label="Cerrar selección de municipio" onClick={() => setShowMunicipalitySetup(false)}><X aria-hidden="true" /></button> : null}<p className="eyebrow">PERSONALIZA MÁGINA OLIVO</p><h2 id="municipality-setup-title">¿Cuál es tu municipio?</h2><p>Lo usaremos para mostrarte el tiempo, noticias, cooperativas y servicios cercanos. Podrás cambiarlo después.</p><label htmlFor="initial-municipality">Municipio de referencia</label><select id="initial-municipality" value={municipalityDraft} onChange={(event) => setMunicipalityDraft(event.currentTarget.value)}>{MUNICIPALITY_VISUALS.map((municipality) => <option value={municipality.slug} key={municipality.slug}>{municipality.name}</option>)}</select><button className="primary-button" type="button" onClick={() => selectMunicipality(municipalityDraft)}>Guardar y continuar</button><small>Esta elección se guarda en este dispositivo y, al crear tu explotación, queda vinculada a tu perfil agrícola.</small></section></div> : null}
     </main>
   );
 }

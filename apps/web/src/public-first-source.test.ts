@@ -34,6 +34,11 @@ test('public routes are reachable without a session and private destinations use
   assert.match(home, /api\/v1\/public\/weather/);
   assert.match(home, /weather\?municipality=\$\{encodeURIComponent\(selectedMunicipality\)\}/);
   assert.match(home, /DEFAULT_MUNICIPALITY_SLUG/);
+  assert.match(home, /¿Cuál es tu municipio\?/);
+  assert.match(home, /municipalitySetupRequired/);
+  assert.match(home, /writePreferredMunicipality\(slug\)/);
+  assert.match(home, /Cambiar municipio\. Actual:/);
+  assert.match(home, /WeatherIcon className="weather-hero-icon"/);
   assert.match(home, /QuickIcon/);
   assert.match(home, /href="\/mi-campo"/);
   assert.match(home, /<a href="\/calendario"><QuickIcon kind="calendar" \/>Tareas<\/a>/);

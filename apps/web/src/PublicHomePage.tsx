@@ -67,7 +67,10 @@ export function PublicHomePage() {
     setWeather(null);
     void fetch(`/api/v1/public/weather?municipality=${encodeURIComponent(selectedMunicipality)}`, { headers: { accept: 'application/json' }, signal: controller.signal })
       .then(async (response) => response.ok ? response.json() as Promise<Weather> : Promise.reject(new Error('weather')))
-      .then(setWeather).catch(() => undefined);
+      .then((result) => {
+        const responseMunicipality = resolveMunicipalitySlug(result.municipality.slug ?? result.municipality.name);
+        setWeather(responseMunicipality === selectedMunicipality ? result : null);
+      }).catch(() => setWeather(null));
     return () => controller.abort();
   }, [selectedMunicipality]);
 
@@ -78,7 +81,7 @@ export function PublicHomePage() {
     '--municipality-mobile-position': selectedVisual.objectPositionMobile,
   } as CSSProperties;
   const today = weather?.forecast.days[0];
-  const weatherTitle = weather?.municipality.name ?? selectedVisual.name;
+  const weatherTitle = selectedVisual.name;
   const weatherTemperature = today?.temperatureMaxC == null ? '—' : `${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format(today.temperatureMaxC)}°`;
   const weatherRange = today?.temperatureMinC == null ? 'Predicción no disponible' : `Máx. ${weatherTemperature} · Mín. ${new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format(today.temperatureMinC)}°`;
   const weatherMood = (today?.precipitationProbabilityPercent ?? 0) >= 55 ? 'rainy' : (today?.precipitationProbabilityPercent ?? 0) >= 25 ? 'partly' : 'sunny';

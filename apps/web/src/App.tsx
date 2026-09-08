@@ -144,7 +144,12 @@ export function App({ initialTab = 'home', initialFieldView = 'home' }: { initia
     const [farmResult, campaignResult] = await Promise.all([api.farms(holdingId), api.campaigns(holdingId)]);
     setFarms(farmResult.items);
     setCampaigns(campaignResult.items);
-    setSelectedFarmId((current) => farmResult.items.some((item) => item.id === current) ? current : (farmResult.items[0]?.id ?? ''));
+    let rememberedFarm = '';
+    try { rememberedFarm = sessionStorage.getItem(`magina:farm:${cachedOwnerUserId()}:${holdingId}`) ?? ''; } catch { /* Storage may be unavailable. */ }
+    setSelectedFarmId((current) => {
+      const candidate = current || rememberedFarm;
+      return farmResult.items.some((item) => item.id === candidate) ? candidate : (farmResult.items[0]?.id ?? '');
+    });
     setSelectedCampaignId((current) => campaignResult.items.some((item) => item.id === current) ? current : (campaignResult.items[0]?.id ?? ''));
   }, []);
 
@@ -156,6 +161,11 @@ export function App({ initialTab = 'home', initialFieldView = 'home' }: { initia
     const result = await api.plots(farmId);
     setPlots(result.items);
   }, []);
+
+  useEffect(() => {
+    if (!user || !selectedHoldingId || !selectedFarmId) return;
+    try { sessionStorage.setItem(`magina:farm:${user.id}:${selectedHoldingId}`, selectedFarmId); } catch { /* Navigation remains available without storage. */ }
+  }, [user, selectedHoldingId, selectedFarmId]);
 
   const loadCampaign = useCallback(async (campaignId: string) => {
     if (!campaignId) {
@@ -576,10 +586,8 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
   const selectedFarmOliveTrees = plots.reduce((total, plot) => total + (plot.oliveTreeCount ?? 0), 0);
   const notebookActivityType = fieldView === 'treatments' ? 'treatment' : fieldView === 'irrigation' ? 'irrigation' : undefined;
   const openFieldView = (view: FieldInitialView) => {
-    setFieldView(view);
-    setShowMapWorkspace(view === 'map');
-    setShowFarmDetail(view !== 'home' && view !== 'map');
-    window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
+    const paths = { home: '/mi-campo', plots: '/mi-campo/parcelas', map: '/mi-campo/mapa', notebook: '/mi-campo/cuaderno', treatments: '/mi-campo/tratamientos', irrigation: '/mi-campo/riegos' };
+    window.location.assign(paths[view]);
   };
   const openFarmSection = (sectionId: string) => openFieldView(sectionId === 'cuaderno' ? 'notebook' : 'plots');
   const openMapWorkspace = () => {

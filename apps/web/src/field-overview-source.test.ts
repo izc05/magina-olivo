@@ -27,7 +27,7 @@ test('Mi Campo keeps the private farm overview wired to real holdings and farms'
   assert.match(app, /selectedFarmOliveTrees/);
   assert.match(app, /className="field-farm-switcher"/);
   assert.match(app, /Contexto de trabajo/);
-  assert.match(app, /openFieldView\('home'\)/);
+  assert.match(app, /backHref="\/mi-campo"/);
   assert.match(app, /summary\?\.weightedYieldPercent/);
   assert.match(app, /<CampaignDeliveryTrend deliveries=\{deliveries\} \/>/);
   assert.match(app, /function CampaignDeliveryTrend/);

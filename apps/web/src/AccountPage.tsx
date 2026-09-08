@@ -1,5 +1,7 @@
 import { VisualHeader } from './VisualChrome';
 import { PublicNavigation } from './PublicNavigation';
+import { api } from './api';
+import { listPendingOperations } from './offline/outbox';
 import { useEffect, useMemo, useState } from 'react';
 
 type User = { id: string; name?: string | null; email: string };
@@ -59,7 +61,7 @@ async function jsonRequest<T>(url: string, init: RequestInit = {}): Promise<T> {
     } catch {
       // Keep the generic HTTP status for non-JSON errors.
     }
-    throw new Error(message);
+    throw Object.assign(new Error(message), { status: response.status });
   }
   return response.json() as Promise<T>;
 }
@@ -105,12 +107,30 @@ export function AccountPage() {
   const [exportBusy, setExportBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [preferencesReady, setPreferencesReady] = useState(false);
+  const [retry, setRetry] = useState(0);
+
+  async function signOut() {
+    setBusy(true);
+    setError(null);
+    try {
+      const session = await api.me();
+      const pending = await listPendingOperations(session.user.id);
+      if (pending.length) throw new Error('Sincroniza los cambios pendientes antes de cerrar sesión.');
+      await api.signOut();
+      window.location.assign('/');
+    } catch (reason) {
+      setError(accountErrorMessage(reason, 'No se ha podido cerrar sesión. Vuelve a intentarlo.'));
+    } finally { setBusy(false); }
+  }
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       setLoading(true);
       setError(null);
+      setNotice(null);
+      setPreferencesReady(false);
       try {
         const [sessionResult, preferenceResult, directoryResult, exportResult] = await Promise.allSettled([
           jsonRequest<{ user: User }>('/api/v1/me'),
@@ -125,6 +145,7 @@ export function AccountPage() {
         // preferences/database issue must not hide the user's account data.
         if (preferenceResult.status === 'fulfilled') {
           setPreferences(preferenceResult.value);
+          setPreferencesReady(true);
         } else {
           setPreferences(DEFAULT_PREFERENCES);
           setNotice('Tus datos básicos están disponibles. Las preferencias se cargarán de nuevo al reintentar.');
@@ -139,7 +160,7 @@ export function AccountPage() {
     }
     void load();
     return () => { cancelled = true; };
-  }, []);
+  }, [retry]);
 
   const preferred = useMemo(
     () => destinations.find((item) => item.id === preferences.preferredCooperativeId) ?? null,
@@ -166,6 +187,7 @@ export function AccountPage() {
   }, [latestExport?.id, latestExport?.status]);
 
   async function save() {
+    if (!preferencesReady) return;
     setBusy(true);
     setError(null);
     setNotice(null);
@@ -218,19 +240,27 @@ export function AccountPage() {
       <div className="account-page">
         <section>
           <p className="eyebrow page-eyebrow">MI PERFIL</p>
-          <h1 className="section-title">Preferencias y privacidad</h1>
-          <p className="section-copy">Elige la información que quieres recibir y gestiona tus datos con claridad.</p>
+          <h1 className="section-title">Mi perfil</h1>
+          <p className="section-copy">Tu cuenta, tus preferencias y tus accesos personales.</p>
         </section>
 
         {error ? <div className="alert section" role="alert">{error}</div> : null}
         {notice ? <div className="alert success section" role="status">{notice}</div> : null}
+        {!preferencesReady || error ? <button className="secondary-button" onClick={() => setRetry((value) => value + 1)}>Reintentar carga</button> : null}
 
         <section className="section card card-body account-profile-summary" id="perfil">
           <h2 className="section-title account-section-title">Tu perfil</h2>
-          <p className="list-card-title">{user?.name || 'Agricultor'}</p>
+          <p className="list-card-title">{user?.name || (user ? 'Tu cuenta' : 'Perfil no disponible')}</p>
           <p className="list-card-meta">{user?.email}</p>
+          <div className="form-actions"><a className="primary-button" href="/perfil/editar">Editar perfil →</a><a className="secondary-button" href="/tu-olivo">Tu Olivo y recompensas →</a><button className="secondary-button" disabled={busy} onClick={() => void signOut()}>{busy ? 'Espera…' : 'Cerrar sesión'}</button></div>
         </section>
 
+        <nav className="section more-links" aria-label="Opciones de tu cuenta">
+          <a className="card list-card" href="/perfil/preferencias">Preferencias de Inicio →</a>
+          <a className="card list-card" href="/perfil/privacidad">Privacidad y permisos →</a>
+          <a className="card list-card" href="/perfil/soporte">Ayuda y soporte →</a>
+        </nav>
+        <fieldset disabled={!preferencesReady || busy} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
         <section className="section card card-body" id="cooperativa">
           <h2 className="section-title account-section-title">Cooperativa / almazara habitual</h2>
           <p className="section-copy">Sirve como preferencia de uso. Seleccionarla no comparte tus entregas ni tus documentos con esa entidad.</p>
@@ -286,6 +316,7 @@ export function AccountPage() {
           </div>
         </section>
 
+        </fieldset>
         <section className="section card card-body account-privacy-card" id="privacidad">
           <h2 className="section-title account-section-title">Copia de tus datos</h2>
           <p className="section-copy">Puedes preparar una copia estructurada y versionada de tu perfil, preferencias y de las explotaciones donde eres propietario: fincas, parcelas, campañas, entregas, rendimientos, labores e índice de documentos.</p>
@@ -316,7 +347,7 @@ export function AccountPage() {
         </section>
 
         <div className="section form-actions account-save-row" id="preferencias">
-          <button className="primary-button" type="button" onClick={() => void save()} disabled={busy}>{busy ? 'Guardando…' : 'Guardar preferencias'}</button>
+          <button className="primary-button" type="button" onClick={() => void save()} disabled={busy || !preferencesReady}>{busy ? 'Guardando…' : 'Guardar preferencias'}</button>
         </div>
       </div>
     </main>

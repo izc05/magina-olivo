@@ -75,11 +75,17 @@ summary { cursor: pointer; }
 /* Home reference: photograph, forecast, field shortcut, four quick actions. */
 .public-home-v2-hero { position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 12px; min-height: 0; height: 254px; padding: 16px; border-radius: 20px; overflow: hidden; isolation: isolate; margin: 0 0 23px; }
 .public-home-v2-photo { position: absolute; inset: 0; z-index: -2; background: url('/photos/home-sierra-magina.webp') center 58% / cover; }
-.public-home-v2-hero::before { content: ''; position: absolute; inset: -28%; z-index: -1; pointer-events: none; opacity: .52; background: radial-gradient(circle at 72% 13%, rgba(255,236,155,.96) 0 7%, rgba(255,224,116,.42) 15%, rgba(255,210,75,0) 39%), linear-gradient(118deg, rgba(255,241,186,.08), rgba(255,191,67,.16) 52%, rgba(255,239,178,.06)); mix-blend-mode: screen; animation: hero-sun-drift 14s ease-in-out infinite alternate; }
+.public-home-v2-hero::before { content: ''; position: absolute; inset: -28%; z-index: -1; pointer-events: none; opacity: .72; background: radial-gradient(circle at 78% 8%, rgba(255,246,184,1) 0 8%, rgba(255,218,106,.7) 15%, rgba(255,205,74,0) 38%), linear-gradient(115deg, rgba(255,238,170,.15), rgba(255,190,54,.28) 48%, rgba(255,245,190,.1)); mix-blend-mode: screen; animation: hero-sun-drift 14s ease-in-out infinite alternate; }
 .public-home-v2-hero.partly::before { opacity: .4; background: radial-gradient(circle at 74% 11%, rgba(255,240,173,.9) 0 6%, rgba(255,214,100,.3) 16%, rgba(255,210,75,0) 35%), linear-gradient(125deg, rgba(210,233,255,.1), rgba(255,206,100,.12)); }
 .public-home-v2-hero.rainy::before { opacity: .22; background: linear-gradient(145deg, rgba(166,203,220,.25), rgba(70,101,120,.16)); mix-blend-mode: soft-light; animation: none; }
 .public-home-v2-hero::after { content: ''; position: absolute; inset: 0; z-index: -1; background: #1820131a; pointer-events: none; }
 @keyframes hero-sun-drift { from { transform: translate3d(-2%, -1%, 0) scale(1); } to { transform: translate3d(2%, 1%, 0) scale(1.06); } }
+.public-home-v2-hero.sunny .public-home-v2-photo { filter: saturate(1.08) contrast(1.03); }
+.public-home-v2-hero.sunny::after { background: linear-gradient(145deg, rgba(255,214,101,.12), rgba(24,32,19,.2) 74%); }
+.public-home-weather-card.sunny { border-color: rgba(255,220,116,.8); box-shadow: 0 8px 26px rgba(255,191,54,.22), 0 6px 20px #11111116; }
+.weather-orb { position: relative; overflow: visible; }
+.weather-orb::after { content: ''; position: absolute; inset: -7px; border-radius: 50%; background: rgba(255,210,72,.28); filter: blur(8px); animation: orb-pulse 3.5s ease-in-out infinite; z-index: -1; }
+@keyframes orb-pulse { 0%, 100% { transform: scale(.92); opacity: .55; } 50% { transform: scale(1.18); opacity: .95; } }
 .public-home-weather-card { position: static; display: flex; flex-direction: column; gap: 3px; width: fit-content; max-width: 86%; min-width: 165px; padding: 12px 16px; border: 1px solid white; border-radius: 17px; background: #faf9f2f5; color: var(--ink); text-decoration: none; box-shadow: 0 6px 20px #11111116; }
 .public-home-weather-card > span { color: var(--muted); font-size: .85rem; }
 .public-home-weather-card strong { font: 700 2.9rem/1.05 Georgia, serif; }

@@ -2,7 +2,34 @@
 
 Fecha: 2026-09-08  
 Rama auditada: `feat/visual-v2-public-first-convergence`  
-Estado: decisión de arquitectura previa al rediseño
+Estado: flujo actualizado tras la revisión visual de septiembre de 2026
+
+## Decisión vigente: lista de fincas antes que mapa
+
+La auditoría inicial proponía un mapa como primera superficie. La revisión con
+agricultores y las referencias visuales posteriores dejan una decisión más
+clara para V1: la entrada de **Mi Campo** es una lista breve de *Mis fincas*.
+El mapa sigue siendo una herramienta principal, pero no obliga a comprender
+capas, GPS o Catastro antes de elegir dónde se va a trabajar.
+
+```text
+Mi Campo
+├── Mis fincas (nombre, foto, hectáreas y número de parcelas)
+│   └── tocar una finca → ficha de finca
+│       ├── sus parcelas
+│       ├── actividad reciente
+│       ├── estado y campaña
+│       └── accesos a mapa y Catastro
+└── + Centro de acciones
+    ├── elegir finca visible y reversible
+    ├── abrir el registro correspondiente
+    └── elegir parcela antes de guardar cuando la acción la requiera
+```
+
+Esto conserva la jerarquía `Explotación → Finca → Parcela`, reduce ruido en la
+entrada y hace que cada registro tenga un destino explícito. El mapa vivo y la
+ficha detallada de parcela siguen siendo la siguiente evolución; no se
+eliminan las rutas ni contratos existentes.
 
 ## Objetivo
 

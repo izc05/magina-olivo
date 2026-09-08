@@ -7,7 +7,7 @@ async function source(path: string): Promise<string> {
 }
 
 test('Mi Campo keeps the private farm overview wired to real holdings and farms', async () => {
-  const app = await source('./App.tsx');
+  const [app, actions] = await Promise.all([source('./App.tsx'), source('./FieldActionCenter.tsx')]);
   const vite = await source('../vite.config.ts');
 
   assert.match(app, /<PrivateAccessGate returnTo=\{window\.location\.pathname\} area="field" \/>/);
@@ -18,16 +18,19 @@ test('Mi Campo keeps the private farm overview wired to real holdings and farms'
   assert.match(app, /aria-pressed=\{farm\.id === selectedFarmId\}/);
   assert.match(app, /api\.createFarm\(holdingId, body\)/);
   assert.match(app, /Aún no has añadido ninguna finca\./);
-  assert.match(app, /className="field-overview-hero"/);
-  assert.match(app, /className="field-overview-portal"/);
-  assert.match(app, /Tu explotación, al día/);
+  assert.match(app, /function FarmListHome/);
+  assert.match(app, /className="field-farms-home-intro"/);
+  assert.match(app, /className="field-farm-home-card"/);
+  assert.match(app, /className="field-farm-home-photo"/);
+  assert.match(app, /Elige una finca/);
+  assert.match(app, /href=\{`\/mi-campo\?finca=\$\{encodeURIComponent\(farm\.id\)\}`\}/);
   assert.match(app, /const openFieldView = \(view: FieldInitialView\) =>/);
   assert.match(app, /href="\/calendario"/);
-  assert.match(app, /href="\/campana"/);
+  assert.match(actions, /href: '\/campana\?new=delivery'/);
   assert.match(app, /selectedFarmOliveTrees/);
-  assert.match(app, /className="field-hero-farm-picker"/);
-  assert.match(app, /<select value=\{selectedFarmId\}/);
-  assert.match(app, /Gestionar o añadir finca/);
+  assert.match(app, /requestedFarmId/);
+  assert.match(app, /setSelectedFarmId\(requestedFarmId\)/);
+  assert.match(app, /Añadir otra finca/);
   assert.doesNotMatch(app, /Contexto de trabajo/);
   assert.match(app, /backHref="\/mi-campo"/);
   assert.match(app, /summary\?\.weightedYieldPercent/);
@@ -62,16 +65,16 @@ test('Mi Campo opens the map as a dedicated workspace instead of placing it afte
 });
 
 test('Mi Campo uses dedicated URLs for its short workspaces instead of a single long form', async () => {
-  const app = await source('./App.tsx');
+  const [app, actions] = await Promise.all([source('./App.tsx'), source('./FieldActionCenter.tsx')]);
   const main = await source('./main.tsx');
   const notebook = await source('./FieldNotebook.tsx');
 
   assert.match(app, /export type FieldInitialView/);
-  assert.match(app, /className="field-app-shortcuts"/);
-  assert.match(app, /href="\/mi-campo\/mapa"/);
-  assert.match(app, /href="\/mi-campo\/parcelas"/);
-  assert.match(app, /href="\/mi-campo\/cuaderno"/);
-  assert.match(app, /href="\/mi-campo\/tratamientos"/);
+  assert.match(app, /const openFieldView = \(view: FieldInitialView\) =>/);
+  assert.match(app, /href: '\/mi-campo\/mapa'/);
+  assert.match(app, /href: '\/mi-campo\/parcelas'/);
+  assert.match(app, /href: '\/mi-campo\/cuaderno'/);
+  assert.match(actions, /href: '\/mi-campo\/tratamientos\?new=activity'/);
   assert.match(main, /path === '\/mi-campo\/mapa'/);
   assert.match(main, /initialFieldView="map"/);
   assert.match(main, /initialFieldView="treatments"/);
@@ -85,10 +88,11 @@ test('farm detail and plots remain a local visual layer over the existing privat
   assert.match(app, /void loadPlots\(selectedFarmId\)/);
   assert.match(app, /const \[selectedPlotId, setSelectedPlotId\] = useState\(''\)/);
   assert.match(app, /plots\.some\(\(plot\) => plot\.id === current\)/);
-  assert.match(app, /<section className="farm-detail-card"/);
+  assert.match(app, /<section className="farm-detail-card farm-detail-hero"/);
   assert.match(app, /plots\.map\(\(plot\) =>/);
   assert.match(app, /onClick=\{\(\) => setSelectedPlotId\(plot\.id\)\}/);
   assert.match(app, /aria-pressed=\{plot\.id === selectedPlotId\}/);
+  assert.doesNotMatch(app, /plots\[0\]\?\.id/);
   assert.match(app, /Aún no has añadido parcelas a esta finca\./);
   assert.match(app, /api\.createPlot\(farmId, body\)/);
   assert.match(app, /<FieldNotebook holdingId=\{selectedHolding\.id\} farmId=\{selectedFarm\.id\} plots=\{plots\} onOpenMap=\{openMapWorkspace\} initialActivityType=\{notebookActivityType\} openEntry=\{Boolean\(notebookActivityType\) \|\| new URLSearchParams\(window\.location\.search\)\.get\('new'\) === 'activity'\} \/>/);

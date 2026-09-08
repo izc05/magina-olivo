@@ -42,7 +42,8 @@ export function DeliveryEntryCard({
   farms: Farm[];
   onSaved: () => Promise<void>;
 }) {
-  const [farmId, setFarmId] = useState('');
+  const requestedFarmId = new URLSearchParams(window.location.search).get('finca') ?? '';
+  const [farmId, setFarmId] = useState(() => farms.some((farm) => farm.id === requestedFarmId) ? requestedFarmId : '');
   const [plots, setPlots] = useState<Plot[]>([]);
   const [plotId, setPlotId] = useState('');
   const [destinations, setDestinations] = useState<DestinationSuggestion[]>([]);
@@ -58,6 +59,10 @@ export function DeliveryEntryCard({
     () => destinations.find((item) => item.officialName === destinationText.trim()) ?? null,
     [destinations, destinationText],
   );
+
+  useEffect(() => {
+    if (requestedFarmId && farms.some((farm) => farm.id === requestedFarmId)) setFarmId(requestedFarmId);
+  }, [farms, requestedFarmId]);
 
   useEffect(() => {
     const controller = new AbortController();

@@ -63,6 +63,17 @@ type AlertItem = {
   source?: string;
 };
 
+const DISMISSED_ALERTS_KEY = 'magina-dismissed-pilot-alerts-v1';
+
+function readDismissedAlerts(): string[] {
+  try {
+    const stored = JSON.parse(localStorage.getItem(DISMISSED_ALERTS_KEY) ?? '[]');
+    return Array.isArray(stored) ? stored.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
 function normalizePlace(value: string): string {
   return value
     .normalize('NFD')
@@ -89,6 +100,7 @@ function dayLabel(date: string): string {
 
 export function PilotAlerts() {
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [dismissed, setDismissed] = useState<string[]>(readDismissedAlerts);
 
   useEffect(() => {
     let cancelled = false;
@@ -196,13 +208,22 @@ export function PilotAlerts() {
     };
   }, []);
 
-  const visible = useMemo(() => alerts.slice(0, 2), [alerts]);
+  const visible = useMemo(() => alerts.filter((alert) => !dismissed.includes(alert.id)).slice(0, 2), [alerts, dismissed]);
   if (!visible.length) return null;
+
+  function dismissAlert(id: string) {
+    setDismissed((current) => {
+      const next = [...new Set([...current, id])].slice(-50);
+      localStorage.setItem(DISMISSED_ALERTS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }
 
   return (
     <aside className="pilot-alerts" aria-label="Avisos útiles" aria-live="polite">
       {visible.map((alert) => (
         <article className="pilot-alert-card" key={alert.id}>
+          <button className="pilot-alert-dismiss" type="button" aria-label={`Cerrar ${alert.title}`} onClick={() => dismissAlert(alert.id)}>×</button>
           <strong>{alert.title}</strong>
           <span>{alert.detail}</span>
           {alert.source ? <small>Fuente: {alert.source}</small> : null}

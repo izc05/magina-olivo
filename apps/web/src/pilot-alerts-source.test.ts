@@ -32,6 +32,9 @@ test('pilot alerts reuse persisted preferences, backend campaign summary, privat
   assert.match(alerts, /freshness\.status === 'fresh' \|\| weather\.freshness\.status === 'aging'/);
   assert.match(alerts, /source\.attribution/);
   assert.match(alerts, /scopeNote/);
+  assert.match(alerts, /magina-dismissed-pilot-alerts-v1/);
+  assert.match(alerts, /Cerrar \$\{alert\.title\}/);
+  assert.match(alerts, /dismissAlert\(alert\.id\)/);
   assert.doesNotMatch(alerts, /AEMET_API_KEY/);
 });
 

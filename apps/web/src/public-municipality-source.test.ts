@@ -6,18 +6,21 @@ async function read(relativePath: string): Promise<string> {
   return readFile(new URL(relativePath, import.meta.url), 'utf8');
 }
 
-test('verified Sierra Mágina municipality seed keeps unique five-digit AEMET codes', async () => {
-  const migration = await read('../../../db/migrations/0007_public_municipalities.sql');
-  const codes = migration.match(/'23\d{3}'/g)?.map((value) => value.slice(1, -1)) ?? [];
+test('verified Sierra Mágina municipality migrations keep unique five-digit AEMET codes', async () => {
+  const seed = await read('../../../db/migrations/0007_public_municipalities.sql');
+  const larvaMigration = await read('../../../db/migrations/0047_add_larva_public_municipality.sql');
+  const migrations = `${seed}\n${larvaMigration}`;
+  const codes = migrations.match(/'23\d{3}'/g)?.map((value) => value.slice(1, -1)) ?? [];
 
-  assert.equal(codes.length, 14);
-  assert.equal(new Set(codes).size, 14);
+  assert.equal(codes.length, 15);
+  assert.equal(new Set(codes).size, 15);
   for (const code of codes) assert.match(code, /^\d{5}$/);
 
-  assert.match(migration, /'cambil'.*'23018'.*\["Arbuniel"\]/s);
-  assert.match(migration, /'huelma'.*'23044'.*\["Solera"\]/s);
-  assert.match(migration, /'bedmar-y-garciez'.*'23902'.*\["Bedmar","Garcíez"\]/s);
-  assert.match(migration, /'carcheles'.*'23901'.*\["Carchelejo","Cárchel"\]/s);
+  assert.match(seed, /'cambil'.*'23018'.*\["Arbuniel"\]/s);
+  assert.match(seed, /'huelma'.*'23044'.*\["Solera"\]/s);
+  assert.match(seed, /'bedmar-y-garciez'.*'23902'.*\["Bedmar","Garcíez"\]/s);
+  assert.match(seed, /'carcheles'.*'23901'.*\["Carchelejo","Cárchel"\]/s);
+  assert.match(larvaMigration, /'larva'.*'Larva'.*'23054'/s);
 });
 
 test('weather public route resolves a verified slug instead of trusting a user-supplied AEMET code', async () => {

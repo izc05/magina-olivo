@@ -16,6 +16,8 @@ export type PublicWeatherForecast = {
   elaboratedAt: string | null;
   days: PublicWeatherDay[];
 };
+export type PublicWeatherHour = { dateTime: string; skyDescription: string | null; precipitationProbabilityPercent: number | null; temperatureC: number | null; humidityPercent: number | null; windKmh: number | null; windDirection: string | null };
+export type PublicHourlyWeatherForecast = { provider: 'AEMET OpenData'; municipalityCode: string; municipalityName: string | null; province: string | null; elaboratedAt: string | null; hours: PublicWeatherHour[] };
 
 type AemetEnvelope = {
   estado?: number;
@@ -37,6 +39,9 @@ type AemetMunicipalityForecast = {
   provincia?: string;
   prediccion?: { dia?: AemetDay[] };
 };
+type AemetHourlyValue = { value?: number | string | null; periodo?: string; descripcion?: string };
+type AemetHourlyDay = { fecha?: string; estadoCielo?: AemetHourlyValue[]; probPrecipitacion?: AemetHourlyValue[]; temperatura?: AemetHourlyValue[]; humedadRelativa?: AemetHourlyValue[]; vientoAndRachaMax?: Array<{ periodo?: string; direccion?: string[]; velocidad?: Array<number | string> }> };
+type AemetHourlyMunicipalityForecast = { elaborado?: string; nombre?: string; provincia?: string; prediccion?: { dia?: AemetHourlyDay[] } };
 
 function finiteNumber(value: unknown): number | null {
   const number = typeof value === 'string' && value.trim() === '' ? Number.NaN : Number(value);
@@ -88,6 +93,31 @@ export function parseAemetDailyForecast(
   };
 }
 
+export function parseAemetHourlyForecast(municipalityCode: string, payload: unknown): PublicHourlyWeatherForecast {
+  const rows = Array.isArray(payload) ? payload : [];
+  const root = (rows[0] ?? {}) as AemetHourlyMunicipalityForecast;
+  const hours: PublicWeatherHour[] = [];
+  for (const day of root.prediccion?.dia ?? []) {
+    if (!day.fecha) continue;
+    for (const temperature of day.temperatura ?? []) {
+      const period = temperature.periodo;
+      if (!period || !/^\d{2}$/.test(period)) continue;
+      const at = (values?: AemetHourlyValue[]) => values?.find((item) => item.periodo === period);
+      const wind = day.vientoAndRachaMax?.find((item) => item.periodo === period);
+      hours.push({
+        dateTime: `${day.fecha.split('T', 1)[0]}T${period}:00:00`,
+        skyDescription: at(day.estadoCielo)?.descripcion?.trim() || null,
+        precipitationProbabilityPercent: finiteNumber(at(day.probPrecipitacion)?.value),
+        temperatureC: finiteNumber(temperature.value),
+        humidityPercent: finiteNumber(at(day.humedadRelativa)?.value),
+        windKmh: maxFinite(wind?.velocidad ?? []),
+        windDirection: wind?.direccion?.find(Boolean)?.trim() || null,
+      });
+    }
+  }
+  return { provider: 'AEMET OpenData', municipalityCode, municipalityName: root.nombre?.trim() || null, province: root.provincia?.trim() || null, elaboratedAt: root.elaborado?.trim() || null, hours: hours.slice(0, 48) };
+}
+
 async function fetchJson(url: string, init?: RequestInit): Promise<unknown> {
   const response = await fetch(url, init);
   if (!response.ok) {
@@ -124,4 +154,15 @@ export async function fetchAemetDailyForecast(municipalityCode: string): Promise
 
   const payload = await fetchJson(dataUrl.toString(), { headers: { accept: 'application/json' } });
   return parseAemetDailyForecast(municipalityCode, payload);
+}
+
+export async function fetchAemetHourlyForecast(municipalityCode: string): Promise<PublicHourlyWeatherForecast> {
+  const apiKey = process.env.AEMET_API_KEY?.trim();
+  if (!apiKey) throw new Error('AEMET_API_KEY_NOT_CONFIGURED');
+  if (!/^\d{5}$/.test(municipalityCode)) throw new Error('INVALID_AEMET_MUNICIPALITY_CODE');
+  const envelope = await fetchJson(`${AEMET_BASE_URL}/api/prediccion/especifica/municipio/horaria/${encodeURIComponent(municipalityCode)}`, { headers: { api_key: apiKey, accept: 'application/json', 'user-agent': 'Magina-Olivo/1.0 (+public-weather-adapter)' } }) as AemetEnvelope;
+  if (!envelope.datos || typeof envelope.datos !== 'string') throw new Error(`AEMET_DATA_URL_MISSING:${envelope.estado ?? 'unknown'}`);
+  const dataUrl = new URL(envelope.datos);
+  if (dataUrl.protocol !== 'https:' || dataUrl.hostname !== 'opendata.aemet.es') throw new Error('AEMET_DATA_URL_NOT_TRUSTED');
+  return parseAemetHourlyForecast(municipalityCode, await fetchJson(dataUrl.toString(), { headers: { accept: 'application/json' } }));
 }

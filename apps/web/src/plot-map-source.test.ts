@@ -6,13 +6,17 @@ async function read(relativePath: string): Promise<string> {
   return readFile(new URL(relativePath, import.meta.url), 'utf8');
 }
 
-test('plot map is wired into Mi Campo and supports point plus boundary editing', async () => {
+test('plot map has one primary Mi Campo surface and supports point plus boundary editing', async () => {
+  const app = await read('./App.tsx');
   const notebook = await read('./FieldNotebook.tsx');
   const panel = await read('./PlotMapPanel.tsx');
   const editor = await read('./PlotMapEditor.tsx');
 
-  assert.match(notebook, /import \{ PlotMapPanel \}/);
-  assert.match(notebook, /<PlotMapPanel farmId=\{farmId\}/);
+  assert.match(app, /import \{ PlotMapPanel \}/);
+  assert.match(app, /<PlotMapPanel farmId=\{selectedFarm\.id\}/);
+  assert.match(app, /id="mapa-parcelas"/);
+  assert.match(notebook, /href="#mapa-parcelas"/);
+  assert.doesNotMatch(notebook, /<PlotMapPanel/);
   assert.match(panel, /PlotMapEditor/);
   assert.match(panel, /SigpacRecintoPanel/);
   assert.match(editor, /Mapa de Parcelas/);
@@ -22,6 +26,11 @@ test('plot map is wired into Mi Campo and supports point plus boundary editing',
   assert.match(editor, /Guardar perímetro/);
   assert.match(editor, /Añadir mi posición/);
   assert.match(editor, /tile\.openstreetmap\.org/);
+  assert.match(editor, /OI\.OrthoimageCoverage/);
+  assert.match(editor, /GoogleMapsCompatible/);
+  assert.match(editor, /dir_action=navigate/);
+  assert.match(editor, /Ortofoto PNOA/);
+  assert.match(editor, /Relieve/);
   assert.match(editor, /OpenStreetMap contributors/);
   assert.match(editor, /polygonFromVertices/);
   assert.match(editor, /polygonAreaSquareMeters/);

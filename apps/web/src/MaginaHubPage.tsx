@@ -1,3 +1,4 @@
+import { PhotoCredit, TerritoryLinks, VisualHeader } from './VisualChrome';
 import { useEffect, useState } from 'react';
 
 type PublicSource = {
@@ -38,20 +39,15 @@ export function MaginaHubPage() {
 
   return (
     <main className="magina-hub-shell" id="main-content">
-      <header className="directory-header">
-        <a className="directory-brand" href="/" aria-label="Volver a Mágina Olivo">
-          <img src="/brand/magina-olivo-mark.svg" alt="" />
-          <span><strong>Mágina Olivo</strong><small>Sierra Mágina · Jaén</small></span>
-        </a>
-        <a className="directory-back" href="/">Mi Mágina Olivo</a>
-      </header>
+      <VisualHeader />
 
       <section className="magina-hub-hero" aria-labelledby="magina-hub-title">
-        <p className="eyebrow">Mágina</p>
-        <h1 id="magina-hub-title">Tu territorio, en un solo lugar</h1>
+        <p className="eyebrow">Sierra Mágina</p>
+        <h1 id="magina-hub-title">Mágina al día</h1>
         <p>Información pública útil para el olivar de Sierra Mágina, separada de tus fincas, entregas y documentos privados.</p>
       </section>
-
+      <TerritoryLinks />
+      <a className="territory-feature" href="/magina/noticias"><span className="eyebrow">Actualidad del olivar</span><h2>El campo y la vida de nuestra comarca</h2><p>Consulta las últimas publicaciones con su fuente y fecha.</p></a>
       <section className="magina-hub-grid" aria-label="Servicios públicos de Mágina">
         <a className="card magina-hub-card ready" href="/magina/tiempo">
           <span className="badge gold">Disponible</span>
@@ -87,6 +83,13 @@ export function MaginaHubPage() {
           <p>Publicaciones del Observatorio con fecha visible y control de frescura antes de mostrar precios estructurados.</p>
           <strong>Ver contexto de mercado →</strong>
         </a>
+
+        <a className="card magina-hub-card ready magina-hub-card-territory" href="/descubre">
+          <span className="badge gold">Territorio</span>
+          <h2>Descubre Sierra Mágina</h2>
+          <p>Rutas, pueblos y cultura del olivar con contenidos locales claramente identificados.</p>
+          <strong>Explorar el territorio →</strong>
+        </a>
       </section>
 
       <section className="magina-source-section" aria-labelledby="source-health-title">
@@ -120,6 +123,7 @@ export function MaginaHubPage() {
       </section>
 
       <footer className="directory-footer">
+        <PhotoCredit />
         <p>La información pública se muestra con procedencia y fecha. Tus datos de campo, campañas y documentos permanecen en el área privada y no se publican aquí.</p>
       </footer>
     </main>

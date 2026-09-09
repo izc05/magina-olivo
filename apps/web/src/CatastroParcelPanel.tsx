@@ -125,7 +125,7 @@ function formatDate(value: string | null): string {
   return new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' }).format(date);
 }
 
-function GeometryPreview({ geometry }: { geometry: CatastroGeometry }) {
+export function GeometryPreview({ geometry }: { geometry: CatastroGeometry }) {
   const rings = useMemo(() => exteriorRings(geometry), [geometry]);
   const positions = rings.flat();
   if (!positions.length) return <div className="catastro-preview-empty">Geometría no representable</div>;
@@ -151,9 +151,9 @@ function GeometryPreview({ geometry }: { geometry: CatastroGeometry }) {
   );
 }
 
-export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; onImported: () => Promise<void> }) {
+export function CatastroParcelPanel({ farmId, onImported, activePlotId }: { farmId: string; onImported: () => Promise<void>; activePlotId?: string }) {
   const [plots, setPlots] = useState<PlotSummary[]>([]);
-  const [plotId, setPlotId] = useState('');
+  const [plotId, setPlotId] = useState(activePlotId ?? '');
   const [items, setItems] = useState<CatastroParcel[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [source, setSource] = useState<CatastroResponse['source'] | null>(null);
@@ -172,9 +172,9 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
     void request<{ items: PlotSummary[] }>(`/api/v1/farms/${farmId}/plots`).then((result) => {
       if (cancelled) return;
       setPlots(result.items);
-      setPlotId((current) => result.items.some((plot) => plot.id === current) ? current : (result.items[0]?.id ?? ''));
+      setPlotId((current) => result.items.some((plot) => plot.id === current) ? current : (activePlotId ? '' : result.items[0]?.id ?? ''));
     }).catch(() => {
-      if (!cancelled) setPlots([]);
+      if (!cancelled) { setPlots([]); setError('No se ha podido cargar la parcela para Catastro. Vuelve al mapa e inténtalo de nuevo.'); }
     });
     return () => { cancelled = true; };
   }, [farmId]);
@@ -251,7 +251,7 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
     }
   }
 
-  if (!plots.length) return null;
+  if (!plots.length) return <p role={error ? 'alert' : 'status'}>{error || 'Cargando parcela…'}</p>;
 
   return (
     <section className="section catastro-shell" aria-labelledby="catastro-title">
@@ -267,7 +267,7 @@ export function CatastroParcelPanel({ farmId, onImported }: { farmId: string; on
       <div className="card card-body catastro-search-card">
         <div className="field">
           <label htmlFor="catastro-plot">Parcela de Mágina Olivo</label>
-          <select id="catastro-plot" value={plotId} onChange={(event) => setPlotId(event.target.value)}>
+              <select id="catastro-plot" value={plotId} disabled={Boolean(activePlotId)} onChange={(event) => setPlotId(event.target.value)}>
             {plots.map((plot) => <option key={plot.id} value={plot.id}>{plot.name}</option>)}
           </select>
         </div>

@@ -63,6 +63,16 @@ export type ActivityCreateBody = {
 
 export type ActivityCreateResult = Activity | { offlineQueued: true; clientGeneratedId: string };
 
+export type TaskCreateBody = {
+  title: string;
+  dueDate: string;
+  priority?: 'low' | 'normal' | 'high';
+  notes?: string;
+  reminderDaysBefore?: number | null;
+  farmId?: string;
+  plotId?: string;
+};
+
 export type PlotTimelineItem = {
   type: 'activity' | 'delivery' | 'yield_result';
   id: string;
@@ -73,6 +83,10 @@ export type PlotTimelineItem = {
   ticketNumber?: string;
   yieldPercent?: string;
   activityType?: ActivityType;
+  affectedAreaHa?: string;
+  productName?: string;
+  quantity?: string;
+  quantityUnit?: string;
   notes?: string;
   costEur?: string;
 };
@@ -110,7 +124,7 @@ function invalidateCachePrefix(prefix: string): void {
   }
 }
 
-async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
+export async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   if (init.body && !headers.has('content-type')) headers.set('content-type', 'application/json');
   headers.set('accept', 'application/json');
@@ -245,5 +259,36 @@ export const api = {
     }
   },
 
+  createTask: (holdingId: string, body: TaskCreateBody) => request<unknown>(`/api/v1/holdings/${holdingId}/tasks`, { method: 'POST', body: JSON.stringify(body) }),
+
   plotTimeline: (plotId: string) => cachedGet<{ items: PlotTimelineItem[] }>(`/api/v1/plots/${plotId}/timeline`),
+  parseIntent: (text: string, holdingId?: string) => request<{
+    confidence: number;
+    draft: {
+      kind: 'activity' | 'delivery' | 'query';
+      activityType?: ActivityType;
+      occurredAt?: string;
+      deliveredAt?: string;
+      kilograms?: string;
+      customDestination?: string;
+      farmId?: string;
+      plotId?: string;
+      plotName?: string;
+      productName?: string;
+      quantity?: number;
+      quantityUnit?: string;
+      notes?: string;
+    };
+    humanExplanation: string;
+  }>('/api/v1/ai/parse-intent', { method: 'POST', body: JSON.stringify({ text, holdingId }) }),
+  parseTicket: (text: string) => request<{
+    confidence: number;
+    kilograms: string;
+    fatYieldPercent?: number;
+    acidityPercent?: number;
+    ticketNumber?: string;
+    cooperativeName?: string;
+    notes?: string;
+    humanExplanation: string;
+  }>('/api/v1/ai/parse-ticket', { method: 'POST', body: JSON.stringify({ text }) }),
 };

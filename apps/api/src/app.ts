@@ -2,7 +2,11 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { checkDatabase } from './db.ts';
 import { registerAccountExportRoutes } from './account-export-routes.ts';
 import { registerAccountPreferenceRoutes } from './account-preference-routes.ts';
+import { registerAdminRoutes } from './admin-routes.ts';
 import { registerActivityRoutes } from './activity-routes.ts';
+import { registerAiRoutes } from './ai-routes.ts';
+import { registerPushRoutes } from './push-routes.ts';
+import { registerCrewRoutes } from './crew-routes.ts';
 import { registerAuthRoutes } from './auth-routes.ts';
 import { registerCampaignExportRoutes } from './campaign-export-routes.ts';
 import { registerCampaignRoutes } from './campaign-routes.ts';
@@ -14,17 +18,21 @@ import { registerDeliveryUpdateRoutes } from './delivery-update-routes.ts';
 import { registerDocumentRoutes } from './document-routes.ts';
 import { registerFarmRoutes } from './farm-routes.ts';
 import { registerHoldingRoutes } from './holding-routes.ts';
+import { registerLoyaltyRoutes } from './loyalty-routes.ts';
 import { registerPlotRoutes } from './plot-routes.ts';
 import { registerPlotTimelineRoutes } from './plot-timeline-routes.ts';
 import { registerPublicDestinationRoutes } from './public-destination-routes.ts';
 import { registerPublicFieldAlertRoutes } from './public-field-alert-routes.ts';
 import { registerPublicMunicipalityRoutes } from './public-municipality-routes.ts';
+import { registerPublicMarketRoutes } from './public-market-routes.ts';
 import { registerPublicNewsRoutes } from './public-news-routes.ts';
 import { registerPublicRadarRoutes } from './public-radar-routes.ts';
 import { registerPublicSourceRoutes } from './public-source-routes.ts';
 import { registerPublicWeatherRoutes } from './public-weather-routes.ts';
 import { registerRainAlertRoutes } from './rain-alert-routes.ts';
 import { registerRequestSecurity } from './request-security.ts';
+import { registerRewardPartnerRoutes } from './reward-partner-routes.ts';
+import { registerRewardRoutes } from './reward-routes.ts';
 import { registerSigpacMapRoutes } from './sigpac-map-routes.ts';
 import { registerTaskRoutes } from './task-routes.ts';
 
@@ -68,12 +76,17 @@ export function buildApp(): FastifyInstance {
   });
 
   registerAuthRoutes(app);
+  registerAiRoutes(app);
+  registerPushRoutes(app);
+  registerCrewRoutes(app);
+  registerAdminRoutes(app);
   registerAccountPreferenceRoutes(app);
   registerAccountExportRoutes(app);
   registerRainAlertRoutes(app);
   registerPublicDestinationRoutes(app);
   registerPublicMunicipalityRoutes(app);
   registerPublicSourceRoutes(app);
+  registerPublicMarketRoutes(app);
   registerPublicWeatherRoutes(app);
   registerPublicRadarRoutes(app);
   registerPublicFieldAlertRoutes(app);
@@ -93,6 +106,9 @@ export function buildApp(): FastifyInstance {
   registerDocumentRoutes(app);
   registerActivityRoutes(app);
   registerTaskRoutes(app);
+  registerLoyaltyRoutes(app);
+  registerRewardRoutes(app);
+  registerRewardPartnerRoutes(app);
 
   return app;
 }

@@ -24,10 +24,15 @@ test('calendar keeps agricultural scope, overdue visibility and write restrictio
   const calendar = await read('./CalendarPage.tsx');
 
   assert.match(calendar, /Tareas y calendario/);
-  assert.match(calendar, /Organización del campo/);
+  assert.match(calendar, /Organiza los trabajos del olivar/);
+  assert.match(calendar, /id="calendar-content"/);
+  assert.match(calendar, /className="calendar-hero"/);
   assert.match(calendar, /Tareas vencidas/);
   assert.match(calendar, /reminderDaysBefore/);
   assert.match(calendar, /priority/);
+  assert.match(calendar, /const contextualFarmId = taskSearch\.get\('finca'\)/);
+  assert.match(calendar, /plotId: contextualPlotId \?\? undefined/);
+  assert.match(calendar, /Esta tarea se guardará en/);
   assert.match(calendar, /activeHolding\.role !== 'viewer'/);
   assert.match(calendar, /solo lectura/);
   assert.doesNotMatch(calendar, /pushManager|Notification\.requestPermission/);

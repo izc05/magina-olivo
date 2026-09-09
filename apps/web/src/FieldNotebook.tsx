@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
+import { BookOpen, Droplets, FlaskConical, PackagePlus, Sprout, TrendingUp } from 'lucide-react';
 import {
   api,
   type ActivityCreateBody,
@@ -8,7 +9,6 @@ import {
   type Plot,
   type PlotTimelineItem,
 } from './api.ts';
-import { PlotMapPanel } from './PlotMapPanel.tsx';
 
 const activityLabels: Record<ActivityType, string> = {
   treatment: 'Tratamiento',
@@ -33,9 +33,21 @@ function localDateTimeValue(): string {
 }
 
 function timelineTitle(item: PlotTimelineItem): string {
-  if (item.type === 'delivery') return `Entrega · ${item.kilograms ?? '—'} kg`;
-  if (item.type === 'yield_result') return `Rendimiento · ${item.yieldPercent ?? '—'} %`;
+  if (item.type === 'delivery') return 'Entrega';
+  if (item.type === 'yield_result') return 'Rendimiento';
   return activityLabels[item.activityType ?? 'other'];
+}
+
+function formatTimelineValue(value: string): string {
+  return new Intl.NumberFormat('es-ES', { maximumFractionDigits: 3 }).format(Number(value));
+}
+
+function timelinePrimaryValue(item: PlotTimelineItem): string | null {
+  if (item.type === 'delivery' && item.kilograms) return `${formatTimelineValue(item.kilograms)} kg`;
+  if (item.type === 'yield_result' && item.yieldPercent) return `${formatTimelineValue(item.yieldPercent)} %`;
+  if (item.type === 'activity' && item.quantity && item.quantityUnit) return `${formatTimelineValue(item.quantity)} ${item.quantityUnit}${item.activityType === 'harvest' ? ' estimados' : ''}`;
+  if (item.type === 'activity' && item.productName) return item.productName;
+  return null;
 }
 
 function timelineDetail(item: PlotTimelineItem): string | null {
@@ -43,7 +55,16 @@ function timelineDetail(item: PlotTimelineItem): string | null {
     return [item.destination, item.ticketNumber ? `Ticket ${item.ticketNumber}` : null].filter(Boolean).join(' · ') || null;
   }
   if (item.type === 'yield_result') return 'Resultado asociado a una entrega';
-  return [item.notes, item.costEur ? `${item.costEur} €` : null].filter(Boolean).join(' · ') || null;
+  return [item.affectedAreaHa ? `${formatTimelineValue(item.affectedAreaHa)} ha` : null, item.costEur ? `${formatTimelineValue(item.costEur)} €` : null, item.notes].filter(Boolean).join(' · ') || null;
+}
+
+function TimelineIcon({ item }: { item: PlotTimelineItem }) {
+  if (item.type === 'delivery') return <PackagePlus aria-hidden="true" />;
+  if (item.type === 'yield_result') return <TrendingUp aria-hidden="true" />;
+  if (item.activityType === 'treatment') return <FlaskConical aria-hidden="true" />;
+  if (item.activityType === 'irrigation') return <Droplets aria-hidden="true" />;
+  if (item.activityType === 'harvest') return <Sprout aria-hidden="true" />;
+  return <BookOpen aria-hidden="true" />;
 }
 
 function filterLabel(filter: TimelineFilter): string {
@@ -57,12 +78,19 @@ export function FieldNotebook({
   holdingId,
   farmId,
   plots,
+  onOpenMap,
+  initialActivityType,
+  openEntry = false,
 }: {
   holdingId: string;
   farmId: string;
   plots: Plot[];
+  onOpenMap?: () => void;
+  initialActivityType?: ActivityType | undefined;
+  openEntry?: boolean;
 }) {
-  const [selectedPlotId, setSelectedPlotId] = useState(plots[0]?.id ?? '');
+  const requestedPlotId = new URLSearchParams(window.location.search).get('parcela') ?? '';
+  const [selectedPlotId, setSelectedPlotId] = useState(() => plots.some((plot) => plot.id === requestedPlotId) ? requestedPlotId : (plots[0]?.id ?? ''));
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [campaignId, setCampaignId] = useState('');
   const [timeline, setTimeline] = useState<PlotTimelineItem[]>([]);
@@ -92,10 +120,33 @@ export function FieldNotebook({
   const lastTimelineDate = timeline[0]?.occurredAt
     ? new Date(timeline[0].occurredAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
     : '—';
+  const focusedWorkspace = initialActivityType === 'treatment' || initialActivityType === 'irrigation';
+  const workspaceTitle = initialActivityType === 'treatment'
+    ? 'Tratamientos'
+    : initialActivityType === 'irrigation'
+      ? 'Riegos'
+      : 'Cuaderno de campo';
+  const workspaceCopy = initialActivityType === 'treatment'
+    ? 'Registra aplicaciones y consulta el historial de la parcela activa.'
+    : initialActivityType === 'irrigation'
+      ? 'Registra el agua aplicada y consulta solo el historial de riego de la parcela activa.'
+      : 'Registra el trabajo realizado y consulta la historia de cada parcela.';
+  const entryLabel = initialActivityType === 'treatment'
+    ? 'Registrar tratamiento'
+    : initialActivityType === 'irrigation'
+      ? 'Registrar riego'
+      : 'Añadir registro al cuaderno';
 
   useEffect(() => {
-    if (!plots.some((plot) => plot.id === selectedPlotId)) setSelectedPlotId(plots[0]?.id ?? '');
-  }, [plots, selectedPlotId]);
+    setSelectedPlotId((current) => {
+      if (requestedPlotId && plots.some((plot) => plot.id === requestedPlotId)) return requestedPlotId;
+      return plots.some((plot) => plot.id === current) ? current : (plots[0]?.id ?? '');
+    });
+  }, [plots, requestedPlotId]);
+
+  useEffect(() => {
+    if (initialActivityType) setActivityType(initialActivityType);
+  }, [initialActivityType]);
 
   useEffect(() => {
     let cancelled = false;
@@ -176,7 +227,7 @@ export function FieldNotebook({
     try {
       const result = await api.createActivity(holdingId, body);
       form.reset();
-      setActivityType('observation');
+      setActivityType(initialActivityType ?? 'observation');
       if ('offlineQueued' in result) {
         setNotice('Labor guardada en este móvil. Se añadirá a la historia al recuperar conexión.');
       } else {
@@ -202,17 +253,17 @@ export function FieldNotebook({
 
   return (
     <>
-      <PlotMapPanel farmId={farmId} />
       <section className="section notebook-shell" aria-labelledby="field-notebook-title">
-        <div className="section-heading">
+        <div className="section-heading notebook-workspace-heading">
           <div>
-            <p className="eyebrow page-eyebrow">Cuaderno personal</p>
-            <h2 id="field-notebook-title" className="section-title">Labores e historia</h2>
-            <p className="section-copy">Recolección y entrega siguen siendo registros distintos.</p>
+            <p className="eyebrow page-eyebrow">{focusedWorkspace ? 'MI CAMPO' : 'CUADERNO'}</p>
+            <h2 id="field-notebook-title" className="section-title">{workspaceTitle}</h2>
+            <p className="section-copy">{workspaceCopy}</p>
+            <p className="notebook-context"><strong>Parcela activa:</strong> {selectedPlot?.name ?? 'Sin seleccionar'} · <strong>Campaña:</strong> {campaigns.find((campaign) => campaign.id === campaignId)?.name ?? 'Sin campaña'}</p>
           </div>
         </div>
 
-        <div className="card card-body notebook-card">
+        <div className={`card card-body notebook-card${focusedWorkspace ? ' notebook-card-focused' : ''}`}>
           <div className="notebook-selector-row">
             <div className="field">
               <label htmlFor="notebook-plot">Parcela</label>
@@ -220,23 +271,30 @@ export function FieldNotebook({
                 {plots.map((plot) => <option key={plot.id} value={plot.id}>{plot.name}</option>)}
               </select>
             </div>
-            <div className="field">
+            {!focusedWorkspace ? <div className="field">
               <label htmlFor="notebook-campaign">Campaña</label>
               <select id="notebook-campaign" value={campaignId} onChange={(event) => setCampaignId(event.target.value)}>
                 <option value="">Sin campaña</option>
                 {campaigns.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}
               </select>
-            </div>
+            </div> : null}
           </div>
 
+          <a className="notebook-map-context notebook-map-link" href="#mapa-parcelas" onClick={(event) => { if (onOpenMap) { event.preventDefault(); onOpenMap(); } }} aria-label={`Abrir mapa de ${selectedPlot?.name ?? 'la parcela activa'}`}>
+            <strong>{focusedWorkspace ? 'Ver mapa, SIGPAC y Catastro' : 'Mapa, SIGPAC y Catastro'}</strong>
+            <span>{focusedWorkspace ? `Parcela ${selectedPlot?.name ?? 'activa'} · perímetro y fuente oficial` : 'Consulta el perímetro y la fuente oficial de la parcela activa.'}</span>
+          </a>
+
+          <details className={`visual-disclosure notebook-entry-disclosure${focusedWorkspace ? ' is-focused' : ''}`} open={openEntry}>
+          <summary>{entryLabel}</summary>
           <form className="form-grid notebook-form" onSubmit={submit}>
             <div className="inline-fields">
-              <div className="field">
+              {!focusedWorkspace ? <div className="field">
                 <label htmlFor="activity-type">Tipo de labor</label>
                 <select id="activity-type" value={activityType} onChange={(event) => setActivityType(event.target.value as ActivityType)}>
                   {Object.entries(activityLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                 </select>
-              </div>
+              </div> : <div className="notebook-fixed-type"><strong>{activityLabels[activityType]}</strong><small>{initialActivityType === 'treatment' ? 'Registro fitosanitario' : 'Registro de riego'}</small></div>}
               <div className="field">
                 <label htmlFor="activity-occurred-at">Fecha y hora</label>
                 <input id="activity-occurred-at" name="occurredAt" type="datetime-local" defaultValue={localDateTimeValue()} required />
@@ -245,7 +303,7 @@ export function FieldNotebook({
 
             <div className="inline-fields">
               <div className="field">
-                <label htmlFor="activity-area">Superficie afectada (ha)</label>
+                <label htmlFor="activity-area">{activityType === 'harvest' ? 'Superficie recolectada (ha)' : 'Superficie afectada (ha)'}</label>
                 <input id="activity-area" name="affectedAreaHa" type="number" min="0" step="0.001" placeholder={selectedPlot?.areaHa ?? 'Opcional'} />
               </div>
               <div className="field">
@@ -279,26 +337,40 @@ export function FieldNotebook({
               </div>
             ) : null}
 
+            {activityType === 'harvest' ? (
+              <div className="notebook-context-fields">
+                <div className="field">
+                  <label htmlFor="activity-quantity">Kilos estimados</label>
+                  <input id="activity-quantity" name="quantity" type="number" min="0" step="0.001" inputMode="decimal" placeholder="Opcional" />
+                </div>
+                <input type="hidden" name="quantityUnit" value="kg" />
+              </div>
+            ) : null}
+
             <div className="field">
               <label htmlFor="activity-notes">Notas</label>
-              <textarea id="activity-notes" name="notes" maxLength={4000} placeholder="Qué se ha hecho, observaciones, estado del olivar…" />
+              <textarea id="activity-notes" name="notes" maxLength={4000} placeholder={activityType === 'harvest' ? 'Jornada, método o detalle opcional…' : 'Qué se ha hecho, observaciones, estado del olivar…'} />
             </div>
 
             {error ? <div className="alert" role="alert">{error}</div> : null}
             {notice ? <div className="alert success" role="status">{notice}</div> : null}
 
             <div className="form-actions">
-              <button className="primary-button" type="submit" disabled={busy}>{busy ? 'Guardando…' : 'Guardar labor'}</button>
+              <button className="primary-button" type="submit" disabled={busy}>{busy ? 'Guardando…' : initialActivityType === 'treatment' ? 'Guardar tratamiento' : initialActivityType === 'irrigation' ? 'Guardar riego' : activityType === 'harvest' ? 'Guardar recolección' : 'Guardar labor'}</button>
             </div>
           </form>
+          </details>
         </div>
 
-        <div className="notebook-summary-grid" aria-label={`Resumen de ${selectedPlot?.name ?? 'la parcela'}`}>
+        {focusedWorkspace ? <div className="notebook-focused-summary" aria-label={`Resumen de ${selectedPlot?.name ?? 'la parcela'}`}>
+          <strong>{timelineCounts.all} movimientos en {selectedPlot?.name ?? 'la parcela'}</strong>
+          <span>{timelineCounts.activity} labores · {timelineCounts.delivery} entregas · Último: {lastTimelineDate}</span>
+        </div> : <div className="notebook-summary-grid" aria-label={`Resumen de ${selectedPlot?.name ?? 'la parcela'}`}>
           <article><span>Labores</span><strong>{timelineCounts.activity}</strong><small>registradas</small></article>
           <article><span>Entregas</span><strong>{timelineCounts.delivery}</strong><small>asociadas</small></article>
           <article><span>Rendimientos</span><strong>{timelineCounts.yield_result}</strong><small>resultados</small></article>
           <article><span>Último movimiento</span><strong>{lastTimelineDate}</strong><small>{timelineCounts.all} hitos</small></article>
-        </div>
+        </div>}
 
         <div className="section-heading notebook-history-heading">
           <div>
@@ -325,12 +397,13 @@ export function FieldNotebook({
         <div className="timeline-list">
           {filteredTimeline.map((item) => (
             <article className="card timeline-item" key={`${item.type}-${item.id}`}>
-              <div className={`timeline-dot ${item.type}`} aria-hidden="true" />
+              <div className={`timeline-icon ${item.type} ${item.activityType ?? ''}`}><TimelineIcon item={item} /></div>
               <div className="timeline-copy">
                 <div className="timeline-topline">
                   <strong>{timelineTitle(item)}</strong>
                   <time dateTime={item.occurredAt}>{new Date(item.occurredAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</time>
                 </div>
+                {timelinePrimaryValue(item) ? <b className="timeline-primary-value">{timelinePrimaryValue(item)}</b> : null}
                 {timelineDetail(item) ? <p>{timelineDetail(item)}</p> : null}
               </div>
             </article>

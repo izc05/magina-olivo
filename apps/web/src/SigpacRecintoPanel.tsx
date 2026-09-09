@@ -159,9 +159,9 @@ function GeometryPreview({ geometry }: { geometry: SigpacGeometry }) {
   );
 }
 
-export function SigpacRecintoPanel({ farmId, onImported }: { farmId: string; onImported: () => Promise<void> }) {
+export function SigpacRecintoPanel({ farmId, onImported, activePlotId }: { farmId: string; onImported: () => Promise<void>; activePlotId?: string }) {
   const [plots, setPlots] = useState<PlotSummary[]>([]);
-  const [plotId, setPlotId] = useState('');
+  const [plotId, setPlotId] = useState(activePlotId ?? '');
   const [items, setItems] = useState<SigpacRecinto[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [source, setSource] = useState<SigpacResponse['source'] | null>(null);
@@ -180,9 +180,9 @@ export function SigpacRecintoPanel({ farmId, onImported }: { farmId: string; onI
     void request<{ items: PlotSummary[] }>(`/api/v1/farms/${farmId}/plots`).then((result) => {
       if (cancelled) return;
       setPlots(result.items);
-      setPlotId((current) => result.items.some((plot) => plot.id === current) ? current : (result.items[0]?.id ?? ''));
+      setPlotId((current) => result.items.some((plot) => plot.id === current) ? current : (activePlotId ? '' : result.items[0]?.id ?? ''));
     }).catch(() => {
-      if (!cancelled) setPlots([]);
+      if (!cancelled) { setPlots([]); setError('No se ha podido cargar la parcela para SIGPAC. Vuelve al mapa e inténtalo de nuevo.'); }
     });
     return () => { cancelled = true; };
   }, [farmId]);
@@ -259,7 +259,7 @@ export function SigpacRecintoPanel({ farmId, onImported }: { farmId: string; onI
     }
   }
 
-  if (!plots.length) return null;
+  if (!plots.length) return <p role={error ? 'alert' : 'status'}>{error || 'Cargando parcela…'}</p>;
 
   return (
     <section className="section sigpac-shell" aria-labelledby="sigpac-title">
@@ -275,7 +275,7 @@ export function SigpacRecintoPanel({ farmId, onImported }: { farmId: string; onI
       <div className="card card-body sigpac-search-card">
         <div className="field">
           <label htmlFor="sigpac-plot">Parcela de Mágina Olivo</label>
-          <select id="sigpac-plot" value={plotId} onChange={(event) => setPlotId(event.target.value)}>
+              <select id="sigpac-plot" value={plotId} disabled={Boolean(activePlotId)} onChange={(event) => setPlotId(event.target.value)}>
             {plots.map((plot) => <option key={plot.id} value={plot.id}>{plot.name}</option>)}
           </select>
         </div>

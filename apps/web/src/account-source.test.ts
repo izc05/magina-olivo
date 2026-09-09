@@ -21,6 +21,9 @@ test('Mi Cuenta is reachable only through an authenticated session signal', asyn
   assert.match(account, /\/api\/v1\/account\/preferences/);
   assert.match(account, /\/api\/v1\/public\/destinations/);
   assert.match(account, /\/api\/v1\/account\/exports/);
+  assert.match(account, /accountErrorMessage/);
+  assert.match(account, /No se ha podido cargar tu perfil ahora/);
+  assert.match(account, /activePath="\/cuenta"/);
 });
 
 test('account preferences persist user choices and portability does not overpromise destructive or ZIP flows', async () => {
@@ -44,6 +47,61 @@ test('account preferences persist user choices and portability does not overprom
   assert.match(account, /Baja de cuenta/);
   assert.match(account, /No mostraremos una acción destructiva/);
   assert.doesNotMatch(account, /Eliminar cuenta<\/button>/);
+});
+
+test('the official supplied brand mark is used by the shared web chrome', async () => {
+  const chrome = await read('./VisualChrome.tsx');
+  const brand = await read('./brand.css');
+
+  assert.match(chrome, /magina-olivo-official-mark\.png/);
+  assert.match(brand, /magina-olivo-official-mark\.png/);
+  assert.doesNotMatch(chrome, /magina-olivo-mark\.svg/);
+});
+
+test('edit profile is private and saves only fields backed by real services', async () => {
+  const main = await read('./main.tsx');
+  const profile = await read('./EditProfilePage.tsx');
+
+  assert.match(main, /path === '\/perfil\/editar'/);
+  assert.match(main, /<PrivateRoute returnTo=\{returnTo\}><EditProfilePage \/><\/PrivateRoute>/);
+  assert.match(profile, /\/api\/auth\/update-user/);
+  assert.match(profile, /\/api\/v1\/account\/preferences/);
+  assert.match(profile, /El correo de acceso no se cambia desde esta pantalla/);
+  assert.doesNotMatch(profile, /name="phone"|name="surname"/);
+});
+
+test('notification preferences use a protected route and persist existing server fields', async () => {
+  const main = await read('./main.tsx');
+  const notifications = await read('./NotificationPreferencesPage.tsx');
+  assert.match(main, /path === '\/perfil\/notificaciones'/);
+  assert.match(notifications, /\/api\/v1\/account\/preferences/);
+  assert.match(notifications, /notifyWeather/);
+  assert.match(notifications, /notifyTasks/);
+  assert.match(notifications, /notifyPendingYield/);
+  assert.match(notifications, /role="switch"/);
+});
+
+test('privacy permissions are private, gesture-driven and never prompt on mount', async () => {
+  const main = await read('./main.tsx');
+  const privacy = await read('./PrivacyPermissionsPage.tsx');
+  assert.match(main, /path === '\/perfil\/privacidad'/);
+  assert.match(privacy, /Notification\.requestPermission\(\)/);
+  assert.match(privacy, /navigator\.geolocation\.getCurrentPosition/);
+  assert.match(privacy, /navigator\.mediaDevices\.getUserMedia/);
+  assert.match(privacy, /onClick=\{action\}/);
+});
+
+test('home preferences and support are private, real routes', async () => {
+  const main = await read('./main.tsx');
+  const preferences = await read('./HomePreferencesPage.tsx');
+  const support = await read('./SupportPage.tsx');
+  assert.match(main, /path === '\/perfil\/preferencias'/);
+  assert.match(main, /path === '\/perfil\/soporte'/);
+  assert.match(preferences, /HOME_PREFERENCES_KEY/);
+  assert.match(preferences, /localStorage\.setItem/);
+  assert.match(support, /VITE_CONTACT_EMAIL/);
+  assert.match(support, /soportemaginaolivo@gmail\.com/);
+  assert.doesNotMatch(support, /soporte@maginaolivo\.es/);
 });
 
 // Keep this source gate in the CI-triggering slice so portability changes always re-run both repository gates.

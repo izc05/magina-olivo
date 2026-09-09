@@ -22,6 +22,7 @@ type DemoCampaign = {
 };
 type DemoDelivery = {
   id: string;
+  campaignId: string;
   deliveredAt: string;
   kilograms: string;
   cooperativeId: string | null;
@@ -147,6 +148,7 @@ const campaigns: DemoCampaign[] = [
 const deliveries: DemoDelivery[] = [
   {
     id: 'demo-delivery-1',
+    campaignId: 'demo-campaign-1',
     deliveredAt: '2026-11-24T09:20:00.000Z',
     kilograms: '3280',
     cooperativeId: null,
@@ -160,6 +162,7 @@ const deliveries: DemoDelivery[] = [
   },
   {
     id: 'demo-delivery-2',
+    campaignId: 'demo-campaign-1',
     deliveredAt: '2026-12-02T16:10:00.000Z',
     kilograms: '4120',
     cooperativeId: null,
@@ -173,6 +176,7 @@ const deliveries: DemoDelivery[] = [
   },
   {
     id: 'demo-delivery-3',
+    campaignId: 'demo-campaign-1',
     deliveredAt: '2026-12-11T08:45:00.000Z',
     kilograms: '2675',
     cooperativeId: null,
@@ -180,6 +184,34 @@ const deliveries: DemoDelivery[] = [
     farmId: 'demo-farm-2',
     plotId: 'demo-plot-3',
     ticketNumber: 'D-2026-0307',
+    variety: 'Picual',
+    verificationStatus: 'verified',
+    version: 1,
+  },
+  {
+    id: 'demo-delivery-previous-1',
+    campaignId: 'demo-campaign-0',
+    deliveredAt: '2025-11-18T09:20:00.000Z',
+    kilograms: '2890',
+    cooperativeId: null,
+    customDestination: 'Cooperativa de Huelma',
+    farmId: 'demo-farm-1',
+    plotId: 'demo-plot-1',
+    ticketNumber: 'D-2025-0171',
+    variety: 'Picual',
+    verificationStatus: 'verified',
+    version: 1,
+  },
+  {
+    id: 'demo-delivery-previous-2',
+    campaignId: 'demo-campaign-0',
+    deliveredAt: '2025-12-03T10:10:00.000Z',
+    kilograms: '3760',
+    cooperativeId: null,
+    customDestination: 'Cooperativa de Huelma',
+    farmId: 'demo-farm-1',
+    plotId: 'demo-plot-2',
+    ticketNumber: 'D-2025-0226',
     variety: 'Picual',
     verificationStatus: 'verified',
     version: 1,
@@ -195,7 +227,7 @@ const yields: DemoYield[] = [
     unit: '%',
     measuredAt: '2026-11-25T10:00:00.000Z',
     sourceKind: 'manual',
-    status: 'verified',
+    status: 'current',
     notes: null,
     createdAt: '2026-11-25T10:00:00.000Z',
     updatedAt: '2026-11-25T10:00:00.000Z',
@@ -208,10 +240,36 @@ const yields: DemoYield[] = [
     unit: '%',
     measuredAt: '2026-12-03T10:00:00.000Z',
     sourceKind: 'manual',
-    status: 'verified',
+    status: 'current',
     notes: null,
     createdAt: '2026-12-03T10:00:00.000Z',
     updatedAt: '2026-12-03T10:00:00.000Z',
+  },
+  {
+    id: 'demo-yield-previous-1',
+    deliveryId: 'demo-delivery-previous-1',
+    resultType: 'fat_yield',
+    value: '20.95',
+    unit: '%',
+    measuredAt: '2025-11-19T10:00:00.000Z',
+    sourceKind: 'manual',
+    status: 'current',
+    notes: null,
+    createdAt: '2025-11-19T10:00:00.000Z',
+    updatedAt: '2025-11-19T10:00:00.000Z',
+  },
+  {
+    id: 'demo-yield-previous-2',
+    deliveryId: 'demo-delivery-previous-2',
+    resultType: 'fat_yield',
+    value: '21.2',
+    unit: '%',
+    measuredAt: '2025-12-04T10:00:00.000Z',
+    sourceKind: 'manual',
+    status: 'current',
+    notes: null,
+    createdAt: '2025-12-04T10:00:00.000Z',
+    updatedAt: '2025-12-04T10:00:00.000Z',
   },
 ];
 
@@ -314,7 +372,7 @@ function nextId(prefix: string): string {
 }
 
 function campaignSummary(campaignId: string) {
-  const campaignDeliveries = campaignId === 'demo-campaign-1' ? deliveries : [];
+  const campaignDeliveries = deliveries.filter((delivery) => delivery.campaignId === campaignId);
   const withYield = campaignDeliveries.filter((delivery) => yields.some((item) => item.deliveryId === delivery.id));
   const totalKg = campaignDeliveries.reduce((sum, delivery) => sum + Number(delivery.kilograms || 0), 0);
   const coveredKg = withYield.reduce((sum, delivery) => sum + Number(delivery.kilograms || 0), 0);
@@ -348,6 +406,7 @@ function timelineForPlot(plotId: string) {
     }));
 
   const deliveryItems = deliveries
+    .filter((item) => item.campaignId === 'demo-campaign-1')
     .filter((item) => item.plotId === plotId)
     .flatMap((delivery) => {
       const result = yields.find((item) => item.deliveryId === delivery.id);
@@ -636,11 +695,12 @@ async function handleDemoApi(input: RequestInfo | URL, init?: RequestInit): Prom
   }
 
   const campaignDeliveries = path.match(/^\/api\/v1\/campaigns\/([^/]+)\/deliveries$/);
-  if (campaignDeliveries && method === 'GET') return json({ items: campaignDeliveries[1] === 'demo-campaign-1' ? deliveries : [] });
+  if (campaignDeliveries && method === 'GET') return json({ items: deliveries.filter((item) => item.campaignId === campaignDeliveries[1]).map(({ campaignId: _campaignId, ...item }) => item) });
   if (campaignDeliveries && method === 'POST') {
     const body = await bodyOf(input, init);
     const created: DemoDelivery = {
       id: nextId('demo-delivery'),
+      campaignId: campaignDeliveries[1],
       deliveredAt: String(body.deliveredAt || new Date().toISOString()),
       kilograms: String(body.kilograms || '0'),
       cooperativeId: body.cooperativeId ? String(body.cooperativeId) : null,
@@ -653,7 +713,8 @@ async function handleDemoApi(input: RequestInfo | URL, init?: RequestInit): Prom
       version: 1,
     };
     deliveries.unshift(created);
-    return json(created, 201);
+    const { campaignId: _campaignId, ...payload } = created;
+    return json(payload, 201);
   }
 
   const campaignSummaryPath = path.match(/^\/api\/v1\/campaigns\/([^/]+)\/summary$/);
@@ -672,7 +733,7 @@ async function handleDemoApi(input: RequestInfo | URL, init?: RequestInit): Prom
       unit: '%',
       measuredAt: body.measuredAt ? String(body.measuredAt) : now,
       sourceKind: 'manual',
-      status: 'verified',
+      status: 'current',
       notes: null,
       createdAt: now,
       updatedAt: now,
@@ -721,6 +782,9 @@ async function handleDemoApi(input: RequestInfo | URL, init?: RequestInit): Prom
     activities.unshift(created);
     return json(created, 201);
   }
+
+  const holdingDocuments = path.match(/^\/api\/v1\/holdings\/([^/]+)\/documents$/);
+  if (holdingDocuments && method === 'GET') return json({ items: [] });
 
   const plotTimeline = path.match(/^\/api\/v1\/plots\/([^/]+)\/timeline$/);
   if (plotTimeline && method === 'GET') return json({ items: timelineForPlot(plotTimeline[1]) });

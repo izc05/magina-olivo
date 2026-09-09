@@ -1,6 +1,8 @@
+import { PhotoCredit, VisualHeader } from './VisualChrome';
 import { useEffect, useMemo, useState } from 'react';
 import { WeatherRainAlertSummary } from './WeatherRainAlertSummary';
 import './weather-radar.css';
+import { readPreferredMunicipality } from './municipality-visuals';
 
 type Municipality = {
   slug: string;
@@ -40,6 +42,16 @@ type WeatherResponse = {
     scopeNote: string;
   };
 };
+type HourlyWeatherResponse = { forecast: { elaboratedAt: string | null; hours: Array<{ dateTime: string; temperatureC: number | null; precipitationProbabilityPercent: number | null }> } };
+
+function closestHour(hours: HourlyWeatherResponse['forecast']['hours']) {
+  const now = Date.now();
+  return hours.reduce<(typeof hours)[number] | null>((closest, hour) => {
+    const time = new Date(hour.dateTime).getTime();
+    if (!Number.isFinite(time)) return closest;
+    return !closest || Math.abs(time - now) < Math.abs(new Date(closest.dateTime).getTime() - now) ? hour : closest;
+  }, null);
+}
 
 type RadarFrame = {
   id: string;
@@ -116,8 +128,9 @@ function freshnessCopy(freshness: WeatherFreshness): { label: string; detail: st
 
 export function MaginaWeatherPage() {
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
-  const [selectedSlug, setSelectedSlug] = useState('huelma');
+  const [selectedSlug, setSelectedSlug] = useState(() => readPreferredMunicipality() ?? 'huelma');
   const [weather, setWeather] = useState<WeatherResponse | null>(null);
+  const [hourlyWeather, setHourlyWeather] = useState<HourlyWeatherResponse | null>(null);
   const [radar, setRadar] = useState<RadarResponse | null>(null);
   const [radarIndex, setRadarIndex] = useState(0);
   const [radarPlaying, setRadarPlaying] = useState(false);
@@ -158,9 +171,8 @@ export function MaginaWeatherPage() {
     setLoadingWeather(true);
     setError(null);
 
-    void fetch(`/api/v1/public/weather?municipality=${encodeURIComponent(selectedSlug)}`, {
-      headers: { accept: 'application/json' },
-      signal: controller.signal,
+    const dailyRequest = fetch(`/api/v1/public/weather?municipality=${encodeURIComponent(selectedSlug)}`, {
+      headers: { accept: 'application/json' }, signal: controller.signal, cache: 'no-store',
     }).then(async (response) => {
       if (response.ok) return response.json() as Promise<WeatherResponse>;
 
@@ -183,7 +195,12 @@ export function MaginaWeatherPage() {
       setError(reason instanceof Error && reason.message === 'AEMET_NOT_CONFIGURED'
         ? 'La conexión con AEMET está preparada, pero la clave server-side todavía no está configurada en este entorno.'
         : 'La predicción de AEMET no está disponible temporalmente.');
-    }).finally(() => {
+    });
+    const hourlyRequest = fetch(`/api/v1/public/weather/hourly?municipality=${encodeURIComponent(selectedSlug)}`, {
+      headers: { accept: 'application/json' }, signal: controller.signal, cache: 'no-store',
+    }).then((response) => response.ok ? response.json() as Promise<HourlyWeatherResponse> : Promise.reject())
+      .then(setHourlyWeather).catch(() => setHourlyWeather(null));
+    void Promise.allSettled([dailyRequest, hourlyRequest]).finally(() => {
       if (!controller.signal.aborted) setLoadingWeather(false);
     });
 
@@ -239,16 +256,21 @@ export function MaginaWeatherPage() {
   const degraded = weather?.availability.mode === 'degraded-cache';
   const radarFrame = radar?.items[radarIndex] ?? null;
   const radarFrameCount = radar?.items.length ?? 0;
+  const currentHour = closestHour(hourlyWeather?.forecast.hours ?? []);
 
   return (
     <main className="weather-shell" id="main-content">
-      <header className="directory-header">
-        <a className="directory-brand" href="/" aria-label="Volver a Mágina Olivo">
-          <img src="/brand/magina-olivo-mark.svg" alt="" />
-          <span><strong>Mágina Olivo</strong><small>Sierra Mágina · Jaén</small></span>
-        </a>
-        <a className="directory-back" href="/">Volver a la aplicación</a>
-      </header>
+      <VisualHeader />
+
+      <section className="weather-reference-hero" aria-label="Resumen de la previsión municipal">
+        <div className="public-home-weather-card" aria-live="polite">
+          <span>{weather?.municipality.name ?? selectedMunicipality?.name ?? 'Sierra Mágina'}</span>
+          <strong>{valueOrDash(currentHour?.temperatureC ?? null, '°')}</strong>
+          <small>Ahora · previsión horaria AEMET</small>
+          <small>Lluvia: {valueOrDash(currentHour?.precipitationProbabilityPercent ?? null, '%')} · Actualización automática</small>
+          {!weather ? <small>{loadingWeather ? 'Consultando previsión…' : 'Previsión no disponible'}</small> : null}
+        </div>
+      </section>
 
       <section className="weather-hero" aria-labelledby="weather-title">
         <p className="eyebrow">Mágina · Tiempo</p>
@@ -392,6 +414,7 @@ export function MaginaWeatherPage() {
           )}
         </div>
       </section>
+      <PhotoCredit />
     </main>
   );
 }

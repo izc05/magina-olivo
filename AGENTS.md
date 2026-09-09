@@ -41,6 +41,16 @@ Si la implementación contradice una decisión aprobada en documentación, no oc
 - Documentación importante puede convivir en la rama funcional correspondiente.
 - Evitar merges directos de trabajo incompleto.
 
+## Coordinación Codex y Antigravity
+
+- Codex y Antigravity deben converger, no competir.
+- Antes de modificar un módulo o archivo, revisar ramas remotas, últimos commits y PR abiertos relacionados.
+- Una rama o un brief asignado no demuestra que el trabajo esté implementado: comprobar el diff y los commits reales.
+- Si el otro agente ya ha realizado cambios, tratarlos como trabajo existente: revisar, integrar y continuar; no sobrescribirlos ni reconstruirlos desde cero.
+- Para `Mi Olivo`, revisar primero `feat/mi-olivo-gamification-convergence-v1`, `docs/agents/ANTIGRAVITY_MI_OLIVO_V1.md` y el PR #181.
+- Para `Mi Campo`, revisar primero cualquier rama `feat/mi-campo-*`, documentación `docs/mi-campo-*` y PR relacionado.
+- Cuando las ramas partan de bases distintas, no hacer un merge o cherry-pick ciego: comparar contratos, pruebas y archivos solapados antes de integrar.
+
 ## Criterios antes de merge
 
 - Código compila.

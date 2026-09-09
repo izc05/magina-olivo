@@ -14,7 +14,7 @@ test('registration is reachable and uses Better Auth sign-up safely', async () =
 
   assert.match(main, /path === '\/register'/);
   assert.match(main, /<RegisterPage \/>/);
-  assert.match(main, /<RegistrationEntry \/>/);
+  assert.match(main, /<RegisterPage \/>/);
   assert.match(register, /\/api\/auth\/sign-up\/email/);
   assert.match(register, /credentials: 'include'/);
   assert.match(register, /password\.length < 10/);

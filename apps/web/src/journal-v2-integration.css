@@ -14,6 +14,36 @@
   opacity: 1;
 }
 
+.notebook-context {
+  margin: 10px 0 0;
+  color: #686b5d;
+  font-size: .78rem;
+}
+
+.notebook-map-context {
+  margin: 0 -4px 16px;
+}
+
+.notebook-map-link {
+  display: grid;
+  gap: 3px;
+  margin: 14px 0 2px;
+  padding: 13px 15px;
+  border: 1px solid rgba(47, 90, 68, .18);
+  border-radius: 16px;
+  color: #284a37;
+  text-decoration: none;
+  background: linear-gradient(125deg, #e5f0e7, #fdfbf3 68%);
+}
+
+.notebook-map-link strong { font-size: .92rem; }
+.notebook-map-link span { color: var(--muted); font-size: .8rem; }
+.notebook-map-link:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+
+.notebook-map-context > * {
+  margin-top: 0 !important;
+}
+
 .notebook-card {
   position: relative;
   border-radius: 24px;
@@ -262,6 +292,101 @@
   background: rgba(255,253,248,.72);
 }
 
+.more-links {
+  display: grid;
+  gap: 10px;
+}
+
+.more-link-card {
+  display: flex;
+  min-height: 68px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  color: var(--olive-950);
+  text-decoration: none;
+}
+
+.profile-reference-card {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 22px;
+  min-height: 154px;
+  background: rgba(255, 253, 248, .94);
+}
+
+.profile-real-stats { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 4px; padding-top: 16px; border-top: 1px solid var(--line); }
+.profile-real-stats > span { display: grid; place-items: center; gap: 3px; min-width: 0; text-align: center; border-right: 1px solid var(--line); }
+.profile-real-stats > span:last-child { border-right: 0; }
+.profile-real-stats svg { width: 24px; height: 24px; color: var(--olive-800); }
+.profile-real-stats strong { color: var(--ink); font: 700 1.15rem Georgia, serif; }
+.profile-real-stats small { color: var(--muted); }
+
+.profile-reference-card .profile-initials {
+  position: static;
+  width: 74px;
+  height: 74px;
+  border: 0;
+  color: var(--olive-950);
+  background: linear-gradient(145deg, #eef1e7, #dce4d4);
+  font-size: 1.8rem;
+}
+
+.profile-reference-main { min-width: 0; }
+.profile-reference-main .more-card-title { margin-bottom: 7px; }
+.profile-reference-main .list-card-meta { display: flex; align-items: center; gap: 7px; margin-top: 5px; }
+.profile-reference-main .list-card-meta svg { width: 17px; height: 17px; color: var(--olive-800); }
+.profile-reference-main .profile-email { padding-left: 24px; overflow-wrap: anywhere; }
+
+.profile-edit-button {
+  align-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  color: var(--olive-950);
+  background: #eef1e7;
+  text-decoration: none;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.profile-edit-button svg { width: 18px; height: 18px; }
+.profile-reference-links { gap: 12px; }
+.profile-reference-links .more-link-card { justify-content: flex-start; min-height: 84px; padding: 12px 16px; border-radius: 20px; }
+.profile-link-icon { flex: 0 0 54px; display: grid; place-items: center; width: 54px; height: 54px; border-radius: 14px; background: #e9eee2; color: var(--olive-900); }
+.profile-link-icon svg { width: 27px; height: 27px; }
+.profile-link-copy { flex: 1 1 auto; min-width: 0; }
+.profile-reference-links .more-link-card > svg { width: 22px; height: 22px; color: var(--ink); }
+
+.more-link-card strong,
+.more-link-card small {
+  display: block;
+}
+
+.more-link-card small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: .78rem;
+}
+
+.more-link-card > span:last-child {
+  color: var(--olive-800);
+  font-size: 1.3rem;
+}
+
+.more-logout {
+  margin-top: 24px;
+}
+
+.more-logout .danger-button {
+  min-height: 48px;
+}
+
 @media (max-width: 700px) {
   .notebook-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -269,6 +394,10 @@
 }
 
 @media (max-width: 560px) {
+  .profile-reference-card { grid-template-columns: 64px minmax(0, 1fr); padding: 18px; }
+  .profile-reference-card .profile-initials { width: 64px; height: 64px; }
+  .profile-edit-button { grid-column: 1 / -1; justify-self: stretch; justify-content: center; }
+
   .notebook-card {
     padding: 16px;
     border-radius: 21px;

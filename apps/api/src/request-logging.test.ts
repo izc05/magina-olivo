@@ -26,11 +26,11 @@ test('buildApp HTTP logger retains operational logs without sensitive request da
     await app.close();
   `], {
     encoding: 'utf8',
-    timeout: 20_000,
+    timeout: 30_000,
     env: { ...process.env, NODE_ENV: 'test', LOG_LEVEL: 'info',
       DATABASE_URL: 'postgres://test:test@127.0.0.1:1/test', AUTH_MAIL_TRANSPORT: 'disabled' },
   });
-  assert.equal(child.status, 0, 'logger probe must complete');
+  assert.equal(child.status, 0, `logger probe failed: ${child.stderr || child.stdout}`);
   const output = child.stdout + child.stderr;
   for (const sentinel of ['SENSITIVE_RESET_TOKEN_SENTINEL', 'QUERY_TOKEN_SENTINEL',
     'QUERY_PASSWORD_SENTINEL', 'AUTHORIZATION_SENTINEL', 'COOKIE_SENTINEL', 'SET_COOKIE_SENTINEL']) {

@@ -30,8 +30,8 @@ test('public weather UI includes animated precipitation radar controls without e
 });
 
 test('staging worker receives server-side AEMET radar configuration', async () => {
-  const compose = await read('../../../infra/docker/compose.staging.yml');
-  const envExample = await read('../../../infra/docker/staging.env.example');
+  const compose = (await read('../../../infra/docker/compose.staging.yml')).replace(/\r\n/g, '\n');
+  const envExample = (await read('../../../infra/docker/staging.env.example')).replace(/\r\n/g, '\n');
   const workerBlock = compose.match(/\n  worker:\n([\s\S]*?)\n  web:\n/)?.[1] ?? '';
 
   assert.match(workerBlock, /AEMET_API_KEY: \$\{AEMET_API_KEY:\?set AEMET_API_KEY\}/);
@@ -42,5 +42,27 @@ test('staging worker receives server-side AEMET radar configuration', async () =
 test('public weather route is exposed as a standalone Mágina page', async () => {
   const main = await read('./main.tsx');
   assert.match(main, /path === '\/magina\/tiempo'/);
+  assert.match(main, /<WeatherWeeklyPage \/>/);
+  assert.match(main, /path === '\/magina\/tiempo\/horas'/);
+  assert.match(main, /<WeatherHourlyPage \/>/);
+  assert.match(main, /path === '\/magina\/tiempo\/radar'/);
   assert.match(main, /<MaginaWeatherPage \/>/);
+});
+
+test('hourly weather remains server-connected and does not expose AEMET credentials', async () => {
+  const page = await read('./WeatherExperiencePages.tsx');
+  const routes = await read('../../api/src/public-weather-routes.ts');
+
+  assert.match(page, /\/api\/v1\/public\/weather\/hourly\?municipality=/);
+  assert.match(routes, /\/api\/v1\/public\/weather\/hourly/);
+  assert.match(routes, /fetchAemetHourlyForecast/);
+  assert.doesNotMatch(page, /AEMET_API_KEY/);
+});
+
+test('weekly forecast accepts AEMET ISO dates with an existing time and never throws on an invalid provider date', async () => {
+  const page = await read('./WeatherExperiencePages.tsx');
+
+  assert.match(page, /const value = new Date\(date\)/);
+  assert.match(page, /Number\.isNaN\(value\.getTime\(\)\)/);
+  assert.doesNotMatch(page, /new Date\(`\$\{date\}T12:00:00`\)/);
 });

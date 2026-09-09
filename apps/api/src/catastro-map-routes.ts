@@ -34,6 +34,17 @@ function simplePolygon(geometry: { type: 'Polygon' | 'MultiPolygon'; coordinates
 }
 
 export function registerCatastroMapRoutes(app: FastifyInstance): void {
+  app.get<{ Params: { reference: string } }>('/api/v1/maps/catastro/parcelas/by-reference/:reference', async (request, reply) => {
+    const session = await getAuthenticatedSession(request);
+    if (!session) return reply.code(401).send(apiError(request, 'AUTH_REQUIRED', 'Authentication required'));
+    const reference = request.params.reference.trim().toUpperCase();
+    if (!validateCadastralReference(reference)) return reply.code(400).send(apiError(request, 'INVALID_CADASTRAL_REFERENCE', 'La referencia de parcela debe tener 14 caracteres.'));
+    try {
+      return await fetchCatastroParcelByReference(reference);
+    } catch {
+      return reply.code(502).send(apiError(request, 'CATASTRO_UNAVAILABLE', 'No se ha podido consultar esa referencia en Catastro. Revisa la referencia o reintenta más tarde.'));
+    }
+  });
   app.get<{ Querystring: CatastroQuery }>(
     '/api/v1/maps/catastro/parcelas',
     async (request, reply) => {

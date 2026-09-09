@@ -1,3 +1,7 @@
+import { VisualHeader } from './VisualChrome';
+import { PublicNavigation } from './PublicNavigation';
+import { api } from './api';
+import { listPendingOperations } from './offline/outbox';
 import { useEffect, useMemo, useState } from 'react';
 
 type User = { id: string; name?: string | null; email: string };
@@ -57,7 +61,7 @@ async function jsonRequest<T>(url: string, init: RequestInit = {}): Promise<T> {
     } catch {
       // Keep the generic HTTP status for non-JSON errors.
     }
-    throw new Error(message);
+    throw Object.assign(new Error(message), { status: response.status });
   }
   return response.json() as Promise<T>;
 }
@@ -81,6 +85,18 @@ function formatBytes(value: string | null): string | null {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function accountErrorMessage(reason: unknown, fallback: string): string {
+  if (!(reason instanceof Error)) return fallback;
+  const status = (reason as Error & { status?: number }).status;
+  if (status === 401 || status === 403) {
+    return 'Tu sesión ya no está disponible en este dispositivo. Inicia sesión de nuevo para continuar.';
+  }
+  if (/^HTTP 5\d\d$/.test(reason.message)) {
+    return 'No se ha podido cargar tu perfil ahora. Inténtalo de nuevo en unos minutos.';
+  }
+  return reason.message || fallback;
+}
+
 export function AccountPage() {
   const [user, setUser] = useState<User | null>(null);
   const [destinations, setDestinations] = useState<Destination[]>([]);
@@ -91,33 +107,69 @@ export function AccountPage() {
   const [exportBusy, setExportBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [preferencesReady, setPreferencesReady] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const [adminAccess, setAdminAccess] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void jsonRequest<{ role: string }>('/api/v1/admin/overview')
+      .then(({ role }) => { if (!cancelled) setAdminAccess(['super_admin', 'admin', 'editor', 'support'].includes(role)); })
+      .catch(() => { if (!cancelled) setAdminAccess(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  async function signOut() {
+    setBusy(true);
+    setError(null);
+    try {
+      const session = await api.me();
+      const pending = await listPendingOperations(session.user.id);
+      if (pending.length) throw new Error('Sincroniza los cambios pendientes antes de cerrar sesión.');
+      await api.signOut();
+      window.location.assign('/');
+    } catch (reason) {
+      setError(accountErrorMessage(reason, 'No se ha podido cerrar sesión. Vuelve a intentarlo.'));
+    } finally { setBusy(false); }
+  }
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       setLoading(true);
       setError(null);
+      setNotice(null);
+      setPreferencesReady(false);
       try {
-        const [session, preferenceResult, directory, exportResult] = await Promise.all([
+        const [sessionResult, preferenceResult, directoryResult, exportResult] = await Promise.allSettled([
           jsonRequest<{ user: User }>('/api/v1/me'),
           jsonRequest<Preferences>('/api/v1/account/preferences'),
           jsonRequest<{ items: Destination[] }>('/api/v1/public/destinations'),
           jsonRequest<{ items: AccountExport[] }>('/api/v1/account/exports'),
         ]);
         if (cancelled) return;
-        setUser(session.user);
-        setPreferences(preferenceResult);
-        setDestinations(directory.items);
-        setExports(exportResult.items);
+        if (sessionResult.status === 'rejected') throw sessionResult.reason;
+        setUser(sessionResult.value.user);
+        // The profile and its preferences are separate resources. A temporary
+        // preferences/database issue must not hide the user's account data.
+        if (preferenceResult.status === 'fulfilled') {
+          setPreferences(preferenceResult.value);
+          setPreferencesReady(true);
+        } else {
+          setPreferences(DEFAULT_PREFERENCES);
+          setNotice('Tus datos básicos están disponibles. Las preferencias se cargarán de nuevo al reintentar.');
+        }
+        setDestinations(directoryResult.status === 'fulfilled' ? directoryResult.value.items : []);
+        setExports(exportResult.status === 'fulfilled' ? exportResult.value.items : []);
       } catch (reason) {
-        if (!cancelled) setError(reason instanceof Error ? reason.message : 'No se ha podido cargar Mi Cuenta.');
+        if (!cancelled) setError(accountErrorMessage(reason, 'No se ha podido cargar Mi Cuenta.'));
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
     void load();
     return () => { cancelled = true; };
-  }, []);
+  }, [retry]);
 
   const preferred = useMemo(
     () => destinations.find((item) => item.id === preferences.preferredCooperativeId) ?? null,
@@ -144,6 +196,7 @@ export function AccountPage() {
   }, [latestExport?.id, latestExport?.status]);
 
   async function save() {
+    if (!preferencesReady) return;
     setBusy(true);
     setError(null);
     setNotice(null);
@@ -163,7 +216,7 @@ export function AccountPage() {
       setPreferences(saved);
       setNotice('Preferencias guardadas.');
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'No se han podido guardar las preferencias.');
+      setError(accountErrorMessage(reason, 'No se han podido guardar las preferencias.'));
     } finally {
       setBusy(false);
     }
@@ -180,7 +233,7 @@ export function AccountPage() {
       setExports((current) => [result.export, ...current.filter((item) => item.id !== result.export.id)]);
       setNotice(result.export.status === 'ready' ? 'Ya tienes una copia preparada y vigente.' : 'Copia solicitada. Puedes seguir usando la aplicación mientras se prepara.');
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'No se ha podido solicitar la copia de tus datos.');
+      setError(accountErrorMessage(reason, 'No se ha podido solicitar la copia de tus datos.'));
     } finally {
       setExportBusy(false);
     }
@@ -190,31 +243,35 @@ export function AccountPage() {
 
   return (
     <main className="account-shell">
-      <header className="account-topbar">
-        <a className="text-button" href="/">← Volver</a>
-        <div className="brand-lockup">
-          <span className="brand-title">Mágina Olivo</span>
-          <span className="brand-kicker">Mi Cuenta</span>
-        </div>
-      </header>
+      <VisualHeader />
+      <PublicNavigation activePath="/cuenta" />
 
       <div className="account-page">
         <section>
-          <p className="eyebrow page-eyebrow">Mi Cuenta</p>
-          <h1 className="section-title">Preferencias y privacidad</h1>
-          <p className="section-copy">Configura lo que quieres ver y recibir sin mezclar estas preferencias con los datos privados de tu explotación.</p>
+          <p className="eyebrow page-eyebrow">MI PERFIL</p>
+          <h1 className="section-title">Mi perfil</h1>
+          <p className="section-copy">Tu cuenta, tus preferencias y tus accesos personales.</p>
         </section>
 
         {error ? <div className="alert section" role="alert">{error}</div> : null}
         {notice ? <div className="alert success section" role="status">{notice}</div> : null}
+        {!preferencesReady || error ? <button className="secondary-button" onClick={() => setRetry((value) => value + 1)}>Reintentar carga</button> : null}
 
-        <section className="section card card-body">
+        <section className="section card card-body account-profile-summary" id="perfil">
           <h2 className="section-title account-section-title">Tu perfil</h2>
-          <p className="list-card-title">{user?.name || 'Agricultor'}</p>
+          <p className="list-card-title">{user?.name || (user ? 'Tu cuenta' : 'Perfil no disponible')}</p>
           <p className="list-card-meta">{user?.email}</p>
+          <div className="form-actions"><a className="primary-button" href="/perfil/editar">Editar perfil →</a><a className="secondary-button" href="/tu-olivo">Tu Olivo y recompensas →</a><button className="secondary-button" disabled={busy} onClick={() => void signOut()}>{busy ? 'Espera…' : 'Cerrar sesión'}</button></div>
         </section>
 
-        <section className="section card card-body">
+        <nav className="section more-links" aria-label="Opciones de tu cuenta">
+          {adminAccess ? <a className="card list-card" href="/admin">Panel de administración →</a> : null}
+          <a className="card list-card" href="/perfil/preferencias">Preferencias de Inicio →</a>
+          <a className="card list-card" href="/perfil/privacidad">Privacidad y permisos →</a>
+          <a className="card list-card" href="/perfil/soporte">Ayuda y soporte →</a>
+        </nav>
+        <fieldset disabled={!preferencesReady || busy} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+        <section className="section card card-body" id="cooperativa">
           <h2 className="section-title account-section-title">Cooperativa / almazara habitual</h2>
           <p className="section-copy">Sirve como preferencia de uso. Seleccionarla no comparte tus entregas ni tus documentos con esa entidad.</p>
           <div className="field account-field">
@@ -235,8 +292,9 @@ export function AccountPage() {
           {preferred ? <p className="list-card-meta">Actual: {preferred.brandName || preferred.officialName}{preferred.municipality ? ` · ${preferred.municipality}` : ''}</p> : null}
         </section>
 
-        <section className="section card card-body">
-          <h2 className="section-title account-section-title">Avisos</h2>
+        <section className="section card card-body" id="notificaciones">
+          <p className="eyebrow account-group-label">NOTIFICACIONES GENERALES</p>
+          <h2 className="section-title account-section-title">Notificaciones</h2>
           <p className="section-copy">La alarma de lluvia se revisa automáticamente en el servidor para los próximos 2 días con la predicción municipal de AEMET y tu umbral. Helada y viento siguen apareciendo como avisos meteorológicos complementarios. Son contexto para organizarte, no un diagnóstico de parcela.</p>
 
           <label className="account-toggle">
@@ -268,7 +326,8 @@ export function AccountPage() {
           </div>
         </section>
 
-        <section className="section card card-body account-privacy-card">
+        </fieldset>
+        <section className="section card card-body account-privacy-card" id="privacidad">
           <h2 className="section-title account-section-title">Copia de tus datos</h2>
           <p className="section-copy">Puedes preparar una copia estructurada y versionada de tu perfil, preferencias y de las explotaciones donde eres propietario: fincas, parcelas, campañas, entregas, rendimientos, labores e índice de documentos.</p>
           <p className="section-copy"><strong>Importante:</strong> esta fase no incluye todavía los archivos binarios originales dentro de un ZIP. El índice sí conserva nombre, tipo, tamaño y hash cuando existe; los documentos siguen disponibles mediante descarga privada.</p>
@@ -297,8 +356,8 @@ export function AccountPage() {
           <p className="section-copy"><strong>Baja de cuenta:</strong> sigue separada de la exportación. No mostraremos una acción destructiva hasta implementar reautenticación, ownership, revocación de sesiones y política de retención completa.</p>
         </section>
 
-        <div className="section form-actions account-save-row">
-          <button className="primary-button" type="button" onClick={() => void save()} disabled={busy}>{busy ? 'Guardando…' : 'Guardar preferencias'}</button>
+        <div className="section form-actions account-save-row" id="preferencias">
+          <button className="primary-button" type="button" onClick={() => void save()} disabled={busy || !preferencesReady}>{busy ? 'Guardando…' : 'Guardar preferencias'}</button>
         </div>
       </div>
     </main>

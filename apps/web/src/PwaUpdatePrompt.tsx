@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { X } from 'lucide-react';
 import { registerSW } from 'virtual:pwa-register';
 import { cachedOwnerUserId } from './api';
 import { listPendingOperations } from './offline/outbox';
@@ -80,6 +81,7 @@ export function PwaUpdatePrompt() {
       <button type="button" onClick={() => void applyUpdate()} disabled={state === 'applying' || hasPendingOperations}>
         {state === 'applying' ? 'Actualizando…' : 'Actualizar ahora'}
       </button>
+      <button className="pwa-update-dismiss" type="button" aria-label="Cerrar aviso de actualización" onClick={() => setState('idle')} disabled={state === 'applying'}><X size={18} aria-hidden="true" /></button>
     </section>
   );
 }

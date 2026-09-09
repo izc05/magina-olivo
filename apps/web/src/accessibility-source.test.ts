@@ -9,11 +9,20 @@ async function source(path: string): Promise<string> {
 test('primary SPA navigation keeps programmatic focus and current-page semantics', async () => {
   const app = await source('./App.tsx');
 
+  assert.match(app, /<a className="skip-link" href="#main-content">Saltar al contenido<\/a>/);
+  assert.match(app, /<main id="main-content" className="page"/);
   assert.match(app, /tabIndex=\{-1\}/);
   assert.match(app, /pageRef\.current\?\.focus/);
   assert.match(app, /aria-current=\{active \? 'page' : undefined\}/);
-  assert.match(app, /aria-current=\{tab === 'campaign' \? 'page' : undefined\}/);
-  assert.match(app, /aria-pressed=\{farm\.id === selectedFarmId\}/);
+  assert.match(app, /aria-label="Centro de acciones de Mi Campo"/);
+  assert.match(app, /tab === 'field' \|\| tab === 'campaign' \? <button/);
+  assert.match(app, /aria-expanded=\{showQuickMenu\}/);
+  assert.doesNotMatch(app, /nav-plus[^\n]*aria-current/);
+  assert.match(app, /const Icon = navigationIcons\[icon\]/);
+  assert.match(app, /<Icon aria-hidden="true"/);
+  assert.match(app, /href=\{`\/mi-campo\?finca=\$\{encodeURIComponent\(farm\.id\)\}`\}/);
+  assert.match(app, /href=\{`\/mi-campo\/parcelas\/\$\{encodeURIComponent\(plot\.id\)\}\?finca=/);
+  assert.match(app, /<FieldBackBar backHref=/);
 });
 
 test('global styles preserve visible focus and user motion/contrast preferences', async () => {
@@ -24,6 +33,14 @@ test('global styles preserve visible focus and user motion/contrast preferences'
   assert.match(styles, /prefers-reduced-motion:\s*reduce/);
   assert.match(styles, /forced-colors:\s*active/);
   assert.match(styles, /\.yield-form button \{[^}]*min-height:\s*44px/s);
+});
+
+test('route failures present an accessible recovery action instead of a blank screen', async () => {
+  const main = await source('./main.tsx');
+
+  assert.match(main, /class RouteErrorBoundary/);
+  assert.match(main, /Actualizar y reintentar/);
+  assert.match(main, /<RouteErrorBoundary><Suspense/);
 });
 
 test('ticket upload after delivery remains a real keyboard-operable button', async () => {
@@ -37,13 +54,16 @@ test('ticket upload after delivery remains a real keyboard-operable button', asy
 });
 
 test('login keeps its visible form before the fixed registration entry in keyboard order', async () => {
-  const main = await source('./main.tsx');
+  const login = await source('./LoginPage.tsx');
 
-  assert.ok(main.indexOf('<App />') < main.indexOf('<RegistrationEntry />'));
+  assert.match(login, /<form className="form-grid"/);
+  assert.match(login, /<button className="text-button" type="button" onClick=\{\(\) => void resetPassword\(\)\}/);
 });
 
 test('PWA updates are announced and can only be applied through an accessible user action', async () => {
   const prompt = await source('./PwaUpdatePrompt.tsx');
+  const vite = await source('../vite.config.ts');
+  const index = await source('../index.html');
 
   assert.match(prompt, /onNeedRefresh/);
   assert.match(prompt, /applyPwaUpdateWhenSafe/);
@@ -51,4 +71,22 @@ test('PWA updates are announced and can only be applied through an accessible us
   assert.match(prompt, /aria-live="polite"/);
   assert.match(prompt, /type="button"/);
   assert.match(prompt, /Actualizar ahora/);
+  assert.match(prompt, /aria-label="Cerrar aviso de actualización" onClick=\{\(\) => setState\('idle'\)\}/);
+  assert.match(vite, /magina-olivo-official-mark\.png/);
+  assert.match(vite, /purpose: 'any maskable'/);
+  assert.match(index, /apple-mobile-web-app-capable/);
+  assert.match(index, /apple-touch-icon/);
+});
+
+test('PWA installation uses the browser prompt when available and an honest iOS install guide', async () => {
+  const prompt = await source('./PwaInstallPrompt.tsx');
+
+  assert.match(prompt, /beforeinstallprompt/);
+  assert.match(prompt, /event\.preventDefault\(\)/);
+  assert.match(prompt, /deferredPrompt\.prompt\(\)/);
+  assert.match(prompt, /appinstalled/);
+  assert.match(prompt, /Añadir a pantalla de inicio/);
+  assert.match(prompt, /role="dialog"/);
+  assert.match(prompt, /aria-label="Cerrar aviso de instalación"/);
+  assert.match(prompt, /DISMISS_FOR_MS/);
 });

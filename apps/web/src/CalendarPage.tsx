@@ -1,3 +1,5 @@
+import { VisualHeader } from './VisualChrome';
+import { PublicNavigation } from './PublicNavigation';
 import { useEffect, useMemo, useState } from 'react';
 
 type Holding = {
@@ -80,6 +82,10 @@ function buildMonthDays(month: Date): Array<{ iso: string; day: number; weekday:
 }
 
 export function CalendarPage() {
+  const taskSearch = new URLSearchParams(window.location.search);
+  const createTaskIntent = taskSearch.get('new') === 'task';
+  const contextualFarmId = taskSearch.get('finca') || null;
+  const contextualPlotId = taskSearch.get('parcela') || null;
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [holdingId, setHoldingId] = useState('');
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -173,6 +179,8 @@ export function CalendarPage() {
           dueDate,
           priority,
           reminderDaysBefore,
+          farmId: contextualFarmId ?? undefined,
+          plotId: contextualPlotId ?? undefined,
         }),
       });
       setTasks((current) => [...current, created].sort((a, b) => a.dueDate.localeCompare(b.dueDate)));
@@ -216,22 +224,17 @@ export function CalendarPage() {
   if (loading) return <div className="loading-screen" role="status">Cargando calendario…</div>;
 
   return (
-    <main className="calendar-shell">
-      <header className="account-topbar calendar-topbar">
-        <a className="text-button" href="/">← Volver</a>
-        <div className="brand-lockup">
-          <span className="brand-title">Mágina Olivo</span>
-          <span className="brand-kicker">Calendario</span>
-        </div>
-        <a className="text-button" href="/cuenta">Mi cuenta</a>
-      </header>
+    <main id="main-content" className="calendar-shell">
+      <a className="skip-link" href="#calendar-content">Saltar al contenido</a>
+      <VisualHeader />
+      <PublicNavigation activePath="/mi-campo" />
 
-      <div className="calendar-page">
-        <section className="calendar-heading">
-          <div>
-            <p className="eyebrow page-eyebrow">Organización del campo</p>
-            <h1 className="section-title">Tareas y calendario</h1>
-            <p className="section-copy">Planifica trabajos, fechas y recordatorios sin convertir el cuaderno de campo en una agenda genérica.</p>
+      <div id="calendar-content" className="calendar-page">
+        <section className="calendar-hero" aria-labelledby="calendar-title">
+          <div className="calendar-hero-copy">
+            <p className="eyebrow">Mi Campo</p>
+            <h1 id="calendar-title">Tareas y calendario</h1>
+            <p>Organiza los trabajos del olivar y conserva cada recordatorio dentro de tu explotación.</p>
           </div>
           <label className="field calendar-holding-select">
             <span>Explotación</span>
@@ -268,10 +271,11 @@ export function CalendarPage() {
                     <h2 className="section-title account-section-title">Nueva tarea</h2>
                   </div>
                 </div>
+                {contextualFarmId ? <p className="calendar-context-note">Esta tarea se guardará en {contextualPlotId ? 'la parcela activa' : 'la finca activa'}.</p> : null}
                 <div className="calendar-form-grid">
                   <label className="field calendar-title-field">
                     <span>Tarea</span>
-                    <input value={title} maxLength={160} placeholder="Ej. Revisar riego de la parcela norte" onChange={(event) => setTitle(event.target.value)} />
+                    <input autoFocus={createTaskIntent} value={title} maxLength={160} placeholder="Ej. Revisar riego de la parcela norte" onChange={(event) => setTitle(event.target.value)} />
                   </label>
                   <label className="field">
                     <span>Fecha</span>

@@ -42,7 +42,9 @@ export function DeliveryEntryCard({
   farms: Farm[];
   onSaved: () => Promise<void>;
 }) {
-  const [farmId, setFarmId] = useState('');
+  const requestedFarmId = new URLSearchParams(window.location.search).get('finca') ?? '';
+  const requestedPlotId = new URLSearchParams(window.location.search).get('parcela') ?? '';
+  const [farmId, setFarmId] = useState(() => farms.some((farm) => farm.id === requestedFarmId) ? requestedFarmId : '');
   const [plots, setPlots] = useState<Plot[]>([]);
   const [plotId, setPlotId] = useState('');
   const [destinations, setDestinations] = useState<DestinationSuggestion[]>([]);
@@ -58,6 +60,10 @@ export function DeliveryEntryCard({
     () => destinations.find((item) => item.officialName === destinationText.trim()) ?? null,
     [destinations, destinationText],
   );
+
+  useEffect(() => {
+    if (requestedFarmId && farms.some((farm) => farm.id === requestedFarmId)) setFarmId(requestedFarmId);
+  }, [farms, requestedFarmId]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -89,7 +95,10 @@ export function DeliveryEntryCard({
 
     setLoadingPlots(true);
     void api.plots(farmId).then((result) => {
-      if (!cancelled) setPlots(result.items);
+      if (!cancelled) {
+        setPlots(result.items);
+        setPlotId(result.items.some((plot) => plot.id === requestedPlotId) ? requestedPlotId : '');
+      }
     }).catch((reason) => {
       if (!cancelled) setError(reason instanceof Error ? reason.message : 'No se han podido cargar las parcelas.');
     }).finally(() => {
@@ -97,7 +106,7 @@ export function DeliveryEntryCard({
     });
 
     return () => { cancelled = true; };
-  }, [farmId]);
+  }, [farmId, requestedPlotId]);
 
   function chooseTicket(file: File | null) {
     setWarning(null);
@@ -194,51 +203,56 @@ export function DeliveryEntryCard({
 
   return (
     <>
-      <section className="section card card-body delivery-entry-card" aria-labelledby="new-delivery-title">
+      <section className="section card card-body delivery-entry-card" aria-labelledby="new-delivery-title" tabIndex={-1}>
         <div className="delivery-form-heading">
           <div>
             <p className="eyebrow page-eyebrow">Registro rápido</p>
-            <h2 id="new-delivery-title" className="section-title form-card-title">Nueva entrega</h2>
+            <h2 id="new-delivery-title" className="section-title form-card-title">Registrar entrega</h2>
           </div>
           <span className="badge gold">Campaña</span>
         </div>
 
         <form className="form-grid" onSubmit={submit} aria-busy={busy}>
-          <div className="inline-fields">
+          <div className="delivery-primary-fields">
             <div className="field">
               <label htmlFor="delivery-kilograms">Kilos</label>
               <input id="delivery-kilograms" name="kilograms" type="number" min="0.001" step="0.001" inputMode="decimal" placeholder="1842" required />
             </div>
             <div className="field">
-              <label htmlFor="delivery-destination">Almazara / cooperativa</label>
-              <input
-                id="delivery-destination"
-                name="destination"
-                type="text"
-                list="magina-destination-suggestions"
-                maxLength={200}
-                placeholder="San Sebastián"
-                aria-describedby="delivery-destination-help delivery-destination-status"
-                value={destinationText}
-                onChange={(event) => setDestinationText(event.target.value)}
-                required
-              />
-              <datalist id="magina-destination-suggestions">
-                {destinations.map((item) => (
-                  <option key={item.id} value={item.officialName}>
-                    {[item.brandName, item.municipality].filter(Boolean).join(' · ')}
-                  </option>
-                ))}
-              </datalist>
-              <small id="delivery-destination-help">Puedes elegir una entidad pública de Mágina o escribir cualquier otro destino.</small>
-              {destinationText.trim() ? (
-                <small id="delivery-destination-status" className={`destination-status${canonicalDestination ? ' destination-status--known' : ''}`}>
-                  {canonicalDestination
-                    ? `Entidad reconocida${canonicalDestination.municipality ? ` · ${canonicalDestination.municipality}` : ''}`
-                    : 'Destino manual · se guardará tal como lo has escrito'}
-                </small>
-              ) : <span id="delivery-destination-status" className="sr-only">Sin destino seleccionado</span>}
+              <label htmlFor="delivery-date-time">Fecha y hora</label>
+              <input id="delivery-date-time" name="deliveredAt" type="datetime-local" defaultValue={localDateTimeValue()} required />
             </div>
+          </div>
+
+          <div className="field">
+            <label htmlFor="delivery-destination">Almazara / cooperativa</label>
+            <input
+              id="delivery-destination"
+              name="destination"
+              type="text"
+              list="magina-destination-suggestions"
+              maxLength={200}
+              placeholder="San Sebastián"
+              aria-describedby="delivery-destination-help delivery-destination-status"
+              value={destinationText}
+              onChange={(event) => setDestinationText(event.target.value)}
+              required
+            />
+            <datalist id="magina-destination-suggestions">
+              {destinations.map((item) => (
+                <option key={item.id} value={item.officialName}>
+                  {[item.brandName, item.municipality].filter(Boolean).join(' · ')}
+                </option>
+              ))}
+            </datalist>
+            <small id="delivery-destination-help">Puedes elegir una entidad pública de Mágina o escribir cualquier otro destino.</small>
+            {destinationText.trim() ? (
+              <small id="delivery-destination-status" className={`destination-status${canonicalDestination ? ' destination-status--known' : ''}`}>
+                {canonicalDestination
+                  ? `Entidad reconocida${canonicalDestination.municipality ? ` · ${canonicalDestination.municipality}` : ''}`
+                  : 'Destino manual · se guardará tal como lo has escrito'}
+              </small>
+            ) : <span id="delivery-destination-status" className="sr-only">Sin destino seleccionado</span>}
           </div>
 
           <div className="inline-fields">
@@ -263,17 +277,10 @@ export function DeliveryEntryCard({
               <label htmlFor="delivery-ticket-number">Nº ticket</label>
               <input id="delivery-ticket-number" name="ticketNumber" type="text" maxLength={200} placeholder="004281" />
             </div>
-            <div className="field">
-              <label htmlFor="delivery-date-time">Fecha y hora</label>
-              <input id="delivery-date-time" name="deliveredAt" type="datetime-local" defaultValue={localDateTimeValue()} required />
-            </div>
+            <div className="field"><label htmlFor="delivery-variety">Variedad</label><input id="delivery-variety" name="variety" type="text" maxLength={120} placeholder="Picual" /></div>
           </div>
 
           <div className="inline-fields">
-            <div className="field">
-              <label htmlFor="delivery-variety">Variedad</label>
-              <input id="delivery-variety" name="variety" type="text" maxLength={120} placeholder="Picual" />
-            </div>
             <div className="field delivery-file-field">
               <label htmlFor="delivery-ticket-file">Foto / PDF del ticket</label>
               <input

@@ -21,6 +21,7 @@
 
 .plot-map-mode-tabs {
   display: inline-flex;
+  flex-wrap: wrap;
   gap: 0.25rem;
   margin: 0.85rem 0 0.9rem;
   padding: 0.25rem;
@@ -41,7 +42,8 @@
   cursor: pointer;
 }
 
-.plot-map-mode-tabs button.active {
+.plot-map-mode-tabs button.active,
+.plot-map-mode-tabs button[aria-pressed="true"] {
   background: var(--text, #26301f);
   color: #fff;
 }
@@ -171,6 +173,38 @@
   background: #e8ecdf;
   cursor: crosshair;
   touch-action: manipulation;
+}
+
+/* In the dedicated workspace the cartography is the primary working surface;
+   controls remain below it instead of making the grower scroll past forms first. */
+.field-map-workspace {
+  margin: 10px calc((100vw - min(100vw - 28px, 920px)) / -2) 0;
+  padding: 20px max(14px, calc((100vw - min(100vw - 28px, 920px)) / 2)) 28px;
+  background: linear-gradient(180deg, #e9eee2 0%, var(--ivory) 78%);
+}
+
+.field-map-workspace-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+  max-width: 920px;
+  margin: 0 auto 8px;
+}
+
+.field-map-workspace-heading h1 { margin: 0; color: var(--olive-950); font: 700 clamp(2rem, 7vw, 3.1rem)/1 Georgia, serif; }
+.field-map-workspace-heading p:last-child { max-width: 52ch; margin: 8px 0 0; color: var(--muted); font-size: .88rem; line-height: 1.45; }
+.field-map-workspace .plot-map-shell { max-width: 920px; margin: 0 auto; }
+.field-map-workspace .plot-map-grid { grid-template-columns: 1fr; }
+.field-map-workspace .plot-map-card { order: -1; min-height: min(68vh, 670px); }
+.field-map-workspace .plot-map-editor { min-height: min(60vh, 590px); aspect-ratio: auto; }
+
+@media (max-width: 520px) {
+  .field-map-workspace { padding-top: 15px; }
+  .field-map-workspace-heading { align-items: flex-start; }
+  .field-map-workspace-heading .ghost-button { min-height: 38px; padding-inline: 10px; font-size: .72rem; }
+  .field-map-workspace .plot-map-card { min-height: 62vh; }
+  .field-map-workspace .plot-map-editor { min-height: 54vh; }
 }
 
 .plot-map-editor image {
@@ -304,4 +338,46 @@
   .plot-map-footer > a {
     align-self: flex-start;
   }
+}
+
+.plot-map-layer-selector {
+  display: inline-flex;
+  gap: 0.25rem;
+  background: var(--surface-muted, #f3f5ee);
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+}
+
+.plot-map-layer-selector button {
+  padding: 0.35rem 0.65rem;
+  border: none;
+  background: transparent;
+  border-radius: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted, #66705c);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.plot-map-layer-selector button.active {
+  background: #ffffff;
+  color: var(--text, #1c2415);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.plot-map-directions-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.plot-google-directions-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.85rem;
 }

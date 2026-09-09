@@ -120,11 +120,11 @@ Reglas:
 
 Una ficha no contiene más de tres líneas de información antes de abrir el detalle. Si el dato requiere explicación, se lleva al detalle, no se reduce la letra.
 
-## 7. Iconos
+## 7. Iconos y accesos de la mini app
 
 ### Regla de significado
 
-Los iconos son señales estables, nunca decoración intercambiable. Se usa una sola familia de líneas (la biblioteca existente) y un icono siempre se acompaña de texto cuando representa una acción o estado importante.
+Los iconos son señales estables, nunca decoración intercambiable. En la mini app de finca son **los accesos para consultar datos**: al pulsarlos se abre su subpantalla filtrada. Se usa una sola familia de líneas (la biblioteca existente) y un icono siempre se acompaña de texto cuando representa una acción o estado importante.
 
 | Dominio | Icono semántico | Acento visual |
 | --- | --- | --- |
@@ -141,14 +141,30 @@ Los iconos son señales estables, nunca decoración intercambiable. Se usa una s
 | Fuente/mapa | mapa o marcador | azul informativo |
 | Alerta | triángulo | amarillo/rojo según severidad |
 
-Tamaños: 20 px dentro de texto o controles; 24 px en navegación y encabezados; 40–44 px solo en el área de icono de una ficha. No se introducen emojis, ilustraciones de CSS ni iconos diferentes para el mismo concepto.
+### Estilo Android translúcido
+
+Los accesos de finca se muestran en una cuadrícula de dos o tres columnas. Cada uno usa un área de icono de 48–56 px, una superficie de color translúcido sobre blanco y un icono de línea con color semántico. El efecto es ligero, tipo Android/Material: color visible, limpio y táctil; **sin** desenfoque de cristal, degradado ni pérdida de contraste.
+
+| Acceso | Tinte translúcido | Icono |
+| --- | --- | --- |
+| Parcelas | verde oliva suave | terreno/mapa |
+| Trabajos | grafito verdoso | herramienta/libreta |
+| Riegos | azul agua suave | gota |
+| Tratamientos | verde hoja suave | matraz |
+| Tareas | violeta grisáceo suave | calendario/check |
+| Campaña | dorado suave | caja/aceituna/gráfico |
+| Mapa | azul petróleo suave | marcador/mapa |
+| Documentos | gris azulado suave | archivo/cámara |
+| Datos | piedra verdosa suave | información/ajustes |
+
+El tinte se usa solo dentro de la pastilla del icono, con texto oscuro y etiqueta visible debajo; el resto de la pantalla sigue blanco. Tamaños: 20 px dentro de texto o controles; 24 px en navegación y encabezados; 40–44 px solo en el área de icono de una ficha. No se introducen emojis, ilustraciones de CSS ni iconos diferentes para el mismo concepto.
 
 ## 8. Navegación y acción
 
 - La barra inferior mantiene etiqueta bajo cada icono.
 - El destino activo usa tinta/verde y marcador visible, no únicamente variación de color.
 - `Registrar` / `+` es la única entrada de datos y de nueva parcela. `Nueva finca` es la única excepción y vive en la raíz de Mi Campo.
-- Dentro de una finca, cada icono abre una subpantalla de la mini app; el `+` toma el contexto del icono abierto y propone la acción correspondiente.
+- Dentro de una finca, cada icono abre una subpantalla de consulta; el `+` toma el contexto del icono abierto y propone únicamente la creación correspondiente. Tras guardar, se vuelve a esa subpantalla para ver la ficha nueva.
 - Cada grupo explica en una frase qué crea; no se mezclan crear finca/parcela con acciones de diario sin distinguirlo.
 - Al seleccionar una acción, el formulario hereda y muestra el contexto. Cambiarlo debe ser deliberado.
 - La acción destructiva nunca comparte estilo ni posición con `Guardar`.
@@ -174,7 +190,7 @@ Antes de escribir componentes definitivos se diseñarán y revisarán, en este o
 
 1. Mi Campo — lista de fincas con fondo blanco y estado vacío.
 2. Mini app de finca — resumen y lista de parcelas.
-3. Subpantallas Trabajos, Tareas y Campaña filtradas dentro de la finca.
+3. Subpantallas Trabajos, Riegos, Tratamientos, Tareas y Campaña filtradas dentro de la finca.
 4. Selector `Registrar` con contexto agrícola y formulario superficial.
 5. Formulario de trabajo.
 

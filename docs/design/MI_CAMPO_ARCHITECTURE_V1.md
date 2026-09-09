@@ -21,7 +21,8 @@ Explotación
   └─ Finca                         mini app operativa
       ├─ Resumen                   visión de la finca
       ├─ Parcelas                  listado, selección y datos agrícolas
-      ├─ Trabajos / Tareas         registros filtrados por finca/parcela
+      ├─ Trabajos / Riegos / Tratamientos / Tareas
+      │                             registros filtrados por finca/parcela
       ├─ Campaña                   registros productivos de esa finca
       ├─ Mapa / Documentos / Datos contexto, evidencia y fuentes
       └─ Parcela                   ámbito opcional, nunca una mini app paralela
@@ -46,6 +47,8 @@ Mi Campo
 │     ├─ Resumen
 │     ├─ Parcelas
 │     ├─ Trabajos
+│     ├─ Riegos
+│     ├─ Tratamientos
 │     ├─ Tareas
 │     ├─ Campaña
 │     ├─ Mapa
@@ -128,7 +131,7 @@ Ver una finca completa sin crear otro sistema distinto al de parcela. La finca f
 1. identidad: nombre, municipio/localización disponible y foto/evidencia opcional;
 2. tres métricas de contexto: superficie, parcelas y campaña activa;
 3. lanzador `+` y selector de contexto de parcela cuando haga falta; no hay botones dispersos de alta;
-4. iconos/subpantallas de trabajo: `Resumen`, `Parcelas`, `Trabajos`, `Tareas`, `Campaña`, `Mapa`, `Documentos`, `Datos`;
+4. iconos/subpantallas de trabajo: `Resumen`, `Parcelas`, `Trabajos`, `Riegos`, `Tratamientos`, `Tareas`, `Campaña`, `Mapa`, `Documentos`, `Datos`;
 5. contenido de un solo módulo por vez, manteniendo siempre visible el nombre de la finca y el retorno a `Resumen`.
 
 ### Segmentos
@@ -138,6 +141,8 @@ Ver una finca completa sin crear otro sistema distinto al de parcela. La finca f
 | Resumen | última actividad, alertas, métricas y accesos | agregados/consultas reales |
 | Parcelas | `PlotCard`, selección de parcela y datos agrícolas | parcelas de la finca |
 | Trabajos | `ActivityCard` y filtros por tipo/parcela | actividades de finca y parcelas |
+| Riegos | `ActivityCard` filtrada a `irrigation` | riegos de finca y parcelas |
+| Tratamientos | `ActivityCard` filtrada a `treatment` | tratamientos de finca y parcelas |
 | Tareas | `TaskCard` por estado y parcela opcional | tareas de la finca y parcelas |
 | Campaña | recolecciones, entregas, rendimientos y documentos | registros de la campaña filtrados por finca |
 | Mapa | parcelas localizadas y fuentes | coordenadas/geometría autorizadas |
@@ -193,11 +198,13 @@ Nunca se afirma que una referencia catastral pruebe propiedad. El usuario declar
 | Finca · Resumen | lectura general | selector completo de registros |
 | Finca · Parcelas | lista y filtro | `Nueva parcela` o registro con parcela elegida |
 | Finca · Trabajos | actividades filtradas | `Trabajo` |
+| Finca · Riegos | riegos filtrados | `Riego` |
+| Finca · Tratamientos | tratamientos filtrados | `Tratamiento` |
 | Finca · Tareas | tareas filtradas | `Tarea` |
 | Finca · Campaña | registros productivos de la finca | `Entrega` |
 | Finca · Documentos | evidencia filtrada | `Documento` / `Foto` |
 
-El primer toque sobre `+` abre una selección breve; el segundo abre una **subpantalla superficial** de formulario. La subpantalla tiene contexto, campos mínimos, guardar y volver. Tras guardar, devuelve al módulo de origen y coloca la ficha recién creada al principio o la resalta. No deja el formulario abierto junto a las listas.
+El `+` **solo crea**: nunca abre una vista de consulta ni navega a datos. El primer toque abre una selección breve; el segundo abre una **subpantalla superficial** de formulario. La subpantalla tiene contexto, campos mínimos, guardar y volver. Tras guardar, devuelve al módulo de origen y coloca la ficha recién creada al principio o la resalta. No deja el formulario abierto junto a las listas. Los iconos de módulo son los que abren datos; las acciones `Editar` solo modifican un dato existente y no se esconden dentro de `+`.
 
 ### 8.1 Contrato común de formulario
 
@@ -265,7 +272,7 @@ icono + tipo              valor principal
 parcela/finca + fecha     detalle o evidencia
 ```
 
-Cada subpantalla trae su propio filtro simple: Trabajos filtra tipos de actividad; Tareas filtra estado; Campaña filtra recolecciones, entregas, rendimientos y documentos. En cualquier módulo, la parcela activa limita los resultados si existe. Los filtros no cambian ni copian datos; cambian la consulta o la presentación.
+Cada subpantalla trae su propio filtro simple: Trabajos filtra tipos de actividad; Riegos y Tratamientos aplican un tipo fijo y solo ofrecen filtros secundarios; Tareas filtra estado; Campaña filtra recolecciones, entregas, rendimientos y documentos. En cualquier módulo, la parcela activa limita los resultados si existe. Los filtros no cambian ni copian datos; cambian la consulta o la presentación.
 
 | Vista | Regla de agregación |
 | --- | --- |

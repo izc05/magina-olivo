@@ -99,7 +99,7 @@ Acciones rápidas accesibles desde Inicio/contexto:
 
 Durante recolección, `+ Entrega` es la acción primaria.
 
-Documento detallado: `docs/V1_SCREEN_MAP.md` y `docs/V1_WIREFRAMES.md`.
+Documentos de referencia: `docs/V1_SCREEN_MAP.md`, `docs/V1_WIREFRAMES.md`, `docs/design/INTERFACE_ARCHITECTURE_V1.md` y `docs/design/MI_CAMPO_ARCHITECTURE_V1.md`.
 
 ## 6. Jerarquía del campo
 

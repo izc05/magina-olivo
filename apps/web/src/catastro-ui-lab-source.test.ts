@@ -77,3 +77,27 @@ test('Final boundary replacement cannot be confirmed without an explicit uncheck
   assert.match(lab, /La confirmación es obligatoria/);
   assert.match(refinements, /catastro-lab-primary:disabled/);
 });
+
+test('Real Catastro laboratory is protected by a second flag and is not reachable with the visual lab flag alone', async () => {
+  const main = await read('./main.tsx');
+
+  assert.match(main, /VITE_CATASTRO_REAL_LAB === 'true'/);
+  assert.match(main, /catastroUiLabEnabled && import\.meta\.env\.VITE_CATASTRO_REAL_LAB/);
+  assert.match(main, /path === '\/lab\/catastro-real' && catastroRealLabEnabled/);
+  assert.match(main, /<CatastroReadOnlyLabPage \/>/);
+});
+
+test('Real Catastro laboratory can perform authenticated reads but contains no write/import path', async () => {
+  const real = await read('./CatastroReadOnlyLabPage.tsx');
+
+  assert.match(real, /REAL · SOLO LECTURA/);
+  assert.match(real, /credentials: 'include'/);
+  assert.match(real, /\/api\/v1\/maps\/catastro\/parcela\?/);
+  assert.match(real, /\/api\/v1\/maps\/catastro\/parcela-en-punto\?/);
+  assert.match(real, /Solo se realizan peticiones GET/);
+  assert.match(real, /No hay botón “Añadir parcela”/);
+  assert.doesNotMatch(real, /method\s*:/);
+  assert.doesNotMatch(real, /import-catastro/);
+  assert.doesNotMatch(real, /\/api\/v1\/plots\//);
+  assert.doesNotMatch(real, /POST|PUT|PATCH|DELETE/);
+});

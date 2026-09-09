@@ -1,0 +1,190 @@
+.catastro-lab-primary:disabled,
+.catastro-lab-secondary:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  transform: none;
+}
+
+.catastro-lab-primary:disabled:hover {
+  background: #173d2e;
+}
+
+.catastro-lab-reference-field.valid input {
+  border-color: #718d62;
+  box-shadow: inset 0 0 0 1px rgba(113, 141, 98, 0.16);
+}
+
+.catastro-lab-reference-field.valid small {
+  color: #42653f;
+  font-weight: 700;
+}
+
+.catastro-lab-reference-field.invalid input {
+  border-color: #a66555;
+  background: #fff9f5;
+}
+
+.catastro-lab-reference-field.invalid small {
+  color: #8c493a;
+  font-weight: 700;
+}
+
+.catastro-lab-map.interactive > svg {
+  cursor: crosshair;
+  touch-action: manipulation;
+}
+
+.catastro-lab-map.interactive > svg:focus-visible {
+  outline: 4px solid rgba(213, 164, 46, 0.7);
+  outline-offset: -4px;
+}
+
+.catastro-lab-map-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 7rem);
+  padding: 0.58rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(255, 250, 231, 0.94);
+  color: #173d2e;
+  border: 1px solid rgba(23, 61, 46, 0.14);
+  box-shadow: 0 0.45rem 1.4rem rgba(20, 44, 31, 0.16);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-align: center;
+  pointer-events: none;
+}
+
+.catastro-lab-map-hint.selected {
+  background: rgba(229, 239, 214, 0.96);
+  color: #31523f;
+}
+
+.catastro-lab-nearby {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid #dde1d4;
+}
+
+.catastro-lab-nearby-heading {
+  display: grid;
+  gap: 0.14rem;
+  margin-bottom: 0.15rem;
+}
+
+.catastro-lab-nearby-heading strong {
+  font-size: 0.92rem;
+}
+
+.catastro-lab-nearby-heading span {
+  color: #687467;
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.catastro-lab-candidate {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.75rem;
+  border: 1px solid #d5dacd;
+  border-radius: 0.9rem;
+  background: #fffef9;
+  color: #173d2e;
+  text-align: left;
+  cursor: pointer;
+}
+
+.catastro-lab-candidate:hover,
+.catastro-lab-candidate:focus-visible {
+  border-color: #71875f;
+  background: #f4f6ed;
+}
+
+.catastro-lab-candidate:focus-visible {
+  outline: 3px solid rgba(213, 164, 46, 0.46);
+  outline-offset: 2px;
+}
+
+.catastro-lab-candidate-number {
+  width: 1.85rem;
+  height: 1.85rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #edf1e6;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.catastro-lab-candidate > span:nth-child(2),
+.catastro-lab-candidate-area {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.catastro-lab-candidate small {
+  color: #778174;
+  font-size: 0.68rem;
+}
+
+.catastro-lab-candidate-area {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.catastro-lab-reference-note {
+  margin-top: 0.85rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.8rem;
+  background: #f1f3e9;
+  color: #5e6b5e;
+  font-size: 0.77rem;
+  line-height: 1.48;
+}
+
+.catastro-lab-reference-note strong {
+  color: #31523f;
+  word-break: break-all;
+}
+
+.catastro-lab-confirm-help {
+  margin: 0.7rem 0 0;
+  color: #717b70;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.catastro-lab-check strong {
+  color: #173d2e;
+  word-break: break-all;
+}
+
+@media (max-width: 560px) {
+  .catastro-lab-map-hint {
+    bottom: 0.7rem;
+    max-width: calc(100% - 6.2rem);
+    font-size: 0.69rem;
+    border-radius: 0.75rem;
+  }
+
+  .catastro-lab-candidate {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .catastro-lab-candidate-area {
+    grid-column: 2;
+    text-align: left;
+    grid-auto-flow: column;
+    justify-content: start;
+    gap: 0.45rem;
+  }
+}

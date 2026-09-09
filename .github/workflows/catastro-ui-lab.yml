@@ -1,0 +1,60 @@
+name: Catastro UI Lab
+
+on:
+  push:
+    branches:
+      - feat/catastro-ui-lab-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: catastro-ui-lab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prototype:
+    name: Build isolated Catastro prototype
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck workspaces
+        run: npm run typecheck
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Build Catastro UI laboratory
+        env:
+          VITE_CATASTRO_UI_LAB: "true"
+          VITE_DEMO_MODE: "true"
+        run: npm run build --workspace @magina/web
+
+      - name: Verify lab content is present in the bundle
+        run: |
+          grep -R -q "LAB · no producción" apps/web/dist/assets
+          grep -R -q "Encuentra tu parcela en Catastro" apps/web/dist/assets
+
+      - name: Upload testable build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: catastro-ui-lab-preview-${{ github.sha }}
+          path: apps/web/dist
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Keep lab off GitHub Pages
+        run: echo "This workflow only uploads a build artifact; it never deploys GitHub Pages."

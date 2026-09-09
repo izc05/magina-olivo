@@ -1,75 +1,84 @@
-import { useEffect, useRef, useState } from 'react';
-import { BookOpen, CalendarPlus, Camera, Droplets, FilePlus2, FlaskConical, MapPinned, PackagePlus, Sprout, Tractor, X } from 'lucide-react';
-import type { Farm, Plot } from './api.ts';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { ArrowLeft, BookOpen, CalendarPlus, Camera, Droplets, FilePlus2, FlaskConical, MapPinned, PackagePlus, Sprout, Tractor, X } from 'lucide-react';
+import { api, type ActivityType, type Farm, type Plot } from './api.ts';
 
-type ActionItem = { label: string; detail: string; href?: string; icon: typeof BookOpen; tone: string; action?: 'camera'; context?: 'farm' | 'plot' | 'none' };
+type FormKind = 'activity' | 'delivery' | 'task' | 'farm' | 'plot';
+type ActionItem = { label: string; detail: string; icon: typeof BookOpen; tone: string; form?: FormKind; activityType?: ActivityType; action?: 'camera'; href?: string };
 
-const primaryActions: ActionItem[] = [
-  { label: 'Registrar labor', detail: 'Trabajo, poda, abonado u observación', href: '/mi-campo/cuaderno?new=activity', icon: BookOpen, tone: 'olive', context: 'plot' },
-  { label: 'Tratamiento', detail: 'Producto, dosis y plazo de seguridad', href: '/mi-campo/tratamientos?new=activity', icon: FlaskConical, tone: 'leaf', context: 'plot' },
-  { label: 'Riego', detail: 'Agua, duración y superficie', href: '/mi-campo/riegos?new=activity', icon: Droplets, tone: 'water', context: 'plot' },
-  { label: 'Entrega', detail: 'Kilos, destino y albarán', href: '/campana?new=delivery', icon: PackagePlus, tone: 'gold', context: 'plot' },
-  { label: 'Tarea', detail: 'Planificar un trabajo pendiente', href: '/calendario?new=task', icon: CalendarPlus, tone: 'sky', context: 'plot' },
+const actions: ActionItem[] = [
+  { label: 'Trabajo', detail: 'Labor, poda o abonado', icon: BookOpen, tone: 'olive', form: 'activity' },
+  { label: 'Tratamiento', detail: 'Producto, dosis y control', icon: FlaskConical, tone: 'leaf', form: 'activity', activityType: 'treatment' },
+  { label: 'Riego', detail: 'Agua, duración y superficie', icon: Droplets, tone: 'water', form: 'activity', activityType: 'irrigation' },
+  { label: 'Entrega', detail: 'Kilos, destino y albarán', icon: PackagePlus, tone: 'gold', form: 'delivery' },
+  { label: 'Tarea', detail: 'Planificar un trabajo', icon: CalendarPlus, tone: 'sky', form: 'task' },
+  { label: 'Foto', detail: 'Cámara y ubicación', icon: Camera, tone: 'clay', action: 'camera' },
+  { label: 'Nueva parcela', detail: 'Datos básicos y superficie', icon: MapPinned, tone: 'map', form: 'plot' },
+  { label: 'Nueva finca', detail: 'Añade a tu explotación', icon: Tractor, tone: 'mechanic', form: 'farm' },
+  { label: 'Documento', detail: 'Tickets y justificantes', icon: FilePlus2, tone: 'paper', href: '/campana?new=document' },
+  { label: 'Maquinaria', detail: 'Equipos, aperos y QR', icon: Tractor, tone: 'mechanic', href: '/mi-campo/recursos' },
 ];
 
-const moreActions: ActionItem[] = [
-  { label: 'Foto u observación', detail: 'Cámara y ubicación de campo', icon: Camera, tone: 'clay', action: 'camera', context: 'plot' },
-  { label: 'Nueva parcela', detail: 'Mapa, GPS, Catastro o SIGPAC', href: '/mi-campo/mapa?new=plot', icon: MapPinned, tone: 'map', context: 'farm' },
-  { label: 'Nueva finca', detail: 'Añade una finca a tu explotación', href: '/mi-campo?new=farm', icon: Tractor, tone: 'mechanic', context: 'none' },
-  { label: 'Jornales y maquinaria', detail: 'Personas, equipos, aperos y QR', href: '/mi-campo/recursos', icon: Tractor, tone: 'mechanic', context: 'plot' },
-  { label: 'Documento', detail: 'Tickets y justificantes de campaña', href: '/campana?new=document', icon: FilePlus2, tone: 'paper', context: 'plot' },
-];
+const activityLabels: Record<ActivityType, string> = { treatment: 'Tratamiento', fertilization: 'Abonado', pruning: 'Poda', mowing: 'Desbroce', tillage: 'Laboreo', irrigation: 'Riego', harvest: 'Recolección', maintenance: 'Mantenimiento', planting: 'Plantación', sampling: 'Muestreo', observation: 'Observación', other: 'Otro trabajo' };
+const todayInput = () => new Date().toISOString().slice(0, 16);
+const number = (value: FormDataEntryValue | null) => value === null || value === '' ? null : Number(value);
 
-function contextualHref(href: string | undefined, farmId: string | null, plotId: string | null, context: ActionItem['context'] = 'plot'): string | undefined {
-  if (!href || context === 'none') return href;
-  const separator = href.includes('?') ? '&' : '?';
-  const search = new URLSearchParams();
-  if (farmId) search.set('finca', farmId);
-  if (context === 'plot' && plotId) search.set('parcela', plotId);
-  const query = search.toString();
-  return query ? `${href}${separator}${query}` : href;
-}
-
-export function FieldActionCenter({ farms, plots, selectedFarmId, initialPlotId = '', onSelectFarm, onClose, onCamera }: { farms: Farm[]; plots: Plot[]; selectedFarmId: string; initialPlotId?: string; onSelectFarm: (farmId: string) => void; onClose: () => void; onCamera: () => void }) {
+export function FieldActionCenter({ farms, plots, selectedFarmId, initialPlotId = '', holdingId, campaignId, onSelectFarm, onSaved, onClose, onCamera }: { farms: Farm[]; plots: Plot[]; selectedFarmId: string; initialPlotId?: string; holdingId: string; campaignId: string; onSelectFarm: (farmId: string) => void; onSaved: () => Promise<void>; onClose: () => void; onCamera: () => void }) {
   const sheetRef = useRef<HTMLElement>(null);
   const requestedPlotId = initialPlotId || new URLSearchParams(window.location.search).get('parcela') || '';
   const [selectedPlotId, setSelectedPlotId] = useState(requestedPlotId);
+  const [selectedAction, setSelectedAction] = useState<ActionItem | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
   const selectedFarm = farms.find((farm) => farm.id === selectedFarmId) ?? null;
   const selectedPlot = plots.find((plot) => plot.id === selectedPlotId) ?? null;
-  useEffect(() => {
-    sheetRef.current?.focus();
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', closeOnEscape);
-    return () => document.removeEventListener('keydown', closeOnEscape);
-  }, [onClose]);
 
-  useEffect(() => {
-    setSelectedPlotId((current) => {
-      if (requestedPlotId && plots.some((plot) => plot.id === requestedPlotId)) return requestedPlotId;
-      return plots.some((plot) => plot.id === current) ? current : '';
-    });
-  }, [requestedPlotId, plots]);
+  useEffect(() => { sheetRef.current?.focus(); const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') selectedAction ? setSelectedAction(null) : onClose(); }; document.addEventListener('keydown', closeOnEscape); return () => document.removeEventListener('keydown', closeOnEscape); }, [onClose, selectedAction]);
+  useEffect(() => { setSelectedPlotId((current) => requestedPlotId && plots.some((plot) => plot.id === requestedPlotId) ? requestedPlotId : plots.some((plot) => plot.id === current) ? current : ''); }, [requestedPlotId, plots]);
 
-  const changeFarm = (farmId: string) => {
-    setSelectedPlotId('');
-    onSelectFarm(farmId);
-  };
+  const changeFarm = (farmId: string) => { setSelectedPlotId(''); onSelectFarm(farmId); };
+  const contextText = selectedFarm ? selectedPlot ? `Finca ${selectedFarm.name} · Parcela ${selectedPlot.name}` : `Finca ${selectedFarm.name} · toda la finca` : 'Elige una finca antes de guardar.';
 
-  const renderAction = (item: ActionItem) => {
-    const Icon = item.icon;
-    const content = <><span className={`field-action-icon ${item.tone}`}><Icon aria-hidden="true" /></span><span><strong>{item.label}</strong><small>{item.detail}</small></span></>;
-    return item.action === 'camera'
-      ? <button key={item.label} type="button" className="field-action-item" onClick={() => { onClose(); onCamera(); }}>{content}</button>
-      : <a key={item.label} className="field-action-item" href={contextualHref(item.href, selectedFarm?.id ?? null, selectedPlot?.id ?? null, item.context)} onClick={onClose}>{content}</a>;
-  };
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedAction?.form || !holdingId) return;
+    const values = new FormData(event.currentTarget);
+    const area = number(values.get('area'));
+    const quantity = number(values.get('quantity'));
+    const cost = number(values.get('cost'));
+    const trees = number(values.get('trees'));
+    setBusy(true); setError('');
+    try {
+      const farmId = selectedFarm?.id;
+      const plotId = selectedPlot?.id;
+      if (selectedAction.form === 'activity') {
+        await api.createActivity(holdingId, { activityType: (values.get('activityType') as ActivityType) || selectedAction.activityType || 'observation', occurredAt: String(values.get('occurredAt')), ...(campaignId ? { campaignId } : {}), ...(farmId ? { farmId } : {}), ...(plotId ? { plotId } : {}), ...(area !== null ? { affectedAreaHa: area } : {}), ...(String(values.get('product') || '') ? { productName: String(values.get('product')) } : {}), ...(quantity !== null ? { quantity } : {}), ...(String(values.get('unit') || '') ? { quantityUnit: String(values.get('unit')) } : {}), ...(cost !== null ? { costEur: cost } : {}), ...(String(values.get('notes') || '') ? { notes: String(values.get('notes')) } : {}) });
+      } else if (selectedAction.form === 'delivery') {
+        if (!campaignId) throw new Error('Selecciona una campaña antes de registrar una entrega.');
+        await api.createDelivery(campaignId, { deliveredAt: String(values.get('occurredAt')), kilograms: String(values.get('kilograms')), ...(String(values.get('destination') || '') ? { customDestination: String(values.get('destination')) } : {}), ...(String(values.get('ticket') || '') ? { ticketNumber: String(values.get('ticket')) } : {}), ...(farmId ? { farmId } : {}), ...(plotId ? { plotId } : {}), clientGeneratedId: crypto.randomUUID() }, crypto.randomUUID());
+      } else if (selectedAction.form === 'task') {
+        await api.createTask(holdingId, { title: String(values.get('title')).trim(), dueDate: String(values.get('dueDate')), priority: values.get('priority') as 'low' | 'normal' | 'high', ...(String(values.get('notes') || '') ? { notes: String(values.get('notes')) } : {}), ...(farmId ? { farmId } : {}), ...(plotId ? { plotId } : {}) });
+      } else if (selectedAction.form === 'farm') {
+        const farm = await api.createFarm(holdingId, { name: String(values.get('name')).trim(), ...(area !== null ? { areaHa: area } : {}), ...(String(values.get('notes') || '') ? { description: String(values.get('notes')) } : {}) });
+        onSelectFarm(farm.id);
+      } else if (selectedAction.form === 'plot') {
+        if (!farmId) throw new Error('Elige una finca para crear una parcela.');
+        await api.createPlot(farmId, { name: String(values.get('name')).trim(), ...(area !== null ? { areaHa: area } : {}), ...(trees !== null ? { oliveTreeCount: trees } : {}), irrigationType: (values.get('irrigation') as 'dryland' | 'irrigated' | 'mixed' | 'unknown') || 'unknown', ...(String(values.get('sigpac') || '') ? { sigpacReference: String(values.get('sigpac')) } : {}) });
+      }
+      await onSaved(); onClose();
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'No se ha podido guardar.'); } finally { setBusy(false); }
+  }
 
-  return <div className="field-action-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <section ref={sheetRef} className="field-action-sheet" role="dialog" aria-modal="true" aria-labelledby="field-action-title" tabIndex={-1}>
-      <div className="field-action-handle" aria-hidden="true" />
-      <header><div><p className="eyebrow">CENTRO DE ACCIONES</p><h2 id="field-action-title">¿Qué quieres añadir?</h2><p>Añade algo a tu campo sin salir del contexto elegido.</p></div><button type="button" className="field-action-close" onClick={onClose} aria-label="Cerrar centro de acciones"><X aria-hidden="true" /></button></header>
-      <div className="field-action-context"><span><Sprout aria-hidden="true" /> Destino de trabajo</span><label className="sr-only" htmlFor="action-farm">Finca para la nueva acción</label><select id="action-farm" value={selectedFarmId} onChange={(event) => changeFarm(event.target.value)} aria-label="Finca para la nueva acción"><option value="">Elegir al abrir el formulario</option>{farms.map((farm) => <option key={farm.id} value={farm.id}>{farm.name}</option>)}</select>{plots.length ? <><label className="sr-only" htmlFor="action-plot">Parcela para la nueva acción</label><select id="action-plot" value={selectedPlotId} onChange={(event) => setSelectedPlotId(event.target.value)} aria-label="Parcela para la nueva acción"><option value="">Toda la finca / elegir después</option>{plots.map((plot) => <option key={plot.id} value={plot.id}>{plot.name}</option>)}</select></> : null}<small>{selectedFarm ? selectedPlot ? `Finca ${selectedFarm.name} · Parcela ${selectedPlot.name}` : `Finca ${selectedFarm.name} · toda la finca` : 'Elige una finca y, si procede, una parcela.'}</small></div>
-      <div className="field-action-primary">{primaryActions.map(renderAction)}</div>
-      <details className="field-action-more"><summary>Más acciones</summary><div>{moreActions.map(renderAction)}</div></details>
-    </section>
-  </div>;
+  const field = (name: string, label: string, type = 'text', required = false, placeholder = '') => <label className="field-action-field">{label}<input name={name} type={type} required={required} placeholder={placeholder} /></label>;
+  const formTitle = selectedAction?.label ?? '';
+  const actionForm = selectedAction?.form ? <form className="field-action-form" onSubmit={submit}>
+    <p className="field-action-form-context">{contextText}</p>
+    {selectedAction.form === 'activity' ? <><div className="field-action-form-grid">{selectedAction.activityType ? <input type="hidden" name="activityType" value={selectedAction.activityType} /> : <label className="field-action-field">Tipo<select name="activityType" defaultValue="observation">{Object.entries(activityLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>}<label className="field-action-field">Fecha y hora<input name="occurredAt" type="datetime-local" defaultValue={todayInput()} required /></label>{field('area', 'Superficie (ha)', 'number')}{field('cost', 'Coste (€)', 'number')}</div>{selectedAction.activityType === 'treatment' ? <div className="field-action-form-grid">{field('product', 'Producto', 'text', true, 'Ej. caolín')}{field('quantity', 'Cantidad', 'number')}<label className="field-action-field">Unidad<select name="unit" defaultValue="l/ha"><option>l/ha</option><option>kg/ha</option><option>kg</option><option>l</option></select></label></div> : null}<label className="field-action-field">Nota<input name="notes" placeholder="Detalle opcional" /></label></> : null}
+    {selectedAction.form === 'delivery' ? <><div className="field-action-form-grid"><label className="field-action-field">Fecha y hora<input name="occurredAt" type="datetime-local" defaultValue={todayInput()} required /></label>{field('kilograms', 'Kilos entregados', 'number', true)}</div><div className="field-action-form-grid">{field('destination', 'Destino / cooperativa', 'text', false, 'Opcional')}{field('ticket', 'N.º albarán')}</div></> : null}
+    {selectedAction.form === 'task' ? <><label className="field-action-field">Tarea<input name="title" required placeholder="Ej. Revisar riego" /></label><div className="field-action-form-grid"><label className="field-action-field">Fecha<input name="dueDate" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></label><label className="field-action-field">Prioridad<select name="priority" defaultValue="normal"><option value="low">Baja</option><option value="normal">Normal</option><option value="high">Alta</option></select></label></div><label className="field-action-field">Nota<input name="notes" placeholder="Opcional" /></label></> : null}
+    {selectedAction.form === 'farm' ? <><div className="field-action-form-grid">{field('name', 'Nombre de la finca', 'text', true, 'Ej. Cortijo del Río')}{field('area', 'Superficie (ha)', 'number')}</div><label className="field-action-field">Nota<input name="notes" placeholder="Opcional" /></label></> : null}
+    {selectedAction.form === 'plot' ? <><div className="field-action-form-grid">{field('name', 'Nombre de la parcela', 'text', true, 'Ej. Parcela Norte')}{field('area', 'Superficie (ha)', 'number')}</div><div className="field-action-form-grid">{field('trees', 'Número de olivos', 'number')}<label className="field-action-field">Riego<select name="irrigation" defaultValue="unknown"><option value="unknown">Sin definir</option><option value="dryland">Secano</option><option value="irrigated">Regadío</option><option value="mixed">Mixto</option></select></label></div>{field('sigpac', 'Referencia SIGPAC')}</> : null}
+    {error ? <p className="field-action-form-error" role="alert">{error}</p> : null}<button className="primary-button field-action-submit" type="submit" disabled={busy || (!selectedFarm && selectedAction.form !== 'farm')}>{busy ? 'Guardando…' : `Guardar ${formTitle.toLowerCase()}`}</button>
+  </form> : null;
+
+  return <div className="field-action-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section ref={sheetRef} className="field-action-sheet" role="dialog" aria-modal="true" aria-labelledby="field-action-title" tabIndex={-1}><div className="field-action-handle" aria-hidden="true" />{selectedAction?.form ? <><header><div><button className="field-action-back" type="button" onClick={() => { setSelectedAction(null); setError(''); }}><ArrowLeft aria-hidden="true" /> Acciones</button><p className="eyebrow">REGISTRO RÁPIDO</p><h2 id="field-action-title">{formTitle}</h2><p>Completa solo lo necesario. Se guardará en el contexto elegido.</p></div><button type="button" className="field-action-close" onClick={onClose} aria-label="Cerrar centro de acciones"><X aria-hidden="true" /></button></header>{actionForm}</> : <><header><div><p className="eyebrow">CENTRO DE ACCIONES</p><h2 id="field-action-title">¿Qué quieres añadir?</h2><p>Elige una acción; el formulario se abre aquí mismo.</p></div><button type="button" className="field-action-close" onClick={onClose} aria-label="Cerrar centro de acciones"><X aria-hidden="true" /></button></header><div className="field-action-context"><span><Sprout aria-hidden="true" /> Destino de trabajo</span><select value={selectedFarmId} onChange={(event) => changeFarm(event.target.value)} aria-label="Finca para la nueva acción"><option value="">Elegir finca</option>{farms.map((farm) => <option key={farm.id} value={farm.id}>{farm.name}</option>)}</select>{plots.length ? <select value={selectedPlotId} onChange={(event) => setSelectedPlotId(event.target.value)} aria-label="Parcela para la nueva acción"><option value="">Toda la finca</option>{plots.map((plot) => <option key={plot.id} value={plot.id}>{plot.name}</option>)}</select> : null}<small>{contextText}</small></div><div className="field-action-primary">{actions.map((item) => { const Icon = item.icon; const content = <><span className={`field-action-icon ${item.tone}`}><Icon aria-hidden="true" /></span><span><strong>{item.label}</strong><small>{item.detail}</small></span></>; return item.action === 'camera' ? <button key={item.label} type="button" className="field-action-item" onClick={() => { onClose(); onCamera(); }}>{content}</button> : item.href ? <a key={item.label} className="field-action-item" href={item.href}>{content}</a> : <button key={item.label} type="button" className="field-action-item" onClick={() => setSelectedAction(item)}>{content}</button>; })}</div></>}</section></div>;
 }

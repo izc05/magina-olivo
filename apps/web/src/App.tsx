@@ -315,7 +315,7 @@ export function App({ initialTab = 'home', initialFieldView = 'home', initialPlo
             onClose={() => setShowCameraModal(false)}
           />
         ) : null}
-        {showQuickMenu ? <FieldActionCenter farms={farms} plots={plots} selectedFarmId={selectedFarmId} initialPlotId={initialPlotId} onSelectFarm={setSelectedFarmId} onClose={() => setShowQuickMenu(false)} onCamera={() => setShowCameraModal(true)} /> : null}
+        {showQuickMenu ? <FieldActionCenter farms={farms} plots={plots} selectedFarmId={selectedFarmId} initialPlotId={initialPlotId} holdingId={selectedHoldingId} campaignId={selectedCampaignId} onSelectFarm={setSelectedFarmId} onSaved={async () => { await Promise.all([selectedHoldingId ? loadHoldingData(selectedHoldingId) : Promise.resolve(), selectedFarmId ? loadPlots(selectedFarmId) : Promise.resolve(), selectedCampaignId ? loadCampaign(selectedCampaignId) : Promise.resolve()]); }} onClose={() => setShowQuickMenu(false)} onCamera={() => setShowCameraModal(true)} /> : null}
         {error ? <div className="alert" role="alert">{error}</div> : null}
         {holdings.length > 1 ? (
           <select className="selector" value={selectedHoldingId} onChange={(event) => setSelectedHoldingId(event.target.value)} aria-label="Explotación activa">

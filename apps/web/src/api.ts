@@ -63,6 +63,16 @@ export type ActivityCreateBody = {
 
 export type ActivityCreateResult = Activity | { offlineQueued: true; clientGeneratedId: string };
 
+export type TaskCreateBody = {
+  title: string;
+  dueDate: string;
+  priority?: 'low' | 'normal' | 'high';
+  notes?: string;
+  reminderDaysBefore?: number | null;
+  farmId?: string;
+  plotId?: string;
+};
+
 export type PlotTimelineItem = {
   type: 'activity' | 'delivery' | 'yield_result';
   id: string;
@@ -245,6 +255,8 @@ export const api = {
     }
   },
 
+  createTask: (holdingId: string, body: TaskCreateBody) => request<unknown>(`/api/v1/holdings/${holdingId}/tasks`, { method: 'POST', body: JSON.stringify(body) }),
+
   plotTimeline: (plotId: string) => cachedGet<{ items: PlotTimelineItem[] }>(`/api/v1/plots/${plotId}/timeline`),
   parseIntent: (text: string, holdingId?: string) => request<{
     confidence: number;
@@ -276,4 +288,3 @@ export const api = {
     humanExplanation: string;
   }>('/api/v1/ai/parse-ticket', { method: 'POST', body: JSON.stringify({ text }) }),
 };
-

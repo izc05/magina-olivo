@@ -24,7 +24,7 @@ test('Mi Campo keeps the private farm overview wired to real holdings and farms'
   assert.match(app, /href=\{`\/mi-campo\?finca=\$\{encodeURIComponent\(farm\.id\)\}`\}/);
   assert.match(app, /const openFieldView = \(view: Exclude<FieldInitialView, 'plot'>\) =>/);
   assert.match(app, /href="\/calendario"/);
-  assert.match(actions, /href: '\/campana\?new=delivery'/);
+  assert.match(actions, /label: 'Entrega'.*form: 'delivery'/);
   assert.match(app, /selectedFarmOliveTrees/);
   assert.match(app, /requestedFarmId/);
   assert.match(app, /setSelectedFarmId\(requestedFarmId\)/);
@@ -69,10 +69,10 @@ test('Mi Campo uses dedicated URLs for its short workspaces instead of a single 
 
   assert.match(app, /export type FieldInitialView/);
   assert.match(app, /const openFieldView = \(view: Exclude<FieldInitialView, 'plot'>\) =>/);
-  assert.match(actions, /href: '\/mi-campo\/mapa\?new=plot'/);
+  assert.match(actions, /label: 'Nueva parcela'.*form: 'plot'/);
   assert.match(app, /\/mi-campo\/parcelas\/\$\{encodeURIComponent\(plot\.id\)\}/);
-  assert.match(actions, /href: '\/mi-campo\/cuaderno\?new=activity'/);
-  assert.match(actions, /href: '\/mi-campo\/tratamientos\?new=activity'/);
+  assert.match(actions, /label: 'Trabajo'.*form: 'activity'/);
+  assert.match(actions, /label: 'Tratamiento'.*form: 'activity'/);
   assert.match(main, /path === '\/mi-campo\/mapa'/);
   assert.match(main, /initialFieldView="map"/);
   assert.match(main, /initialFieldView="treatments"/);

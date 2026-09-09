@@ -43,6 +43,7 @@ import './offline-v2-integration.css';
 import './auth-onboarding.css';
 import './pilot-alerts.css';
 import './calendar.css';
+import './catastro-ui-lab-refinements.css';
 
 installDemoPreview();
 installWeatherDemoPreview();

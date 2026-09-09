@@ -14,7 +14,8 @@ test('primary SPA navigation keeps programmatic focus and current-page semantics
   assert.match(app, /tabIndex=\{-1\}/);
   assert.match(app, /pageRef\.current\?\.focus/);
   assert.match(app, /aria-current=\{active \? 'page' : undefined\}/);
-  assert.match(app, /aria-label="Centro de acciones"/);
+  assert.match(app, /aria-label="Centro de acciones de Mi Campo"/);
+  assert.match(app, /tab === 'field' \? <button/);
   assert.match(app, /aria-expanded=\{showQuickMenu\}/);
   assert.doesNotMatch(app, /nav-plus[^\n]*aria-current/);
   assert.match(app, /const Icon = navigationIcons\[icon\]/);

@@ -24,7 +24,8 @@ test('the global action center keeps additions in one contextual flow', async ()
   assert.doesNotMatch(center, /field-action-more/);
   assert.match(center, /lucide-react/);
   assert.doesNotMatch(center, /🚜|📋|💧|🌱|👨‍🌾|⚙️|📦|📝|🏞️/);
-  assert.match(app, /aria-label="Centro de acciones"/);
+  assert.match(app, /aria-label="Centro de acciones de Mi Campo"/);
+  assert.match(app, /tab === 'field' \? <button type="button" className=\{`nav-plus/);
   assert.match(app, /holdingId=\{selectedHoldingId\}/);
   assert.match(map, /get\('new'\) === 'plot'/);
 });

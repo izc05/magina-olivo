@@ -257,6 +257,7 @@ a { color: inherit; }
 .farm-detail-metrics span, .farm-detail-metrics strong { display: block; }
 .farm-detail-metrics span { color: rgba(255,255,255,.74); font-size: .74rem; }
 .farm-detail-metrics strong { margin-top: 4px; font-size: 1.14rem; }
+.farm-detail-metric-icon { display: grid !important; place-items: center; width: 30px; height: 30px; margin-bottom: 6px; border-radius: 10px; background: rgba(255,255,255,.15); color: var(--gold-soft); }.farm-detail-metric-icon svg { width: 17px; }
 .plot-list-card { width: 100%; min-height: 72px; border: 1px solid var(--line); text-align: left; }
 .plot-list-card[aria-pressed="true"] { border-color: var(--olive-650); background: rgba(92,122,70,.09); box-shadow: 0 0 0 2px rgba(92,122,70,.16); }
 .plot-detail-card { margin-top: 18px; padding: 20px; }

@@ -77,6 +77,10 @@ export function App({ initialTab = 'home', initialFieldView = 'home', initialPlo
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [sunMode, setSunMode] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    if (tab !== 'field') setShowQuickMenu(false);
+  }, [tab]);
   const pageRef = useRef<HTMLElement | null>(null);
   const activePlotsRequestFarmId = useRef('');
 
@@ -366,7 +370,7 @@ export function App({ initialTab = 'home', initialFieldView = 'home', initialPlo
         <a className="nav-button" href="/magina"><Mountain aria-hidden="true" />Mágina</a>
         <a className="nav-button" href="/descubre"><Compass aria-hidden="true" />Descubre</a>
         <a className={`nav-button${tab === 'more' ? ' active' : ''}`} href="/cuenta" aria-current={tab === 'more' ? 'page' : undefined}><UserRound aria-hidden="true" />Perfil</a>
-        <button type="button" className={`nav-plus${showQuickMenu ? ' active' : ''}`} onClick={() => setShowQuickMenu((prev) => !prev)} aria-label="Centro de acciones" aria-expanded={showQuickMenu}><Plus aria-hidden="true" /></button>
+        {tab === 'field' ? <button type="button" className={`nav-plus${showQuickMenu ? ' active' : ''}`} onClick={() => setShowQuickMenu((prev) => !prev)} aria-label="Centro de acciones de Mi Campo" aria-expanded={showQuickMenu}><Plus aria-hidden="true" /></button> : null}
       </nav>
     </div>
   );
@@ -586,9 +590,9 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, plots, busy,
               <p>{selectedHolding.name}{selectedHolding.municipality ? ` · ${selectedHolding.municipality}` : ''}</p>
             </div>
             <div className="farm-detail-metrics" aria-label={`Resumen de ${selectedFarm.name}`}>
-              <div><span>Superficie</span><strong>{selectedFarm.areaHa != null ? formatHa(selectedFarm.areaHa) : 'Pendiente'}</strong></div>
-              <div><span>Parcelas</span><strong>{plots.length}</strong></div>
-              <div><span>Olivos</span><strong>{selectedFarmOliveTrees ? new Intl.NumberFormat('es-ES').format(selectedFarmOliveTrees) : '—'}</strong></div>
+              <div><span className="farm-detail-metric-icon"><Map aria-hidden="true" /></span><span>Superficie</span><strong>{selectedFarm.areaHa != null ? formatHa(selectedFarm.areaHa) : 'Pendiente'}</strong></div>
+              <div><span className="farm-detail-metric-icon"><Sprout aria-hidden="true" /></span><span>Parcelas</span><strong>{plots.length}</strong></div>
+              <div><span className="farm-detail-metric-icon"><Tractor aria-hidden="true" /></span><span>Olivos</span><strong>{selectedFarmOliveTrees ? new Intl.NumberFormat('es-ES').format(selectedFarmOliveTrees) : '—'}</strong></div>
             </div>
           </section> : null}
           {showingFarmOverview ? <>

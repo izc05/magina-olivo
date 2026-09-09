@@ -68,7 +68,7 @@ function MapMock({
   stage: LabStage;
   interactive?: boolean;
   selectedPoint?: MapPoint | null;
-  onSelectPoint?: (point: MapPoint) => void;
+  onSelectPoint?: ((point: MapPoint) => void) | undefined;
 }) {
   const active = stage !== 'locate' || Boolean(selectedPoint);
   const pin = selectedPoint ?? DEFAULT_POINT;

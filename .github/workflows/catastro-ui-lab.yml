@@ -4,13 +4,17 @@ on:
   push:
     branches:
       - feat/catastro-ui-lab-v1
+  pull_request:
+    branches:
+      - feat/catastro-borrowed-audit-v1
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: catastro-ui-lab-${{ github.ref }}
+  group: catastro-ui-lab-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:

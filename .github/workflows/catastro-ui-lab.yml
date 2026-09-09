@@ -44,6 +44,7 @@ jobs:
       - name: Build Catastro UI laboratory
         env:
           VITE_CATASTRO_UI_LAB: "true"
+          VITE_CATASTRO_REAL_LAB: "true"
           VITE_DEMO_MODE: "true"
         run: npm run build --workspace @magina/web
 
@@ -51,6 +52,8 @@ jobs:
         run: |
           grep -R -q "LAB · no producción" apps/web/dist/assets
           grep -R -q "Encuentra tu parcela en Catastro" apps/web/dist/assets
+          grep -R -q "REAL · SOLO LECTURA" apps/web/dist/assets
+          grep -R -q "Comprobar Catastro real" apps/web/dist/assets
 
       - name: Upload testable build artifact
         uses: actions/upload-artifact@v4

@@ -52,6 +52,50 @@ final result: passed
 
 ---
 
+# Design QA — Mi Campo, ficha contextual de parcela
+
+## Evidence
+
+- Source visual truth: `/tmp/codex-clipboard-aff53844-09b7-42e2-a215-fd72d6971904.png`, ficha móvil de parcela de 941 × 1672 px (incluye el cromo del teléfono).
+- Rendered implementation: captura real de la ficha **Estacas** desde `https://staging-magina.isivoltpro.com/mi-campo/parcelas/fa8086fe-4ef5-4c02-954d-ef576eb0ab9e?finca=78f1fd4f-9be2-4790-8c82-0100e8235406` en el navegador integrado autenticado.
+- Implementation capture: 1186 × 4360 px, navegador de escritorio. La superficie disponible no permite forzar la misma ventana móvil ni capturar sólo la pantalla del teléfono; no se hizo comparación 1:1 de densidad.
+- State: parcela seleccionada, antes de abrir el centro de acciones.
+
+## Full-view comparison
+
+- La implementación conserva la jerarquía deseada: volver a la finca, foto agrícola real, nombre/ubicación de parcela, tres métricas esenciales, ficha de datos y accesos claros a mapa y cuaderno.
+- Tipografía: título editorial serif y datos en sans, con contraste suficiente en la captura revisada.
+- Ritmo: tarjetas con bordes, radios y espaciado coherentes; la barra de navegación fija no tapa acciones de la ficha.
+- Color e imagen: usa los tokens oliva/marfil existentes y el activo fotográfico agrícola del repositorio. Los iconos proceden de la biblioteca del producto, no de aproximaciones dibujadas.
+- Contenido: los nombres, hectáreas, riego y olivos son datos de la finca/parcela seleccionada y no fixtures copiados de la referencia.
+
+## Primary interactions checked
+
+1. Finca → parcela abre una URL estable de ficha individual.
+2. Volver devuelve a la finca elegida.
+3. El centro `+` hereda `Finca salinillas · Parcela Estacas`.
+4. `Registrar labor` abre el cuaderno con `finca` y `parcela` en la URL y con **Estacas** activa.
+
+## Comparison history
+
+1. P0 funcional detectado: una entrada directa a parcela podía mostrar temporalmente datos de otra finca por una carrera de carga. Corregido en `77791c52297e`: la URL de finca tiene prioridad y se descartan respuestas de parcelas que ya no corresponden al contexto activo.
+2. Evidencia posterior: la ficha directa de **Estacas**, el regreso a **salinillas** y el alta de labor contextual funcionan en staging.
+
+## Findings
+
+- [P2] Falta una comparación móvil normalizada.
+  - Evidence: la fuente es un teléfono de 941 × 1672 px y la captura disponible es un navegador de escritorio de 1186 × 4360 px.
+  - Impact: no permite validar exactamente el recorte de hero, la densidad vertical y el comportamiento de la navegación inferior en el móvil real.
+  - Fix: abrir esta misma URL desde el móvil o un viewport equivalente y repetir la comparación sin el cromo del navegador.
+
+## Follow-up polish
+
+- [P3] Tras la captura móvil, valorar un recorte de hero más fotográfico si el paisaje queda escaso en pantallas estrechas.
+
+final result: blocked
+
+---
+
 # Design QA — municipio, hero y contexto de finca
 
 ## Evidence

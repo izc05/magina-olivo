@@ -19,8 +19,9 @@ test('primary SPA navigation keeps programmatic focus and current-page semantics
   assert.doesNotMatch(app, /nav-plus[^\n]*aria-current/);
   assert.match(app, /const Icon = navigationIcons\[icon\]/);
   assert.match(app, /<Icon aria-hidden="true"/);
-  assert.match(app, /aria-pressed=\{farm\.id === selectedFarmId\}/);
-  assert.match(app, /aria-pressed=\{plot\.id === selectedPlotId\}/);
+  assert.match(app, /href=\{`\/mi-campo\?finca=\$\{encodeURIComponent\(farm\.id\)\}`\}/);
+  assert.match(app, /href=\{`\/mi-campo\/parcelas\/\$\{encodeURIComponent\(plot\.id\)\}\?finca=/);
+  assert.match(app, /<FieldBackBar backHref=/);
 });
 
 test('global styles preserve visible focus and user motion/contrast preferences', async () => {

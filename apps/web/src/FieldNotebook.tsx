@@ -67,7 +67,8 @@ export function FieldNotebook({
   initialActivityType?: ActivityType | undefined;
   openEntry?: boolean;
 }) {
-  const [selectedPlotId, setSelectedPlotId] = useState(plots[0]?.id ?? '');
+  const requestedPlotId = new URLSearchParams(window.location.search).get('parcela') ?? '';
+  const [selectedPlotId, setSelectedPlotId] = useState(() => plots.some((plot) => plot.id === requestedPlotId) ? requestedPlotId : (plots[0]?.id ?? ''));
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [campaignId, setCampaignId] = useState('');
   const [timeline, setTimeline] = useState<PlotTimelineItem[]>([]);
@@ -115,8 +116,11 @@ export function FieldNotebook({
       : 'Añadir registro al cuaderno';
 
   useEffect(() => {
-    if (!plots.some((plot) => plot.id === selectedPlotId)) setSelectedPlotId(plots[0]?.id ?? '');
-  }, [plots, selectedPlotId]);
+    setSelectedPlotId((current) => {
+      if (requestedPlotId && plots.some((plot) => plot.id === requestedPlotId)) return requestedPlotId;
+      return plots.some((plot) => plot.id === current) ? current : (plots[0]?.id ?? '');
+    });
+  }, [plots, requestedPlotId]);
 
   useEffect(() => {
     if (initialActivityType) setActivityType(initialActivityType);

@@ -43,6 +43,7 @@ export function DeliveryEntryCard({
   onSaved: () => Promise<void>;
 }) {
   const requestedFarmId = new URLSearchParams(window.location.search).get('finca') ?? '';
+  const requestedPlotId = new URLSearchParams(window.location.search).get('parcela') ?? '';
   const [farmId, setFarmId] = useState(() => farms.some((farm) => farm.id === requestedFarmId) ? requestedFarmId : '');
   const [plots, setPlots] = useState<Plot[]>([]);
   const [plotId, setPlotId] = useState('');
@@ -94,7 +95,10 @@ export function DeliveryEntryCard({
 
     setLoadingPlots(true);
     void api.plots(farmId).then((result) => {
-      if (!cancelled) setPlots(result.items);
+      if (!cancelled) {
+        setPlots(result.items);
+        setPlotId(result.items.some((plot) => plot.id === requestedPlotId) ? requestedPlotId : '');
+      }
     }).catch((reason) => {
       if (!cancelled) setError(reason instanceof Error ? reason.message : 'No se han podido cargar las parcelas.');
     }).finally(() => {
@@ -102,7 +106,7 @@ export function DeliveryEntryCard({
     });
 
     return () => { cancelled = true; };
-  }, [farmId]);
+  }, [farmId, requestedPlotId]);
 
   function chooseTicket(file: File | null) {
     setWarning(null);

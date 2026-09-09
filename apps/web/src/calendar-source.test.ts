@@ -30,6 +30,9 @@ test('calendar keeps agricultural scope, overdue visibility and write restrictio
   assert.match(calendar, /Tareas vencidas/);
   assert.match(calendar, /reminderDaysBefore/);
   assert.match(calendar, /priority/);
+  assert.match(calendar, /const contextualFarmId = taskSearch\.get\('finca'\)/);
+  assert.match(calendar, /plotId: contextualPlotId \?\? undefined/);
+  assert.match(calendar, /Esta tarea se guardará en/);
   assert.match(calendar, /activeHolding\.role !== 'viewer'/);
   assert.match(calendar, /solo lectura/);
   assert.doesNotMatch(calendar, /pushManager|Notification\.requestPermission/);

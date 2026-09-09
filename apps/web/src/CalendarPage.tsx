@@ -82,7 +82,10 @@ function buildMonthDays(month: Date): Array<{ iso: string; day: number; weekday:
 }
 
 export function CalendarPage() {
-  const createTaskIntent = new URLSearchParams(window.location.search).get('new') === 'task';
+  const taskSearch = new URLSearchParams(window.location.search);
+  const createTaskIntent = taskSearch.get('new') === 'task';
+  const contextualFarmId = taskSearch.get('finca') || null;
+  const contextualPlotId = taskSearch.get('parcela') || null;
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [holdingId, setHoldingId] = useState('');
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -176,6 +179,8 @@ export function CalendarPage() {
           dueDate,
           priority,
           reminderDaysBefore,
+          farmId: contextualFarmId ?? undefined,
+          plotId: contextualPlotId ?? undefined,
         }),
       });
       setTasks((current) => [...current, created].sort((a, b) => a.dueDate.localeCompare(b.dueDate)));
@@ -266,6 +271,7 @@ export function CalendarPage() {
                     <h2 className="section-title account-section-title">Nueva tarea</h2>
                   </div>
                 </div>
+                {contextualFarmId ? <p className="calendar-context-note">Esta tarea se guardará en {contextualPlotId ? 'la parcela activa' : 'la finca activa'}.</p> : null}
                 <div className="calendar-form-grid">
                   <label className="field calendar-title-field">
                     <span>Tarea</span>

@@ -27,7 +27,7 @@ import { PhotoCredit, VisualHeader, navigationIcons } from './VisualChrome';
 import { FieldActionCenter } from './FieldActionCenter';
 
 type Tab = 'home' | 'field' | 'campaign' | 'magina' | 'more';
-export type FieldInitialView = 'home' | 'plots' | 'notebook' | 'map' | 'treatments' | 'irrigation';
+export type FieldInitialView = 'home' | 'plots' | 'plot' | 'notebook' | 'map' | 'treatments' | 'irrigation';
 type SessionState = 'checking' | 'signed_out' | 'signed_in' | 'offline_locked';
 type ActionRunner = (action: () => Promise<void>) => Promise<void>;
 
@@ -57,7 +57,7 @@ function messageFrom(error: unknown): string {
   return 'Ha ocurrido un error inesperado.';
 }
 
-export function App({ initialTab = 'home', initialFieldView = 'home' }: { initialTab?: Tab; initialFieldView?: FieldInitialView }) {
+export function App({ initialTab = 'home', initialFieldView = 'home', initialPlotId = '' }: { initialTab?: Tab; initialFieldView?: FieldInitialView; initialPlotId?: string }) {
   const [sessionState, setSessionState] = useState<SessionState>('checking');
   const [user, setUser] = useState<User | null>(null);
   const [tab, setTab] = useState<Tab>(initialTab);
@@ -309,7 +309,7 @@ export function App({ initialTab = 'home', initialFieldView = 'home' }: { initia
             onClose={() => setShowCameraModal(false)}
           />
         ) : null}
-        {showQuickMenu ? <FieldActionCenter farms={farms} selectedFarmId={selectedFarmId} onSelectFarm={setSelectedFarmId} onClose={() => setShowQuickMenu(false)} onCamera={() => setShowCameraModal(true)} /> : null}
+        {showQuickMenu ? <FieldActionCenter farms={farms} plots={plots} selectedFarmId={selectedFarmId} initialPlotId={initialPlotId} onSelectFarm={setSelectedFarmId} onClose={() => setShowQuickMenu(false)} onCamera={() => setShowCameraModal(true)} /> : null}
         {error ? <div className="alert" role="alert">{error}</div> : null}
         {holdings.length > 1 ? (
           <select className="selector" value={selectedHoldingId} onChange={(event) => setSelectedHoldingId(event.target.value)} aria-label="Explotación activa">
@@ -324,17 +324,14 @@ export function App({ initialTab = 'home', initialFieldView = 'home' }: { initia
             selectedHolding={selectedHolding}
             farms={farms}
             selectedFarm={selectedFarm}
-            selectedFarmId={selectedFarmId}
             plots={plots}
-            campaign={selectedCampaign}
-            summary={summary}
             busy={busy}
             setSelectedFarmId={setSelectedFarmId}
             runAction={runAction}
             reloadHoldings={loadHoldings}
             reloadHoldingData={() => loadHoldingData(selectedHoldingId)}
-            reloadPlots={() => loadPlots(selectedFarmId)}
             initialView={initialFieldView}
+            initialPlotId={initialPlotId}
           />
         ) : null}
         {tab === 'campaign' ? (
@@ -501,18 +498,22 @@ function irrigationLabel(value: string | null): string {
   return 'Sin definir';
 }
 
-function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarmId, plots, campaign, summary, busy, setSelectedFarmId, runAction, reloadHoldings, reloadHoldingData, reloadPlots, initialView }: { holdings: Holding[]; selectedHolding: Holding | null; farms: Farm[]; selectedFarm: Farm | null; selectedFarmId: string; plots: Plot[]; campaign: Campaign | null; summary: CampaignSummary | null; busy: boolean; setSelectedFarmId: (id: string) => void; runAction: ActionRunner; reloadHoldings: () => Promise<void>; reloadHoldingData: () => Promise<void>; reloadPlots: () => Promise<void>; initialView: FieldInitialView }) {
+function FieldTab({ holdings, selectedHolding, farms, selectedFarm, plots, busy, setSelectedFarmId, runAction, reloadHoldings, reloadHoldingData, initialView, initialPlotId }: { holdings: Holding[]; selectedHolding: Holding | null; farms: Farm[]; selectedFarm: Farm | null; plots: Plot[]; busy: boolean; setSelectedFarmId: (id: string) => void; runAction: ActionRunner; reloadHoldings: () => Promise<void>; reloadHoldingData: () => Promise<void>; initialView: FieldInitialView; initialPlotId: string }) {
   const requestedFarmId = new URLSearchParams(window.location.search).get('finca') ?? '';
+  const requestedPlotId = initialPlotId || new URLSearchParams(window.location.search).get('parcela') || '';
   const [selectedPlotId, setSelectedPlotId] = useState('');
   const [fieldView, setFieldView] = useState<FieldInitialView>(initialView);
-  const [showFarmDetail, setShowFarmDetail] = useState(initialView === 'plots' || initialView === 'notebook' || initialView === 'treatments' || initialView === 'irrigation' || Boolean(requestedFarmId));
+  const [showFarmDetail, setShowFarmDetail] = useState(initialView === 'plots' || initialView === 'plot' || initialView === 'notebook' || initialView === 'treatments' || initialView === 'irrigation' || Boolean(requestedFarmId));
   const [showMapWorkspace, setShowMapWorkspace] = useState(initialView === 'map');
   const [farmPlotCounts, setFarmPlotCounts] = useState<Record<string, number>>({});
   const selectedPlot = useMemo(() => plots.find((plot) => plot.id === selectedPlotId) ?? null, [plots, selectedPlotId]);
 
   useEffect(() => {
-    setSelectedPlotId((current) => plots.some((plot) => plot.id === current) ? current : '');
-  }, [plots]);
+    setSelectedPlotId((current) => {
+      if (requestedPlotId && plots.some((plot) => plot.id === requestedPlotId)) return requestedPlotId;
+      return plots.some((plot) => plot.id === current) ? current : '';
+    });
+  }, [plots, requestedPlotId]);
 
   useEffect(() => {
     if (requestedFarmId && farms.some((farm) => farm.id === requestedFarmId)) setSelectedFarmId(requestedFarmId);
@@ -521,8 +522,8 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
   useEffect(() => {
     setFieldView(initialView);
     setShowMapWorkspace(initialView === 'map');
-    setShowFarmDetail((initialView !== 'home' && initialView !== 'map') || Boolean(requestedFarmId));
-  }, [initialView, requestedFarmId]);
+    setShowFarmDetail((initialView !== 'home' && initialView !== 'map') || Boolean(requestedFarmId) || Boolean(requestedPlotId));
+  }, [initialView, requestedFarmId, requestedPlotId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -535,38 +536,20 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
   const selectedFarmOliveTrees = plots.reduce((total, plot) => total + (plot.oliveTreeCount ?? 0), 0);
   const notebookActivityType = fieldView === 'treatments' ? 'treatment' : fieldView === 'irrigation' ? 'irrigation' : undefined;
   const showingFarmOverview = fieldView === 'home' || fieldView === 'plots';
-  const openFieldView = (view: FieldInitialView) => {
-    const paths = { home: '/mi-campo', plots: '/mi-campo/parcelas', map: '/mi-campo/mapa', notebook: '/mi-campo/cuaderno', treatments: '/mi-campo/tratamientos', irrigation: '/mi-campo/riegos' };
-    window.location.assign(paths[view]);
+  const contextualFieldHref = (path: string, includePlot = false) => {
+    const search = new URLSearchParams();
+    if (selectedFarm?.id) search.set('finca', selectedFarm.id);
+    if (includePlot && selectedPlotId) search.set('parcela', selectedPlotId);
+    const query = search.toString();
+    return query ? `${path}?${query}` : path;
   };
-  const openFarmSection = (sectionId: string) => openFieldView(sectionId === 'cuaderno' ? 'notebook' : 'plots');
+  const openFieldView = (view: Exclude<FieldInitialView, 'plot'>) => {
+    const paths = { home: '/mi-campo', plots: '/mi-campo/parcelas', map: '/mi-campo/mapa', notebook: '/mi-campo/cuaderno', treatments: '/mi-campo/tratamientos', irrigation: '/mi-campo/riegos' };
+    window.location.assign(contextualFieldHref(paths[view], view !== 'home' && view !== 'plots'));
+  };
   const openMapWorkspace = () => {
     openFieldView('map');
   };
-
-  const fieldManagement = selectedHolding ? (
-        <details id="field-management" className="field-management visual-disclosure" open={!selectedFarm}>
-          <summary>Mis fincas · {selectedHolding.name}</summary>
-          <section className="card field-holding-context" aria-label="Explotación activa">
-            <div>
-              <p className="eyebrow">Explotación activa</p>
-              <h2>{selectedHolding.name}</h2>
-              <p>{[selectedHolding.municipality, selectedHolding.province].filter(Boolean).join(' · ') || 'Ubicación pendiente'}</p>
-            </div>
-          </section>
-          <section className="section">
-            <div className="section-heading"><div><h2 className="section-title">Mis fincas</h2><p className="section-copy">Selecciona una finca para continuar con sus parcelas.</p></div></div>
-            {farms.map((farm) => (
-              <button key={farm.id} type="button" className="card list-card interactive farm-list-card" onClick={() => setSelectedFarmId(farm.id)} aria-pressed={farm.id === selectedFarmId}>
-                <div className="list-card-main"><p className="list-card-title">{farm.name}</p><p className="list-card-meta">{farm.areaHa != null ? formatHa(farm.areaHa) : 'Superficie pendiente'}</p></div>
-                <span className={`badge${farm.id === selectedFarmId ? ' gold' : ''}`}>{farm.id === selectedFarmId ? 'Seleccionada' : 'Ver finca'}</span>
-              </button>
-            ))}
-            {!farms.length ? <EmptyState title="Aún no has añadido ninguna finca.">Crea tu primera finca para empezar a organizar tus parcelas.</EmptyState> : null}
-          </section>
-          <CreateFarmCard holdingId={selectedHolding.id} busy={busy} runAction={runAction} onCreated={reloadHoldingData} firstFarm={farms.length === 0} />
-        </details>
-      ) : null;
 
   return (
     <>
@@ -575,7 +558,7 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
 
       {selectedFarm && selectedHolding && showMapWorkspace ? (
         <>
-          <FieldFlowNav farmName={selectedFarm.name} current="mapa" backHref="/mi-campo" nextHref="/mi-campo/parcelas" nextLabel="Parcelas" />
+          <FieldBackBar backHref={contextualFieldHref('/mi-campo')} label="Mis fincas" />
           <section className="field-map-workspace" id="mapa-parcelas" aria-labelledby="field-map-workspace-title">
             <div className="field-map-workspace-heading">
               <div><p className="eyebrow">{selectedFarm.name} · Mi Campo</p><h1 id="field-map-workspace-title">Mapa de parcelas</h1><p>Trabaja con GPS, ortofoto PNOA, relieve y fuentes oficiales sin perder el contexto de tu finca.</p></div>
@@ -589,8 +572,8 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
 
       {selectedFarm && selectedHolding && showFarmDetail && !showMapWorkspace ? (
         <>
-          <FieldFlowNav farmName={selectedFarm.name} current={fieldView === 'plots' ? 'parcelas' : fieldView === 'notebook' || fieldView === 'treatments' || fieldView === 'irrigation' ? 'cuaderno' : 'finca'} backHref="/mi-campo" nextHref={fieldView === 'plots' ? '/mi-campo/mapa' : fieldView === 'notebook' || fieldView === 'treatments' || fieldView === 'irrigation' ? '/mi-campo/recursos' : '/mi-campo/parcelas'} nextLabel={fieldView === 'plots' ? 'Mapa' : fieldView === 'notebook' || fieldView === 'treatments' || fieldView === 'irrigation' ? 'Recursos' : 'Parcelas'} />
-          <section className="farm-detail-card farm-detail-hero" aria-labelledby="selected-farm-title">
+          {fieldView === 'plot' ? <FieldBackBar backHref={contextualFieldHref('/mi-campo')} label={selectedFarm.name} /> : <FieldBackBar backHref="/mi-campo" label="Mis fincas" />}
+          {fieldView !== 'plot' ? <section className="farm-detail-card farm-detail-hero" aria-labelledby="selected-farm-title">
             <div>
               <p className="eyebrow">Finca activa</p>
               <h1 id="selected-farm-title">{selectedFarm.name}</h1>
@@ -601,35 +584,23 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
               <div><span>Parcelas</span><strong>{plots.length}</strong></div>
               <div><span>Olivos</span><strong>{selectedFarmOliveTrees ? new Intl.NumberFormat('es-ES').format(selectedFarmOliveTrees) : '—'}</strong></div>
             </div>
-          </section>
+          </section> : null}
           {showingFarmOverview ? <>
           <section className="section" id="parcelas">
-            <div className="section-heading"><div><p className="eyebrow page-eyebrow">Mi Campo</p><h2 className="section-title">Parcelas</h2></div><a className="text-button" href="#gestion-parcelas" onClick={() => { const panel = document.querySelector<HTMLDetailsElement>('#gestion-parcelas details'); if (panel) panel.open = true; }}>Añadir</a></div>
+            <div className="section-heading"><div><p className="eyebrow page-eyebrow">Finca activa</p><h2 className="section-title">Parcelas</h2><p className="section-copy">Abre una parcela para consultar sus datos y trabajar dentro de ella.</p></div></div>
             {plots.map((plot) => (
-              <button type="button" className="card list-card interactive plot-list-card" key={plot.id} onClick={() => setSelectedPlotId(plot.id)} aria-pressed={plot.id === selectedPlotId}>
+              <a className="card list-card interactive plot-list-card" key={plot.id} href={`/mi-campo/parcelas/${encodeURIComponent(plot.id)}?finca=${encodeURIComponent(selectedFarm.id)}`}>
                 <span className="visual-icon-tile"><Sprout aria-hidden="true" /></span>
                 <div className="list-card-main"><p className="list-card-title">{plot.name}</p><p className="list-card-meta">{[plot.areaHa != null ? formatHa(plot.areaHa) : null, plot.oliveTreeCount != null ? `${plot.oliveTreeCount} olivos` : null, plot.irrigationType ? irrigationLabel(plot.irrigationType) : null].filter(Boolean).join(' · ') || 'Información pendiente'}</p></div>
-                <span className={`badge${plot.id === selectedPlotId ? ' gold' : ''}`}>{plot.id === selectedPlotId ? 'Seleccionada' : plot.sigpacReference ? 'SIGPAC' : 'Ver parcela'}</span>
+                {plot.sigpacReference ? <span className="badge">SIGPAC</span> : null}
                 <ChevronRight className="row-chevron" aria-hidden="true" />
-              </button>
+              </a>
             ))}
-            {!plots.length ? <EmptyState title="Aún no has añadido parcelas a esta finca.">Crea la primera parcela para empezar a registrar su información.</EmptyState> : null}
-            <div id="gestion-parcelas"><details className="visual-disclosure" open={!plots.length}><summary>Añadir parcela</summary><CreatePlotCard farmId={selectedFarm.id} busy={busy} runAction={runAction} onCreated={reloadPlots} /></details></div>
+            {!plots.length ? <EmptyState title="Aún no has añadido parcelas a esta finca.">Usa el botón + para crearla con GPS, Catastro o SIGPAC.</EmptyState> : null}
           </section>
-          {selectedPlot ? (
-            <section className="card plot-detail-card" aria-labelledby="selected-plot-title">
-              <p className="eyebrow">Parcela seleccionada</p>
-              <h3 id="selected-plot-title">{selectedPlot.name}</h3>
-              <dl>
-                {selectedPlot.areaHa != null ? <div><dt>Superficie</dt><dd>{formatHa(selectedPlot.areaHa)}</dd></div> : null}
-                {selectedPlot.oliveTreeCount != null ? <div><dt>Olivos</dt><dd>{selectedPlot.oliveTreeCount}</dd></div> : null}
-                {selectedPlot.irrigationType ? <div><dt>Riego</dt><dd>{irrigationLabel(selectedPlot.irrigationType)}</dd></div> : null}
-                {selectedPlot.sigpacReference ? <div><dt>Referencia SIGPAC</dt><dd>{selectedPlot.sigpacReference}</dd></div> : null}
-              </dl>
-              <button className="text-button plot-detail-map-note" type="button" onClick={openMapWorkspace}>Abrir mapa, GPS, SIGPAC y Catastro</button>
-            </section>
-          ) : null}
           </> : null}
+          {fieldView === 'plot' && selectedPlot ? <PlotDetailScreen farm={selectedFarm} holding={selectedHolding} plot={selectedPlot} /> : null}
+          {fieldView === 'plot' && !selectedPlot ? <EmptyState title="No encontramos esta parcela en la finca seleccionada.">Vuelve a la finca y elige una de sus parcelas.</EmptyState> : null}
           {fieldView === 'notebook' || fieldView === 'treatments' || fieldView === 'irrigation' ? <div id="cuaderno"><FieldNotebook holdingId={selectedHolding.id} farmId={selectedFarm.id} plots={plots} onOpenMap={openMapWorkspace} initialActivityType={notebookActivityType} openEntry={Boolean(notebookActivityType) || new URLSearchParams(window.location.search).get('new') === 'activity'} /></div> : null}
           <PhotoCredit field />
         </>
@@ -641,6 +612,7 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, selectedFarm
 function FarmListHome({ holding, farms, farmPlotCounts, busy, runAction, onCreated }: { holding: Holding; farms: Farm[]; farmPlotCounts: Record<string, number>; busy: boolean; runAction: ActionRunner; onCreated: () => Promise<void> }) {
   const totalArea = farms.reduce((total, farm) => total + (Number(farm.areaHa) || 0), 0);
   const totalPlots = farms.reduce((total, farm) => total + (farmPlotCounts[farm.id] ?? 0), 0);
+  const showFarmForm = new URLSearchParams(window.location.search).get('new') === 'farm';
 
   return <>
     <section className="field-farms-home-intro" aria-labelledby="field-farms-home-title">
@@ -665,14 +637,44 @@ function FarmListHome({ holding, farms, farmPlotCounts, busy, runAction, onCreat
       {!farms.length ? <EmptyState title="Aún no has añadido ninguna finca.">Crea tu primera finca para organizar parcelas, mapas y registros.</EmptyState> : null}
     </section>
 
-    <details className="field-add-farm visual-disclosure" open={!farms.length}><summary><Plus aria-hidden="true" /> {farms.length ? 'Añadir otra finca' : 'Añade tu primera finca'}</summary><CreateFarmCard holdingId={holding.id} busy={busy} runAction={runAction} onCreated={onCreated} firstFarm={farms.length === 0} /></details>
+    {showFarmForm || !farms.length ? <CreateFarmCard holdingId={holding.id} busy={busy} runAction={runAction} onCreated={onCreated} firstFarm={farms.length === 0} /> : null}
     <PhotoCredit field />
   </>;
 }
 
-function FieldFlowNav({ farmName, current, backHref, nextHref, nextLabel }: { farmName: string; current: 'finca' | 'parcelas' | 'mapa' | 'cuaderno'; backHref: string; nextHref: string; nextLabel: string }) {
-  const steps = [{ key: 'finca', label: 'Resumen', href: '/mi-campo' }, { key: 'parcelas', label: 'Parcelas', href: '/mi-campo/parcelas' }, { key: 'mapa', label: 'Mapa', href: '/mi-campo/mapa' }, { key: 'cuaderno', label: 'Cuaderno', href: '/mi-campo/cuaderno' }] as const;
-  return <div className="field-flow-nav"><div className="field-flow-nav-top"><a className="field-back-button" href={backHref}><ChevronLeft aria-hidden="true" /> Mi Campo</a><span className="field-flow-context">Finca · {farmName}</span><a className="field-flow-next" href={nextHref}>Siguiente: {nextLabel}<ChevronRight aria-hidden="true" /></a></div><nav aria-label="Navegación de la finca" className="field-flow-steps">{steps.map((step, index) => <a key={step.key} className={step.key === current ? 'active' : ''} href={step.href}><span>{index + 1}</span>{step.label}</a>)}</nav></div>;
+function FieldBackBar({ backHref, label }: { backHref: string; label: string }) {
+  return <nav className="field-back-bar" aria-label="Volver a Mi Campo"><a className="field-back-button" href={backHref}><ChevronLeft aria-hidden="true" />{label}</a></nav>;
+}
+
+function PlotDetailScreen({ farm, holding, plot }: { farm: Farm; holding: Holding; plot: Plot }) {
+  const mapHref = `/mi-campo/mapa?finca=${encodeURIComponent(farm.id)}&parcela=${encodeURIComponent(plot.id)}`;
+  const notebookHref = `/mi-campo/cuaderno?finca=${encodeURIComponent(farm.id)}&parcela=${encodeURIComponent(plot.id)}`;
+  return <>
+    <section className="plot-profile-hero" aria-labelledby="plot-profile-title">
+      <img src="/photos/field-olivares-magina.webp" alt="" />
+      <div className="plot-profile-copy"><p className="eyebrow">PARCELA</p><h1 id="plot-profile-title">{plot.name}</h1><p><MapPin aria-hidden="true" />{farm.name} · {holding.municipality || holding.province || 'Ubicación pendiente'}</p></div>
+    </section>
+    <section className="plot-profile-summary" aria-label={`Resumen de ${plot.name}`}>
+      <div><span className="visual-icon-tile"><Map aria-hidden="true" /></span><small>Superficie</small><strong>{plot.areaHa != null ? formatHa(plot.areaHa) : 'Pendiente'}</strong></div>
+      <div><span className="visual-icon-tile"><Sprout aria-hidden="true" /></span><small>Olivos</small><strong>{plot.oliveTreeCount != null ? new Intl.NumberFormat('es-ES').format(plot.oliveTreeCount) : 'Pendiente'}</strong></div>
+      <div><span className="visual-icon-tile"><Droplets aria-hidden="true" /></span><small>Riego</small><strong>{irrigationLabel(plot.irrigationType)}</strong></div>
+    </section>
+    <section className="plot-profile-details card" aria-labelledby="plot-data-title">
+      <div className="section-heading"><div><p className="eyebrow">Ficha de parcela</p><h2 id="plot-data-title" className="section-title">Información</h2></div></div>
+      <dl>
+        <div><dt>Finca</dt><dd>{farm.name}</dd></div>
+        <div><dt>Referencia SIGPAC</dt><dd>{plot.sigpacReference || 'Sin vincular'}</dd></div>
+        <div><dt>Superficie</dt><dd>{plot.areaHa != null ? formatHa(plot.areaHa) : 'Sin registrar'}</dd></div>
+        <div><dt>Riego</dt><dd>{irrigationLabel(plot.irrigationType)}</dd></div>
+        {plot.notes ? <div className="plot-profile-notes"><dt>Notas</dt><dd>{plot.notes}</dd></div> : null}
+      </dl>
+    </section>
+    <section className="plot-profile-links" aria-label="Consultar la parcela">
+      <a className="plot-profile-link" href={mapHref}><span className="visual-icon-tile"><Map aria-hidden="true" /></span><span><strong>Mapa, GPS y Catastro</strong><small>Consulta el perímetro y las fuentes oficiales.</small></span><ChevronRight aria-hidden="true" /></a>
+      <a className="plot-profile-link" href={notebookHref}><span className="visual-icon-tile"><BookOpen aria-hidden="true" /></span><span><strong>Cuaderno e historial</strong><small>Consulta los trabajos registrados en esta parcela.</small></span><ChevronRight aria-hidden="true" /></a>
+    </section>
+    <p className="plot-profile-context"><Sprout aria-hidden="true" />El botón + ya tiene seleccionada esta parcela para cualquier nuevo registro.</p>
+  </>;
 }
 
 function CampaignTab({ selectedHolding, campaigns, selectedCampaignId, setSelectedCampaignId, selectedCampaign, farms, deliveries, summary, busy, runAction, reloadHoldingData, reloadCampaign }: { selectedHolding: Holding | null; campaigns: Campaign[]; selectedCampaignId: string; setSelectedCampaignId: (id: string) => void; selectedCampaign: Campaign | null; farms: Farm[]; deliveries: Delivery[]; summary: CampaignSummary | null; busy: boolean; runAction: ActionRunner; reloadHoldingData: () => Promise<void>; reloadCampaign: () => Promise<void> }) {
@@ -886,30 +888,13 @@ function CreateHoldingCard({ busy, runAction, onCreated }: { busy: boolean; runA
 }
 
 function CreateFarmCard({ holdingId, busy, runAction, onCreated, firstFarm = false }: { holdingId: string; busy: boolean; runAction: ActionRunner; onCreated: () => Promise<void>; firstFarm?: boolean }) {
-  return <FormCard title={firstFarm ? 'Añade tu primera finca' : 'Añadir finca'} submitLabel={firstFarm ? 'Añadir mi primera finca' : 'Guardar finca'} busy={busy} onSubmit={(form) => runAction(async () => {
+  return <FormCard title={firstFarm ? 'Crea tu primera finca' : 'Nueva finca'} submitLabel={firstFarm ? 'Guardar mi primera finca' : 'Guardar finca'} busy={busy} onSubmit={(form) => runAction(async () => {
     const area = String(form.get('areaHa') || '').trim();
     const body: { name: string; areaHa?: number } = { name: String(form.get('name') || '').trim() };
     if (area) body.areaHa = Number(area);
     await api.createFarm(holdingId, body);
     await onCreated();
   })} fields={<div className="inline-fields"><Field name="name" label="Nombre" placeholder="Las Viñas" required /><Field name="areaHa" label="Hectáreas" type="number" step="0.001" placeholder="2.50" /></div>} />;
-}
-
-function CreatePlotCard({ farmId, busy, runAction, onCreated }: { farmId: string; busy: boolean; runAction: ActionRunner; onCreated: () => Promise<void> }) {
-  return <FormCard title="Añadir parcela" submitLabel="Guardar parcela" busy={busy} onSubmit={(form) => runAction(async () => {
-    const area = String(form.get('areaHa') || '').trim();
-    const trees = String(form.get('oliveTreeCount') || '').trim();
-    const sigpac = String(form.get('sigpacReference') || '').trim();
-    const body: { name: string; areaHa?: number; oliveTreeCount?: number; sigpacReference?: string; irrigationType?: 'dryland' | 'irrigated' | 'mixed' | 'unknown' } = {
-      name: String(form.get('name') || '').trim(),
-      irrigationType: String(form.get('irrigationType') || 'unknown') as 'dryland' | 'irrigated' | 'mixed' | 'unknown',
-    };
-    if (area) body.areaHa = Number(area);
-    if (trees) body.oliveTreeCount = Number(trees);
-    if (sigpac) body.sigpacReference = sigpac;
-    await api.createPlot(farmId, body);
-    await onCreated();
-  })} fields={<><Field name="name" label="Nombre" placeholder="Parcela Norte" required /><div className="inline-fields"><Field name="areaHa" label="Hectáreas" type="number" step="0.001" /><Field name="oliveTreeCount" label="Olivos" type="number" step="1" /></div><Field name="sigpacReference" label="Referencia SIGPAC" placeholder="Opcional" /><div className="field"><label htmlFor="irrigationType">Riego</label><select id="irrigationType" name="irrigationType" defaultValue="unknown"><option value="unknown">Sin definir</option><option value="dryland">Secano</option><option value="irrigated">Regadío</option><option value="mixed">Mixto</option></select></div></>} />;
 }
 
 function CreateCampaignCard({ holdingId, busy, runAction, onCreated }: { holdingId: string; busy: boolean; runAction: ActionRunner; onCreated: () => Promise<void> }) {

@@ -184,6 +184,8 @@ createRoot(root).render(
         <App initialTab="field" />
       ) : path === '/mi-campo/parcelas' ? (
         <App initialTab="field" initialFieldView="plots" />
+      ) : path.startsWith('/mi-campo/parcelas/') ? (
+        <App initialTab="field" initialFieldView="plot" initialPlotId={path.split('/').filter(Boolean).at(-1) ?? ''} />
       ) : path === '/mi-campo/cuaderno' ? (
         <App initialTab="field" initialFieldView="notebook" />
       ) : path === '/mi-campo/mapa' ? (

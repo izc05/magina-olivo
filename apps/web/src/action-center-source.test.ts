@@ -10,6 +10,9 @@ test('the global action center uses real routes and carries the chosen farm cont
   assert.match(center, /onSelectFarm/);
   assert.match(center, /contextualHref/);
   assert.match(center, /Finca para la nueva acción/);
+  assert.match(center, /const requestedPlotId = initialPlotId \|\| new URLSearchParams\(window\.location\.search\)\.get\('parcela'\)/);
+  assert.match(center, /id="action-plot"/);
+  assert.match(center, /Nueva finca/);
   for (const route of ['/mi-campo/cuaderno?new=activity', '/mi-campo/tratamientos?new=activity', '/mi-campo/riegos?new=activity', '/campana?new=delivery', '/calendario?new=task', '/mi-campo/mapa?new=plot', '/mi-campo/recursos']) assert.ok(center.includes(route), route);
   assert.match(center, /lucide-react/);
   assert.doesNotMatch(center, /🚜|📋|💧|🌱|👨‍🌾|⚙️|📦|📝|🏞️/);

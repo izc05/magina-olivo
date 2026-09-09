@@ -20,16 +20,20 @@ Mi Campo
 │       ├── actividad reciente
 │       ├── estado y campaña
 │       └── accesos a mapa y Catastro
+│           └── tocar una parcela → ficha fija de parcela
+│               ├── datos agronómicos y SIGPAC
+│               ├── mapa, GPS y Catastro
+│               └── cuaderno e historial de esa parcela
 └── + Centro de acciones
-    ├── elegir finca visible y reversible
-    ├── abrir el registro correspondiente
-    └── elegir parcela antes de guardar cuando la acción la requiera
+    ├── hereda finca y parcela cuando ya se está dentro de ellas
+    ├── permite cambiar ese destino de forma visible y reversible
+    └── es la única entrada para crear registros, parcelas y fincas
 ```
 
 Esto conserva la jerarquía `Explotación → Finca → Parcela`, reduce ruido en la
-entrada y hace que cada registro tenga un destino explícito. El mapa vivo y la
-ficha detallada de parcela siguen siendo la siguiente evolución; no se
-eliminan las rutas ni contratos existentes.
+entrada y hace que cada registro tenga un destino explícito. La ficha de
+parcela queda en una URL estable y el botón de volver recupera la ficha de
+finca desde la que se abrió; no se eliminan contratos ni rutas existentes.
 
 ## Objetivo
 
@@ -75,9 +79,13 @@ El mapa no es la superficie inicial. Una fotografía ocupa el área protagonista
 
 La finca activa se conserva, pero cada ruta vuelve a explicar la finca, presenta pasos numerados y añade enlaces de “siguiente”. Trabajar en el campo no es un asistente lineal: mapa, parcela, labor y campaña son accesos contextuales.
 
-### 3. La parcela aún no es una pantalla de trabajo
+### 3. La parcela debe ser una pantalla de trabajo, no una selección dentro de una lista
 
-Actualmente seleccionar una parcela muestra una ficha corta dentro del listado. Falta la URL y ficha estable con `Resumen / Actividad / Cosecha / Datos / Documentos`. Por eso Tratamientos y Riegos necesitan volver a pedir parcela y campaña.
+Una parcela se abre en una ficha estable propia. Debe enseñar primero los datos
+disponibles, mapa y cuaderno y no pestañas ni pasos que repitan el contexto.
+Las rutas que registran labores, tratamientos, riegos y entregas reciben su
+`plotId` desde esa ficha o desde `+`; por tanto no vuelven a pedirla salvo que
+el agricultor decida cambiar el destino.
 
 ### 4. Alta inicial circular
 

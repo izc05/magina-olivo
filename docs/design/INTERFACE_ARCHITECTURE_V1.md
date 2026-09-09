@@ -16,6 +16,7 @@ Este documento ordena la interfaz. No sustituye las reglas de negocio existentes
 | Autorización, API, offline y documentos privados | `ARCHITECTURE.md`, `docs/API_CONTRACT_V1.md`, `docs/INTEGRATION_V2_MVP_V1.md` |
 | Lenguaje visual | `docs/DESIGN_SYSTEM_V1.md` |
 | Flujos y pantallas | este documento y `docs/design/MI_CAMPO_ARCHITECTURE_V1.md` |
+| Color, tipo, iconos y fichas | `docs/design/VISUAL_SYSTEM_CLEAN_V1.md` |
 
 Si una decisión visual exige un dato, permiso o cálculo que el núcleo no ofrece, se documenta como evolución. Nunca se simula como si estuviera disponible.
 
@@ -167,4 +168,3 @@ El rediseño sigue este orden; no se salta a iconos o colores antes de decidir l
 9. Accesibilidad, offline y PWA en dispositivo real.
 
 El detalle completo de los puntos 2 a 6 está en `docs/design/MI_CAMPO_ARCHITECTURE_V1.md`.
-

@@ -1,0 +1,872 @@
+.catastro-lab-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(209, 218, 183, 0.7), transparent 34rem),
+    linear-gradient(180deg, #f6f3e8 0%, #eeeadb 100%);
+  color: #173d2e;
+}
+
+.catastro-lab-page *,
+.catastro-lab-page *::before,
+.catastro-lab-page *::after {
+  box-sizing: border-box;
+}
+
+.catastro-lab-header {
+  min-height: 4.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem clamp(1rem, 3vw, 2.5rem);
+  border-bottom: 1px solid rgba(23, 61, 46, 0.1);
+  background: rgba(250, 248, 240, 0.86);
+  backdrop-filter: blur(14px);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.catastro-lab-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.catastro-lab-mark {
+  width: 2.25rem;
+  height: 2.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.catastro-lab-brand span {
+  display: grid;
+  line-height: 1;
+}
+
+.catastro-lab-brand strong {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.24rem;
+  font-weight: 600;
+}
+
+.catastro-lab-brand small {
+  margin-top: 0.22rem;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 0.55rem;
+  color: #69775f;
+}
+
+.catastro-lab-badge,
+.catastro-lab-source-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.42rem 0.7rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.catastro-lab-badge {
+  color: #704e12;
+  background: #f6e5b2;
+  border: 1px solid rgba(112, 78, 18, 0.14);
+}
+
+.catastro-lab-shell {
+  width: min(1180px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: clamp(1.6rem, 4vw, 3.4rem) 0 4rem;
+}
+
+.catastro-lab-heading {
+  display: grid;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.catastro-lab-eyebrow {
+  margin: 0 0 0.45rem;
+  color: #7a6531;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.catastro-lab-heading h1,
+.catastro-lab-result-card h2,
+.catastro-lab-confirm-card h2,
+.catastro-lab-success-card h2 {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: #123626;
+}
+
+.catastro-lab-heading h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  max-width: 16ch;
+  line-height: 1.02;
+}
+
+.catastro-lab-heading > div > p:last-child {
+  max-width: 62ch;
+  color: #5b6856;
+  line-height: 1.62;
+  margin: 0.9rem 0 0;
+}
+
+.catastro-lab-stepper {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  max-width: 36rem;
+}
+
+.catastro-lab-step {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.38rem;
+  color: #8a9386;
+  font-size: 0.78rem;
+}
+
+.catastro-lab-step::after {
+  content: '';
+  position: absolute;
+  height: 2px;
+  background: #cfd4c5;
+  width: calc(100% - 2.8rem);
+  top: 1rem;
+  left: calc(50% + 1.4rem);
+}
+
+.catastro-lab-step:last-child::after {
+  display: none;
+}
+
+.catastro-lab-step > span {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid #c9d0c4;
+  background: #f7f4ea;
+  position: relative;
+  z-index: 2;
+  font-weight: 800;
+}
+
+.catastro-lab-step.active,
+.catastro-lab-step.done {
+  color: #173d2e;
+}
+
+.catastro-lab-step.active > span {
+  background: #173d2e;
+  color: #fff9e8;
+  border-color: #173d2e;
+}
+
+.catastro-lab-step.done > span {
+  background: #dce5cc;
+  border-color: #76895b;
+  color: #173d2e;
+}
+
+.catastro-lab-step.done::after {
+  background: #91a173;
+}
+
+.catastro-lab-layout {
+  display: grid;
+  gap: 1rem;
+}
+
+.catastro-lab-panel,
+.catastro-lab-result-card,
+.catastro-lab-confirm-card,
+.catastro-lab-success-card {
+  border: 1px solid rgba(32, 72, 52, 0.12);
+  background: rgba(255, 253, 246, 0.91);
+  border-radius: 1.4rem;
+  box-shadow: 0 1rem 3rem rgba(50, 65, 40, 0.08);
+}
+
+.catastro-lab-panel {
+  padding: clamp(1rem, 3vw, 1.5rem);
+  align-self: start;
+}
+
+.catastro-lab-mode-grid {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.catastro-lab-mode {
+  appearance: none;
+  border: 1px solid #d5d9cb;
+  background: #fffdf7;
+  color: inherit;
+  text-align: left;
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.8rem;
+  padding: 0.95rem;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: border-color 160ms ease, transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.catastro-lab-mode:hover {
+  transform: translateY(-1px);
+  border-color: #a8b297;
+}
+
+.catastro-lab-mode.selected {
+  border-color: #355b45;
+  background: #f2f5e9;
+  box-shadow: inset 0 0 0 1px rgba(53, 91, 69, 0.18);
+}
+
+.catastro-lab-mode:focus-visible,
+.catastro-lab-primary:focus-visible,
+.catastro-lab-secondary:focus-visible,
+.catastro-lab-backlink:focus-visible,
+.catastro-lab-disclosure:focus-visible,
+.catastro-lab-map-control:focus-visible,
+.catastro-lab-reference-field input:focus-visible,
+.catastro-lab-check input:focus-visible {
+  outline: 3px solid rgba(213, 164, 46, 0.46);
+  outline-offset: 2px;
+}
+
+.catastro-lab-mode-radio {
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  border: 2px solid #899681;
+  margin-top: 0.15rem;
+  position: relative;
+}
+
+.catastro-lab-mode.selected .catastro-lab-mode-radio {
+  border-color: #173d2e;
+}
+
+.catastro-lab-mode.selected .catastro-lab-mode-radio::after {
+  content: '';
+  position: absolute;
+  inset: 0.2rem;
+  border-radius: 50%;
+  background: #173d2e;
+}
+
+.catastro-lab-mode-copy {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.catastro-lab-mode-copy small {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #8a6f2b;
+  font-weight: 800;
+}
+
+.catastro-lab-mode-copy strong {
+  font-size: 1rem;
+}
+
+.catastro-lab-mode-copy > span {
+  color: #63705f;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.catastro-lab-reference-field {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.catastro-lab-reference-field label {
+  font-weight: 750;
+  font-size: 0.84rem;
+}
+
+.catastro-lab-reference-field input {
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid #c9d0c2;
+  border-radius: 0.85rem;
+  padding: 0 0.9rem;
+  background: #fffef9;
+  color: #173d2e;
+  font: inherit;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.catastro-lab-reference-field small {
+  color: #788274;
+  font-size: 0.75rem;
+}
+
+.catastro-lab-instruction {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  padding: 0.85rem;
+  border-radius: 0.9rem;
+  background: #edf1e6;
+}
+
+.catastro-lab-instruction-icon {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #173d2e;
+  color: #fffbe9;
+  font-weight: 800;
+}
+
+.catastro-lab-instruction > div {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.catastro-lab-instruction span:last-child {
+  color: #64705f;
+  font-size: 0.82rem;
+}
+
+.catastro-lab-primary,
+.catastro-lab-secondary,
+.catastro-lab-backlink,
+.catastro-lab-disclosure {
+  min-height: 2.8rem;
+  border-radius: 0.82rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.catastro-lab-primary {
+  width: 100%;
+  margin-top: 1rem;
+  border: 1px solid #173d2e;
+  background: #173d2e;
+  color: #fff9e7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.72rem 1rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.catastro-lab-primary:hover {
+  background: #0f3023;
+}
+
+.catastro-lab-primary.link {
+  margin-top: 0;
+}
+
+.catastro-lab-secondary {
+  width: 100%;
+  margin-top: 0.55rem;
+  border: 1px solid #bfc7b9;
+  background: #fffef9;
+  color: #31523f;
+  padding: 0.7rem 1rem;
+  font-weight: 750;
+}
+
+.catastro-lab-fineprint {
+  color: #7b8476;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  margin: 0.7rem 0 0;
+}
+
+.catastro-lab-map-column {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.catastro-lab-map {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.4rem;
+  min-height: 22rem;
+  background: #69774d;
+  border: 1px solid rgba(23, 61, 46, 0.18);
+  box-shadow: 0 1rem 3rem rgba(40, 59, 30, 0.12);
+}
+
+.catastro-lab-map > svg {
+  width: 100%;
+  height: 100%;
+  min-height: 22rem;
+  object-fit: cover;
+  display: block;
+}
+
+.catastro-lab-selected-shape,
+.catastro-lab-pin {
+  transition: opacity 180ms ease, stroke 180ms ease, fill 180ms ease, transform 180ms ease;
+}
+
+.catastro-lab-pin {
+  opacity: 0.55;
+}
+
+.catastro-lab-pin.active {
+  opacity: 1;
+  transform-origin: center;
+}
+
+.catastro-lab-map-topbar {
+  position: absolute;
+  inset: 0.8rem 0.8rem auto;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.catastro-lab-source-chip {
+  color: #173d2e;
+  background: rgba(255, 250, 231, 0.92);
+  border: 1px solid rgba(23, 61, 46, 0.12);
+  box-shadow: 0 0.4rem 1.1rem rgba(20, 44, 31, 0.1);
+}
+
+.catastro-lab-map-control {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(23, 61, 46, 0.12);
+  background: rgba(255, 250, 231, 0.92);
+  color: #173d2e;
+  font-size: 1.35rem;
+  cursor: pointer;
+}
+
+.catastro-lab-map-scale {
+  position: absolute;
+  left: 0.9rem;
+  bottom: 0.8rem;
+  min-width: 4rem;
+  padding-top: 0.22rem;
+  border-top: 3px solid #fff8e5;
+  color: #fff8e5;
+  font-size: 0.67rem;
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.catastro-lab-map-caption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  color: #687467;
+  font-size: 0.75rem;
+}
+
+.catastro-lab-map-caption span {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.catastro-lab-map-caption .dot {
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.catastro-lab-map-caption .dot.work {
+  background: #395f48;
+}
+
+.catastro-lab-map-caption .dot.cadastre {
+  background: #e2b74e;
+}
+
+.catastro-lab-backlink {
+  justify-self: start;
+  border: 0;
+  background: transparent;
+  color: #355b45;
+  min-height: 2.3rem;
+  padding: 0.3rem 0.2rem;
+  font-weight: 750;
+}
+
+.catastro-lab-result-card {
+  padding: clamp(1.1rem, 3vw, 1.6rem);
+  align-self: start;
+}
+
+.catastro-lab-result-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+  padding: 0.42rem 0.65rem;
+  background: #e6edd8;
+  border-radius: 999px;
+  color: #31523f;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.catastro-lab-result-status span {
+  width: 1.1rem;
+  height: 1.1rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #587149;
+  color: #fff;
+  font-size: 0.72rem;
+}
+
+.catastro-lab-result-card h2,
+.catastro-lab-confirm-card h2,
+.catastro-lab-success-card h2 {
+  font-size: clamp(1.7rem, 4vw, 2.35rem);
+  line-height: 1.08;
+}
+
+.catastro-lab-reference {
+  margin: 0.65rem 0 1.1rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #6c765f;
+  letter-spacing: 0.06em;
+  word-break: break-all;
+}
+
+.catastro-lab-facts {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  border-top: 1px solid #e0e2d8;
+}
+
+.catastro-lab-facts > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  padding: 0.72rem 0;
+  border-bottom: 1px solid #e0e2d8;
+}
+
+.catastro-lab-facts dt {
+  color: #6d786a;
+}
+
+.catastro-lab-facts dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.catastro-lab-facts .soft-warning {
+  color: #886b1f;
+}
+
+.catastro-lab-disclosure {
+  width: 100%;
+  margin-top: 0.7rem;
+  border: 0;
+  background: transparent;
+  color: #365d46;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0;
+  font-weight: 800;
+}
+
+.catastro-lab-details {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.8rem;
+  background: #f3f2e9;
+  color: #6b7468;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.catastro-lab-info-box {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 0.9rem;
+  padding: 0.9rem;
+  border-left: 4px solid #d2a431;
+  border-radius: 0.7rem;
+  background: #fbf2d8;
+}
+
+.catastro-lab-info-box strong {
+  font-size: 0.82rem;
+}
+
+.catastro-lab-info-box span {
+  color: #6b6451;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.catastro-lab-confirm-card,
+.catastro-lab-success-card {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: clamp(1.3rem, 4vw, 2.2rem);
+  text-align: center;
+}
+
+.catastro-lab-confirm-icon,
+.catastro-lab-success-mark {
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto 1rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 2rem;
+  font-weight: 900;
+}
+
+.catastro-lab-confirm-icon {
+  background: #eef1e5;
+  color: #173d2e;
+}
+
+.catastro-lab-success-mark {
+  background: #dce7cc;
+  color: #315b42;
+}
+
+.catastro-lab-confirm-card > p:not(.catastro-lab-eyebrow),
+.catastro-lab-success-card > p:not(.catastro-lab-eyebrow) {
+  color: #657063;
+  max-width: 55ch;
+  margin: 0.8rem auto 0;
+  line-height: 1.58;
+}
+
+.catastro-lab-compare {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.7rem;
+  align-items: center;
+  margin: 1.5rem 0;
+}
+
+.catastro-lab-compare > div {
+  min-height: 7.5rem;
+  display: grid;
+  align-content: center;
+  gap: 0.2rem;
+  padding: 0.8rem;
+  border-radius: 1rem;
+  border: 1px solid #d7dccf;
+  background: #fbfaf3;
+}
+
+.catastro-lab-compare > div.selected {
+  border-color: #6e8358;
+  background: #edf2e4;
+}
+
+.catastro-lab-compare small,
+.catastro-lab-success-summary small {
+  color: #788274;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.catastro-lab-compare strong {
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.catastro-lab-compare span:not(.catastro-lab-arrow) {
+  color: #697468;
+  font-size: 0.75rem;
+}
+
+.catastro-lab-arrow {
+  font-size: 1.5rem;
+  color: #7b876e;
+}
+
+.catastro-lab-check {
+  text-align: left;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.65rem;
+  align-items: start;
+  color: #4f5e51;
+  padding: 0.9rem;
+  border-radius: 0.8rem;
+  background: #f4f3eb;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.catastro-lab-check input {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: #173d2e;
+}
+
+.catastro-lab-confirm-actions {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.catastro-lab-confirm-actions .catastro-lab-primary,
+.catastro-lab-confirm-actions .catastro-lab-secondary {
+  margin-top: 0;
+}
+
+.catastro-lab-success-summary {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1.4rem 0 0;
+  text-align: left;
+}
+
+.catastro-lab-success-summary > span {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.8rem;
+  border-radius: 0.8rem;
+  background: #f2f4eb;
+}
+
+.catastro-lab-success-summary strong {
+  font-size: 0.9rem;
+  word-break: break-word;
+}
+
+@media (min-width: 820px) {
+  .catastro-lab-heading {
+    grid-template-columns: minmax(0, 1fr) minmax(24rem, 0.7fr);
+    align-items: end;
+  }
+
+  .catastro-lab-stepper {
+    justify-self: end;
+    width: 100%;
+  }
+
+  .catastro-lab-layout {
+    grid-template-columns: minmax(18rem, 0.78fr) minmax(0, 1.5fr);
+    align-items: start;
+  }
+
+  .catastro-lab-layout.review {
+    grid-template-columns: minmax(0, 1.5fr) minmax(20rem, 0.8fr);
+  }
+
+  .catastro-lab-map,
+  .catastro-lab-map > svg {
+    min-height: 35rem;
+  }
+
+  .catastro-lab-confirm-actions {
+    grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  }
+
+  .catastro-lab-success-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .catastro-lab-header {
+    min-height: 4rem;
+  }
+
+  .catastro-lab-badge {
+    font-size: 0.58rem;
+    padding-inline: 0.55rem;
+  }
+
+  .catastro-lab-shell {
+    width: min(100% - 1rem, 1180px);
+    padding-top: 1.2rem;
+  }
+
+  .catastro-lab-heading h1 {
+    font-size: 2rem;
+  }
+
+  .catastro-lab-step strong {
+    font-size: 0.67rem;
+  }
+
+  .catastro-lab-panel,
+  .catastro-lab-result-card,
+  .catastro-lab-confirm-card,
+  .catastro-lab-success-card,
+  .catastro-lab-map {
+    border-radius: 1rem;
+  }
+
+  .catastro-lab-map,
+  .catastro-lab-map > svg {
+    min-height: 20rem;
+  }
+
+  .catastro-lab-compare {
+    grid-template-columns: 1fr;
+  }
+
+  .catastro-lab-arrow {
+    transform: rotate(90deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .catastro-lab-mode,
+  .catastro-lab-selected-shape,
+  .catastro-lab-pin {
+    transition: none;
+  }
+}

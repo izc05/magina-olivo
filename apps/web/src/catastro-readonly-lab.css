@@ -1,0 +1,303 @@
+.catastro-real-page {
+  min-height: 100vh;
+  background: #f2f1e8;
+  color: #173d2e;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.catastro-real-header {
+  min-height: 4.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem clamp(1rem, 4vw, 3rem);
+  background: #173d2e;
+  color: #fffdf4;
+}
+
+.catastro-real-back {
+  color: inherit;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.catastro-real-badge {
+  padding: 0.45rem 0.68rem;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.catastro-real-shell {
+  width: min(100% - 2rem, 68rem);
+  margin: 0 auto;
+  padding: clamp(2rem, 5vw, 4.2rem) 0 4rem;
+  display: grid;
+  gap: 1.2rem;
+}
+
+.catastro-real-heading {
+  max-width: 52rem;
+}
+
+.catastro-real-eyebrow {
+  margin: 0 0 0.35rem;
+  color: #7a7447;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.catastro-real-heading h1,
+.catastro-real-result h2 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 1.05;
+}
+
+.catastro-real-heading h1 {
+  font-size: clamp(2rem, 5vw, 4rem);
+}
+
+.catastro-real-heading > p:last-child {
+  max-width: 48rem;
+  margin: 0.8rem 0 0;
+  color: #647064;
+  line-height: 1.55;
+}
+
+.catastro-real-warning,
+.catastro-real-footer {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.9rem 1rem;
+  border-radius: 0.9rem;
+  background: #fff9de;
+  border: 1px solid #e3d58f;
+}
+
+.catastro-real-warning span,
+.catastro-real-footer span {
+  color: #6d6a54;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.catastro-real-card,
+.catastro-real-result {
+  border: 1px solid #d9ddd2;
+  border-radius: 1.2rem;
+  background: #fffef9;
+  box-shadow: 0 1rem 2.7rem rgba(35, 56, 39, 0.08);
+}
+
+.catastro-real-card {
+  padding: clamp(1rem, 3vw, 1.5rem);
+  display: grid;
+  gap: 1rem;
+}
+
+.catastro-real-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+  padding: 0.3rem;
+  border-radius: 0.85rem;
+  background: #edf0e7;
+}
+
+.catastro-real-tabs button {
+  min-height: 2.8rem;
+  border: 0;
+  border-radius: 0.65rem;
+  background: transparent;
+  color: #5c665b;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.catastro-real-tabs button.active {
+  background: #fffef9;
+  color: #173d2e;
+  box-shadow: 0 0.2rem 0.8rem rgba(35, 56, 39, 0.08);
+}
+
+.catastro-real-form {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.catastro-real-form label {
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.catastro-real-form input {
+  width: 100%;
+  min-height: 3.15rem;
+  box-sizing: border-box;
+  border: 1px solid #cdd3c7;
+  border-radius: 0.75rem;
+  background: #fff;
+  color: #173d2e;
+  padding: 0 0.9rem;
+  font: inherit;
+}
+
+.catastro-real-form input[aria-invalid="true"] {
+  border-color: #9e5548;
+  background: #fff8f5;
+}
+
+.catastro-real-form small {
+  color: #747e72;
+  font-size: 0.72rem;
+}
+
+.catastro-real-coordinate-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.catastro-real-primary {
+  min-height: 3.1rem;
+  border: 0;
+  border-radius: 0.8rem;
+  background: #173d2e;
+  color: #fffdf4;
+  padding: 0.75rem 1rem;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.catastro-real-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.catastro-real-error {
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.75rem;
+  background: #fff1ed;
+  color: #884537;
+  border: 1px solid #ecc3ba;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.catastro-real-result {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(16rem, 0.85fr);
+  gap: 1rem;
+  padding: clamp(1rem, 3vw, 1.5rem);
+}
+
+.catastro-real-result-copy {
+  min-width: 0;
+}
+
+.catastro-real-success {
+  width: fit-content;
+  margin-bottom: 0.8rem;
+  padding: 0.38rem 0.62rem;
+  border-radius: 999px;
+  background: #e8f1df;
+  color: #45633e;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.catastro-real-result h2 {
+  font-size: clamp(1.5rem, 4vw, 2.35rem);
+  word-break: break-all;
+}
+
+.catastro-real-result dl {
+  margin: 1rem 0 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.catastro-real-result dl div {
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.8fr) minmax(0, 1.2fr);
+  gap: 0.7rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e3e6de;
+}
+
+.catastro-real-result dt {
+  color: #737c72;
+}
+
+.catastro-real-result dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 700;
+}
+
+.catastro-real-geometry,
+.catastro-real-empty {
+  width: 100%;
+  min-height: 16rem;
+  align-self: stretch;
+  border: 1px solid #d7ddce;
+  border-radius: 1rem;
+  background: linear-gradient(145deg, #eef1e4, #dfe8d3);
+}
+
+.catastro-real-geometry polygon {
+  fill: rgba(213, 164, 46, 0.25);
+  stroke: #173d2e;
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+}
+
+.catastro-real-empty {
+  display: grid;
+  place-items: center;
+  color: #737d71;
+}
+
+.catastro-real-footer {
+  background: #edf3ea;
+  border-color: #cfdbca;
+}
+
+@media (max-width: 720px) {
+  .catastro-real-result,
+  .catastro-real-coordinate-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .catastro-real-result dl div {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+
+  .catastro-real-result dd {
+    text-align: left;
+  }
+}
+
+@media (max-width: 480px) {
+  .catastro-real-shell {
+    width: min(100% - 1.2rem, 68rem);
+  }
+
+  .catastro-real-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .catastro-real-tabs {
+    grid-template-columns: 1fr;
+  }
+}

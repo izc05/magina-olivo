@@ -14,6 +14,9 @@ test('the global action center keeps additions in one contextual flow', async ()
   assert.match(center, /api\.createTask/);
   assert.match(center, /api\.createFarm/);
   assert.match(center, /api\.createPlot/);
+  assert.match(center, /isoDateTime\(values\.get\('occurredAt'\)\)/);
+  assert.match(center, /DESTINATION_REQUIRED/);
+  assert.match(center, /field-action-form-title/);
   assert.match(center, /const requestedPlotId = initialPlotId \|\| new URLSearchParams\(window\.location\.search\)\.get\('parcela'\)/);
   assert.match(center, /aria-label="Parcela para la nueva acción"/);
   assert.match(center, /Nueva finca/);

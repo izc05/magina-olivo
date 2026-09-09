@@ -592,6 +592,7 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, plots, busy,
             </div>
           </section> : null}
           {showingFarmOverview ? <>
+          <FarmWorkspaceCards farm={selectedFarm} plots={plots} />
           <section className="section" id="parcelas">
             <div className="section-heading"><div><p className="eyebrow page-eyebrow">Finca activa</p><h2 className="section-title">Parcelas</h2><p className="section-copy">Abre una parcela para consultar sus datos y trabajar dentro de ella.</p></div></div>
             {plots.map((plot) => (
@@ -640,12 +641,27 @@ function FarmListHome({ holding, farms, farmPlotCounts, busy, runAction, onCreat
         <span className="field-farm-home-copy"><strong>{farm.name}</strong><small>{[farm.areaHa != null ? formatHa(farm.areaHa) : null, `${farmPlotCounts[farm.id] ?? 0} parcela${(farmPlotCounts[farm.id] ?? 0) === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}</small><em>Abrir finca</em></span>
         <ChevronRight aria-hidden="true" />
       </a>)}
+      <a className="field-farm-add-card" href="/mi-campo?new=farm"><span className="visual-icon-tile"><Plus aria-hidden="true" /></span><span><strong>Nueva finca</strong><small>Añade una finca a tu explotación</small></span><ChevronRight aria-hidden="true" /></a>
       {!farms.length ? <EmptyState title="Aún no has añadido ninguna finca.">Crea tu primera finca para organizar parcelas, mapas y registros.</EmptyState> : null}
     </section>
 
     {showFarmForm || !farms.length ? <CreateFarmCard holdingId={holding.id} busy={busy} runAction={runAction} onCreated={onCreated} firstFarm={farms.length === 0} /> : null}
     <PhotoCredit field />
   </>;
+}
+
+function FarmWorkspaceCards({ farm, plots }: { farm: Farm; plots: Plot[] }) {
+  const farmQuery = `finca=${encodeURIComponent(farm.id)}`;
+  const cards = [
+    { label: 'Mapa y lindes', detail: 'GPS, SIGPAC y Catastro', href: `/mi-campo/mapa?${farmQuery}`, icon: Map, tone: 'map' },
+    { label: 'Cuaderno', detail: 'Trabajos e historial', href: `/mi-campo/cuaderno?${farmQuery}`, icon: BookOpen, tone: 'gold' },
+    { label: 'Riegos', detail: plots.length ? 'Control del agua' : 'Añade una parcela primero', href: `/mi-campo/riegos?${farmQuery}`, icon: Droplets, tone: 'water' },
+    { label: 'Tratamientos', detail: 'Cuaderno fitosanitario', href: `/mi-campo/tratamientos?${farmQuery}`, icon: Leaf, tone: 'leaf' },
+  ];
+  return <section className="farm-workspace" aria-label={`Herramientas de ${farm.name}`}>
+    <div className="farm-workspace-heading"><div><p className="eyebrow page-eyebrow">Ficha de finca</p><h2>Gestiona {farm.name}</h2></div>{farm.description ? <p>{farm.description}</p> : <p>Selecciona una herramienta o entra en una parcela para trabajar con más detalle.</p>}</div>
+    <div className="farm-workspace-grid">{cards.map((card) => { const Icon = card.icon; return <a key={card.label} className="farm-workspace-card" href={card.href}><span className={`visual-icon-tile ${card.tone}`}><Icon aria-hidden="true" /></span><span><strong>{card.label}</strong><small>{card.detail}</small></span><ChevronRight aria-hidden="true" /></a>; })}</div>
+  </section>;
 }
 
 function FieldBackBar({ backHref, label }: { backHref: string; label: string }) {

@@ -78,6 +78,7 @@ export function App({ initialTab = 'home', initialFieldView = 'home', initialPlo
   const [sunMode, setSunMode] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const pageRef = useRef<HTMLElement | null>(null);
+  const activePlotsRequestFarmId = useRef('');
 
   useEffect(() => {
     if (darkMode) {
@@ -147,8 +148,9 @@ export function App({ initialTab = 'home', initialFieldView = 'home', initialPlo
     setCampaigns(campaignResult.items);
     let rememberedFarm = '';
     try { rememberedFarm = localStorage.getItem(`magina:farm:${cachedOwnerUserId()}:${holdingId}`) ?? ''; } catch { /* Storage may be unavailable. */ }
+    const requestedFarmId = new URLSearchParams(window.location.search).get('finca') ?? '';
     setSelectedFarmId((current) => {
-      const candidate = current || rememberedFarm;
+      const candidate = requestedFarmId || current || rememberedFarm;
       return farmResult.items.some((item) => item.id === candidate) ? candidate : (farmResult.items[0]?.id ?? '');
     });
     setSelectedCampaignId((current) => campaignResult.items.some((item) => item.id === current) ? current : (campaignResult.items[0]?.id ?? ''));
@@ -156,11 +158,15 @@ export function App({ initialTab = 'home', initialFieldView = 'home', initialPlo
 
   const loadPlots = useCallback(async (farmId: string) => {
     if (!farmId) {
+      activePlotsRequestFarmId.current = '';
       setPlots([]);
       return;
     }
+    activePlotsRequestFarmId.current = farmId;
     const result = await api.plots(farmId);
-    setPlots(result.items);
+    // Si el usuario cambia de finca mientras llega la respuesta, no mostramos
+    // las parcelas de la finca anterior en el nuevo contexto.
+    if (activePlotsRequestFarmId.current === farmId) setPlots(result.items);
   }, []);
 
   useEffect(() => {

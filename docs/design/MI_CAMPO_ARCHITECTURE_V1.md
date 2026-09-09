@@ -18,18 +18,20 @@ No es un panel genérico de agricultura ni una copia visual de un ERP. Es el cua
 
 ```text
 Explotación
-  └─ Finca                         contexto de gestión
-      └─ Parcela                   unidad agrícola operativa
-          ├─ Registros             hechos introducidos una vez
-          ├─ Evidencias            fotos, documentos, fuentes
-          └─ Insights              agregados calculados y alertas
+  └─ Finca                         mini app operativa
+      ├─ Resumen                   visión de la finca
+      ├─ Parcelas                  listado, selección y datos agrícolas
+      ├─ Trabajos / Tareas         registros filtrados por finca/parcela
+      ├─ Campaña                   registros productivos de esa finca
+      ├─ Mapa / Documentos / Datos contexto, evidencia y fuentes
+      └─ Parcela                   ámbito opcional, nunca una mini app paralela
 ```
 
 | Capa | Qué contiene | Qué nunca debe hacer |
 | --- | --- | --- |
 | Explotación | selector y límites de autorización | mezclar datos de dos propietarios |
-| Finca | parcelas, actividad agregada y resumen | copiar registros de sus parcelas |
-| Parcela | ficha agrícola, mapa, historial y acciones | exigir que toda entrega tenga parcela |
+| Finca | mini app, parcelas, actividad agregada y resumen | copiar registros de sus parcelas |
+| Parcela | ámbito agrícola, filtro y datos propios dentro de la finca | comportarse como una segunda app o exigirla en toda entrega |
 | Registro | actividad, entrega, rendimiento, tarea o documento | duplicarse al aparecer en una agregación |
 | Evidencia/fuente | ticket, foto, Catastro, SIGPAC, perímetro | afirmar propiedad o inventar verificación |
 | Insight | métricas y alertas deterministas | reemplazar el registro fuente |
@@ -39,25 +41,21 @@ Explotación
 ```text
 Mi Campo
 ├─ Mis fincas
-│  ├─ Crear primera finca
-│  ├─ Crear finca
-│  └─ Ficha de finca
+│  ├─ Crear primera finca / Nueva finca  [única alta directa]
+│  └─ Mini app de finca
 │     ├─ Resumen
 │     ├─ Parcelas
-│     ├─ Actividad
-│     ├─ Cosecha
+│     ├─ Trabajos
+│     ├─ Tareas
+│     ├─ Campaña
 │     ├─ Mapa
-│     └─ Datos y documentos
-└─ Ficha de parcela
-   ├─ Resumen
-   ├─ Actividad
-   ├─ Cosecha
-   ├─ Mapa
-   ├─ Datos del olivar
-   └─ Documentos y fotos
+│     ├─ Documentos
+│     └─ Datos
+└─ Registro rápido (+)
+   └─ abre una subpantalla superficial y vuelve al módulo que lo originó
 ```
 
-Los formularios no son nodos principales del árbol. Se abren desde un contexto y, al guardar, devuelven a la ficha creada o actualizada.
+Los formularios no son nodos principales del árbol. Se abren mediante `+` desde una subpantalla de la finca y, al guardar, devuelven al mismo módulo con la ficha nueva visible.
 
 ## 4. Pantalla raíz: Mis fincas
 
@@ -129,52 +127,38 @@ Ver una finca completa sin crear otro sistema distinto al de parcela. La finca f
 
 1. identidad: nombre, municipio/localización disponible y foto/evidencia opcional;
 2. tres métricas de contexto: superficie, parcelas y campaña activa;
-3. acciones contextuales: añadir parcela, registrar para toda la finca, abrir mapa;
-4. segmentos de trabajo: `Resumen`, `Parcelas`, `Actividad`, `Cosecha`, `Mapa`, `Datos`;
-5. contenido de un solo segmento por vez.
+3. lanzador `+` y selector de contexto de parcela cuando haga falta; no hay botones dispersos de alta;
+4. iconos/subpantallas de trabajo: `Resumen`, `Parcelas`, `Trabajos`, `Tareas`, `Campaña`, `Mapa`, `Documentos`, `Datos`;
+5. contenido de un solo módulo por vez, manteniendo siempre visible el nombre de la finca y el retorno a `Resumen`.
 
 ### Segmentos
 
 | Segmento | Contenido | Fuente |
 | --- | --- | --- |
 | Resumen | última actividad, alertas, métricas y accesos | agregados/consultas reales |
-| Parcelas | `PlotCard` de la finca | parcelas de la finca |
-| Actividad | `ActivityCard`, `TaskCard`, evidencia relacionada | registros filtrados por finca y sus parcelas |
-| Cosecha | entregas y rendimiento por parcela/sin asignar | campaña y entregas canónicas |
+| Parcelas | `PlotCard`, selección de parcela y datos agrícolas | parcelas de la finca |
+| Trabajos | `ActivityCard` y filtros por tipo/parcela | actividades de finca y parcelas |
+| Tareas | `TaskCard` por estado y parcela opcional | tareas de la finca y parcelas |
+| Campaña | recolecciones, entregas, rendimientos y documentos | registros de la campaña filtrados por finca |
 | Mapa | parcelas localizadas y fuentes | coordenadas/geometría autorizadas |
+| Documentos | `DocumentCard` y evidencia relacionada | documentos enlazados a la finca, sus parcelas o campaña |
 | Datos | descripción, notas y fuentes generales | finca + fuentes enlazadas |
 
-Un registro creado para una parcela aparece en la actividad de finca con el nombre de la parcela. Un registro creado para toda la finca lo indica expresamente: `Toda la finca`.
+Un registro creado para una parcela aparece en el módulo de finca con el nombre de la parcela. Un registro creado para toda la finca lo indica expresamente: `Toda la finca`.
 
-## 7. Ficha de parcela
+## 7. Parcelas: listado, filtro y datos dentro de la finca
 
-### Objetivo
+Parcelas no abre una jerarquía nueva de pantallas. Su icono abre una subpantalla de la mini app que permite ver, localizar y elegir las parcelas de la finca.
 
-Es el núcleo operativo. Debe ser breve de leer, contextual al trabajar y profunda solo si el usuario abre un espacio de trabajo.
+Al tocar una parcela, el usuario puede:
 
-### Cabecera
+1. consultar sus datos agrícolas y fuentes;
+2. establecerla como filtro activo para `Trabajos`, `Tareas`, `Campaña`, `Mapa` y `Documentos`;
+3. abrir `+` con finca y parcela ya preseleccionadas.
 
-- volver a la finca;
-- nombre de parcela;
-- finca y municipio/localización cuando existan;
-- superficie, número de olivos y riego como métricas legibles;
-- estado de localización/fuente cuando exista;
-- acción principal contextual `Registrar`.
+El filtro siempre se muestra como un chip claro, por ejemplo `Estacas ×`, y se puede volver a `Todas las parcelas`. No se crea una barra de navegación independiente para cada parcela.
 
-### Secciones
-
-| Sección | Pregunta que resuelve | Componentes |
-| --- | --- | --- |
-| Resumen | ¿Cómo está esta parcela hoy? | campaña, alertas, última labor, acceso a registro |
-| Actividad | ¿Qué se ha hecho y observado? | timeline y filtros por tipo |
-| Cosecha | ¿Qué se recogió/entregó y qué rendimiento llegó? | recolecciones, entregas, rendimientos y desglose honesto |
-| Mapa | ¿Dónde está y de qué fuente procede el límite? | mapa, fuente, precisión y edición permitida |
-| Datos | ¿Qué sé del olivar? | datos agrícolas y edición progresiva |
-| Documentos | ¿Qué evidencia guardé? | documentos y fotos relacionados |
-
-La ficha no muestra todos los segmentos a la vez. `Resumen` es la única portada; las demás son vistas focalizadas.
-
-## 8. Datos del olivar y fuentes
+### Datos del olivar y fuentes
 
 ### Datos editables del agricultor
 
@@ -199,9 +183,23 @@ Catastro, SIGPAC y perímetro no se editan como texto libre. La interfaz muestra
 
 Nunca se afirma que una referencia catastral pruebe propiedad. El usuario declara que gestiona la parcela; el servidor verifica la fuente antes de convertirla en dato privado cuando el flujo map-first esté disponible.
 
-## 9. Registros de Mi Campo
+## 8. Registro rápido y subpantallas superficiales
 
-### 9.1 Contrato común de formulario
+### Regla de creación
+
+| Lugar actual | Qué muestra | Acción inicial del `+` |
+| --- | --- | --- |
+| Mi Campo | fincas | elegir finca o continuar con contexto pendiente; `Nueva finca` permanece fuera del `+` |
+| Finca · Resumen | lectura general | selector completo de registros |
+| Finca · Parcelas | lista y filtro | `Nueva parcela` o registro con parcela elegida |
+| Finca · Trabajos | actividades filtradas | `Trabajo` |
+| Finca · Tareas | tareas filtradas | `Tarea` |
+| Finca · Campaña | registros productivos de la finca | `Entrega` |
+| Finca · Documentos | evidencia filtrada | `Documento` / `Foto` |
+
+El primer toque sobre `+` abre una selección breve; el segundo abre una **subpantalla superficial** de formulario. La subpantalla tiene contexto, campos mínimos, guardar y volver. Tras guardar, devuelve al módulo de origen y coloca la ficha recién creada al principio o la resalta. No deja el formulario abierto junto a las listas.
+
+### 8.1 Contrato común de formulario
 
 Todo alta debe definir:
 
@@ -215,7 +213,7 @@ Todo alta debe definir:
 
 Al guardar se muestra confirmación concreta (`Riego guardado en Estacas`) y el usuario puede volver al contexto, añadir otro o abrir la ficha del registro cuando exista detalle.
 
-### 9.2 Matriz de registros
+### 8.2 Matriz de registros
 
 | Registro | Entidad V1 | Mínimo | Datos progresivos | Ficha | Aparece en |
 | --- | --- | --- | --- | --- | --- |
@@ -232,7 +230,7 @@ Al guardar se muestra confirmación concreta (`Riego guardado en Estacas`) y el 
 
 `*` significa que el campo está diseñado pero no se presenta hasta que exista contrato de datos y validación de servidor. En particular, recolección **no es** entrega: la primera registra trabajo/cosecha; la segunda registra una carga entregada a una almazara.
 
-### 9.3 Formularios específicos
+### 8.3 Formularios específicos
 
 #### Trabajo
 
@@ -258,7 +256,7 @@ Una entrega normal se completa en menos de 30 segundos: kilos destacados, destin
 
 Documento y foto comparten evidencia privada: tipo, archivo, fecha, notas y enlaces con entidad. El archivo original se conserva de forma privada; una foto no se convierte en una actividad automáticamente.
 
-## 10. Timeline, filtros y agregación
+## 9. Timeline, filtros y agregación
 
 La timeline de parcela ordena por fecha descendente y usa icono, título, contexto, valor principal y detalle secundario.
 
@@ -267,18 +265,18 @@ icono + tipo              valor principal
 parcela/finca + fecha     detalle o evidencia
 ```
 
-Filtros iniciales: `Todo`, `Labores`, `Entregas`, `Rendimientos`, `Documentos`. Los filtros no cambian ni copian datos; cambian la consulta o la presentación.
+Cada subpantalla trae su propio filtro simple: Trabajos filtra tipos de actividad; Tareas filtra estado; Campaña filtra recolecciones, entregas, rendimientos y documentos. En cualquier módulo, la parcela activa limita los resultados si existe. Los filtros no cambian ni copian datos; cambian la consulta o la presentación.
 
 | Vista | Regla de agregación |
 | --- | --- |
-| Parcela | solo registros con `plot_id` de la parcela |
-| Finca | registros de su `farm_id` y de sus parcelas, con etiqueta de origen |
-| Campaña | entregas/resultados y actividades con `campaign_id`; nunca inferir una campaña sin regla explícita |
+| Finca · todas las parcelas | registros de su `farm_id` y de sus parcelas, con etiqueta de origen |
+| Finca · parcela filtrada | solo registros con el `plot_id` elegido dentro de esa finca |
+| Finca · Campaña | entregas/resultados y actividades con `campaign_id`, filtrados por finca y parcela si aplica; nunca inferir una campaña sin regla explícita |
 | Mi Campo | actividad reciente de las fincas permitidas; sin convertirla en historial completo |
 
 Los kilos de campaña y el rendimiento ponderado proceden de los cálculos canónicos. Recolecciones y entregas se muestran como conceptos distintos para evitar doble conteo.
 
-## 11. Estados y excepciones de Mi Campo
+## 10. Estados y excepciones de Mi Campo
 
 | Situación | Respuesta de interfaz |
 | --- | --- |
@@ -292,7 +290,7 @@ Los kilos de campaña y el rendimiento ponderado proceden de los cálculos canó
 | Error de fuente cartográfica | conservar datos privados y ofrecer reintento; no borrar vínculo |
 | Sin permiso | explicación y retorno seguro; nunca una ficha parcialmente editable |
 
-## 12. Accesibilidad y uso exterior
+## 11. Accesibilidad y uso exterior
 
 - Etiqueta de texto e icono en cada acción; no solo color.
 - Objetivos táctiles mínimos de 44 px y espaciado que evite pulsaciones accidentales.
@@ -302,7 +300,7 @@ Los kilos de campaña y el rendimiento ponderado proceden de los cálculos canó
 - Contraste válido sobre fondo piedra, superficies blancas y luz intensa; ningún dato relevante sobre fotografía sin capa legible.
 - Los cambios de contexto de finca/parcela se anuncian y no borran un formulario sin aviso.
 
-## 13. Definición de preparado antes de código
+## 12. Definición de preparado antes de código
 
 Una pantalla de Mi Campo solo pasa a implementación cuando tiene:
 
@@ -316,14 +314,14 @@ Una pantalla de Mi Campo solo pasa a implementación cuando tiene:
 - criterios de aceptación verificables;
 - decisión sobre qué queda explícitamente fuera de V1.
 
-## 14. Orden de construcción posterior
+## 13. Orden de construcción posterior
 
 1. `FarmCard`, `PlotCard`, `MetricCard` y estados base.
 2. Raíz de Mi Campo y alta de primera finca.
-3. Ficha de finca con segmentos y agregación real.
-4. Ficha de parcela: resumen, actividad y datos.
-5. `ActivityCard`, `DeliveryCard`, `DocumentCard` y timeline.
-6. Formularios Trabajo, Tratamiento, Riego, Recolección, Entrega, Rendimiento y Tarea.
+3. Mini app de finca con segmentos y agregación real.
+4. Parcelas como listado, filtro y datos dentro de la finca.
+5. `ActivityCard`, `DeliveryCard`, `DocumentCard` y timeline por subpantalla.
+6. Formularios superficiales de Trabajo, Tratamiento, Riego, Recolección, Entrega, Rendimiento y Tarea desde `+`.
 7. Mapa y procedencia de fuentes; solo sobre contratos ya aprobados.
 8. Documento/foto y flujos de evidencia.
 9. Validación manual en móvil: exterior, offline, teclado, PWA y vuelta atrás.

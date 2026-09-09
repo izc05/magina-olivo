@@ -147,7 +147,8 @@ Tamaños: 20 px dentro de texto o controles; 24 px en navegación y encabezados;
 
 - La barra inferior mantiene etiqueta bajo cada icono.
 - El destino activo usa tinta/verde y marcador visible, no únicamente variación de color.
-- `Registrar` es la acción de entrada de datos. Abre un selector con grupos semánticos: actividad, cosecha/entrega, planificación y evidencia.
+- `Registrar` / `+` es la única entrada de datos y de nueva parcela. `Nueva finca` es la única excepción y vive en la raíz de Mi Campo.
+- Dentro de una finca, cada icono abre una subpantalla de la mini app; el `+` toma el contexto del icono abierto y propone la acción correspondiente.
 - Cada grupo explica en una frase qué crea; no se mezclan crear finca/parcela con acciones de diario sin distinguirlo.
 - Al seleccionar una acción, el formulario hereda y muestra el contexto. Cambiarlo debe ser deliberado.
 - La acción destructiva nunca comparte estilo ni posición con `Guardar`.
@@ -172,10 +173,9 @@ No se crea una nueva paleta, tipo de tarjeta ni ruta raíz para una variación p
 Antes de escribir componentes definitivos se diseñarán y revisarán, en este orden:
 
 1. Mi Campo — lista de fincas con fondo blanco y estado vacío.
-2. Ficha de finca — resumen y lista de parcelas.
-3. Ficha de parcela — resumen y actividad.
-4. Selector `Registrar` con contexto agrícola.
+2. Mini app de finca — resumen y lista de parcelas.
+3. Subpantallas Trabajos, Tareas y Campaña filtradas dentro de la finca.
+4. Selector `Registrar` con contexto agrícola y formulario superficial.
 5. Formulario de trabajo.
 
 Una vez aprobadas, esas cinco superficies fijan tokens, espaciado, iconos, tipos y fichas para el resto de la aplicación.
-

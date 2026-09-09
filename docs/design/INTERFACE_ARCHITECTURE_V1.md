@@ -70,18 +70,18 @@ La navegación tiene como máximo cinco destinos persistentes. La decisión func
 | Destino | Responde a | Contenido principal |
 | --- | --- | --- |
 | Inicio | ¿Qué necesito mirar hoy? | campaña activa, avisos y actividad reciente |
-| Mi Campo | ¿Dónde están mis olivos y qué ha pasado? | fincas, parcelas, cuaderno y mapa |
+| Mi Campo | ¿Dónde están mis olivos y qué ha pasado? | fincas y la mini app operativa de cada finca |
 | Campaña | ¿Cómo va la cosecha? | entregas, rendimientos, documentos y comparativas |
 | Mágina | ¿Qué información externa me sirve? | cooperativas, tiempo, RAIF, mercado y territorio |
 | Más | ¿Qué no es una tarea diaria? | perfil, ajustes, importación, ayuda y recursos |
 
-El disparador de registro rápido `+` es **contextual y no un sexto destino**. En una vista de parcela puede abrir acciones de esa parcela; en campaña prioriza entrega; en Inicio propone acciones frecuentes. Su posición visual definitiva se valida junto a la maqueta móvil para que no tape ningún destino de la barra.
+El disparador de registro rápido `+` es **contextual y no un sexto destino**. Es la única puerta para crear registros y parcelas; la excepción es `Nueva finca`, que está disponible directamente en la raíz de Mi Campo. En una subpantalla de finca, el `+` hereda tanto la finca como el módulo abierto: Trabajos propone trabajo, Tareas propone tarea y Campaña propone entrega. Su posición visual definitiva se valida junto a la maqueta móvil para que no tape ningún destino de la barra.
 
 ### 3.3 Áreas de producto
 
 - **Inicio** resume; no duplica listas completas ni configura fincas.
-- **Mi Campo** es el espacio operativo y territorial privado. Es la prioridad de este rediseño.
-- **Campaña** agrupa resultados productivos y económicos derivados de entregas y resultados, no sustituye el cuaderno.
+- **Mi Campo** es el espacio operativo y territorial privado. Muestra las fincas; cada finca abre una mini app propia. Es la prioridad de este rediseño.
+- **Campaña** global agrupa resultados de toda la explotación. La subpantalla `Campaña` dentro de una finca muestra exactamente los mismos tipos de registros, filtrados por esa finca; no crea una segunda campaña.
 - **Mágina** separa explícitamente datos públicos externos de los datos privados del agricultor.
 - **Más** contiene acciones poco frecuentes y preferencias; no se usa como cajón para acciones diarias de campo.
 
@@ -159,9 +159,9 @@ El rediseño sigue este orden; no se salta a iconos o colores antes de decidir l
 
 1. Shell y navegación, sin implementar todavía la composición final.
 2. Mi Campo: lista de fincas y estados vacíos.
-3. Ficha de finca y agregaciones.
-4. Ficha de parcela y sus espacios de trabajo.
-5. Registro rápido y formularios de Mi Campo.
+3. Mini app de finca, sus módulos y agregaciones.
+4. Parcelas como listado, filtro y datos agrícolas dentro de la finca.
+5. Registro rápido y formularios superficiales de Mi Campo.
 6. Fichas y timeline reutilizables.
 7. Campaña conectada a los mismos registros.
 8. Inicio, Mágina y Más.

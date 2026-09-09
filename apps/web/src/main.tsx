@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { AccountPage } from './AccountPage';
 import { App } from './App';
 import { CalendarPage } from './CalendarPage';
+import { CatastroUiLabPage } from './CatastroUiLabPage';
 import { ConnectivityStatus } from './ConnectivityStatus';
 import { installDemoPreview } from './demoPreview';
 import { MaginaDirectoryPage } from './MaginaDirectoryPage';
@@ -55,6 +56,7 @@ const pathWithoutBase = basePath && browserPath.startsWith(basePath)
   ? browserPath.slice(basePath.length) || '/'
   : browserPath;
 const path = pathWithoutBase.startsWith('/') ? pathWithoutBase : `/${pathWithoutBase}`;
+const catastroUiLabEnabled = import.meta.env.VITE_CATASTRO_UI_LAB === 'true';
 
 if (basePath) {
   document.addEventListener('click', (event) => {
@@ -76,7 +78,9 @@ if (basePath) {
 createRoot(root).render(
   <StrictMode>
     <>
-      {path === '/reset-password' ? (
+      {path === '/lab/catastro' && catastroUiLabEnabled ? (
+        <CatastroUiLabPage />
+      ) : path === '/reset-password' ? (
         <ResetPassword />
       ) : path === '/register' ? (
         <RegisterPage />

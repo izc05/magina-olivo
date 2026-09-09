@@ -154,6 +154,46 @@
   padding: 15px 16px;
 }
 
+.timeline-icon {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin: 0 auto;
+  border-radius: 10px;
+  background: #e7edde;
+  color: #36552e;
+  box-shadow: 0 0 0 4px #fffdf7;
+}
+
+.timeline-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.timeline-icon.delivery,
+.timeline-icon.harvest {
+  background: #f8e9bc;
+  color: #815b12;
+}
+
+.timeline-icon.yield_result {
+  background: #dfe8d6;
+  color: #2e3a22;
+}
+
+.timeline-icon.irrigation {
+  background: #dff0f4;
+  color: #176b82;
+}
+
+.timeline-icon.treatment {
+  background: #e6eedf;
+  color: #36552e;
+}
+
 .timeline-dot {
   position: relative;
   z-index: 1;
@@ -202,6 +242,14 @@
   color: #6d7668;
   font-size: .8rem;
   line-height: 1.4;
+}
+
+.timeline-primary-value {
+  display: block;
+  margin-top: 4px;
+  color: #2e3a22;
+  font-size: .88rem;
+  line-height: 1.25;
 }
 
 .notebook-disclaimer {

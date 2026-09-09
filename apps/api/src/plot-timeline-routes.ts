@@ -16,6 +16,10 @@ type TimelineRow = {
   ticket_number: string | null;
   yield_value: string | null;
   activity_type: string | null;
+  affected_area_ha: string | null;
+  product_name: string | null;
+  quantity: string | null;
+  quantity_unit: string | null;
   notes: string | null;
   cost_eur: string | null;
 };
@@ -60,6 +64,10 @@ export function registerPlotTimelineRoutes(app: FastifyInstance): void {
             d.ticket_number,
             null::numeric as yield_value,
             null::text as activity_type,
+            null::numeric as affected_area_ha,
+            null::text as product_name,
+            null::numeric as quantity,
+            null::text as quantity_unit,
             null::text as notes,
             null::numeric as cost_eur
           from plot_deliveries d
@@ -76,6 +84,10 @@ export function registerPlotTimelineRoutes(app: FastifyInstance): void {
             null::text as ticket_number,
             r.value as yield_value,
             null::text as activity_type,
+            null::numeric as affected_area_ha,
+            null::text as product_name,
+            null::numeric as quantity,
+            null::text as quantity_unit,
             null::text as notes,
             null::numeric as cost_eur
           from delivery_results r
@@ -96,6 +108,10 @@ export function registerPlotTimelineRoutes(app: FastifyInstance): void {
             null::text as ticket_number,
             null::numeric as yield_value,
             a.activity_type,
+            a.affected_area_ha,
+            a.product_name,
+            a.quantity,
+            a.quantity_unit,
             a.notes,
             a.cost_eur
           from activities a
@@ -119,6 +135,10 @@ export function registerPlotTimelineRoutes(app: FastifyInstance): void {
           ...(row.ticket_number !== null ? { ticketNumber: row.ticket_number } : {}),
           ...(row.yield_value !== null ? { yieldPercent: row.yield_value } : {}),
           ...(row.activity_type !== null ? { activityType: row.activity_type } : {}),
+          ...(row.affected_area_ha !== null ? { affectedAreaHa: row.affected_area_ha } : {}),
+          ...(row.product_name !== null ? { productName: row.product_name } : {}),
+          ...(row.quantity !== null ? { quantity: row.quantity } : {}),
+          ...(row.quantity_unit !== null ? { quantityUnit: row.quantity_unit } : {}),
           ...(row.notes !== null ? { notes: row.notes } : {}),
           ...(row.cost_eur !== null ? { costEur: row.cost_eur } : {}),
         })),

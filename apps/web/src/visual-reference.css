@@ -73,6 +73,12 @@ img { content-visibility: auto; contain-intrinsic-size: 320px 180px; }
 }
 .public-nav-action svg, .nav-plus svg { width: 30px; height: 30px; stroke-width: 1.7; }
 
+/* The private menu has four destinations around the independent central action. */
+.bottom-nav-v2 > .nav-button:nth-of-type(1) { grid-column: 1; }
+.bottom-nav-v2 > .nav-button:nth-of-type(2) { grid-column: 2; }
+.bottom-nav-v2 > .nav-button:nth-of-type(3) { grid-column: 4; }
+.bottom-nav-v2 > .nav-button:nth-of-type(4) { grid-column: 5; }
+
 /* Home reference: photograph, forecast, field shortcut, four quick actions. */
 .public-home-v2-hero { position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 12px; min-height: 0; height: 254px; padding: 16px; border-radius: 20px; overflow: hidden; isolation: isolate; margin: 0 0 23px; }
 .public-home-v2-photo { position: absolute; inset: 0; z-index: -2; background: url('/photos/home-sierra-magina.webp') center 58% / cover; }

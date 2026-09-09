@@ -83,6 +83,10 @@ export type PlotTimelineItem = {
   ticketNumber?: string;
   yieldPercent?: string;
   activityType?: ActivityType;
+  affectedAreaHa?: string;
+  productName?: string;
+  quantity?: string;
+  quantityUnit?: string;
   notes?: string;
   costEur?: string;
 };

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
+import { BookOpen, Droplets, FlaskConical, PackagePlus, Sprout, TrendingUp } from 'lucide-react';
 import {
   api,
   type ActivityCreateBody,
@@ -32,9 +33,21 @@ function localDateTimeValue(): string {
 }
 
 function timelineTitle(item: PlotTimelineItem): string {
-  if (item.type === 'delivery') return `Entrega · ${item.kilograms ?? '—'} kg`;
-  if (item.type === 'yield_result') return `Rendimiento · ${item.yieldPercent ?? '—'} %`;
+  if (item.type === 'delivery') return 'Entrega';
+  if (item.type === 'yield_result') return 'Rendimiento';
   return activityLabels[item.activityType ?? 'other'];
+}
+
+function formatTimelineValue(value: string): string {
+  return new Intl.NumberFormat('es-ES', { maximumFractionDigits: 3 }).format(Number(value));
+}
+
+function timelinePrimaryValue(item: PlotTimelineItem): string | null {
+  if (item.type === 'delivery' && item.kilograms) return `${formatTimelineValue(item.kilograms)} kg`;
+  if (item.type === 'yield_result' && item.yieldPercent) return `${formatTimelineValue(item.yieldPercent)} %`;
+  if (item.type === 'activity' && item.quantity && item.quantityUnit) return `${formatTimelineValue(item.quantity)} ${item.quantityUnit}${item.activityType === 'harvest' ? ' estimados' : ''}`;
+  if (item.type === 'activity' && item.productName) return item.productName;
+  return null;
 }
 
 function timelineDetail(item: PlotTimelineItem): string | null {
@@ -42,7 +55,16 @@ function timelineDetail(item: PlotTimelineItem): string | null {
     return [item.destination, item.ticketNumber ? `Ticket ${item.ticketNumber}` : null].filter(Boolean).join(' · ') || null;
   }
   if (item.type === 'yield_result') return 'Resultado asociado a una entrega';
-  return [item.notes, item.costEur ? `${item.costEur} €` : null].filter(Boolean).join(' · ') || null;
+  return [item.affectedAreaHa ? `${formatTimelineValue(item.affectedAreaHa)} ha` : null, item.costEur ? `${formatTimelineValue(item.costEur)} €` : null, item.notes].filter(Boolean).join(' · ') || null;
+}
+
+function TimelineIcon({ item }: { item: PlotTimelineItem }) {
+  if (item.type === 'delivery') return <PackagePlus aria-hidden="true" />;
+  if (item.type === 'yield_result') return <TrendingUp aria-hidden="true" />;
+  if (item.activityType === 'treatment') return <FlaskConical aria-hidden="true" />;
+  if (item.activityType === 'irrigation') return <Droplets aria-hidden="true" />;
+  if (item.activityType === 'harvest') return <Sprout aria-hidden="true" />;
+  return <BookOpen aria-hidden="true" />;
 }
 
 function filterLabel(filter: TimelineFilter): string {
@@ -205,7 +227,7 @@ export function FieldNotebook({
     try {
       const result = await api.createActivity(holdingId, body);
       form.reset();
-      setActivityType('observation');
+      setActivityType(initialActivityType ?? 'observation');
       if ('offlineQueued' in result) {
         setNotice('Labor guardada en este móvil. Se añadirá a la historia al recuperar conexión.');
       } else {
@@ -281,7 +303,7 @@ export function FieldNotebook({
 
             <div className="inline-fields">
               <div className="field">
-                <label htmlFor="activity-area">Superficie afectada (ha)</label>
+                <label htmlFor="activity-area">{activityType === 'harvest' ? 'Superficie recolectada (ha)' : 'Superficie afectada (ha)'}</label>
                 <input id="activity-area" name="affectedAreaHa" type="number" min="0" step="0.001" placeholder={selectedPlot?.areaHa ?? 'Opcional'} />
               </div>
               <div className="field">
@@ -315,16 +337,26 @@ export function FieldNotebook({
               </div>
             ) : null}
 
+            {activityType === 'harvest' ? (
+              <div className="notebook-context-fields">
+                <div className="field">
+                  <label htmlFor="activity-quantity">Kilos estimados</label>
+                  <input id="activity-quantity" name="quantity" type="number" min="0" step="0.001" inputMode="decimal" placeholder="Opcional" />
+                </div>
+                <input type="hidden" name="quantityUnit" value="kg" />
+              </div>
+            ) : null}
+
             <div className="field">
               <label htmlFor="activity-notes">Notas</label>
-              <textarea id="activity-notes" name="notes" maxLength={4000} placeholder="Qué se ha hecho, observaciones, estado del olivar…" />
+              <textarea id="activity-notes" name="notes" maxLength={4000} placeholder={activityType === 'harvest' ? 'Jornada, método o detalle opcional…' : 'Qué se ha hecho, observaciones, estado del olivar…'} />
             </div>
 
             {error ? <div className="alert" role="alert">{error}</div> : null}
             {notice ? <div className="alert success" role="status">{notice}</div> : null}
 
             <div className="form-actions">
-              <button className="primary-button" type="submit" disabled={busy}>{busy ? 'Guardando…' : initialActivityType === 'treatment' ? 'Guardar tratamiento' : initialActivityType === 'irrigation' ? 'Guardar riego' : 'Guardar labor'}</button>
+              <button className="primary-button" type="submit" disabled={busy}>{busy ? 'Guardando…' : initialActivityType === 'treatment' ? 'Guardar tratamiento' : initialActivityType === 'irrigation' ? 'Guardar riego' : activityType === 'harvest' ? 'Guardar recolección' : 'Guardar labor'}</button>
             </div>
           </form>
           </details>
@@ -365,12 +397,13 @@ export function FieldNotebook({
         <div className="timeline-list">
           {filteredTimeline.map((item) => (
             <article className="card timeline-item" key={`${item.type}-${item.id}`}>
-              <div className={`timeline-dot ${item.type}`} aria-hidden="true" />
+              <div className={`timeline-icon ${item.type} ${item.activityType ?? ''}`}><TimelineIcon item={item} /></div>
               <div className="timeline-copy">
                 <div className="timeline-topline">
                   <strong>{timelineTitle(item)}</strong>
                   <time dateTime={item.occurredAt}>{new Date(item.occurredAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</time>
                 </div>
+                {timelinePrimaryValue(item) ? <b className="timeline-primary-value">{timelinePrimaryValue(item)}</b> : null}
                 {timelineDetail(item) ? <p>{timelineDetail(item)}</p> : null}
               </div>
             </article>

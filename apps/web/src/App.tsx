@@ -22,7 +22,7 @@ import { FieldCameraModal } from './FieldCameraModal.tsx';
 import { OfflineColdStart } from './OfflineColdStart.tsx';
 import { listPendingOperations } from './offline/outbox.ts';
 import { PrivateAccessGate } from './PrivateAccessGate.tsx';
-import { BarChart3, Bell, BookOpen, Building2, CalendarDays, ChevronLeft, ChevronRight, CircleHelp, Compass, Droplets, FileText, House, Leaf, Map, MapPin, Moon, Mountain, PackageCheck, Pencil, Plus, Settings, ShieldCheck, Sparkles, Sprout, Sun, Tractor, UserRound } from 'lucide-react';
+import { BarChart3, Bell, BookOpen, Building2, CalendarDays, ChevronLeft, ChevronRight, CircleHelp, Compass, Droplets, FileText, House, Leaf, Map, MapPin, Menu, Moon, Mountain, PackageCheck, Pencil, Plus, Settings, ShieldCheck, Sparkles, Sprout, Sun, Tractor, UserRound } from 'lucide-react';
 import { PhotoCredit, VisualHeader, navigationIcons } from './VisualChrome';
 import { FieldActionCenter } from './FieldActionCenter';
 
@@ -79,7 +79,7 @@ export function App({ initialTab = 'home', initialFieldView = 'home', initialPlo
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
-    if (tab !== 'field') setShowQuickMenu(false);
+    if (tab !== 'field' && tab !== 'campaign') setShowQuickMenu(false);
   }, [tab]);
   const pageRef = useRef<HTMLElement | null>(null);
   const activePlotsRequestFarmId = useRef('');
@@ -366,11 +366,10 @@ export function App({ initialTab = 'home', initialFieldView = 'home', initialPlo
 
       <nav className="bottom-nav bottom-nav-v2" aria-label="Navegación principal">
         <a className="nav-button" href="/"><House aria-hidden="true" />Inicio</a>
-        <a className={`nav-button${tab === 'field' || tab === 'campaign' ? ' active' : ''}`} href="/mi-campo" aria-current={tab === 'field' || tab === 'campaign' ? 'page' : undefined}><Sprout aria-hidden="true" />Mi Campo</a>
-        <a className="nav-button" href="/magina"><Mountain aria-hidden="true" />Mágina</a>
-        <a className="nav-button" href="/descubre"><Compass aria-hidden="true" />Descubre</a>
-        <a className={`nav-button${tab === 'more' ? ' active' : ''}`} href="/cuenta" aria-current={tab === 'more' ? 'page' : undefined}><UserRound aria-hidden="true" />Perfil</a>
-        {tab === 'field' ? <button type="button" className={`nav-plus${showQuickMenu ? ' active' : ''}`} onClick={() => setShowQuickMenu((prev) => !prev)} aria-label="Centro de acciones de Mi Campo" aria-expanded={showQuickMenu}><Plus aria-hidden="true" /></button> : null}
+        <a className={`nav-button${tab === 'field' ? ' active' : ''}`} href="/mi-campo" aria-current={tab === 'field' ? 'page' : undefined}><Sprout aria-hidden="true" />Mi Campo</a>
+        <a className={`nav-button${tab === 'campaign' ? ' active' : ''}`} href="/campana" aria-current={tab === 'campaign' ? 'page' : undefined}><PackageCheck aria-hidden="true" />Campaña</a>
+        <a className={`nav-button${tab === 'more' ? ' active' : ''}`} href="/cuenta" aria-current={tab === 'more' ? 'page' : undefined}><Menu aria-hidden="true" />Más</a>
+        {tab === 'field' || tab === 'campaign' ? <button type="button" className={`nav-plus${showQuickMenu ? ' active' : ''}`} onClick={() => setShowQuickMenu((prev) => !prev)} aria-label="Centro de acciones de Mi Campo" aria-expanded={showQuickMenu}><Plus aria-hidden="true" /></button> : null}
       </nav>
     </div>
   );
@@ -568,7 +567,7 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, plots, busy,
 
       {selectedFarm && selectedHolding && showMapWorkspace ? (
         <>
-          <FieldBackBar backHref={contextualFieldHref('/mi-campo')} label="Mis fincas" />
+          <FieldBackBar backHref={contextualFieldHref('/mi-campo')} label="Mi Campo" />
           <section className="field-map-workspace" id="mapa-parcelas" aria-labelledby="field-map-workspace-title">
             <div className="field-map-workspace-heading">
               <div><p className="eyebrow">{selectedFarm.name} · Mi Campo</p><h1 id="field-map-workspace-title">Mapa de parcelas</h1><p>Trabaja con GPS, ortofoto PNOA, relieve y fuentes oficiales sin perder el contexto de tu finca.</p></div>
@@ -582,7 +581,7 @@ function FieldTab({ holdings, selectedHolding, farms, selectedFarm, plots, busy,
 
       {selectedFarm && selectedHolding && showFarmDetail && !showMapWorkspace ? (
         <>
-          {fieldView === 'plot' ? <FieldBackBar backHref={contextualFieldHref('/mi-campo')} label={selectedFarm.name} /> : <FieldBackBar backHref="/mi-campo" label="Mis fincas" />}
+          {fieldView === 'plot' ? <FieldBackBar backHref={contextualFieldHref('/mi-campo')} label={selectedFarm.name} /> : <FieldBackBar backHref="/mi-campo" label="Mi Campo" />}
           {fieldView !== 'plot' ? <section className="farm-detail-card farm-detail-hero" aria-labelledby="selected-farm-title">
             <div>
               <p className="eyebrow">Finca activa</p>
@@ -628,7 +627,7 @@ function FarmListHome({ holding, farms, farmPlotCounts, busy, runAction, onCreat
   return <>
     <section className="field-farms-home-intro" aria-labelledby="field-farms-home-title">
       <p className="eyebrow">MI CAMPO</p>
-      <h1 id="field-farms-home-title">Mis fincas</h1>
+      <h1 id="field-farms-home-title">Mi Campo</h1>
       <p>{holding.name}{[holding.municipality, holding.province].filter(Boolean).length ? ` · ${[holding.municipality, holding.province].filter(Boolean).join(' · ')}` : ''}</p>
     </section>
 
@@ -639,7 +638,7 @@ function FarmListHome({ holding, farms, farmPlotCounts, busy, runAction, onCreat
     </section>
 
     <section className="field-farms-list" aria-labelledby="field-farms-list-title">
-      <div className="section-heading"><div><h2 id="field-farms-list-title" className="section-title">Elige una finca</h2><p className="section-copy">Al abrirla verás sus parcelas, mapa y registros de trabajo.</p></div></div>
+      <div className="section-heading"><div><h2 id="field-farms-list-title" className="section-title">Fincas</h2><p className="section-copy">Abre una finca para consultar sus parcelas, mapa y registros de trabajo.</p></div></div>
       {farms.map((farm) => <a key={farm.id} className="field-farm-home-card" href={`/mi-campo?finca=${encodeURIComponent(farm.id)}`}>
         <img className="field-farm-home-photo" src="/photos/field-olivares-magina.webp" alt="" />
         <span className="field-farm-home-copy"><strong>{farm.name}</strong><small>{[farm.areaHa != null ? formatHa(farm.areaHa) : null, `${farmPlotCounts[farm.id] ?? 0} parcela${(farmPlotCounts[farm.id] ?? 0) === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}</small><em>Abrir finca</em></span>
@@ -858,6 +857,10 @@ function CampaignComparisons({ campaigns, selectedCampaignId, selectedSummary }:
 
 function MoreTab({ user, holding, farms, deliveries, summary, busy, onSignOut }: { user: User; holding: Holding | null; farms: Farm[]; deliveries: Delivery[]; summary: CampaignSummary | null; busy: boolean; onSignOut: () => void }) {
   const initials = (user.name || user.email).trim().split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
+  const exploreLinks = [
+    { href: '/magina', icon: Mountain, title: 'Mágina', copy: 'Tiempo, alertas, mercado y cooperativas' },
+    { href: '/descubre', icon: Compass, title: 'Descubre', copy: 'Territorio, pueblos y cultura del olivar' },
+  ];
   const profileLinks = [
     { href: '/tu-olivo', icon: Leaf, title: 'Tu Olivo', copy: 'Cuida tu árbol virtual y consulta tus recompensas' },
     { href: '/perfil/editar', icon: UserRound, title: 'Datos personales', copy: 'Nombre, contacto e información de tu cuenta' },
@@ -869,7 +872,16 @@ function MoreTab({ user, holding, farms, deliveries, summary, busy, onSignOut }:
   ];
   return (
     <>
-      <PageIntro eyebrow="MI PERFIL" title="Mi perfil" copy="Tu información y preferencias en un solo lugar." />
+      <PageIntro eyebrow="MÁS" title="Más" copy="Servicios, información y ajustes de tu cuenta." />
+      <section className="section more-links profile-reference-links" aria-label="Explorar Mágina Olivo">
+        {exploreLinks.map(({ href, icon: Icon, title, copy }) => (
+          <a className="card more-link-card" href={href} key={title}>
+            <span className="profile-link-icon"><Icon aria-hidden="true" /></span>
+            <span className="profile-link-copy"><strong>{title}</strong><small>{copy}</small></span>
+            <ChevronRight aria-hidden="true" />
+          </a>
+        ))}
+      </section>
       <section className="section card more-profile-card profile-reference-card" aria-labelledby="more-profile-title">
         <span className="profile-initials" aria-hidden="true">{initials}</span>
         <div className="profile-reference-main">

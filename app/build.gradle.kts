@@ -61,6 +61,7 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
     debugImplementation(libs.compose.ui.tooling)
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
@@ -79,4 +80,5 @@ dependencies {
     androidTestImplementation("androidx.test:core:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 }

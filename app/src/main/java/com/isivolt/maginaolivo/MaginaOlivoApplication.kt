@@ -5,9 +5,11 @@ import androidx.room.Room
 import com.isivolt.maginaolivo.data.local.MaginaOlivoDatabase
 import com.isivolt.maginaolivo.data.remote.SupabaseProvider
 import com.isivolt.maginaolivo.data.remote.SupabaseWeatherGateway
+import com.isivolt.maginaolivo.data.remote.SupabaseWeatherRadarGateway
 import com.isivolt.maginaolivo.data.repository.LocalFieldRepository
 import com.isivolt.maginaolivo.data.repository.SharedPreferencesWeatherForecastCache
 import com.isivolt.maginaolivo.data.repository.WeatherRepository
+import com.isivolt.maginaolivo.data.repository.WeatherRadarRepository
 import org.maplibre.android.MapLibre
 
 class MaginaOlivoApplication : Application() {
@@ -35,6 +37,13 @@ class MaginaOlivoApplication : Application() {
         WeatherRepository(
             gateway = SupabaseProvider.client?.let(::SupabaseWeatherGateway),
             cache = SharedPreferencesWeatherForecastCache(applicationContext),
+        )
+    }
+
+    val weatherRadarRepository: WeatherRadarRepository by lazy {
+        WeatherRadarRepository(
+            gateway = SupabaseProvider.client?.let(::SupabaseWeatherRadarGateway),
+            context = applicationContext,
         )
     }
 }

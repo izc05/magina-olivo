@@ -93,7 +93,7 @@ class LocalOutboxE2ETest {
     }
 
     @Test
-    fun farmIsDequeuedBeforePlotWhenTheyShareTheSameTimestamp() = runBlocking {
+    fun farmIsDequeuedBeforeOlderPlotToProtectRemoteForeignKey() = runBlocking {
         val context: Context = InstrumentationRegistry
             .getInstrumentation()
             .targetContext
@@ -104,7 +104,8 @@ class LocalOutboxE2ETest {
         ).build()
 
         try {
-            val timestamp = 1_789_750_800_000L
+            val plotTimestamp = 1_789_750_800_000L
+            val farmTimestamp = plotTimestamp + 1_000L
             val farmId = "11111111-1111-4111-8111-111111111111"
             val plotId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
 
@@ -117,14 +118,14 @@ class LocalOutboxE2ETest {
                     areaHa = 1.0,
                     boundaryGeoJson = null,
                     boundarySource = "catastro",
-                    updatedAtEpochMs = timestamp,
+                    updatedAtEpochMs = plotTimestamp,
                     syncState = "pending_upload",
                 ),
                 outbox = SyncOutboxEntity(
                     entityType = "plot",
                     entityId = plotId,
                     operation = "upsert",
-                    enqueuedAtEpochMs = timestamp,
+                    enqueuedAtEpochMs = plotTimestamp,
                 ),
             )
 
@@ -133,14 +134,14 @@ class LocalOutboxE2ETest {
                     id = farmId,
                     name = "Finca después",
                     coverImageUri = null,
-                    updatedAtEpochMs = timestamp,
+                    updatedAtEpochMs = farmTimestamp,
                     syncState = "pending_upload",
                 ),
                 outbox = SyncOutboxEntity(
                     entityType = "farm",
                     entityId = farmId,
                     operation = "upsert",
-                    enqueuedAtEpochMs = timestamp,
+                    enqueuedAtEpochMs = farmTimestamp,
                 ),
             )
 

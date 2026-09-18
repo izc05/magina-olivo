@@ -25,7 +25,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.isivolt.maginaolivo.MaginaOlivoApplication
+import com.isivolt.maginaolivo.data.remote.SupabaseCatastroParcelGateway
 import com.isivolt.maginaolivo.data.remote.SupabaseProvider
+import com.isivolt.maginaolivo.ui.catastro.AddParcelByReferenceScreen
 import com.isivolt.maginaolivo.ui.map.PlotMapScreen
 import kotlinx.coroutines.launch
 
@@ -41,13 +43,25 @@ fun MaginaOlivoApp() {
     val plots by plotsFlow.collectAsState(initial = emptyList())
 
     var showMap by rememberSaveable { mutableStateOf(false) }
+    var showAddParcel by rememberSaveable { mutableStateOf(false) }
     var showCreateFarm by rememberSaveable { mutableStateOf(false) }
     var farmName by rememberSaveable { mutableStateOf("") }
     var farmError by rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val catastroGateway = remember {
+        SupabaseProvider.client?.let(::SupabaseCatastroParcelGateway)
+    }
 
     MaterialTheme {
-        if (showMap) {
+        if (showAddParcel) {
+            AddParcelByReferenceScreen(
+                farms = farms,
+                repository = repository,
+                gateway = catastroGateway,
+                onBack = { showAddParcel = false },
+                onSaved = { showAddParcel = false },
+            )
+        } else if (showMap) {
             PlotMapScreen(
                 plots = plots,
                 onBack = { showMap = false },
@@ -113,7 +127,7 @@ fun MaginaOlivoApp() {
                     }
 
                     Button(
-                        onClick = { },
+                        onClick = { showAddParcel = true },
                         enabled = farms.isNotEmpty(),
                     ) {
                         Text(

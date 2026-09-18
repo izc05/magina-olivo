@@ -1,4 +1,5 @@
 import proj4 from "npm:proj4@2.22.0";
+import { fetchWithSingleRetry } from "./retry.ts";
 
 const CATASTRO_WFS_URL = "http://ovc.catastro.meh.es/INSPIRE/wfsCP.aspx";
 const CATASTRO_SRS = "EPSG::25830";
@@ -265,13 +266,18 @@ function parseCatastroGml(xml: string): Parcel[] {
 }
 
 async function fetchXml(url: string): Promise<string> {
-  const response = await fetch(url, {
-    headers: {
-      accept: "application/gml+xml, application/xml, text/xml",
-      "user-agent": "Magina-Olivo/1.0 Catastro-INSPIRE-adapter",
-    },
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  });
+  const response = await fetchWithSingleRetry(
+    url,
+    {},
+    () =>
+      fetch(url, {
+        headers: {
+          accept: "application/gml+xml, application/xml, text/xml",
+          "user-agent": "Magina-Olivo/1.0 Catastro-INSPIRE-adapter",
+        },
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      }),
+  );
 
   if (!response.ok) {
     throw new Error(`CATASTRO_HTTP_${response.status}`);

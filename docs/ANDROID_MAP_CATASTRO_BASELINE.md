@@ -106,15 +106,27 @@ Backend dedicado ya preparado:
 - región: `eu-west-3`;
 - estado: `ACTIVE_HEALTHY`;
 - URL: `https://zzelvbcuxsboafibfxch.supabase.co`;
-- Edge Function `catastro-map`: `ACTIVE`, versión 1, `verify_jwt = true`;
+- Edge Function `catastro-map`: `ACTIVE`, versión 2, `verify_jwt = true`;
 - la app Android lee `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY` desde propiedades Gradle o variables de entorno; no se guarda ninguna clave en el repositorio.
 
+Estado Auth/Edge verificado:
+- Anonymous Sign-Ins habilitado y validado: HTTP 200, JWT emitido, `is_anonymous=true`, rol `authenticated`;
+- `catastro-map` v2 usa el endpoint WFS oficial `http://ovc.catastro.meh.es/INSPIRE/wfsCP.aspx`;
+- se añadió regresión CI para impedir volver accidentalmente al endpoint HTTPS;
+- `deno check` y el test de adaptador pasan en Catastro Edge CI;
+- una consulta BBOX real devolvió HTTP 200, 80 parcelas y proveedor `Dirección General del Catastro`.
+
+Incidencia externa observada:
+- el servicio WFS de Catastro presenta resets de conexión intermitentes incluso usando HTTP;
+- por tanto Gate C NO se considera todavía cerrado extremo a extremo;
+- no se debe ocultar este comportamiento ni confundirlo con un fallo de Auth, parser o proyección.
+
 Pendiente para cerrar Gate C:
-1. habilitar **Anonymous Sign-Ins** en el proyecto `magina-olivo` desde Supabase Dashboard → Authentication → Providers → Anonymous Sign-Ins → Enable;
-2. configurar localmente:
+1. configurar localmente:
    - `SUPABASE_URL=https://zzelvbcuxsboafibfxch.supabase.co`;
    - `SUPABASE_PUBLISHABLE_KEY=<clave publishable default del proyecto>`;
-3. validar el recorrido real mapa → Catastro remoto → selección → revisión → Room.
+2. añadir manejo controlado de fallos transitorios del WFS;
+3. validar el recorrido real mapa → Catastro remoto → selección → revisión → Room desde Android.
 
 Nota de seguridad:
 - usar la clave **publishable**, nunca una clave secret/service-role en Android;

@@ -44,6 +44,7 @@ fun MaginaOlivoApp() {
 
     var showMap by rememberSaveable { mutableStateOf(false) }
     var showAddParcel by rememberSaveable { mutableStateOf(false) }
+    var pendingCatastroReference by rememberSaveable { mutableStateOf<String?>(null) }
     var showCreateFarm by rememberSaveable { mutableStateOf(false) }
     var farmName by rememberSaveable { mutableStateOf("") }
     var farmError by rememberSaveable { mutableStateOf<String?>(null) }
@@ -58,12 +59,24 @@ fun MaginaOlivoApp() {
                 farms = farms,
                 repository = repository,
                 gateway = catastroGateway,
-                onBack = { showAddParcel = false },
-                onSaved = { showAddParcel = false },
+                initialReference = pendingCatastroReference,
+                onBack = {
+                    pendingCatastroReference = null
+                    showAddParcel = false
+                },
+                onSaved = {
+                    pendingCatastroReference = null
+                    showAddParcel = false
+                },
             )
         } else if (showMap) {
             PlotMapScreen(
                 plots = plots,
+                catastroGateway = catastroGateway,
+                onCatastroReferenceSelected = { reference ->
+                    pendingCatastroReference = reference
+                    showAddParcel = true
+                },
                 onBack = { showMap = false },
             )
         } else {
@@ -127,7 +140,10 @@ fun MaginaOlivoApp() {
                     }
 
                     Button(
-                        onClick = { showAddParcel = true },
+                        onClick = {
+                            pendingCatastroReference = null
+                            showAddParcel = true
+                        },
                         enabled = farms.isNotEmpty(),
                     ) {
                         Text(

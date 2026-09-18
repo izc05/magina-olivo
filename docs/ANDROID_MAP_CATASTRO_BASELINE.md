@@ -71,7 +71,7 @@ Nunca etiquetar un perímetro como `catastro` o `sigpac` si no ha sido obtenido 
 
 - Gate A: completado previamente (Android/Compose/Room/configuración sin secretos).
 - Gate B: CERRADO. MapLibre, ubicación con permisos Android, mapa base, PNOA IGN y render de parcelas propias desde Room implementados y validados en emulador.
-- Gate C:
+- Gate C: CERRADO extremo a extremo.
   - consulta Catastro por BBOX implementada;
   - búsqueda por referencia 14/18/20 implementada;
   - Polygon y MultiPolygon implementados;
@@ -86,9 +86,11 @@ Nunca etiquetar un perímetro como `catastro` o `sigpac` si no ha sido obtenido 
   - `verify_jwt = true` se mantiene en `catastro-map`.
 - Adaptador Catastro: WFS 2.0 usando ETRS89 / UTM 30N (EPSG:25830), convertido a GeoJSON WGS84 para MapLibre.
 - PNOA: WMTS oficial del IGN con `OI.OrthoimageCoverage` y `GoogleMapsCompatible`.
-- CI sobre HEAD `932a935fa633f2a354f26c1d072e4830e7db77ab`:
+- CI sobre HEAD `a26f27be26a77b91c39c46deeab79c7e2ada7992`:
   - Android CI: verde;
   - Catastro Edge CI: verde;
+  - Catastro Backend E2E: verde;
+  - Android Catastro Room E2E: verde;
   - Android Emulator Smoke: verde.
 - Evidencia de emulador:
   - APK debug instalada correctamente;
@@ -97,8 +99,6 @@ Nunca etiquetar un perímetro como `catastro` o `sigpac` si no ha sido obtenido 
   - árbol UI confirma `Volver`, `Mi ubicación`, `PNOA` y `Catastro`;
   - screenshot real del mapa de Sierra Mágina capturado;
   - sin `FATAL EXCEPTION` ni crash de `com.isivolt.maginaolivo` en logcat.
-
-Gate C NO se considera todavía cerrado extremo a extremo.
 
 Backend dedicado ya preparado:
 - proyecto Supabase: `magina-olivo`;
@@ -111,15 +111,15 @@ Backend dedicado ya preparado:
 
 Estado Auth/Edge verificado:
 - Anonymous Sign-Ins habilitado y validado: HTTP 200, JWT emitido, `is_anonymous=true`, rol `authenticated`;
-- `catastro-map` v2 usa el endpoint WFS oficial `http://ovc.catastro.meh.es/INSPIRE/wfsCP.aspx`;
+- `catastro-map` v3 usa el endpoint WFS oficial `http://ovc.catastro.meh.es/INSPIRE/wfsCP.aspx`;
 - se añadió regresión CI para impedir volver accidentalmente al endpoint HTTPS;
 - `deno check` y el test de adaptador pasan en Catastro Edge CI;
 - una consulta BBOX real devolvió HTTP 200, 80 parcelas y proveedor `Dirección General del Catastro`.
 
 Incidencia externa observada:
 - el servicio WFS de Catastro presenta resets de conexión intermitentes incluso usando HTTP;
-- por tanto Gate C NO se considera todavía cerrado extremo a extremo;
-- no se debe ocultar este comportamiento ni confundirlo con un fallo de Auth, parser o proyección.
+- el adapter aplica un único reintento controlado para error de red, HTTP 429 o HTTP 5xx;
+- no se debe confundir esta intermitencia externa con un fallo de Auth, parser o proyección.
 
 E2E backend automático verificado:
 - workflow `Catastro Backend E2E`: verde;
@@ -135,11 +135,17 @@ Resiliencia WFS:
 - no reintenta HTTP 4xx normales;
 - cada intento usa su propio timeout de 8 s.
 
-Pendiente para cerrar Gate C:
-1. configurar en el entorno Android:
-   - `SUPABASE_URL=https://zzelvbcuxsboafibfxch.supabase.co`;
-   - `SUPABASE_PUBLISHABLE_KEY=<clave publishable default del proyecto>`;
-2. validar desde Android el recorrido mapa → Catastro remoto → selección → revisión → guardado en Room.
+Cierre Gate C — evidencia Android real:
+- workflow `Android Catastro Room E2E`: verde;
+- el emulador recibe `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY` desde el entorno protegido de CI;
+- Android crea/reutiliza sesión anónima Supabase;
+- consulta BBOX real a Catastro mediante `SupabaseCatastroParcelGateway`;
+- selecciona una parcela con superficie oficial;
+- vuelve a verificar la misma referencia por Catastro antes de persistir;
+- crea una finca de prueba con `LocalFieldRepository`;
+- importa la parcela en una Room real en memoria;
+- verifica en Room: referencia catastral, geometría GeoJSON, superficie en hectáreas, `boundarySource=catastro` y `syncState=pending_upload`;
+- `connectedDebugAndroidTest` finaliza con `BUILD SUCCESSFUL`.
 
 Nota de seguridad:
 - usar la clave **publishable**, nunca una clave secret/service-role en Android;

@@ -9,7 +9,7 @@ const ETRS89_UTM30 =
 const TIMEOUT_MS = 8_000;
 const MAX_FEATURES = 80;
 const MAX_XML_BYTES = 2_000_000;
-const MAX_BBOX_SPAN = 0.05;
+const MAX_CATASTRO_BBOX_AREA_M2 = 1_000_000;
 
 type Bbox = {
   minLongitude: number;
@@ -74,12 +74,11 @@ function validateBbox(bbox: Bbox): string | null {
   ) {
     return "BBOX_EMPTY_OR_INVERTED";
   }
-  if (bbox.maxLongitude - bbox.minLongitude > MAX_BBOX_SPAN) {
-    return "BBOX_TOO_WIDE";
-  }
-  if (bbox.maxLatitude - bbox.minLatitude > MAX_BBOX_SPAN) {
-    return "BBOX_TOO_TALL";
-  }
+  const projected = projectBboxToUtm30(bbox);
+  const areaM2 = (projected.maxX - projected.minX) *
+    (projected.maxY - projected.minY);
+  if (!Number.isFinite(areaM2)) return "BBOX_NON_FINITE";
+  if (areaM2 > MAX_CATASTRO_BBOX_AREA_M2) return "BBOX_AREA_TOO_LARGE";
   return null;
 }
 
@@ -91,6 +90,25 @@ function lonLatToUtm30(longitude: number, latitude: number): [number, number] {
 function utm30ToLonLat(easting: number, northing: number): [number, number] {
   const result = proj4("EPSG:25830", WGS84, [easting, northing]);
   return [result[0], result[1]];
+}
+
+function projectBboxToUtm30(bbox: Bbox) {
+  const corners = [
+    lonLatToUtm30(bbox.minLongitude, bbox.minLatitude),
+    lonLatToUtm30(bbox.minLongitude, bbox.maxLatitude),
+    lonLatToUtm30(bbox.maxLongitude, bbox.minLatitude),
+    lonLatToUtm30(bbox.maxLongitude, bbox.maxLatitude),
+  ];
+
+  const eastings = corners.map(([easting]) => easting);
+  const northings = corners.map(([, northing]) => northing);
+
+  return {
+    minX: Math.min(...eastings),
+    minY: Math.min(...northings),
+    maxX: Math.max(...eastings),
+    maxY: Math.max(...northings),
+  };
 }
 
 function buildReferenceUrl(reference: string): string {
@@ -105,20 +123,7 @@ function buildReferenceUrl(reference: string): string {
 }
 
 function buildBboxUrl(bbox: Bbox): string {
-  const corners = [
-    lonLatToUtm30(bbox.minLongitude, bbox.minLatitude),
-    lonLatToUtm30(bbox.minLongitude, bbox.maxLatitude),
-    lonLatToUtm30(bbox.maxLongitude, bbox.minLatitude),
-    lonLatToUtm30(bbox.maxLongitude, bbox.maxLatitude),
-  ];
-
-  const eastings = corners.map(([easting]) => easting);
-  const northings = corners.map(([, northing]) => northing);
-
-  const minX = Math.min(...eastings);
-  const minY = Math.min(...northings);
-  const maxX = Math.max(...eastings);
-  const maxY = Math.max(...northings);
+  const { minX, minY, maxX, maxY } = projectBboxToUtm30(bbox);
 
   const url = new URL(CATASTRO_WFS_URL);
   url.searchParams.set("service", "WFS");

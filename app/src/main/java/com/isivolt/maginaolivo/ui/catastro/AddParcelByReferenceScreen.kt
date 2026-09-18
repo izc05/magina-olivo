@@ -36,13 +36,14 @@ fun AddParcelByReferenceScreen(
     farms: List<FarmEntity>,
     repository: LocalFieldRepository,
     gateway: CatastroParcelGateway?,
+    initialReference: String? = null,
     onBack: () -> Unit,
     onSaved: () -> Unit,
 ) {
     var selectedFarmId by rememberSaveable(farms) {
         mutableStateOf(farms.firstOrNull()?.id)
     }
-    var referenceInput by rememberSaveable { mutableStateOf("") }
+    var referenceInput by rememberSaveable(initialReference) { mutableStateOf(initialReference.orEmpty()) }
     var candidate by remember { mutableStateOf<CatastroParcel?>(null) }
     var workingName by rememberSaveable { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }

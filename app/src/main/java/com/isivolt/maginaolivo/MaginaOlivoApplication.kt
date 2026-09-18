@@ -17,13 +17,16 @@ class MaginaOlivoApplication : Application() {
             applicationContext,
             MaginaOlivoDatabase::class.java,
             "magina-olivo.db",
-        ).build()
+        )
+            .addMigrations(MaginaOlivoDatabase.MIGRATION_1_2)
+            .build()
     }
 
     val fieldRepository: LocalFieldRepository by lazy {
         LocalFieldRepository(
             farmDao = database.farmDao(),
             plotDao = database.plotDao(),
+            fieldWriteDao = database.fieldWriteDao(),
         )
     }
 }

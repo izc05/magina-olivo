@@ -6,6 +6,7 @@ import com.isivolt.maginaolivo.data.local.FieldWriteDao
 import com.isivolt.maginaolivo.data.local.PlotDao
 import com.isivolt.maginaolivo.data.local.PlotEntity
 import com.isivolt.maginaolivo.data.local.SyncOutboxEntity
+import com.isivolt.maginaolivo.data.sync.FieldSyncScheduler
 import com.isivolt.maginaolivo.domain.catastro.CatastroParcel
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
@@ -14,6 +15,7 @@ class LocalFieldRepository(
     private val farmDao: FarmDao,
     private val plotDao: PlotDao,
     private val fieldWriteDao: FieldWriteDao,
+    private val syncScheduler: FieldSyncScheduler = FieldSyncScheduler {},
     private val clock: () -> Long = System::currentTimeMillis,
     private val idFactory: () -> String = { UUID.randomUUID().toString() },
 ) {
@@ -30,23 +32,24 @@ class LocalFieldRepository(
         val normalizedName = name.trim()
         require(normalizedName.isNotEmpty()) { "FARM_NAME_REQUIRED" }
 
-        return FarmEntity(
+        val farm = FarmEntity(
             id = idFactory(),
             name = normalizedName,
             coverImageUri = coverImageUri,
             updatedAtEpochMs = clock(),
             syncState = SyncState.PENDING_UPLOAD,
-        ).also { farm ->
-            fieldWriteDao.upsertFarmWithOutbox(
-                farm = farm,
-                outbox = SyncOutboxEntity(
-                    entityType = "farm",
-                    entityId = farm.id,
-                    operation = "upsert",
-                    enqueuedAtEpochMs = farm.updatedAtEpochMs,
-                ),
-            )
-        }
+        )
+        fieldWriteDao.upsertFarmWithOutbox(
+            farm = farm,
+            outbox = SyncOutboxEntity(
+                entityType = "farm",
+                entityId = farm.id,
+                operation = "upsert",
+                enqueuedAtEpochMs = farm.updatedAtEpochMs,
+            ),
+        )
+        requestSync()
+        return farm
     }
 
     suspend fun importCatastroParcel(
@@ -60,7 +63,7 @@ class LocalFieldRepository(
         val normalizedName = workingName.trim()
         require(normalizedName.isNotEmpty()) { "PLOT_NAME_REQUIRED" }
 
-        PlotEntity(
+        val plot = PlotEntity(
             id = idFactory(),
             farmId = farmId,
             name = normalizedName,
@@ -70,17 +73,22 @@ class LocalFieldRepository(
             boundarySource = BoundarySource.CATASTRO,
             updatedAtEpochMs = clock(),
             syncState = SyncState.PENDING_UPLOAD,
-        ).also { plot ->
-            fieldWriteDao.upsertPlotWithOutbox(
-                plot = plot,
-                outbox = SyncOutboxEntity(
-                    entityType = "plot",
-                    entityId = plot.id,
-                    operation = "upsert",
-                    enqueuedAtEpochMs = plot.updatedAtEpochMs,
-                ),
-            )
-        }
+        )
+        fieldWriteDao.upsertPlotWithOutbox(
+            plot = plot,
+            outbox = SyncOutboxEntity(
+                entityType = "plot",
+                entityId = plot.id,
+                operation = "upsert",
+                enqueuedAtEpochMs = plot.updatedAtEpochMs,
+            ),
+        )
+        requestSync()
+        plot
+    }
+
+    private fun requestSync() {
+        runCatching { syncScheduler.schedule() }
     }
 
     private object SyncState {

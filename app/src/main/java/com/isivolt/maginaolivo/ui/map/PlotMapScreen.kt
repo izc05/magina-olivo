@@ -70,6 +70,9 @@ private const val PLOTS_LINE_LAYER_ID = "my-plots-line"
 private const val CATASTRO_SOURCE_ID = "catastro-candidates"
 private const val CATASTRO_FILL_LAYER_ID = "catastro-candidates-fill"
 private const val CATASTRO_LINE_LAYER_ID = "catastro-candidates-line"
+private const val CATASTRO_SELECTED_SOURCE_ID = "catastro-selected"
+private const val CATASTRO_SELECTED_FILL_LAYER_ID = "catastro-selected-fill"
+private const val CATASTRO_SELECTED_LINE_LAYER_ID = "catastro-selected-line"
 
 private const val PNOA_SOURCE_ID = "pnoa-ign"
 private const val PNOA_LAYER_ID = "pnoa-ign-raster"
@@ -128,6 +131,9 @@ fun PlotMapScreen(
     val selectedCandidates = remember(catastroCandidates, selectedReferences) {
         catastroCandidates.filter { it.cadastralReference in selectedReferences }
     }
+    val selectedGeoJson = remember(selectedCandidates) {
+        catastroFeatureCollection(selectedCandidates)
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
@@ -166,6 +172,7 @@ fun PlotMapScreen(
             loadedStyle = style
             attachPlotLayers(style, plotGeoJson)
             attachCatastroLayers(style, candidateGeoJson)
+            attachSelectedCatastroLayers(style, selectedGeoJson)
             updatePnoaLayer(style, pnoaEnabled)
             if (locationRequested && context.hasLocationPermission()) {
                 map?.let { readyMap ->
@@ -233,6 +240,12 @@ fun PlotMapScreen(
         map?.style
             ?.getSourceAs<GeoJsonSource>(CATASTRO_SOURCE_ID)
             ?.setGeoJson(candidateGeoJson)
+    }
+
+    LaunchedEffect(map, selectedGeoJson) {
+        map?.style
+            ?.getSourceAs<GeoJsonSource>(CATASTRO_SELECTED_SOURCE_ID)
+            ?.setGeoJson(selectedGeoJson)
     }
 
     LaunchedEffect(loadedStyle, pnoaEnabled) {
@@ -461,6 +474,27 @@ private fun attachCatastroLayers(style: Style, geoJson: String) {
         LineLayer(CATASTRO_LINE_LAYER_ID, CATASTRO_SOURCE_ID).withProperties(
             lineColor(Color.rgb(181, 118, 17)),
             lineWidth(2.0f),
+        ),
+    )
+}
+
+private fun attachSelectedCatastroLayers(style: Style, geoJson: String) {
+    style.getSource(CATASTRO_SELECTED_SOURCE_ID)?.let { source ->
+        (source as? GeoJsonSource)?.setGeoJson(geoJson)
+        return
+    }
+
+    style.addSource(GeoJsonSource(CATASTRO_SELECTED_SOURCE_ID, geoJson))
+    style.addLayer(
+        FillLayer(CATASTRO_SELECTED_FILL_LAYER_ID, CATASTRO_SELECTED_SOURCE_ID).withProperties(
+            fillColor(Color.rgb(68, 103, 54)),
+            fillOpacity(0.34f),
+        ),
+    )
+    style.addLayer(
+        LineLayer(CATASTRO_SELECTED_LINE_LAYER_ID, CATASTRO_SELECTED_SOURCE_ID).withProperties(
+            lineColor(Color.rgb(37, 72, 34)),
+            lineWidth(3.2f),
         ),
     )
 }

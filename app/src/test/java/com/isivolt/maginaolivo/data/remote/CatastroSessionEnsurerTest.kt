@@ -1,12 +1,12 @@
 package com.isivolt.maginaolivo.data.remote
 
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class CatastroSessionEnsurerTest {
     @Test
-    fun createsAnonymousSessionWhenMissing() = runTest {
+    fun createsAnonymousSessionWhenMissing() = runBlocking {
         val auth = FakeCatastroSessionAuth(hasSession = false)
         val ensurer = CatastroSessionEnsurer(auth)
 
@@ -16,7 +16,7 @@ class CatastroSessionEnsurerTest {
     }
 
     @Test
-    fun reusesExistingSessionWithoutCreatingAnotherUser() = runTest {
+    fun reusesExistingSessionWithoutCreatingAnotherUser() = runBlocking {
         val auth = FakeCatastroSessionAuth(hasSession = true)
         val ensurer = CatastroSessionEnsurer(auth)
 

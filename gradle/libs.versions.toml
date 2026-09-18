@@ -10,6 +10,7 @@ room = "2.8.5"
 supabase = "3.8.0"
 ktor = "3.5.2"
 maplibre = "13.6.1"
+work = "2.11.2"
 
 [libraries]
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
@@ -30,6 +31,7 @@ supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt" }
 supabase-functions = { module = "io.github.jan-tennert.supabase:functions-kt" }
 ktor-client-android = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
 maplibre-android = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre" }
+work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

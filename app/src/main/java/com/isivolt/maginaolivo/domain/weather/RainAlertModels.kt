@@ -17,4 +17,9 @@ data class RainAlertSettings(
     val municipalityCode: String = MaginaWeatherMunicipalities.default.code,
     val thresholdPercent: Int = 60,
     val horizonDays: Int = 2,
+    val rainAlertEnabled: Boolean = true,
+    val windAlertEnabled: Boolean = false,
+    val windThresholdKmh: Int = 40,
+    val frostAlertEnabled: Boolean = false,
+    val frostThresholdC: Int = 2,
 )

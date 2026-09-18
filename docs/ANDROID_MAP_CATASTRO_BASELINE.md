@@ -71,7 +71,7 @@ Nunca etiquetar un perímetro como `catastro` o `sigpac` si no ha sido obtenido 
 
 - Gate A: completado previamente (Android/Compose/Room/configuración sin secretos).
 - Gate B: CERRADO. MapLibre, ubicación con permisos Android, mapa base, PNOA IGN y render de parcelas propias desde Room implementados y validados en emulador.
-- Gate C: CERRADO extremo a extremo.
+- Gate C: funcionalmente validado hasta Catastro → verificación → Room; pendiente una última evidencia UI estricta del toque real sobre parcela MapLibre → selección → revisión.
   - consulta Catastro por BBOX implementada;
   - búsqueda por referencia 14/18/20 implementada;
   - Polygon y MultiPolygon implementados;
@@ -135,17 +135,21 @@ Resiliencia WFS:
 - no reintenta HTTP 4xx normales;
 - cada intento usa su propio timeout de 8 s.
 
-Cierre Gate C — evidencia Android real:
+Evidencia Android real validada:
 - workflow `Android Catastro Room E2E`: verde;
 - el emulador recibe `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY` desde el entorno protegido de CI;
 - Android crea/reutiliza sesión anónima Supabase;
 - consulta BBOX real a Catastro mediante `SupabaseCatastroParcelGateway`;
-- selecciona una parcela con superficie oficial;
-- vuelve a verificar la misma referencia por Catastro antes de persistir;
+- toma una parcela con superficie oficial y vuelve a verificar la misma referencia;
 - crea una finca de prueba con `LocalFieldRepository`;
 - importa la parcela en una Room real en memoria;
 - verifica en Room: referencia catastral, geometría GeoJSON, superficie en hectáreas, `boundarySource=catastro` y `syncState=pending_upload`;
+- la UI de revisión/guardado tiene prueba de instrumentación independiente y persiste en Room;
 - `connectedDebugAndroidTest` finaliza con `BUILD SUCCESSFUL`.
+
+Última evidencia pendiente para el cierre estricto de Gate C:
+- automatizar en una única prueba el toque real sobre un polígono Catastro renderizado en MapLibre y encadenar selección → revisión;
+- no se fusiona el PR mientras esa interacción no quede demostrada.
 
 Nota de seguridad:
 - usar la clave **publishable**, nunca una clave secret/service-role en Android;

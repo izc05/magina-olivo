@@ -42,6 +42,8 @@ object WeatherAlertNotifier {
     fun notify(
         context: Context,
         alert: WeatherPlanningAlert,
+        scopeId: String = "global",
+        farmName: String? = null,
     ): Boolean {
         if (!notificationsAllowed(context)) return false
 
@@ -57,8 +59,9 @@ object WeatherAlertNotifier {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        val title = titleFor(alert)
-        val body = bodyFor(alert)
+        val baseTitle = titleFor(alert)
+        val title = farmName?.takeIf { it.isNotBlank() }?.let { "$it · $baseTitle" } ?: baseTitle
+        val body = bodyFor(alert, farmName)
 
         val notification = Notification.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_weather_alert)
@@ -72,7 +75,7 @@ object WeatherAlertNotifier {
 
         return runCatching {
             context.getSystemService(NotificationManager::class.java)
-                .notify(notificationId(alert), notification)
+                .notify(notificationId(alert, scopeId), notification)
             true
         }.getOrDefault(false)
     }
@@ -101,7 +104,10 @@ object WeatherAlertNotifier {
                 }
         }
 
-    private fun bodyFor(alert: WeatherPlanningAlert): String {
+    private fun bodyFor(
+        alert: WeatherPlanningAlert,
+        farmName: String?,
+    ): String {
         val value = when (alert.kind) {
             WeatherPlanningAlertKind.RAIN ->
                 "${alert.value.toInt()}%"
@@ -120,12 +126,20 @@ object WeatherAlertNotifier {
                 "Comprueba la situación local de la finca antes de tomar decisiones."
         }
 
-        return "${alert.municipality.name}: $value para ${dateLabel(alert.date)}. $advice"
+        val place = farmName?.takeIf { it.isNotBlank() }?.let {
+            "$it · ${alert.municipality.name}"
+        } ?: alert.municipality.name
+
+        return "$place: $value para ${dateLabel(alert.date)}. $advice"
     }
 
-    private fun notificationId(alert: WeatherPlanningAlert): Int =
+    private fun notificationId(
+        alert: WeatherPlanningAlert,
+        scopeId: String,
+    ): Int =
         (
-            alert.kind.name + "|" +
+            scopeId + "|" +
+                alert.kind.name + "|" +
                 alert.municipality.code + "|" +
                 alert.date
             )

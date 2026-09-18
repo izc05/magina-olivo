@@ -1,0 +1,117 @@
+name: Main Required Gates
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: main-gates-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  mvp-core:
+    name: MVP Core Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Reject unresolved merge markers
+        shell: bash
+        run: |
+          if git grep -n -E '^(<<<<<<<|=======|>>>>>>>)' -- ':!*.lock'; then
+            echo "Unresolved merge markers found."
+            exit 1
+          fi
+
+      - name: Validate repository Agent Skills
+        shell: bash
+        run: |
+          if [ ! -d .github/skills ]; then
+            exit 0
+          fi
+
+          for dir in .github/skills/*/; do
+            [ -d "$dir" ] || continue
+            file="${dir}SKILL.md"
+            if [ ! -f "$file" ]; then
+              echo "Missing $file"
+              exit 1
+            fi
+            head -n 1 "$file" | grep -qx -- '---'
+            grep -q '^name:' "$file"
+            grep -q '^description:' "$file"
+          done
+
+      - name: Run Android unit tests when Android project is present
+        if: ${{ hashFiles('gradlew') != '' }}
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew test --no-daemon
+
+      - name: Setup Node when legacy Node workspace is present
+        if: ${{ hashFiles('package-lock.json') != '' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Run legacy Node tests when workspace is present
+        if: ${{ hashFiles('package-lock.json') != '' }}
+        shell: bash
+        run: |
+          npm ci --no-audit --no-fund
+          npm test
+
+  technical-spike:
+    name: Technical Spike Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate GitHub workflow files
+        shell: bash
+        run: |
+          find .github/workflows -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) -print
+          test -s .github/workflows/main-required-gates.yml
+
+      - name: Check repository for committed sensitive key material
+        shell: bash
+        run: |
+          if git grep -n -E '(-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----|sk_live_[A-Za-z0-9]{16,}|SUPABASE_SERVICE_ROLE_KEY[[:space:]]*=[[:space:]]*[^$])' -- ':!*.lock'; then
+            echo "Potential sensitive key material found."
+            exit 1
+          fi
+
+      - name: Build Android when Android project is present
+        if: ${{ hashFiles('gradlew') != '' }}
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Setup Node when legacy Node workspace is present
+        if: ${{ hashFiles('package-lock.json') != '' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Typecheck legacy Node workspace when supported
+        if: ${{ hashFiles('package-lock.json') != '' }}
+        shell: bash
+        run: |
+          npm ci --no-audit --no-fund
+          if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.typecheck ? 0 : 1)"; then
+            npm run typecheck
+          fi

@@ -99,7 +99,7 @@ private const val OFFLINE_STYLE_JSON = """
 fun PlotMapScreen(
     plots: List<PlotEntity>,
     catastroGateway: CatastroParcelGateway? = null,
-    onCatastroReferenceSelected: ((String) -> Unit)? = null,
+    onCatastroReferencesSelected: ((List<String>) -> Unit)? = null,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -116,7 +116,7 @@ fun PlotMapScreen(
     var locationRequested by remember { mutableStateOf(false) }
 
     var catastroCandidates by remember { mutableStateOf<List<CatastroParcel>>(emptyList()) }
-    var selectedCandidate by remember { mutableStateOf<CatastroParcel?>(null) }
+    var selectedReferences by remember { mutableStateOf<Set<String>>(emptySet()) }
     var catastroLoading by remember { mutableStateOf(false) }
     var catastroMessage by remember { mutableStateOf<String?>(null) }
 
@@ -124,6 +124,10 @@ fun PlotMapScreen(
         catastroFeatureCollection(catastroCandidates)
     }
     val latestCandidates = rememberUpdatedState(catastroCandidates)
+    val latestSelectedReferences = rememberUpdatedState(selectedReferences)
+    val selectedCandidates = remember(catastroCandidates, selectedReferences) {
+        catastroCandidates.filter { it.cadastralReference in selectedReferences }
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
@@ -192,7 +196,13 @@ fun PlotMapScreen(
                     parcelContains(it, point.longitude, point.latitude)
                 }
                 if (candidate != null) {
-                    selectedCandidate = candidate
+                    val reference = candidate.cadastralReference
+                    val currentSelection = latestSelectedReferences.value
+                    selectedReferences = if (reference in currentSelection) {
+                        currentSelection - reference
+                    } else {
+                        currentSelection + reference
+                    }
                     catastroMessage = null
                     true
                 } else {
@@ -319,7 +329,7 @@ fun PlotMapScreen(
 
                     catastroLoading = true
                     catastroMessage = null
-                    selectedCandidate = null
+                    selectedReferences = emptySet()
                     scope.launch {
                         gateway.findInViewport(bbox)
                             .onSuccess { parcels ->
@@ -341,7 +351,7 @@ fun PlotMapScreen(
             }
         }
 
-        selectedCandidate?.let { parcel ->
+        if (selectedCandidates.isNotEmpty()) {
             Card(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -353,27 +363,49 @@ fun PlotMapScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
-                        text = "Parcela ${parcel.cadastralReference}",
+                        text = if (selectedCandidates.size == 1) {
+                            "1 parcela seleccionada"
+                        } else {
+                            "${selectedCandidates.size} parcelas seleccionadas"
+                        },
                         style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
                     )
-                    Text(
-                        parcel.areaM2?.let {
-                            "Superficie oficial: ${String.format("%.4f", it / 10_000.0)} ha"
-                        } ?: "Superficie oficial no disponible",
-                    )
+                    selectedCandidates.take(3).forEach { parcel ->
+                        Text(
+                            parcel.areaM2?.let { area ->
+                                "${parcel.cadastralReference} · ${String.format("%.4f", area / 10_000.0)} ha"
+                            } ?: parcel.cadastralReference,
+                        )
+                    }
+                    if (selectedCandidates.size > 3) {
+                        Text("+ ${selectedCandidates.size - 3} parcelas más")
+                    }
                     Button(
-                        enabled = onCatastroReferenceSelected != null,
+                        enabled = onCatastroReferencesSelected != null,
                         onClick = {
-                            onCatastroReferenceSelected?.invoke(parcel.cadastralReference)
+                            onCatastroReferencesSelected?.invoke(
+                                selectedCandidates.map { it.cadastralReference },
+                            )
                         },
                     ) {
-                        Text("Usar esta parcela")
+                        Text(
+                            if (selectedCandidates.size == 1) {
+                                "Añadir parcela"
+                            } else {
+                                "Añadir selección"
+                            },
+                        )
+                    }
+                    Button(
+                        onClick = { selectedReferences = emptySet() },
+                    ) {
+                        Text("Limpiar selección")
                     }
                 }
             }
         }
 
-        if (selectedCandidate == null) {
+        if (selectedCandidates.isEmpty()) {
             catastroMessage?.let { message ->
                 Card(
                     modifier = Modifier

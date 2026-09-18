@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -54,24 +56,28 @@ fun RegisterScreen(
 ) {
     var selected by remember { mutableStateOf(RegisterKind.ACTIVITY) }
 
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(innerPadding)
-            .padding(horizontal = 20.dp, vertical = 24.dp),
+            .padding(innerPadding),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(
-            text = "Registrar",
-            style = MaterialTheme.typography.headlineLarge,
-        )
-        Text(
-            text = "Elige qué quieres añadir. La estructura queda preparada para conectarse después con campaña, finca y parcela sin duplicar lógica.",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        item {
+            Text(
+                text = "Registrar",
+                style = MaterialTheme.typography.headlineLarge,
+            )
+        }
+        item {
+            Text(
+                text = "Elige qué quieres añadir. La estructura queda preparada para conectarse después con campaña, finca y parcela sin duplicar lógica.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
-        RegisterKind.entries.forEach { kind ->
+        items(RegisterKind.entries) { kind ->
             RegisterKindCard(
                 kind = kind,
                 selected = selected == kind,
@@ -79,30 +85,32 @@ fun RegisterScreen(
             )
         }
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-            ),
-        ) {
-            Column(
-                modifier = Modifier.padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(22.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                ),
             ) {
-                Text(
-                    text = selected.title,
-                    style = MaterialTheme.typography.titleLarge,
-                )
-                Text(
-                    text = "Formulario preparado para integración funcional.",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Text(
-                    text = "No se guarda ningún dato desde esta pantalla todavía.",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                )
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = selected.title,
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                    Text(
+                        text = "Formulario preparado para integración funcional.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = "No se guarda ningún dato desde esta pantalla todavía.",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
         }
     }

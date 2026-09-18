@@ -54,7 +54,7 @@ fun MaginaOlivoApp() {
         SupabaseProvider.client?.let(::SupabaseCatastroParcelGateway)
     }
 
-    MaterialTheme {
+    com.isivolt.maginaolivo.ui.theme.MaginaOlivoTheme {
         if (showAddParcel) {
             key(pendingCatastroReferences.firstOrNull()) {
                 AddParcelByReferenceScreen(

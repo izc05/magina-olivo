@@ -38,7 +38,7 @@ import com.isivolt.maginaolivo.data.repository.WeatherLoadResult
 import com.isivolt.maginaolivo.data.repository.WeatherRepository
 import com.isivolt.maginaolivo.data.repository.WeatherRadarRepository
 import com.isivolt.maginaolivo.domain.weather.MaginaWeatherMunicipalities
-import com.isivolt.maginaolivo.domain.weather.RainAlertEngine
+import com.isivolt.maginaolivo.domain.weather.WeatherPlanningAlertEngine
 import com.isivolt.maginaolivo.domain.weather.WeatherDay
 import com.isivolt.maginaolivo.domain.weather.WeatherFreshnessStatus
 import java.time.LocalDate
@@ -268,7 +268,7 @@ fun WeatherScreen(
                         val alertSettings = alertPreferences.read().copy(
                             municipalityCode = selectedCode,
                         )
-                        val rainAlerts = RainAlertEngine.evaluate(
+                        val planningAlerts = WeatherPlanningAlertEngine.evaluate(
                             forecast = forecast,
                             settings = alertSettings,
                         )
@@ -283,19 +283,19 @@ fun WeatherScreen(
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 Text(
-                                    text = "Avisos de lluvia",
+                                    text = "Avisos meteorológicos",
                                     style = MaterialTheme.typography.titleMedium,
                                 )
                                 Text(
-                                    text = if (rainAlerts.isEmpty()) {
-                                        "Sin avisos con el umbral actual (${alertSettings.thresholdPercent}%)."
+                                    text = if (planningAlerts.isEmpty()) {
+                                        "Sin avisos activos con la configuración actual."
                                     } else {
-                                        "${rainAlerts.size} aviso(s) dentro de los próximos ${alertSettings.horizonDays} días."
+                                        "${planningAlerts.size} aviso(s) dentro de los próximos ${alertSettings.horizonDays} días."
                                     },
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
                                 Button(onClick = { showAlerts = true }) {
-                                    Text("Configurar avisos")
+                                    Text("Configurar avisos meteorológicos")
                                 }
                             }
                         }

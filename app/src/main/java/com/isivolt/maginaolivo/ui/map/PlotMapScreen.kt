@@ -104,6 +104,11 @@ fun PlotMapScreen(
     catastroGateway: CatastroParcelGateway? = null,
     onCatastroReferencesSelected: ((List<String>) -> Unit)? = null,
     onBack: () -> Unit,
+    initialLatitude: Double = 37.75,
+    initialLongitude: Double = -3.45,
+    initialZoom: Double = 10.5,
+    forceOfflineStyle: Boolean = false,
+    onMapReady: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
@@ -194,8 +199,8 @@ fun PlotMapScreen(
             activeMap = readyMap
             map = readyMap
             readyMap.cameraPosition = CameraPosition.Builder()
-                .target(LatLng(37.75, -3.45))
-                .zoom(10.5)
+                .target(LatLng(initialLatitude, initialLongitude))
+                .zoom(initialZoom)
                 .build()
 
             val listener = MapLibreMap.OnMapClickListener { point ->
@@ -219,7 +224,21 @@ fun PlotMapScreen(
             clickListener = listener
             readyMap.addOnMapClickListener(listener)
 
-            readyMap.setStyle(Style.Builder().fromUri(ONLINE_STYLE_URI), ::configureStyle)
+            if (forceOfflineStyle) {
+                readyMap.setStyle(
+                    Style.Builder().fromJson(OFFLINE_STYLE_JSON),
+                ) { style ->
+                    configureStyle(style)
+                    onMapReady?.invoke()
+                }
+            } else {
+                readyMap.setStyle(
+                    Style.Builder().fromUri(ONLINE_STYLE_URI),
+                ) { style ->
+                    configureStyle(style)
+                    onMapReady?.invoke()
+                }
+            }
         }
 
         onDispose {
@@ -257,7 +276,9 @@ fun PlotMapScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
             factory = { mapView },
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag("plot-map-view"),
         )
 
         Button(

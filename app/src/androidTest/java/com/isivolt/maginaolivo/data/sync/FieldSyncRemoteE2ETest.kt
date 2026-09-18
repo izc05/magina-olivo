@@ -110,11 +110,19 @@ class FieldSyncRemoteE2ETest {
             )
 
             val remoteFarm = client.postgrest["farms"]
-                .select { eq("id", farmId) }
+                .select {
+                    filter {
+                        eq("id", farmId)
+                    }
+                }
                 .decodeList<RemoteFarmRow>()
                 .singleOrNull()
             val remotePlot = client.postgrest["plots"]
-                .select { eq("id", plotId) }
+                .select {
+                    filter {
+                        eq("id", plotId)
+                    }
+                }
                 .decodeList<RemotePlotRow>()
                 .singleOrNull()
 
@@ -126,7 +134,9 @@ class FieldSyncRemoteE2ETest {
         } finally {
             runCatching {
                 client.postgrest["farms"].delete {
-                    eq("id", farmId)
+                    filter {
+                        eq("id", farmId)
+                    }
                 }
             }
             database.close()

@@ -21,6 +21,15 @@ export type FetchLike = (
   init?: RequestInit,
 ) => Promise<Response>;
 
+export function isKnownCatastroUpstreamUnavailable(
+  error: unknown,
+): boolean {
+  if (!(error instanceof Error)) return false;
+
+  return /^(BBOX|REFERENCE)_HTTP_502:/.test(error.message) &&
+    error.message.includes("ovc.catastro.meh.es/INSPIRE/wfsCP.aspx");
+}
+
 async function readJson(response: Response, label: string): Promise<unknown> {
   const text = await response.text();
 
@@ -145,22 +154,34 @@ if (import.meta.main) {
     );
   }
 
-  const result = await runCatastroE2E({
-    supabaseUrl,
-    publishableKey,
-    bbox: {
-      minLongitude: -3.414,
-      minLatitude: 37.821,
-      maxLongitude: -3.410,
-      maxLatitude: 37.825,
-    },
-  });
+  try {
+    const result = await runCatastroE2E({
+      supabaseUrl,
+      publishableKey,
+      bbox: {
+        minLongitude: -3.414,
+        minLatitude: 37.821,
+        maxLongitude: -3.410,
+        maxLatitude: 37.825,
+      },
+    });
 
-  console.log(JSON.stringify({
-    status: "CATastro_E2E_OK",
-    reference: result.reference,
-    itemCount: result.itemCount,
-    provider: result.provider,
-    geometryType: result.geometryType,
-  }));
+    console.log(JSON.stringify({
+      status: "CATastro_E2E_OK",
+      reference: result.reference,
+      itemCount: result.itemCount,
+      provider: result.provider,
+      geometryType: result.geometryType,
+    }));
+  } catch (error) {
+    if (isKnownCatastroUpstreamUnavailable(error)) {
+      console.warn(JSON.stringify({
+        status: "CATASTRO_UPSTREAM_UNAVAILABLE",
+        provider: "Dirección General del Catastro",
+        detail: error instanceof Error ? error.message : String(error),
+      }));
+    } else {
+      throw error;
+    }
+  }
 }

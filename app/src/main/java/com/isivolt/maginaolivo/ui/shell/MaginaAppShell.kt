@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -18,12 +17,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.isivolt.maginaolivo.ui.MaginaOlivoApp
+import com.isivolt.maginaolivo.ui.calendar.CalendarScreen
+import com.isivolt.maginaolivo.ui.profile.ProfileScreen
+import com.isivolt.maginaolivo.ui.register.RegisterScreen
 
 enum class MainDestination(
     val label: String,
@@ -74,21 +73,9 @@ fun MaginaAppShell() {
                     MaginaOlivoApp()
                 }
             }
-            MainDestination.REGISTER -> PlannedDestinationScreen(
-                title = "Registrar",
-                body = "Acceso rápido para añadir una actuación, entrega, gasto, documento o nueva tarea de campaña.",
-                innerPadding = innerPadding,
-            )
-            MainDestination.CALENDAR -> PlannedDestinationScreen(
-                title = "Calendario",
-                body = "Vista temporal de trabajos, recordatorios, campaña y próximos avisos del olivar.",
-                innerPadding = innerPadding,
-            )
-            MainDestination.PROFILE -> PlannedDestinationScreen(
-                title = "Perfil",
-                body = "Preferencias de la aplicación, cuenta, datos y configuración del agricultor.",
-                innerPadding = innerPadding,
-            )
+            MainDestination.REGISTER -> RegisterScreen(innerPadding)
+            MainDestination.CALENDAR -> CalendarScreen(innerPadding)
+            MainDestination.PROFILE -> ProfileScreen(innerPadding)
         }
     }
 }
@@ -156,42 +143,6 @@ private fun ShellCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        }
-    }
-}
-
-@Composable
-private fun PlannedDestinationScreen(
-    title: String,
-    body: String,
-    innerPadding: PaddingValues,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(innerPadding)
-            .padding(28.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineLarge,
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            text = body,
-            modifier = Modifier.padding(top = 12.dp),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        Button(
-            onClick = {},
-            enabled = false,
-            modifier = Modifier.padding(top = 24.dp),
-        ) {
-            Text("Preparado para integración")
         }
     }
 }

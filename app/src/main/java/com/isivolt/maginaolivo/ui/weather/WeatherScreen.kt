@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.isivolt.maginaolivo.data.repository.WeatherLoadResult
 import com.isivolt.maginaolivo.data.repository.WeatherRepository
+import com.isivolt.maginaolivo.data.repository.WeatherRadarRepository
 import com.isivolt.maginaolivo.domain.weather.MaginaWeatherMunicipalities
 import com.isivolt.maginaolivo.domain.weather.WeatherDay
 import com.isivolt.maginaolivo.domain.weather.WeatherFreshnessStatus
@@ -51,8 +52,18 @@ private sealed interface WeatherUiState {
 @Composable
 fun WeatherScreen(
     repository: WeatherRepository,
+    radarRepository: WeatherRadarRepository,
     onBack: () -> Unit,
 ) {
+    var showRadar by rememberSaveable { mutableStateOf(false) }
+
+    if (showRadar) {
+        WeatherRadarScreen(
+            repository = radarRepository,
+            onBack = { showRadar = false },
+        )
+        return
+    }
     var selectedCode by rememberSaveable {
         mutableStateOf(MaginaWeatherMunicipalities.default.code)
     }
@@ -231,6 +242,17 @@ fun WeatherScreen(
                                     )
                                 }
                             }
+                        }
+                    }
+
+                    item {
+                        Button(
+                            onClick = { showRadar = true },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp),
+                        ) {
+                            Text("Abrir radar de lluvia")
                         }
                     }
 

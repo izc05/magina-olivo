@@ -3,13 +3,13 @@ package com.isivolt.maginaolivo.ui.catastro
 import android.content.Context
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.fetchSemanticsNodes
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
+import com.isivolt.maginaolivo.data.local.FarmEntity
 import com.isivolt.maginaolivo.data.local.MaginaOlivoDatabase
 import com.isivolt.maginaolivo.data.repository.LocalFieldRepository
 import com.isivolt.maginaolivo.domain.catastro.CatastroBbox
@@ -31,8 +31,7 @@ class AddParcelByReferenceScreenTest {
 
     private lateinit var database: MaginaOlivoDatabase
     private lateinit var repository: LocalFieldRepository
-    private lateinit var farmId: String
-    private lateinit var farmName: String
+    private lateinit var farm: FarmEntity
 
     private val parcel = CatastroParcel(
         featureId = "23013A00700198",
@@ -88,11 +87,9 @@ class AddParcelByReferenceScreenTest {
             idFactory = { ids.next() },
         )
 
-        val farm = runBlocking {
+        farm = runBlocking {
             repository.createFarm("Finca UI Catastro")
         }
-        farmId = farm.id
-        farmName = farm.name
     }
 
     @After
@@ -102,11 +99,6 @@ class AddParcelByReferenceScreenTest {
 
     @Test
     fun parcelCanBeReviewedAndSavedFromCatastroScreen() {
-        val farm = runBlocking {
-            repository.observeFarms()
-                .let { flow -> kotlinx.coroutines.flow.first(flow) }
-                .first()
-        }
         var saved = false
 
         composeRule.setContent {
@@ -144,8 +136,7 @@ class AddParcelByReferenceScreenTest {
         assertNotNull(stored)
         stored!!
         assertEquals("plot-ui-e2e", stored.id)
-        assertEquals(farmId, stored.farmId)
-        assertEquals(farmName, farm.name)
+        assertEquals(farm.id, stored.farmId)
         assertEquals(parcel.cadastralReference, stored.cadastralReference)
         assertEquals(parcel.geometryGeoJson, stored.boundaryGeoJson)
         assertEquals("catastro", stored.boundarySource)

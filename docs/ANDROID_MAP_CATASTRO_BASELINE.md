@@ -67,6 +67,26 @@ La geometría local permite seguir mostrando la parcela cuando no existe conexi�
 
 Nunca etiquetar un perímetro como `catastro` o `sigpac` si no ha sido obtenido y verificado contra la fuente oficial.
 
+## Estado verificado — 2026-09-18
+
+- Gate A: completado previamente (Android/Compose/Room/configuración sin secretos).
+- Gate B: MapLibre, ubicación con permisos Android, mapa base, PNOA IGN y render de parcelas propias desde Room implementados.
+- Gate C:
+  - consulta Catastro por BBOX implementada;
+  - búsqueda por referencia 14/18/20 implementada;
+  - Polygon y MultiPolygon implementados;
+  - selección táctil y multiselección implementadas;
+  - selección resaltada sobre mapa;
+  - cola de importación desde mapa implementada;
+  - cada parcela se vuelve a consultar por referencia antes de guardarse;
+  - deduplicación local por referencia catastral;
+  - límite oficial WFS de BBOX de 1 km² aplicado en Android y servidor.
+- Adaptador Catastro: WFS 2.0 usando ETRS89 / UTM 30N (EPSG:25830), convertido a GeoJSON WGS84 para MapLibre.
+- PNOA: WMTS oficial del IGN con `OI.OrthoimageCoverage` y `GoogleMapsCompatible`.
+- CI: Android CI + Catastro Edge CI. El Edge Function se valida con `deno check`.
+
+Pendiente antes de dar Gate C por cerrado: CI Android verde sobre el último HEAD y prueba en dispositivo/emulador del recorrido completo mapa → Catastro → selección → revisión → Room.
+
 ## Próximos gates
 
 ### Gate A — fundación Android

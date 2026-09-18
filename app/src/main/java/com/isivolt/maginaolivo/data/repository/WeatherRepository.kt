@@ -4,6 +4,7 @@ import android.content.Context
 import com.isivolt.maginaolivo.domain.weather.WeatherDeliveryMode
 import com.isivolt.maginaolivo.domain.weather.WeatherForecast
 import com.isivolt.maginaolivo.domain.weather.WeatherGateway
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 

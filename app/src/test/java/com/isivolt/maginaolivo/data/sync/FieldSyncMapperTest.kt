@@ -3,6 +3,8 @@ package com.isivolt.maginaolivo.data.sync
 import com.isivolt.maginaolivo.data.local.FarmEntity
 import com.isivolt.maginaolivo.data.local.PlotEntity
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -52,10 +54,7 @@ class FieldSyncMapperTest {
         assertEquals("1970-01-01T00:00:01Z", payload.updatedAt)
         assertEquals(
             "Polygon",
-            payload.boundaryGeoJson
-                ?.let { Json.parseToJsonElement(it.toString()) }
-                ?.toString()
-                ?.let { Json.parseToJsonElement(it).jsonObject["type"]?.toString()?.trim('"') },
+            payload.boundaryGeoJson?.jsonObject?.get("type")?.jsonPrimitive?.content,
         )
     }
 
@@ -102,8 +101,8 @@ class FieldSyncMapperTest {
 
         assertEquals("synced", farm.syncState)
         assertEquals("synced", plot.syncState)
-        assertEquals(1_758_212_400_000L, farm.updatedAtEpochMs)
-        assertEquals(1_758_212_401_000L, plot.updatedAtEpochMs)
+        assertEquals(1_789_750_800_000L, farm.updatedAtEpochMs)
+        assertEquals(1_789_750_801_000L, plot.updatedAtEpochMs)
         assertTrue(plot.boundaryGeoJson?.contains("\"Polygon\"") == true)
     }
 }

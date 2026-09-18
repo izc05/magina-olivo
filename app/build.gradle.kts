@@ -72,4 +72,6 @@ dependencies {
     implementation(libs.ktor.client.android)
 
     implementation(libs.maplibre.android)
+
+    testImplementation("junit:junit:4.13.2")
 }

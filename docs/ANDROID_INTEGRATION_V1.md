@@ -29,6 +29,10 @@ Weather is prepared through Draft PR #191:
 
 Do not merge that PR only to make the branch look complete. Merge it when the source feature is stable enough and the integration conflicts have been explicitly resolved.
 
+The current semantic reconciliation plan is documented in:
+
+- `docs/ANDROID_V1_CONFLICT_MATRIX.md`
+
 ## Known shared integration points
 
 The main files that require deliberate reconciliation between Sync and Weather are:
@@ -36,9 +40,9 @@ The main files that require deliberate reconciliation between Sync and Weather a
 - `app/src/main/java/com/isivolt/maginaolivo/MaginaOlivoApplication.kt`;
 - `app/src/main/java/com/isivolt/maginaolivo/ui/MaginaOlivoApp.kt`;
 - `app/src/main/AndroidManifest.xml`;
-- `app/build.gradle.kts`;
-- `gradle/libs.versions.toml`;
 - `supabase/config.toml`.
+
+The latest comparison found `app/build.gradle.kts` and `gradle/libs.versions.toml` equivalent between the two source branches. Recompare them before the final merge because either source branch may still move.
 
 These files must be merged semantically. Do not resolve conflicts by accepting one side wholesale.
 

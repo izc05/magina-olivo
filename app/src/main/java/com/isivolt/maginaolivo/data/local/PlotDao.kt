@@ -7,6 +7,9 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PlotDao {
+    @Query("SELECT * FROM plots ORDER BY name COLLATE NOCASE")
+    fun observeAll(): Flow<List<PlotEntity>>
+
     @Query("SELECT * FROM plots WHERE farmId = :farmId ORDER BY name COLLATE NOCASE")
     fun observeByFarm(farmId: String): Flow<List<PlotEntity>>
 

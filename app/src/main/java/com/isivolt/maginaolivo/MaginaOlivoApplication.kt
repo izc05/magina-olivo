@@ -3,6 +3,7 @@ package com.isivolt.maginaolivo
 import android.app.Application
 import androidx.room.Room
 import com.isivolt.maginaolivo.data.local.MaginaOlivoDatabase
+import com.isivolt.maginaolivo.data.notification.WeatherAlertNotifier
 import com.isivolt.maginaolivo.data.remote.SupabaseProvider
 import com.isivolt.maginaolivo.data.remote.SupabaseWeatherGateway
 import com.isivolt.maginaolivo.data.remote.SupabaseWeatherRadarGateway
@@ -10,12 +11,15 @@ import com.isivolt.maginaolivo.data.repository.LocalFieldRepository
 import com.isivolt.maginaolivo.data.repository.SharedPreferencesWeatherForecastCache
 import com.isivolt.maginaolivo.data.repository.WeatherRepository
 import com.isivolt.maginaolivo.data.repository.WeatherRadarRepository
+import com.isivolt.maginaolivo.data.worker.WeatherRainAlertScheduler
 import org.maplibre.android.MapLibre
 
 class MaginaOlivoApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         MapLibre.getInstance(this)
+        WeatherAlertNotifier.createChannel(this)
+        WeatherRainAlertScheduler.ensureScheduled(this)
     }
 
     val database: MaginaOlivoDatabase by lazy {

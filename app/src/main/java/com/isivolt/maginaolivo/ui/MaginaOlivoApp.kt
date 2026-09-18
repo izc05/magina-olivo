@@ -30,6 +30,7 @@ import com.isivolt.maginaolivo.data.remote.SupabaseCatastroParcelGateway
 import com.isivolt.maginaolivo.data.remote.SupabaseProvider
 import com.isivolt.maginaolivo.ui.catastro.AddParcelByReferenceScreen
 import com.isivolt.maginaolivo.ui.map.PlotMapScreen
+import com.isivolt.maginaolivo.ui.weather.WeatherScreen
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,6 +45,7 @@ fun MaginaOlivoApp() {
     val plots by plotsFlow.collectAsState(initial = emptyList())
 
     var showMap by rememberSaveable { mutableStateOf(false) }
+    var showWeather by rememberSaveable { mutableStateOf(false) }
     var showAddParcel by rememberSaveable { mutableStateOf(false) }
     var pendingCatastroReferences by remember { mutableStateOf<List<String>>(emptyList()) }
     var showCreateFarm by rememberSaveable { mutableStateOf(false) }
@@ -55,7 +57,12 @@ fun MaginaOlivoApp() {
     }
 
     MaterialTheme {
-        if (showAddParcel) {
+        if (showWeather) {
+            WeatherScreen(
+                repository = application.weatherRepository,
+                onBack = { showWeather = false },
+            )
+        } else if (showAddParcel) {
             key(pendingCatastroReferences.firstOrNull()) {
                 AddParcelByReferenceScreen(
                     farms = farms,
@@ -140,6 +147,10 @@ fun MaginaOlivoApp() {
 
                     Button(onClick = { showCreateFarm = true }) {
                         Text("Crear finca")
+                    }
+
+                    Button(onClick = { showWeather = true }) {
+                        Text("Tiempo")
                     }
 
                     Button(onClick = { showMap = true }) {

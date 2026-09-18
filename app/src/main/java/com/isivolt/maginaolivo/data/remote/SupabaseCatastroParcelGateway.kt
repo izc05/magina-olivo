@@ -15,11 +15,14 @@ import kotlinx.serialization.json.put
 
 class SupabaseCatastroParcelGateway(
     private val client: SupabaseClient,
+    private val sessionEnsurer: CatastroSessionEnsurer =
+        CatastroSessionEnsurer(SupabaseCatastroSessionAuth(client)),
 ) : CatastroParcelGateway {
 
     override suspend fun findByReference(
         reference: NormalizedCadastralReference,
     ): Result<CatastroParcel> = runCatching {
+        sessionEnsurer.ensureSession()
         val response = client.functions.invoke(
             function = "catastro-map",
             body = buildJsonObject {
@@ -37,6 +40,7 @@ class SupabaseCatastroParcelGateway(
         bbox: CatastroBbox,
     ): Result<List<CatastroParcel>> = runCatching {
         bbox.validationError()?.let { error(it) }
+        sessionEnsurer.ensureSession()
 
         val response = client.functions.invoke(
             function = "catastro-map",

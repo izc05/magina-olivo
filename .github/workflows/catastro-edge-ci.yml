@@ -32,3 +32,6 @@ jobs:
 
       - name: Type-check Catastro Edge Function
         run: deno check supabase/functions/catastro-map/index.ts
+
+      - name: Catastro adapter tests
+        run: deno test --allow-read supabase/functions/catastro-map/index_test.ts

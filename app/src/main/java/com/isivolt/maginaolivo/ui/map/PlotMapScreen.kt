@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -22,6 +24,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +35,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.isivolt.maginaolivo.data.local.PlotEntity
+import com.isivolt.maginaolivo.domain.catastro.CatastroBbox
+import com.isivolt.maginaolivo.domain.catastro.CatastroParcel
+import com.isivolt.maginaolivo.domain.catastro.CatastroParcelGateway
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 import org.maplibre.android.camera.CameraPosition
@@ -59,6 +67,10 @@ private const val PLOTS_SOURCE_ID = "my-plots"
 private const val PLOTS_FILL_LAYER_ID = "my-plots-fill"
 private const val PLOTS_LINE_LAYER_ID = "my-plots-line"
 
+private const val CATASTRO_SOURCE_ID = "catastro-candidates"
+private const val CATASTRO_FILL_LAYER_ID = "catastro-candidates-fill"
+private const val CATASTRO_LINE_LAYER_ID = "catastro-candidates-line"
+
 private const val PNOA_SOURCE_ID = "pnoa-ign"
 private const val PNOA_LAYER_ID = "pnoa-ign-raster"
 private const val PNOA_WMTS_TILE_URL =
@@ -86,19 +98,32 @@ private const val OFFLINE_STYLE_JSON = """
 @Composable
 fun PlotMapScreen(
     plots: List<PlotEntity>,
+    catastroGateway: CatastroParcelGateway? = null,
+    onCatastroReferenceSelected: ((String) -> Unit)? = null,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
-    val geoJson = remember(plots) { plotsFeatureCollection(plots) }
+    val plotGeoJson = remember(plots) { plotsFeatureCollection(plots) }
     val mapView = remember {
         MapView(context).also { it.onCreate(null) }
     }
+    val scope = rememberCoroutineScope()
 
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
     var loadedStyle by remember { mutableStateOf<Style?>(null) }
     var pnoaEnabled by remember { mutableStateOf(false) }
     var locationRequested by remember { mutableStateOf(false) }
+
+    var catastroCandidates by remember { mutableStateOf<List<CatastroParcel>>(emptyList()) }
+    var selectedCandidate by remember { mutableStateOf<CatastroParcel?>(null) }
+    var catastroLoading by remember { mutableStateOf(false) }
+    var catastroMessage by remember { mutableStateOf<String?>(null) }
+
+    val candidateGeoJson = remember(catastroCandidates) {
+        catastroFeatureCollection(catastroCandidates)
+    }
+    val latestCandidates = rememberUpdatedState(catastroCandidates)
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
@@ -130,10 +155,13 @@ fun PlotMapScreen(
 
     DisposableEffect(mapView) {
         var fallbackLoaded = false
+        var activeMap: MapLibreMap? = null
+        var clickListener: MapLibreMap.OnMapClickListener? = null
 
         fun configureStyle(style: Style) {
             loadedStyle = style
-            attachPlotLayers(style, geoJson)
+            attachPlotLayers(style, plotGeoJson)
+            attachCatastroLayers(style, candidateGeoJson)
             updatePnoaLayer(style, pnoaEnabled)
             if (locationRequested && context.hasLocationPermission()) {
                 map?.let { readyMap ->
@@ -152,23 +180,49 @@ fun PlotMapScreen(
 
         mapView.addOnDidFailLoadingMapListener(failedListener)
         mapView.getMapAsync { readyMap ->
+            activeMap = readyMap
             map = readyMap
             readyMap.cameraPosition = CameraPosition.Builder()
                 .target(LatLng(37.75, -3.45))
                 .zoom(10.5)
                 .build()
+
+            val listener = MapLibreMap.OnMapClickListener { point ->
+                val candidate = latestCandidates.value.firstOrNull {
+                    parcelContains(it, point.longitude, point.latitude)
+                }
+                if (candidate != null) {
+                    selectedCandidate = candidate
+                    catastroMessage = null
+                    true
+                } else {
+                    false
+                }
+            }
+            clickListener = listener
+            readyMap.addOnMapClickListener(listener)
+
             readyMap.setStyle(Style.Builder().fromUri(ONLINE_STYLE_URI), ::configureStyle)
         }
 
         onDispose {
+            clickListener?.let { listener ->
+                activeMap?.removeOnMapClickListener(listener)
+            }
             mapView.removeOnDidFailLoadingMapListener(failedListener)
         }
     }
 
-    LaunchedEffect(map, geoJson) {
+    LaunchedEffect(map, plotGeoJson) {
         map?.style
             ?.getSourceAs<GeoJsonSource>(PLOTS_SOURCE_ID)
-            ?.setGeoJson(geoJson)
+            ?.setGeoJson(plotGeoJson)
+    }
+
+    LaunchedEffect(map, candidateGeoJson) {
+        map?.style
+            ?.getSourceAs<GeoJsonSource>(CATASTRO_SOURCE_ID)
+            ?.setGeoJson(candidateGeoJson)
     }
 
     LaunchedEffect(loadedStyle, pnoaEnabled) {
@@ -226,6 +280,113 @@ fun PlotMapScreen(
             ) {
                 Text(if (pnoaEnabled) "Mapa" else "PNOA")
             }
+
+            Button(
+                enabled = !catastroLoading,
+                onClick = {
+                    val readyMap = map
+                    val gateway = catastroGateway
+
+                    if (readyMap == null) {
+                        catastroMessage = "El mapa todavía se está preparando."
+                        return@Button
+                    }
+                    if (gateway == null) {
+                        catastroMessage = "Catastro necesita el backend de Mágina Olivo."
+                        return@Button
+                    }
+
+                    val bounds = readyMap.projection.visibleRegion.latLngBounds
+                    val bbox = CatastroBbox(
+                        minLongitude = bounds.longitudeWest,
+                        minLatitude = bounds.latitudeSouth,
+                        maxLongitude = bounds.longitudeEast,
+                        maxLatitude = bounds.latitudeNorth,
+                    )
+
+                    val validationError = bbox.validationError()
+                    if (validationError != null) {
+                        catastroMessage = if (
+                            validationError == "BBOX_TOO_WIDE" ||
+                            validationError == "BBOX_TOO_TALL"
+                        ) {
+                            "Acércate más para consultar las parcelas catastrales."
+                        } else {
+                            "Este encuadre no se puede consultar en Catastro."
+                        }
+                        return@Button
+                    }
+
+                    catastroLoading = true
+                    catastroMessage = null
+                    selectedCandidate = null
+                    scope.launch {
+                        gateway.findInViewport(bbox)
+                            .onSuccess { parcels ->
+                                catastroCandidates = parcels
+                                catastroMessage = if (parcels.isEmpty()) {
+                                    "No se han encontrado parcelas en este encuadre."
+                                } else {
+                                    "Toca una parcela catastral para seleccionarla."
+                                }
+                            }
+                            .onFailure {
+                                catastroMessage = "No se ha podido consultar Catastro."
+                            }
+                        catastroLoading = false
+                    }
+                },
+            ) {
+                Text(if (catastroLoading) "Consultando…" else "Catastro")
+            }
+        }
+
+        selectedCandidate?.let { parcel ->
+            Card(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = "Parcela ${parcel.cadastralReference}",
+                        style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        parcel.areaM2?.let {
+                            "Superficie oficial: ${String.format("%.4f", it / 10_000.0)} ha"
+                        } ?: "Superficie oficial no disponible",
+                    )
+                    Button(
+                        enabled = onCatastroReferenceSelected != null,
+                        onClick = {
+                            onCatastroReferenceSelected?.invoke(parcel.cadastralReference)
+                        },
+                    ) {
+                        Text("Usar esta parcela")
+                    }
+                }
+            }
+        }
+
+        if (selectedCandidate == null) {
+            catastroMessage?.let { message ->
+                Card(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                ) {
+                    Text(
+                        text = message,
+                        modifier = Modifier.padding(16.dp),
+                    )
+                }
+            }
         }
     }
 }
@@ -247,6 +408,27 @@ private fun attachPlotLayers(style: Style, geoJson: String) {
         LineLayer(PLOTS_LINE_LAYER_ID, PLOTS_SOURCE_ID).withProperties(
             lineColor(Color.rgb(39, 74, 34)),
             lineWidth(2.4f),
+        ),
+    )
+}
+
+private fun attachCatastroLayers(style: Style, geoJson: String) {
+    style.getSource(CATASTRO_SOURCE_ID)?.let { source ->
+        (source as? GeoJsonSource)?.setGeoJson(geoJson)
+        return
+    }
+
+    style.addSource(GeoJsonSource(CATASTRO_SOURCE_ID, geoJson))
+    style.addLayer(
+        FillLayer(CATASTRO_FILL_LAYER_ID, CATASTRO_SOURCE_ID).withProperties(
+            fillColor(Color.rgb(222, 168, 54)),
+            fillOpacity(0.16f),
+        ),
+    )
+    style.addLayer(
+        LineLayer(CATASTRO_LINE_LAYER_ID, CATASTRO_SOURCE_ID).withProperties(
+            lineColor(Color.rgb(181, 118, 17)),
+            lineWidth(2.0f),
         ),
     )
 }
@@ -337,6 +519,103 @@ private fun plotsFeatureCollection(plots: List<PlotEntity>): String {
         .put("type", "FeatureCollection")
         .put("features", features)
         .toString()
+}
+
+private fun catastroFeatureCollection(parcels: List<CatastroParcel>): String {
+    val features = JSONArray()
+
+    parcels.forEach { parcel ->
+        val geometry = runCatching { JSONObject(parcel.geometryGeoJson) }.getOrNull()
+            ?: return@forEach
+
+        features.put(
+            JSONObject()
+                .put("type", "Feature")
+                .put(
+                    "properties",
+                    JSONObject()
+                        .put("cadastralReference", parcel.cadastralReference)
+                        .put("areaM2", parcel.areaM2 ?: JSONObject.NULL),
+                )
+                .put("geometry", geometry),
+        )
+    }
+
+    return JSONObject()
+        .put("type", "FeatureCollection")
+        .put("features", features)
+        .toString()
+}
+
+private fun parcelContains(
+    parcel: CatastroParcel,
+    longitude: Double,
+    latitude: Double,
+): Boolean {
+    val geometry = runCatching { JSONObject(parcel.geometryGeoJson) }.getOrNull()
+        ?: return false
+    val coordinates = geometry.optJSONArray("coordinates") ?: return false
+
+    return when (geometry.optString("type")) {
+        "Polygon" -> polygonContains(coordinates, longitude, latitude)
+        "MultiPolygon" -> {
+            (0 until coordinates.length()).any { index ->
+                val polygon = coordinates.optJSONArray(index) ?: return@any false
+                polygonContains(polygon, longitude, latitude)
+            }
+        }
+        else -> false
+    }
+}
+
+private fun polygonContains(
+    rings: JSONArray,
+    longitude: Double,
+    latitude: Double,
+): Boolean {
+    val outer = rings.optJSONArray(0) ?: return false
+    if (!ringContains(outer, longitude, latitude)) return false
+
+    for (index in 1 until rings.length()) {
+        val hole = rings.optJSONArray(index) ?: continue
+        if (ringContains(hole, longitude, latitude)) return false
+    }
+    return true
+}
+
+private fun ringContains(
+    ring: JSONArray,
+    longitude: Double,
+    latitude: Double,
+): Boolean {
+    if (ring.length() < 4) return false
+
+    var inside = false
+    var previousIndex = ring.length() - 1
+
+    for (index in 0 until ring.length()) {
+        val current = ring.optJSONArray(index) ?: continue
+        val previous = ring.optJSONArray(previousIndex) ?: continue
+
+        val currentX = current.optDouble(0)
+        val currentY = current.optDouble(1)
+        val previousX = previous.optDouble(0)
+        val previousY = previous.optDouble(1)
+
+        val crosses = (currentY > latitude) != (previousY > latitude)
+        if (crosses) {
+            val denominator = previousY - currentY
+            if (denominator != 0.0) {
+                val intersectionX =
+                    (previousX - currentX) * (latitude - currentY) / denominator + currentX
+                if (longitude < intersectionX) inside = !inside
+            }
+        }
+
+        previousIndex = index
+    }
+
+    return inside
 }
 
 private fun Context.findActivity(): ComponentActivity {

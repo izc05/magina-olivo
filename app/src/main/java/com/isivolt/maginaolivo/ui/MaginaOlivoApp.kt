@@ -61,6 +61,7 @@ fun MaginaOlivoApp() {
             WeatherScreen(
                 repository = application.weatherRepository,
                 radarRepository = application.weatherRadarRepository,
+                farms = farms,
                 onBack = { showWeather = false },
             )
         } else if (showAddParcel) {

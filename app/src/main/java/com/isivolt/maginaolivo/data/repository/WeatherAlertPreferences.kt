@@ -3,6 +3,7 @@ package com.isivolt.maginaolivo.data.repository
 import android.content.Context
 import com.isivolt.maginaolivo.domain.weather.MaginaWeatherMunicipalities
 import com.isivolt.maginaolivo.domain.weather.RainAlertSettings
+import com.isivolt.maginaolivo.domain.weather.WeatherPlanningAlertKind
 
 class WeatherAlertPreferences(
     context: Context,
@@ -70,18 +71,33 @@ class WeatherAlertPreferences(
             .apply()
     }
 
-    fun lastNotificationKey(): String? =
-        preferences.getString(KEY_LAST_NOTIFICATION, null)
+    fun lastNotificationKey(kind: WeatherPlanningAlertKind): String? =
+        preferences.getString(notificationKey(kind), null)
 
-    fun setLastNotificationKey(value: String?) {
+    fun setLastNotificationKey(
+        kind: WeatherPlanningAlertKind,
+        value: String?,
+    ) {
         preferences.edit().apply {
+            val key = notificationKey(kind)
             if (value == null) {
-                remove(KEY_LAST_NOTIFICATION)
+                remove(key)
             } else {
-                putString(KEY_LAST_NOTIFICATION, value)
+                putString(key, value)
             }
         }.apply()
     }
+
+    fun clearLastNotificationKeys() {
+        preferences.edit().apply {
+            WeatherPlanningAlertKind.entries.forEach { kind ->
+                remove(notificationKey(kind))
+            }
+        }.apply()
+    }
+
+    private fun notificationKey(kind: WeatherPlanningAlertKind): String =
+        "last_notification_" + kind.name.lowercase()
 
     private companion object {
         const val PREFERENCES_NAME = "magina_weather_alerts"
@@ -89,7 +105,6 @@ class WeatherAlertPreferences(
         const val KEY_MUNICIPALITY = "municipality_code"
         const val KEY_THRESHOLD = "threshold_percent"
         const val KEY_HORIZON_DAYS = "horizon_days"
-        const val KEY_LAST_NOTIFICATION = "last_notification_key"
         const val KEY_RAIN_ENABLED = "rain_alert_enabled"
         const val KEY_WIND_ENABLED = "wind_alert_enabled"
         const val KEY_WIND_THRESHOLD = "wind_threshold_kmh"

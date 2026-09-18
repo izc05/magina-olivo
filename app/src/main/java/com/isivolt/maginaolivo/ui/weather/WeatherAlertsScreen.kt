@@ -36,10 +36,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.isivolt.maginaolivo.data.local.FarmEntity
+import com.isivolt.maginaolivo.data.repository.FarmWeatherAssignmentPreferences
 import com.isivolt.maginaolivo.data.repository.WeatherAlertPreferences
 import com.isivolt.maginaolivo.data.repository.WeatherLoadResult
 import com.isivolt.maginaolivo.data.repository.WeatherRepository
 import com.isivolt.maginaolivo.data.worker.WeatherRainAlertScheduler
+import com.isivolt.maginaolivo.domain.weather.FarmWeatherAlert
+import com.isivolt.maginaolivo.domain.weather.FarmWeatherAlertEngine
 import com.isivolt.maginaolivo.domain.weather.MaginaWeatherMunicipalities
 import com.isivolt.maginaolivo.domain.weather.WeatherPlanningAlert
 import com.isivolt.maginaolivo.domain.weather.WeatherPlanningAlertEngine
@@ -60,6 +64,8 @@ private sealed interface PlanningAlertsUiState {
 fun WeatherAlertsScreen(
     repository: WeatherRepository,
     preferences: WeatherAlertPreferences,
+    farms: List<FarmEntity>,
+    farmAssignments: FarmWeatherAssignmentPreferences,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -71,6 +77,14 @@ fun WeatherAlertsScreen(
     fun settingsChanged() {
         preferences.clearLastNotificationKeys()
         settings = preferences.read()
+        if (settings.notificationsEnabled) {
+            WeatherRainAlertScheduler.checkNow(context)
+        }
+    }
+
+    fun farmAssignmentChanged() {
+        preferences.clearLastNotificationKeys()
+        refreshKey += 1
         if (settings.notificationsEnabled) {
             WeatherRainAlertScheduler.checkNow(context)
         }
@@ -181,6 +195,82 @@ fun WeatherAlertsScreen(
                                 },
                                 label = { Text(municipality.name) },
                             )
+                        }
+                    }
+                }
+            }
+
+            if (farms.isNotEmpty()) {
+                item {
+                    SectionCard(title = "Municipio por finca") {
+                        Text(
+                            text = "Hasta que Catastro aporte la ubicación definitiva, cada finca puede usar el municipio general o uno elegido manualmente.",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+
+                        farms.forEach { farm ->
+                            val assignedCode = farmAssignments.assignedMunicipalityCode(farm.id)
+                            val effectiveCode = assignedCode ?: settings.municipalityCode
+                            val effectiveMunicipality =
+                                MaginaWeatherMunicipalities.find(effectiveCode)
+                                    ?: MaginaWeatherMunicipalities.default
+
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Text(
+                                        text = farm.name,
+                                        style = MaterialTheme.typography.titleMedium,
+                                    )
+                                    Text(
+                                        text = if (assignedCode == null) {
+                                            "Usa municipio general · ${effectiveMunicipality.name}"
+                                        } else {
+                                            "Municipio asignado manualmente · ${effectiveMunicipality.name}"
+                                        },
+                                        style = MaterialTheme.typography.bodySmall,
+                                    )
+
+                                    LazyRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        item {
+                                            FilterChip(
+                                                selected = assignedCode == null,
+                                                onClick = {
+                                                    farmAssignments.setAssignedMunicipalityCode(
+                                                        farmId = farm.id,
+                                                        municipalityCode = null,
+                                                    )
+                                                    farmAssignmentChanged()
+                                                },
+                                                label = { Text("General") },
+                                            )
+                                        }
+
+                                        items(
+                                            items = MaginaWeatherMunicipalities.all,
+                                            key = { municipality -> farm.id + municipality.code },
+                                        ) { municipality ->
+                                            FilterChip(
+                                                selected = assignedCode == municipality.code,
+                                                onClick = {
+                                                    farmAssignments.setAssignedMunicipalityCode(
+                                                        farmId = farm.id,
+                                                        municipalityCode = municipality.code,
+                                                    )
+                                                    farmAssignmentChanged()
+                                                },
+                                                label = { Text(municipality.name) },
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -454,6 +544,171 @@ fun WeatherAlertsScreen(
                     }
                 }
             }
+            if (farms.isNotEmpty()) {
+                item {
+                    FarmAlertsPreview(
+                        farms = farms,
+                        farmAssignments = farmAssignments,
+                        repository = repository,
+                        settings = settings,
+                        refreshKey = refreshKey,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private sealed interface FarmAlertsPreviewState {
+    data object Loading : FarmAlertsPreviewState
+
+    data class Ready(
+        val alerts: List<FarmWeatherAlert>,
+        val degradedMunicipalities: Int,
+    ) : FarmAlertsPreviewState
+}
+
+@Composable
+private fun FarmAlertsPreview(
+    farms: List<FarmEntity>,
+    farmAssignments: FarmWeatherAssignmentPreferences,
+    repository: WeatherRepository,
+    settings: com.isivolt.maginaolivo.domain.weather.RainAlertSettings,
+    refreshKey: Int,
+) {
+    var state by remember(
+        farms,
+        settings,
+        refreshKey,
+    ) {
+        mutableStateOf<FarmAlertsPreviewState>(FarmAlertsPreviewState.Loading)
+    }
+
+    LaunchedEffect(
+        farms,
+        settings,
+        refreshKey,
+    ) {
+        val targets = farms.map { farm ->
+            farmAssignments.resolve(
+                farm = farm,
+                fallbackMunicipalityCode = settings.municipalityCode,
+            )
+        }
+
+        val alerts = mutableListOf<FarmWeatherAlert>()
+        var degraded = 0
+
+        targets.groupBy { it.municipalityCode }.forEach { (municipalityCode, targetsForMunicipality) ->
+            val result = repository.loadForecast(municipalityCode).getOrNull()
+                ?: return@forEach
+
+            if (result.degraded) {
+                degraded += 1
+            }
+
+            targetsForMunicipality.forEach { target ->
+                alerts += FarmWeatherAlertEngine.evaluate(
+                    target = target,
+                    forecast = result.forecast,
+                    settings = settings,
+                )
+            }
+        }
+
+        state = FarmAlertsPreviewState.Ready(
+            alerts = alerts.sortedWith(
+                compareBy<FarmWeatherAlert> { it.alert.date }
+                    .thenBy { it.target.farmName.lowercase(Locale("es", "ES")) }
+                    .thenBy { it.alert.kind.name },
+            ),
+            degradedMunicipalities = degraded,
+        )
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(
+            text = "Avisos por finca",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(horizontal = 20.dp),
+        )
+
+        when (val current = state) {
+            FarmAlertsPreviewState.Loading -> {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+
+            is FarmAlertsPreviewState.Ready -> {
+                if (current.degradedMunicipalities > 0) {
+                    SectionCard(title = "Datos guardados") {
+                        Text(
+                            text = "Hay ${current.degradedMunicipalities} municipio(s) usando datos de respaldo. Se muestran para consulta, pero no generan nuevas notificaciones automáticas.",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+
+                if (current.alerts.isEmpty()) {
+                    SectionCard(title = "Sin avisos por finca") {
+                        Text(
+                            "Ninguna finca supera actualmente los umbrales configurados dentro del horizonte seleccionado.",
+                        )
+                    }
+                } else {
+                    current.alerts.forEach { farmAlert ->
+                        FarmPlanningAlertCard(farmAlert)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FarmPlanningAlertCard(
+    farmAlert: FarmWeatherAlert,
+) {
+    val alert = farmAlert.alert
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = farmAlert.target.farmName,
+                style = MaterialTheme.typography.titleLarge,
+            )
+            Text(
+                text = alertTitle(alert),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                text = alertValue(alert),
+                style = MaterialTheme.typography.headlineMedium,
+            )
+            Text(
+                text = "${alert.municipality.name} · ${formatAlertDate(alert.date)}",
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                text = alertAdvice(alert),
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
     }
 }

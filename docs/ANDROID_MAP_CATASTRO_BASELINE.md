@@ -106,7 +106,7 @@ Backend dedicado ya preparado:
 - región: `eu-west-3`;
 - estado: `ACTIVE_HEALTHY`;
 - URL: `https://zzelvbcuxsboafibfxch.supabase.co`;
-- Edge Function `catastro-map`: `ACTIVE`, versión 2, `verify_jwt = true`;
+- Edge Function `catastro-map`: `ACTIVE`, versión 3, `verify_jwt = true`;
 - la app Android lee `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY` desde propiedades Gradle o variables de entorno; no se guarda ninguna clave en el repositorio.
 
 Estado Auth/Edge verificado:
@@ -121,12 +121,25 @@ Incidencia externa observada:
 - por tanto Gate C NO se considera todavía cerrado extremo a extremo;
 - no se debe ocultar este comportamiento ni confundirlo con un fallo de Auth, parser o proyección.
 
+E2E backend automático verificado:
+- workflow `Catastro Backend E2E`: verde;
+- Anonymous Auth → JWT → BBOX real → primera referencia → lookup por referencia → coincidencia obligatoria;
+- GitHub secret `SUPABASE_PUBLISHABLE_KEY` configurado;
+- el helper no imprime el JWT;
+- en el mismo HEAD también están verdes Android CI, Catastro Edge CI y Android Emulator Smoke.
+
+Resiliencia WFS:
+- máximo 2 intentos por petición;
+- espera de 250 ms;
+- reintento solo ante error de red, HTTP 429 o HTTP 5xx;
+- no reintenta HTTP 4xx normales;
+- cada intento usa su propio timeout de 8 s.
+
 Pendiente para cerrar Gate C:
-1. configurar localmente:
+1. configurar en el entorno Android:
    - `SUPABASE_URL=https://zzelvbcuxsboafibfxch.supabase.co`;
    - `SUPABASE_PUBLISHABLE_KEY=<clave publishable default del proyecto>`;
-2. añadir manejo controlado de fallos transitorios del WFS;
-3. validar el recorrido real mapa → Catastro remoto → selección → revisión → Room desde Android.
+2. validar desde Android el recorrido mapa → Catastro remoto → selección → revisión → guardado en Room.
 
 Nota de seguridad:
 - usar la clave **publishable**, nunca una clave secret/service-role en Android;

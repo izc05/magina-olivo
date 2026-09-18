@@ -10,6 +10,8 @@ on:
       - "*.gradle.kts"
       - "gradle.properties"
       - ".github/workflows/android-emulator-smoke.yml"
+      - ".github/scripts/android-smoke-ui.py"
+      - ".github/scripts/android-smoke-ui.py"
   pull_request:
     paths:
       - "app/**"
@@ -74,51 +76,14 @@ jobs:
             adb shell uiautomator dump /sdcard/home.xml
             adb pull /sdcard/home.xml /tmp/home.xml
 
-            python3 - <<'PY'
-            import re
-            import subprocess
-            import xml.etree.ElementTree as ET
-
-            root = ET.parse("/tmp/home.xml").getroot()
-            node = next(
-                (
-                    item
-                    for item in root.iter("node")
-                    if item.attrib.get("text") == "Abrir mapa de parcelas"
-                ),
-                None,
-            )
-            if node is None:
-                raise SystemExit("HOME_MAP_BUTTON_NOT_FOUND")
-
-            bounds = node.attrib.get("bounds", "")
-            match = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", bounds)
-            if match is None:
-                raise SystemExit(f"INVALID_BUTTON_BOUNDS:{bounds}")
-
-            x1, y1, x2, y2 = map(int, match.groups())
-            x = (x1 + x2) // 2
-            y = (y1 + y2) // 2
-            subprocess.run(["adb", "shell", "input", "tap", str(x), str(y)], check=True)
-            PY
+            python3 .github/scripts/android-smoke-ui.py tap /tmp/home.xml "Abrir mapa de parcelas"
 
             sleep 5
             adb shell uiautomator dump /sdcard/map.xml
             adb pull /sdcard/map.xml /tmp/map.xml
 
-            python3 - <<'PY'
-            import xml.etree.ElementTree as ET
-
-            root = ET.parse("/tmp/map.xml").getroot()
-            texts = {item.attrib.get("text", "") for item in root.iter("node")}
-
-            required = {"Volver", "Mi ubicación", "PNOA", "Catastro"}
-            missing = sorted(required - texts)
-            if missing:
-                raise SystemExit("MAP_CONTROLS_MISSING:" + ",".join(missing))
-
-            print("ANDROID_MAP_SMOKE_OK")
-            PY
+            python3 .github/scripts/android-smoke-ui.py assert /tmp/map.xml "Volver" "Mi ubicación" "PNOA" "Catastro"
+            echo "ANDROID_MAP_SMOKE_OK"
 
             adb exec-out screencap -p > /tmp/map-smoke.png
             adb logcat -d > /tmp/map-smoke-logcat.txt

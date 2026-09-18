@@ -68,6 +68,7 @@ jobs:
 
             gradle :app:installDebug --stacktrace
 
+            adb shell settings put global hide_error_dialogs 1
             adb logcat -c
             adb shell am force-stop com.isivolt.maginaolivo
             adb shell am start -W -n com.isivolt.maginaolivo/.MainActivity

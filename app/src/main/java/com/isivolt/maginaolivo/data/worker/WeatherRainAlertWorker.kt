@@ -9,7 +9,9 @@ import com.isivolt.maginaolivo.data.remote.SupabaseWeatherGateway
 import com.isivolt.maginaolivo.data.repository.SharedPreferencesWeatherForecastCache
 import com.isivolt.maginaolivo.data.repository.WeatherAlertPreferences
 import com.isivolt.maginaolivo.data.repository.WeatherRepository
-import com.isivolt.maginaolivo.domain.weather.RainAlertEngine
+import com.isivolt.maginaolivo.domain.weather.WeatherPlanningAlert
+import com.isivolt.maginaolivo.domain.weather.WeatherPlanningAlertEngine
+import com.isivolt.maginaolivo.domain.weather.WeatherPlanningAlertKind
 
 class WeatherRainAlertWorker(
     appContext: Context,
@@ -39,37 +41,63 @@ class WeatherRainAlertWorker(
             return Result.success()
         }
 
-        val alerts = RainAlertEngine.evaluate(
+        val alerts = WeatherPlanningAlertEngine.evaluate(
             forecast = loaded.forecast,
             settings = settings,
         )
-        val primary = RainAlertEngine.primary(alerts)
 
-        if (primary == null) {
-            preferences.setLastNotificationKey(null)
-            return Result.success()
-        }
+        WeatherPlanningAlertKind.entries.forEach { kind ->
+            val primary = primaryForKind(alerts, kind)
 
-        val notificationKey = listOf(
-            primary.municipality.code,
-            primary.date,
-            primary.level.name,
-            settings.thresholdPercent.toString(),
-        ).joinToString("|")
+            if (primary == null) {
+                preferences.setLastNotificationKey(kind, null)
+                return@forEach
+            }
 
-        if (notificationKey == preferences.lastNotificationKey()) {
-            return Result.success()
-        }
+            val notificationKey = listOf(
+                primary.kind.name,
+                primary.municipality.code,
+                primary.date,
+                primary.level.name,
+                thresholdKey(primary, settings),
+            ).joinToString("|")
 
-        val delivered = WeatherAlertNotifier.notify(
-            context = applicationContext,
-            alert = primary,
-        )
+            if (notificationKey == preferences.lastNotificationKey(kind)) {
+                return@forEach
+            }
 
-        if (delivered) {
-            preferences.setLastNotificationKey(notificationKey)
+            val delivered = WeatherAlertNotifier.notify(
+                context = applicationContext,
+                alert = primary,
+            )
+
+            if (delivered) {
+                preferences.setLastNotificationKey(kind, notificationKey)
+            }
         }
 
         return Result.success()
     }
+
+    private fun primaryForKind(
+        alerts: List<WeatherPlanningAlert>,
+        kind: WeatherPlanningAlertKind,
+    ): WeatherPlanningAlert? =
+        alerts
+            .filter { it.kind == kind }
+            .sortedWith(
+                compareBy<WeatherPlanningAlert> { it.date }
+                    .thenByDescending { it.level },
+            )
+            .firstOrNull()
+
+    private fun thresholdKey(
+        alert: WeatherPlanningAlert,
+        settings: com.isivolt.maginaolivo.domain.weather.RainAlertSettings,
+    ): String =
+        when (alert.kind) {
+            WeatherPlanningAlertKind.RAIN -> settings.thresholdPercent.toString()
+            WeatherPlanningAlertKind.WIND -> settings.windThresholdKmh.toString()
+            WeatherPlanningAlertKind.FROST -> settings.frostThresholdC.toString()
+        }
 }

@@ -12,7 +12,7 @@ fun quotedBuildConfig(value: String): String =
 
 android {
     namespace = "com.isivolt.maginaolivo"
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.isivolt.maginaolivo"

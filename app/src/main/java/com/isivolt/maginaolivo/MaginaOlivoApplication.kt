@@ -3,13 +3,19 @@ package com.isivolt.maginaolivo
 import android.app.Application
 import androidx.room.Room
 import com.isivolt.maginaolivo.data.local.MaginaOlivoDatabase
+import com.isivolt.maginaolivo.data.remote.SupabaseProvider
 import com.isivolt.maginaolivo.data.repository.LocalFieldRepository
+import com.isivolt.maginaolivo.data.sync.FieldSyncScheduler
+import com.isivolt.maginaolivo.data.sync.WorkManagerFieldSyncScheduler
 import org.maplibre.android.MapLibre
 
 class MaginaOlivoApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         MapLibre.getInstance(this)
+        if (SupabaseProvider.isConfigured) {
+            fieldSyncScheduler.schedule()
+        }
     }
 
     val database: MaginaOlivoDatabase by lazy {
@@ -22,11 +28,20 @@ class MaginaOlivoApplication : Application() {
             .build()
     }
 
+    val fieldSyncScheduler: FieldSyncScheduler by lazy {
+        if (SupabaseProvider.isConfigured) {
+            WorkManagerFieldSyncScheduler(applicationContext)
+        } else {
+            FieldSyncScheduler {}
+        }
+    }
+
     val fieldRepository: LocalFieldRepository by lazy {
         LocalFieldRepository(
             farmDao = database.farmDao(),
             plotDao = database.plotDao(),
             fieldWriteDao = database.fieldWriteDao(),
+            syncScheduler = fieldSyncScheduler,
         )
     }
 }

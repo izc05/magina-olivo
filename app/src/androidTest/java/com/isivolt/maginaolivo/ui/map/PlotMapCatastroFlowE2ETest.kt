@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -15,6 +16,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
+import com.isivolt.maginaolivo.data.local.FarmEntity
 import com.isivolt.maginaolivo.data.local.FarmEntity
 import com.isivolt.maginaolivo.data.local.MaginaOlivoDatabase
 import com.isivolt.maginaolivo.data.repository.LocalFieldRepository

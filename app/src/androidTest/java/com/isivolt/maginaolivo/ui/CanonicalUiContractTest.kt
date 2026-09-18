@@ -50,4 +50,22 @@ class CanonicalUiContractTest {
         composeRule.onNodeWithText("Calendario").assertIsDisplayed()
         composeRule.onNodeWithText("Perfil").assertIsDisplayed()
     }
+
+    @Test
+    fun shell_routesToSecondaryDestinationsWithoutWritingData() {
+        composeRule.setContent {
+            MaginaOlivoTheme {
+                MaginaAppShell()
+            }
+        }
+
+        composeRule.onNodeWithText("+ Registrar").performClick()
+        composeRule.onNodeWithText("Elige qué quieres añadir. La estructura queda preparada para conectarse después con campaña, finca y parcela sin duplicar lógica.").assertIsDisplayed()
+
+        composeRule.onNodeWithText("Calendario").performClick()
+        composeRule.onNodeWithText("Aquí se reunirán trabajos, recordatorios, campaña y avisos relacionados con tus fincas.").assertIsDisplayed()
+
+        composeRule.onNodeWithText("Perfil").performClick()
+        composeRule.onNodeWithText("Cuenta, datos, avisos y preferencias de Mágina Olivo.").assertIsDisplayed()
+    }
 }

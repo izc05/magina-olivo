@@ -2,8 +2,10 @@ package com.isivolt.maginaolivo.data.repository
 
 import com.isivolt.maginaolivo.data.local.FarmDao
 import com.isivolt.maginaolivo.data.local.FarmEntity
+import com.isivolt.maginaolivo.data.local.FieldWriteDao
 import com.isivolt.maginaolivo.data.local.PlotDao
 import com.isivolt.maginaolivo.data.local.PlotEntity
+import com.isivolt.maginaolivo.data.local.SyncOutboxEntity
 import com.isivolt.maginaolivo.domain.catastro.CatastroParcel
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
@@ -11,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 class LocalFieldRepository(
     private val farmDao: FarmDao,
     private val plotDao: PlotDao,
+    private val fieldWriteDao: FieldWriteDao,
     private val clock: () -> Long = System::currentTimeMillis,
     private val idFactory: () -> String = { UUID.randomUUID().toString() },
 ) {
@@ -33,7 +36,17 @@ class LocalFieldRepository(
             coverImageUri = coverImageUri,
             updatedAtEpochMs = clock(),
             syncState = SyncState.PENDING_UPLOAD,
-        ).also { farmDao.upsert(it) }
+        ).also { farm ->
+            fieldWriteDao.upsertFarmWithOutbox(
+                farm = farm,
+                outbox = SyncOutboxEntity(
+                    entityType = "farm",
+                    entityId = farm.id,
+                    operation = "upsert",
+                    enqueuedAtEpochMs = farm.updatedAtEpochMs,
+                ),
+            )
+        }
     }
 
     suspend fun importCatastroParcel(
@@ -57,7 +70,17 @@ class LocalFieldRepository(
             boundarySource = BoundarySource.CATASTRO,
             updatedAtEpochMs = clock(),
             syncState = SyncState.PENDING_UPLOAD,
-        ).also { plotDao.upsert(it) }
+        ).also { plot ->
+            fieldWriteDao.upsertPlotWithOutbox(
+                plot = plot,
+                outbox = SyncOutboxEntity(
+                    entityType = "plot",
+                    entityId = plot.id,
+                    operation = "upsert",
+                    enqueuedAtEpochMs = plot.updatedAtEpochMs,
+                ),
+            )
+        }
     }
 
     private object SyncState {

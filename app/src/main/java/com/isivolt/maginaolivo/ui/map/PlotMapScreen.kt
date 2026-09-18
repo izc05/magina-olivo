@@ -331,7 +331,8 @@ fun PlotMapScreen(
                     if (validationError != null) {
                         catastroMessage = if (
                             validationError == "BBOX_TOO_WIDE" ||
-                            validationError == "BBOX_TOO_TALL"
+                            validationError == "BBOX_TOO_TALL" ||
+                            validationError == "BBOX_AREA_TOO_LARGE"
                         ) {
                             "Acércate más para consultar las parcelas catastrales."
                         } else {

@@ -98,7 +98,23 @@ Nunca etiquetar un perímetro como `catastro` o `sigpac` si no ha sido obtenido 
   - screenshot real del mapa de Sierra Mágina capturado;
   - sin `FATAL EXCEPTION` ni crash de `com.isivolt.maginaolivo` en logcat.
 
-Gate C NO se considera todavía cerrado extremo a extremo. Falta desplegar `catastro-map` en el proyecto Supabase propio de Mágina Olivo, habilitar Anonymous Sign-Ins en ese proyecto y validar el recorrido real mapa → Catastro remoto → selección → revisión → Room. El proyecto Supabase conectado actualmente corresponde a `magina-olivo-aventura` y no debe reutilizarse.
+Gate C NO se considera todavía cerrado extremo a extremo.
+
+Backend dedicado ya preparado:
+- proyecto Supabase: `magina-olivo`;
+- project ref: `zzelvbcuxsboafibfxch`;
+- región: `eu-west-3`;
+- estado: `ACTIVE_HEALTHY`;
+- URL: `https://zzelvbcuxsboafibfxch.supabase.co`;
+- Edge Function `catastro-map`: `ACTIVE`, versión 1, `verify_jwt = true`;
+- la app Android lee `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY` desde propiedades Gradle o variables de entorno; no se guarda ninguna clave en el repositorio.
+
+Pendiente para cerrar Gate C:
+1. habilitar **Anonymous Sign-Ins** en el proyecto `magina-olivo` desde Supabase Dashboard → Authentication → Providers;
+2. configurar localmente `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY`;
+3. validar el recorrido real mapa → Catastro remoto → selección → revisión → Room.
+
+El proyecto `magina-olivo-aventura` permanece separado y no se reutiliza para esta aplicación.
 
 ## Próximos gates
 

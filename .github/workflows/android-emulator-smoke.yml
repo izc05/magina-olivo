@@ -62,7 +62,7 @@ jobs:
           profile: pixel_6
           disable-animations: true
           script: |
-            set -euo pipefail
+            set -eu
 
             gradle :app:installDebug --stacktrace
 

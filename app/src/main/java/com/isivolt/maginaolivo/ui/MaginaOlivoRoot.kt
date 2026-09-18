@@ -8,6 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.isivolt.maginaolivo.ui.onboarding.OnboardingPreferences
 import com.isivolt.maginaolivo.ui.onboarding.OnboardingScreen
+import com.isivolt.maginaolivo.ui.shell.MaginaAppShell
 import com.isivolt.maginaolivo.ui.theme.MaginaOlivoTheme
 
 @Composable
@@ -27,7 +28,7 @@ fun MaginaOlivoRoot() {
                 },
             )
         } else {
-            MaginaOlivoApp()
+            MaginaAppShell()
         }
     }
 }

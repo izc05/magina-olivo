@@ -1,0 +1,55 @@
+name: Catastro Backend E2E
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "feat/android-map-catastro-v1"
+    paths:
+      - "supabase/e2e/**"
+      - "supabase/functions/catastro-map/**"
+      - ".github/workflows/catastro-backend-e2e.yml"
+  pull_request:
+    paths:
+      - "supabase/e2e/**"
+      - "supabase/functions/catastro-map/**"
+      - ".github/workflows/catastro-backend-e2e.yml"
+
+concurrency:
+  group: catastro-backend-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_URL: https://zzelvbcuxsboafibfxch.supabase.co
+      SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Deno 2.9.7
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.7
+
+      - name: Require Supabase publishable key
+        shell: bash
+        run: |
+          if [[ -z "${SUPABASE_PUBLISHABLE_KEY}" ]]; then
+            echo "::error::Missing GitHub Actions secret SUPABASE_PUBLISHABLE_KEY"
+            exit 1
+          fi
+
+      - name: Anonymous Auth -> BBOX -> reference verification
+        run: >
+          deno run
+          --allow-env=SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY
+          --allow-net=zzelvbcuxsboafibfxch.supabase.co
+          supabase/e2e/catastro-e2e.ts

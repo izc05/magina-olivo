@@ -4,7 +4,10 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.isivolt.maginaolivo.data.local.FarmEntity
 import com.isivolt.maginaolivo.data.local.MaginaOlivoDatabase
+import com.isivolt.maginaolivo.data.local.PlotEntity
+import com.isivolt.maginaolivo.data.local.SyncOutboxEntity
 import com.isivolt.maginaolivo.data.repository.LocalFieldRepository
 import com.isivolt.maginaolivo.domain.catastro.CatastroParcel
 import kotlinx.coroutines.runBlocking
@@ -88,4 +91,68 @@ class LocalOutboxE2ETest {
             database.close()
         }
     }
+
+    @Test
+    fun farmIsDequeuedBeforePlotWhenTheyShareTheSameTimestamp() = runBlocking {
+        val context: Context = InstrumentationRegistry
+            .getInstrumentation()
+            .targetContext
+
+        val database = Room.inMemoryDatabaseBuilder(
+            context,
+            MaginaOlivoDatabase::class.java,
+        ).build()
+
+        try {
+            val timestamp = 1_789_750_800_000L
+            val farmId = "11111111-1111-4111-8111-111111111111"
+            val plotId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+
+            database.fieldWriteDao().upsertPlotWithOutbox(
+                plot = PlotEntity(
+                    id = plotId,
+                    farmId = farmId,
+                    name = "Parcela primero",
+                    cadastralReference = "23013A00700198",
+                    areaHa = 1.0,
+                    boundaryGeoJson = null,
+                    boundarySource = "catastro",
+                    updatedAtEpochMs = timestamp,
+                    syncState = "pending_upload",
+                ),
+                outbox = SyncOutboxEntity(
+                    entityType = "plot",
+                    entityId = plotId,
+                    operation = "upsert",
+                    enqueuedAtEpochMs = timestamp,
+                ),
+            )
+
+            database.fieldWriteDao().upsertFarmWithOutbox(
+                farm = FarmEntity(
+                    id = farmId,
+                    name = "Finca después",
+                    coverImageUri = null,
+                    updatedAtEpochMs = timestamp,
+                    syncState = "pending_upload",
+                ),
+                outbox = SyncOutboxEntity(
+                    entityType = "farm",
+                    entityId = farmId,
+                    operation = "upsert",
+                    enqueuedAtEpochMs = timestamp,
+                ),
+            )
+
+            val pending = database.syncOutboxDao().pending(limit = 10)
+
+            assertEquals(
+                listOf("farm", "plot"),
+                pending.map { it.entityType },
+            )
+        } finally {
+            database.close()
+        }
+    }
+
 }

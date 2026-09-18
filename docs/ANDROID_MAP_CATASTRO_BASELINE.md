@@ -70,7 +70,7 @@ Nunca etiquetar un perímetro como `catastro` o `sigpac` si no ha sido obtenido 
 ## Estado verificado — 2026-09-18
 
 - Gate A: completado previamente (Android/Compose/Room/configuración sin secretos).
-- Gate B: MapLibre, ubicación con permisos Android, mapa base, PNOA IGN y render de parcelas propias desde Room implementados.
+- Gate B: CERRADO. MapLibre, ubicación con permisos Android, mapa base, PNOA IGN y render de parcelas propias desde Room implementados y validados en emulador.
 - Gate C:
   - consulta Catastro por BBOX implementada;
   - búsqueda por referencia 14/18/20 implementada;
@@ -80,12 +80,25 @@ Nunca etiquetar un perímetro como `catastro` o `sigpac` si no ha sido obtenido 
   - cola de importación desde mapa implementada;
   - cada parcela se vuelve a consultar por referencia antes de guardarse;
   - deduplicación local por referencia catastral;
-  - límite oficial WFS de BBOX de 1 km² aplicado en Android y servidor.
+  - límite oficial WFS de BBOX de 1 km² aplicado en Android y servidor;
+  - sesión Supabase obligatoria antes de invocar la Edge Function;
+  - si no existe sesión, se crea una sesión anónima; si existe, se reutiliza;
+  - `verify_jwt = true` se mantiene en `catastro-map`.
 - Adaptador Catastro: WFS 2.0 usando ETRS89 / UTM 30N (EPSG:25830), convertido a GeoJSON WGS84 para MapLibre.
 - PNOA: WMTS oficial del IGN con `OI.OrthoimageCoverage` y `GoogleMapsCompatible`.
-- CI: Android CI + Catastro Edge CI. El Edge Function se valida con `deno check`.
+- CI sobre HEAD `932a935fa633f2a354f26c1d072e4830e7db77ab`:
+  - Android CI: verde;
+  - Catastro Edge CI: verde;
+  - Android Emulator Smoke: verde.
+- Evidencia de emulador:
+  - APK debug instalada correctamente;
+  - `MainActivity` arranca con `Status: ok`;
+  - navegación Inicio → mapa completada;
+  - árbol UI confirma `Volver`, `Mi ubicación`, `PNOA` y `Catastro`;
+  - screenshot real del mapa de Sierra Mágina capturado;
+  - sin `FATAL EXCEPTION` ni crash de `com.isivolt.maginaolivo` en logcat.
 
-Pendiente antes de dar Gate C por cerrado: CI Android verde sobre el último HEAD y prueba en dispositivo/emulador del recorrido completo mapa → Catastro → selección → revisión → Room.
+Gate C NO se considera todavía cerrado extremo a extremo. Falta desplegar `catastro-map` en el proyecto Supabase propio de Mágina Olivo, habilitar Anonymous Sign-Ins en ese proyecto y validar el recorrido real mapa → Catastro remoto → selección → revisión → Room. El proyecto Supabase conectado actualmente corresponde a `magina-olivo-aventura` y no debe reutilizarse.
 
 ## Próximos gates
 

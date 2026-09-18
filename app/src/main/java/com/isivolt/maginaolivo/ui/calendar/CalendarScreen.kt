@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -20,46 +21,58 @@ import androidx.compose.ui.unit.dp
 fun CalendarScreen(
     innerPadding: PaddingValues,
 ) {
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(innerPadding)
-            .padding(horizontal = 20.dp, vertical = 24.dp),
+            .padding(innerPadding),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        Text(
-            text = "Calendario",
-            style = MaterialTheme.typography.headlineLarge,
-        )
-        Text(
-            text = "Aquí se reunirán trabajos, recordatorios, campaña y avisos relacionados con tus fincas.",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        CalendarSection(
-            title = "Hoy",
-            body = "Sin tareas conectadas todavía.",
-            emphasis = true,
-        )
-        CalendarSection(
-            title = "Próximos trabajos",
-            body = "Preparado para actuaciones planificadas, recordatorios y revisiones.",
-        )
-        CalendarSection(
-            title = "Campaña",
-            body = "Preparado para hitos de recolección, entregas y seguimiento histórico.",
-        )
-        CalendarSection(
-            title = "Avisos",
-            body = "Preparado para integrar alertas meteorológicas y recordatorios sin duplicarlos.",
-        )
-
-        Text(
-            text = "La agenda será offline-first: los eventos propios deberán seguir visibles sin cobertura.",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
+        item {
+            Text(
+                text = "Calendario",
+                style = MaterialTheme.typography.headlineLarge,
+            )
+        }
+        item {
+            Text(
+                text = "Aquí se reunirán trabajos, recordatorios, campaña y avisos relacionados con tus fincas.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        item {
+            CalendarSection(
+                title = "Hoy",
+                body = "Sin tareas conectadas todavía.",
+                emphasis = true,
+            )
+        }
+        item {
+            CalendarSection(
+                title = "Próximos trabajos",
+                body = "Preparado para actuaciones planificadas, recordatorios y revisiones.",
+            )
+        }
+        item {
+            CalendarSection(
+                title = "Campaña",
+                body = "Preparado para hitos de recolección, entregas y seguimiento histórico.",
+            )
+        }
+        item {
+            CalendarSection(
+                title = "Avisos",
+                body = "Preparado para integrar alertas meteorológicas y recordatorios sin duplicarlos.",
+            )
+        }
+        item {
+            Text(
+                text = "La agenda será offline-first: los eventos propios deberán seguir visibles sin cobertura.",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
     }
 }
 

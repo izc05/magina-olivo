@@ -10,18 +10,12 @@ class SupabaseFieldRemoteGateway(
 
     override suspend fun upsertFarm(farm: FarmUpsertPayload) {
         ensureSession()
-        client.postgrest["farms"].insert(
-            value = farm,
-            upsert = true,
-        )
+        client.postgrest["farms"].upsert(farm)
     }
 
     override suspend fun upsertPlot(plot: PlotUpsertPayload) {
         ensureSession()
-        client.postgrest["plots"].insert(
-            value = plot,
-            upsert = true,
-        )
+        client.postgrest["plots"].upsert(plot)
     }
 
     private suspend fun ensureSession() {

@@ -16,6 +16,12 @@ interface PlotDao {
     @Query("SELECT * FROM plots WHERE cadastralReference = :reference LIMIT 1")
     suspend fun findByCadastralReference(reference: String): PlotEntity?
 
+    @Query("SELECT * FROM plots WHERE id = :id LIMIT 1")
+    suspend fun findById(id: String): PlotEntity?
+
+    @Query("UPDATE plots SET syncState = :syncState WHERE id = :id")
+    suspend fun updateSyncState(id: String, syncState: String)
+
     @Upsert
     suspend fun upsert(plot: PlotEntity)
 }

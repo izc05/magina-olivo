@@ -110,9 +110,17 @@ Backend dedicado ya preparado:
 - la app Android lee `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY` desde propiedades Gradle o variables de entorno; no se guarda ninguna clave en el repositorio.
 
 Pendiente para cerrar Gate C:
-1. habilitar **Anonymous Sign-Ins** en el proyecto `magina-olivo` desde Supabase Dashboard → Authentication → Providers;
-2. configurar localmente `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY`;
+1. habilitar **Anonymous Sign-Ins** en el proyecto `magina-olivo` desde Supabase Dashboard → Authentication → Providers → Anonymous Sign-Ins → Enable;
+2. configurar localmente:
+   - `SUPABASE_URL=https://zzelvbcuxsboafibfxch.supabase.co`;
+   - `SUPABASE_PUBLISHABLE_KEY=<clave publishable default del proyecto>`;
 3. validar el recorrido real mapa → Catastro remoto → selección → revisión → Room.
+
+Nota de seguridad:
+- usar la clave **publishable**, nunca una clave secret/service-role en Android;
+- `catastro-map` permanece con `verify_jwt = true`;
+- los usuarios anónimos reciben JWT de usuario autenticado y podrán migrarse a identidad permanente más adelante;
+- antes de producción se revisará protección antiabuso/rate-limit para altas anónimas.
 
 El proyecto `magina-olivo-aventura` permanece separado y no se reutiliza para esta aplicación.
 

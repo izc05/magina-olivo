@@ -57,3 +57,29 @@ Radar V1 debe mantenerse separado de la predicción:
 - historial corto de fotogramas;
 - reproducción manual en Android;
 - sin inferir ETA de lluvia, intensidad agronómica ni decisiones de tratamiento.
+
+
+## Radar AEMET V1
+
+Implementado como módulo independiente de la predicción:
+
+- Edge Function: `weather-radar`.
+- Fuente oficial: composición nacional de radares de AEMET OpenData.
+- Bucket privado: `weather-radar`.
+- Captura mínima cada 10 minutos cuando se consulta el radar.
+- Deduplicación SHA-256 para no almacenar imágenes idénticas.
+- Retención máxima en servidor: 18 fotogramas.
+- URLs firmadas de corta duración para Android.
+- Caché local Android: hasta 8 imágenes recientes.
+- Reproducción manual, pausa y navegación anterior/siguiente.
+- El producto se etiqueta expresamente como observación, no como predicción futura.
+
+### Comportamiento sin clave AEMET
+
+Si `AEMET_API_KEY` no está disponible, la función conserva y sirve el historial ya almacenado.
+Si el historial está vacío, Android muestra el estado de configuración pendiente sin simular datos meteorológicos.
+
+### Privacidad y seguridad del radar
+
+El bucket no es público. Android no recibe credenciales de Storage ni la clave AEMET.
+La Edge Function usa la clave secreta de Supabase exclusivamente en servidor para almacenar y firmar los fotogramas.

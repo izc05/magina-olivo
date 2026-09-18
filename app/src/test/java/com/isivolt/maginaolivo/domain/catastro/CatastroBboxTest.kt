@@ -6,25 +6,25 @@ import org.junit.Test
 
 class CatastroBboxTest {
     @Test
-    fun acceptsSmallValidViewport() {
+    fun acceptsViewportBelowOfficialOneSquareKilometreLimit() {
+        val bbox = CatastroBbox(
+            minLongitude = -3.470,
+            minLatitude = 37.730,
+            maxLongitude = -3.465,
+            maxLatitude = 37.735,
+        )
+        assertNull(bbox.validationError())
+    }
+
+    @Test
+    fun rejectsViewportAboveOfficialOneSquareKilometreLimit() {
         val bbox = CatastroBbox(
             minLongitude = -3.47,
             minLatitude = 37.73,
             maxLongitude = -3.44,
             maxLatitude = 37.76,
         )
-        assertNull(bbox.validationError())
-    }
-
-    @Test
-    fun rejectsLargeViewport() {
-        val bbox = CatastroBbox(
-            minLongitude = -3.60,
-            minLatitude = 37.60,
-            maxLongitude = -3.40,
-            maxLatitude = 37.80,
-        )
-        assertEquals("BBOX_TOO_WIDE", bbox.validationError())
+        assertEquals("BBOX_AREA_TOO_LARGE", bbox.validationError())
     }
 
     @Test

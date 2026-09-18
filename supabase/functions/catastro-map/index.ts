@@ -1,6 +1,6 @@
 import proj4 from "npm:proj4@2.22.0";
 
-const CATASTRO_WFS_URL = "https://ovc.catastro.meh.es/INSPIRE/wfsCP.aspx";
+const CATASTRO_WFS_URL = "http://ovc.catastro.meh.es/INSPIRE/wfsCP.aspx";
 const CATASTRO_SRS = "EPSG::25830";
 const WGS84 = "EPSG:4326";
 const ETRS89_UTM30 =

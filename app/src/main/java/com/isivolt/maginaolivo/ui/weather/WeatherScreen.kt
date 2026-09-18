@@ -190,7 +190,7 @@ fun WeatherScreen(
 
                                 if (result.degraded) {
                                     Text(
-                                        text = "Mostrando la última predicción guardada",
+                                        text = if (result.fromLocalCache) "Sin datos nuevos · última predicción guardada en el móvil" else "AEMET temporalmente no disponible · datos de respaldo",
                                         style = MaterialTheme.typography.labelLarge,
                                         color = MaterialTheme.colorScheme.error,
                                     )

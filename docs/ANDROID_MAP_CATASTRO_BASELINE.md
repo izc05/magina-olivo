@@ -71,7 +71,7 @@ Nunca etiquetar un perímetro como `catastro` o `sigpac` si no ha sido obtenido 
 
 - Gate A: completado previamente (Android/Compose/Room/configuración sin secretos).
 - Gate B: CERRADO. MapLibre, ubicación con permisos Android, mapa base, PNOA IGN y render de parcelas propias desde Room implementados y validados en emulador.
-- Gate C: funcionalmente validado hasta Catastro → verificación → Room; pendiente una última evidencia UI estricta del toque real sobre parcela MapLibre → selección → revisión.
+- Gate C: CERRADO extremo a extremo.
   - consulta Catastro por BBOX implementada;
   - búsqueda por referencia 14/18/20 implementada;
   - Polygon y MultiPolygon implementados;
@@ -86,7 +86,7 @@ Nunca etiquetar un perímetro como `catastro` o `sigpac` si no ha sido obtenido 
   - `verify_jwt = true` se mantiene en `catastro-map`.
 - Adaptador Catastro: WFS 2.0 usando ETRS89 / UTM 30N (EPSG:25830), convertido a GeoJSON WGS84 para MapLibre.
 - PNOA: WMTS oficial del IGN con `OI.OrthoimageCoverage` y `GoogleMapsCompatible`.
-- CI sobre HEAD `a26f27be26a77b91c39c46deeab79c7e2ada7992`:
+- CI sobre HEAD `eacceeaee5409bde02946cbaf732e3c0acea2996`:
   - Android CI: verde;
   - Catastro Edge CI: verde;
   - Catastro Backend E2E: verde;
@@ -147,9 +147,17 @@ Evidencia Android real validada:
 - la UI de revisión/guardado tiene prueba de instrumentación independiente y persiste en Room;
 - `connectedDebugAndroidTest` finaliza con `BUILD SUCCESSFUL`.
 
-Última evidencia pendiente para el cierre estricto de Gate C:
-- automatizar en una única prueba el toque real sobre un polígono Catastro renderizado en MapLibre y encadenar selección → revisión;
-- no se fusiona el PR mientras esa interacción no quede demostrada.
+Cierre estricto de Gate C:
+- `PlotMapCatastroFlowE2ETest` ejecutado dentro de `connectedDebugAndroidTest`;
+- MapLibre real con estilo offline determinista y cámara centrada sobre un polígono Catastro conocido;
+- el test pulsa `Catastro`, carga el candidato y envía un toque real al `MapView`;
+- aparece `1 parcela seleccionada`;
+- pulsa `Añadir parcela` y abre la pantalla de revisión;
+- vuelve a verificar la referencia mediante el gateway controlado;
+- pulsa `Guardar parcela`;
+- Room confirma finca, referencia, GeoJSON, `boundarySource=catastro` y `syncState=pending_upload`;
+- el workflow `Android Catastro Room E2E` termina en verde con `BUILD SUCCESSFUL`;
+- los hooks de cámara/estilo usados para la prueba son opcionales y sus valores por defecto conservan el comportamiento productivo.
 
 Nota de seguridad:
 - usar la clave **publishable**, nunca una clave secret/service-role en Android;

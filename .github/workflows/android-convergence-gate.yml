@@ -15,6 +15,7 @@ on:
       - "supabase/**"
       - ".github/workflows/android-convergence-gate.yml"
       - "docs/ANDROID_INTEGRATION_V1.md"
+      - "docs/ANDROID_V1_CONFLICT_MATRIX.md"
   workflow_dispatch:
 
 permissions:

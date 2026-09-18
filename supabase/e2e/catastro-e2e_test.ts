@@ -1,4 +1,7 @@
-import { runCatastroE2E } from "./catastro-e2e.ts";
+import {
+  isKnownCatastroUpstreamUnavailable,
+  runCatastroE2E,
+} from "./catastro-e2e.ts";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -112,4 +115,44 @@ Deno.test("fails if reference verification does not match bbox parcel", async ()
   }
 
   assert(failed, "reference mismatch must fail the E2E");
+});
+
+
+Deno.test("classifies only known Catastro WFS 502 as upstream unavailable", () => {
+  const bbox502 = new Error(
+    'BBOX_HTTP_502:{"error":"error sending request for http://ovc.catastro.meh.es/INSPIRE/wfsCP.aspx"}',
+  );
+  const reference502 = new Error(
+    'REFERENCE_HTTP_502:{"error":"connection reset for http://ovc.catastro.meh.es/INSPIRE/wfsCP.aspx"}',
+  );
+  const auth502 = new Error(
+    'AUTH_HTTP_502:{"error":"gateway failure"}',
+  );
+  const unrelated502 = new Error(
+    'BBOX_HTTP_502:{"error":"https://example.test failed"}',
+  );
+  const catastro500 = new Error(
+    'BBOX_HTTP_500:{"error":"http://ovc.catastro.meh.es/INSPIRE/wfsCP.aspx"}',
+  );
+
+  assert(
+    isKnownCatastroUpstreamUnavailable(bbox502),
+    "Catastro BBOX 502 should be classified as upstream unavailable",
+  );
+  assert(
+    isKnownCatastroUpstreamUnavailable(reference502),
+    "Catastro reference 502 should be classified as upstream unavailable",
+  );
+  assert(
+    !isKnownCatastroUpstreamUnavailable(auth502),
+    "Auth failures must still fail CI",
+  );
+  assert(
+    !isKnownCatastroUpstreamUnavailable(unrelated502),
+    "Unrelated 502 responses must still fail CI",
+  );
+  assert(
+    !isKnownCatastroUpstreamUnavailable(catastro500),
+    "Only the observed Catastro 502 is softened",
+  );
 });

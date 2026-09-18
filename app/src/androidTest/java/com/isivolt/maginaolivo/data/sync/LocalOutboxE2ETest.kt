@@ -36,10 +36,12 @@ class LocalOutboxE2ETest {
                 "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
             ).iterator()
 
+            var schedules = 0
             val repository = LocalFieldRepository(
                 farmDao = database.farmDao(),
                 plotDao = database.plotDao(),
                 fieldWriteDao = database.fieldWriteDao(),
+                syncScheduler = FieldSyncScheduler { schedules += 1 },
                 clock = { 1_789_750_800_000L },
                 idFactory = { ids.next() },
             )
@@ -83,6 +85,7 @@ class LocalOutboxE2ETest {
 
             val pending = database.syncOutboxDao().pending(limit = 10)
             assertEquals(2, pending.size)
+            assertEquals(2, schedules)
             assertEquals(
                 setOf("farm" to farm.id, "plot" to plot.id),
                 pending.map { it.entityType to it.entityId }.toSet(),

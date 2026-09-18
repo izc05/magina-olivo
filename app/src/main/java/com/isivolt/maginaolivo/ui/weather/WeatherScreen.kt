@@ -31,11 +31,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.isivolt.maginaolivo.data.repository.WeatherAlertPreferences
 import com.isivolt.maginaolivo.data.repository.WeatherLoadResult
 import com.isivolt.maginaolivo.data.repository.WeatherRepository
 import com.isivolt.maginaolivo.data.repository.WeatherRadarRepository
 import com.isivolt.maginaolivo.domain.weather.MaginaWeatherMunicipalities
+import com.isivolt.maginaolivo.domain.weather.RainAlertEngine
 import com.isivolt.maginaolivo.domain.weather.WeatherDay
 import com.isivolt.maginaolivo.domain.weather.WeatherFreshnessStatus
 import java.time.LocalDate
@@ -55,7 +58,19 @@ fun WeatherScreen(
     radarRepository: WeatherRadarRepository,
     onBack: () -> Unit,
 ) {
+    val context = LocalContext.current.applicationContext
+    val alertPreferences = remember(context) { WeatherAlertPreferences(context) }
     var showRadar by rememberSaveable { mutableStateOf(false) }
+    var showAlerts by rememberSaveable { mutableStateOf(false) }
+
+    if (showAlerts) {
+        WeatherAlertsScreen(
+            repository = repository,
+            preferences = alertPreferences,
+            onBack = { showAlerts = false },
+        )
+        return
+    }
 
     if (showRadar) {
         WeatherRadarScreen(
@@ -65,11 +80,15 @@ fun WeatherScreen(
         return
     }
     var selectedCode by rememberSaveable {
-        mutableStateOf(MaginaWeatherMunicipalities.default.code)
+        mutableStateOf(alertPreferences.read().municipalityCode)
     }
     var refreshKey by rememberSaveable { mutableIntStateOf(0) }
     var state by remember(selectedCode) {
         mutableStateOf<WeatherUiState>(WeatherUiState.Loading)
+    }
+
+    LaunchedEffect(selectedCode) {
+        alertPreferences.setMunicipalityCode(selectedCode)
     }
 
     LaunchedEffect(selectedCode, refreshKey) {
@@ -240,6 +259,43 @@ fun WeatherScreen(
                                         text = note,
                                         style = MaterialTheme.typography.bodySmall,
                                     )
+                                }
+                            }
+                        }
+                    }
+
+                    item {
+                        val alertSettings = alertPreferences.read().copy(
+                            municipalityCode = selectedCode,
+                        )
+                        val rainAlerts = RainAlertEngine.evaluate(
+                            forecast = forecast,
+                            settings = alertSettings,
+                        )
+
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp),
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(18.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Text(
+                                    text = "Avisos de lluvia",
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                                Text(
+                                    text = if (rainAlerts.isEmpty()) {
+                                        "Sin avisos con el umbral actual (${alertSettings.thresholdPercent}%)."
+                                    } else {
+                                        "${rainAlerts.size} aviso(s) dentro de los próximos ${alertSettings.horizonDays} días."
+                                    },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                Button(onClick = { showAlerts = true }) {
+                                    Text("Configurar avisos")
                                 }
                             }
                         }

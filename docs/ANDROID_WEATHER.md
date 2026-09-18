@@ -111,3 +111,33 @@ Los avisos de Mágina Olivo son una ayuda de planificación basada en la probabi
 ### Dependencia
 
 WorkManager estable `2.11.2`, verificado contra la documentación oficial de AndroidX en septiembre de 2026.
+
+
+## Viento y helada V1
+
+Se amplía el motor de avisos con dos tipos nuevos, ambos desactivados por defecto para no empezar a enviar nuevas notificaciones sin una activación explícita del usuario.
+
+### Viento
+
+- Variable: máximo diario previsto por AEMET.
+- Umbral inicial recomendado en la interfaz: 40 km/h.
+- Opciones configurables: 30, 40, 50 o 60 km/h.
+- Nivel interno `HIGH`: 60 km/h o más.
+- El aviso se presenta como ayuda de planificación para trabajos expuestos, no como aviso oficial.
+
+### Temperatura mínima / posible helada
+
+- Variable: temperatura mínima diaria prevista por AEMET.
+- Umbral inicial de la función: 2 °C.
+- Opciones configurables: 0, 1, 2 o 3 °C.
+- Nivel interno `HIGH`: 0 °C o menos.
+- Entre 1 °C y el umbral elegido se etiqueta como posible riesgo de helada.
+- La app advierte expresamente de que una predicción municipal no representa exactamente la temperatura de cada parcela.
+
+### Consentimiento y deduplicación
+
+- Lluvia permanece activada por defecto dentro del motor.
+- Viento y helada permanecen desactivados hasta que el usuario los seleccione.
+- Las notificaciones Android siguen teniendo un interruptor global independiente.
+- Cada tipo mantiene su propia clave de deduplicación, por lo que lluvia, viento y helada pueden coexistir el mismo día sin bloquearse entre sí.
+- No se generan nuevas notificaciones automáticas desde una predicción degradada o servida únicamente desde caché local.

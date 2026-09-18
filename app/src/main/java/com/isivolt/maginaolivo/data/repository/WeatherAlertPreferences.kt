@@ -71,15 +71,19 @@ class WeatherAlertPreferences(
             .apply()
     }
 
-    fun lastNotificationKey(kind: WeatherPlanningAlertKind): String? =
-        preferences.getString(notificationKey(kind), null)
+    fun lastNotificationKey(
+        kind: WeatherPlanningAlertKind,
+        scopeId: String = "global",
+    ): String? =
+        preferences.getString(notificationKey(kind, scopeId), null)
 
     fun setLastNotificationKey(
         kind: WeatherPlanningAlertKind,
         value: String?,
+        scopeId: String = "global",
     ) {
         preferences.edit().apply {
-            val key = notificationKey(kind)
+            val key = notificationKey(kind, scopeId)
             if (value == null) {
                 remove(key)
             } else {
@@ -89,15 +93,19 @@ class WeatherAlertPreferences(
     }
 
     fun clearLastNotificationKeys() {
+        val keys = preferences.all.keys.filter { it.startsWith(LAST_NOTIFICATION_PREFIX) }
         preferences.edit().apply {
-            WeatherPlanningAlertKind.entries.forEach { kind ->
-                remove(notificationKey(kind))
-            }
+            keys.forEach(::remove)
         }.apply()
     }
 
-    private fun notificationKey(kind: WeatherPlanningAlertKind): String =
-        "last_notification_" + kind.name.lowercase()
+    private fun notificationKey(
+        kind: WeatherPlanningAlertKind,
+        scopeId: String,
+    ): String =
+        LAST_NOTIFICATION_PREFIX +
+            kind.name.lowercase() + "_" +
+            scopeId.replace(Regex("[^A-Za-z0-9_-]"), "_")
 
     private companion object {
         const val PREFERENCES_NAME = "magina_weather_alerts"
@@ -110,6 +118,7 @@ class WeatherAlertPreferences(
         const val KEY_WIND_THRESHOLD = "wind_threshold_kmh"
         const val KEY_FROST_ENABLED = "frost_alert_enabled"
         const val KEY_FROST_THRESHOLD = "frost_threshold_c"
+        const val LAST_NOTIFICATION_PREFIX = "last_notification_"
         const val DEFAULT_THRESHOLD = 60
         const val DEFAULT_HORIZON_DAYS = 2
         const val DEFAULT_WIND_THRESHOLD = 40

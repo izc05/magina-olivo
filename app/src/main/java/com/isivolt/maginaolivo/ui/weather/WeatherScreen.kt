@@ -33,6 +33,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.isivolt.maginaolivo.data.local.FarmEntity
+import com.isivolt.maginaolivo.data.repository.FarmWeatherAssignmentPreferences
 import com.isivolt.maginaolivo.data.repository.WeatherAlertPreferences
 import com.isivolt.maginaolivo.data.repository.WeatherLoadResult
 import com.isivolt.maginaolivo.data.repository.WeatherRepository
@@ -56,10 +58,14 @@ private sealed interface WeatherUiState {
 fun WeatherScreen(
     repository: WeatherRepository,
     radarRepository: WeatherRadarRepository,
+    farms: List<FarmEntity>,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current.applicationContext
     val alertPreferences = remember(context) { WeatherAlertPreferences(context) }
+    val farmWeatherAssignments = remember(context) {
+        FarmWeatherAssignmentPreferences(context)
+    }
     var showRadar by rememberSaveable { mutableStateOf(false) }
     var showAlerts by rememberSaveable { mutableStateOf(false) }
 
@@ -67,6 +73,8 @@ fun WeatherScreen(
         WeatherAlertsScreen(
             repository = repository,
             preferences = alertPreferences,
+            farms = farms,
+            farmAssignments = farmWeatherAssignments,
             onBack = { showAlerts = false },
         )
         return

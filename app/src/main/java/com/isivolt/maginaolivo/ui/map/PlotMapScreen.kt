@@ -80,7 +80,6 @@ fun PlotMapScreen(
             override fun onResume(owner: LifecycleOwner) = mapView.onResume()
             override fun onPause(owner: LifecycleOwner) = mapView.onPause()
             override fun onStop(owner: LifecycleOwner) = mapView.onStop()
-            override fun onLowMemory(owner: LifecycleOwner) = mapView.onLowMemory()
         }
         activity.lifecycle.addObserver(observer)
         onDispose {

@@ -36,7 +36,7 @@ class PlotMapCatastroFlowE2ETest {
 
     private lateinit var database: MaginaOlivoDatabase
     private lateinit var repository: LocalFieldRepository
-    private lateinit var farmId: String
+    private lateinit var farm: FarmEntity
 
     private val parcel = CatastroParcel(
         featureId = "23013A00700198",
@@ -93,8 +93,8 @@ class PlotMapCatastroFlowE2ETest {
             idFactory = { ids.next() },
         )
 
-        farmId = runBlocking {
-            repository.createFarm("Finca MapLibre E2E").id
+        farm = runBlocking {
+            repository.createFarm("Finca MapLibre E2E")
         }
     }
 
@@ -105,15 +105,6 @@ class PlotMapCatastroFlowE2ETest {
 
     @Test
     fun realMapTouchSelectsParcelAndOpensReviewBeforeSavingToRoom() {
-        val farm = runBlocking {
-            var result: com.isivolt.maginaolivo.data.local.FarmEntity? = null
-            repository.observeFarms().collect { farms ->
-                result = farms.firstOrNull()
-                if (result != null) throw StopCollecting
-            }
-            checkNotNull(result)
-        }
-
         var mapReady = false
         var saved = false
 
@@ -200,12 +191,11 @@ class PlotMapCatastroFlowE2ETest {
         assertNotNull(stored)
         stored!!
         assertEquals("plot-map-e2e", stored.id)
-        assertEquals(farmId, stored.farmId)
+        assertEquals(farm.id, stored.farmId)
         assertEquals(parcel.cadastralReference, stored.cadastralReference)
         assertEquals(parcel.geometryGeoJson, stored.boundaryGeoJson)
         assertEquals("catastro", stored.boundarySource)
         assertEquals("pending_upload", stored.syncState)
     }
 
-    private object StopCollecting : RuntimeException()
 }

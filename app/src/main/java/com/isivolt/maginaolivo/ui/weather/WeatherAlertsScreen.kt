@@ -41,17 +41,18 @@ import com.isivolt.maginaolivo.data.repository.WeatherLoadResult
 import com.isivolt.maginaolivo.data.repository.WeatherRepository
 import com.isivolt.maginaolivo.data.worker.WeatherRainAlertScheduler
 import com.isivolt.maginaolivo.domain.weather.MaginaWeatherMunicipalities
-import com.isivolt.maginaolivo.domain.weather.RainAlert
-import com.isivolt.maginaolivo.domain.weather.RainAlertEngine
-import com.isivolt.maginaolivo.domain.weather.RainAlertLevel
+import com.isivolt.maginaolivo.domain.weather.WeatherPlanningAlert
+import com.isivolt.maginaolivo.domain.weather.WeatherPlanningAlertEngine
+import com.isivolt.maginaolivo.domain.weather.WeatherPlanningAlertKind
+import com.isivolt.maginaolivo.domain.weather.WeatherPlanningAlertLevel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private sealed interface RainAlertsUiState {
-    data object Loading : RainAlertsUiState
-    data class Ready(val result: WeatherLoadResult) : RainAlertsUiState
-    data class Error(val message: String) : RainAlertsUiState
+private sealed interface PlanningAlertsUiState {
+    data object Loading : PlanningAlertsUiState
+    data class Ready(val result: WeatherLoadResult) : PlanningAlertsUiState
+    data class Error(val message: String) : PlanningAlertsUiState
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,8 +65,16 @@ fun WeatherAlertsScreen(
     val context = LocalContext.current
     var settings by remember { mutableStateOf(preferences.read()) }
     var refreshKey by rememberSaveable { mutableIntStateOf(0) }
-    var state by remember { mutableStateOf<RainAlertsUiState>(RainAlertsUiState.Loading) }
+    var state by remember { mutableStateOf<PlanningAlertsUiState>(PlanningAlertsUiState.Loading) }
     var permissionMessage by rememberSaveable { mutableStateOf<String?>(null) }
+
+    fun settingsChanged() {
+        preferences.clearLastNotificationKeys()
+        settings = preferences.read()
+        if (settings.notificationsEnabled) {
+            WeatherRainAlertScheduler.checkNow(context)
+        }
+    }
 
     fun enableNotifications() {
         preferences.setNotificationsEnabled(true)
@@ -91,15 +100,20 @@ fun WeatherAlertsScreen(
     LaunchedEffect(
         settings.municipalityCode,
         settings.thresholdPercent,
+        settings.windThresholdKmh,
+        settings.frostThresholdC,
         settings.horizonDays,
+        settings.rainAlertEnabled,
+        settings.windAlertEnabled,
+        settings.frostAlertEnabled,
         refreshKey,
     ) {
-        state = RainAlertsUiState.Loading
+        state = PlanningAlertsUiState.Loading
         state = repository.loadForecast(settings.municipalityCode)
             .fold(
-                onSuccess = { RainAlertsUiState.Ready(it) },
+                onSuccess = { PlanningAlertsUiState.Ready(it) },
                 onFailure = {
-                    RainAlertsUiState.Error(
+                    PlanningAlertsUiState.Error(
                         it.message ?: "No se ha podido consultar la predicción.",
                     )
                 },
@@ -109,7 +123,7 @@ fun WeatherAlertsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Avisos de lluvia") },
+                title = { Text("Avisos meteorológicos") },
                 navigationIcon = {
                     TextButton(onClick = onBack) {
                         Text("Atrás")
@@ -139,11 +153,11 @@ fun WeatherAlertsScreen(
                         style = MaterialTheme.typography.headlineSmall,
                     )
                     Text(
-                        text = "Mágina Olivo puede avisarte cuando la probabilidad diaria de lluvia de AEMET supera el umbral elegido.",
+                        text = "Configura avisos de lluvia, viento y temperatura mínima a partir de la predicción municipal de AEMET.",
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Text(
-                        text = "Estos son avisos de planificación de Mágina Olivo, no avisos oficiales amarillo, naranja o rojo de AEMET.",
+                        text = "Son avisos de planificación de Mágina Olivo. No son avisos oficiales amarillo, naranja o rojo de AEMET y no sustituyen la observación local de la finca.",
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -163,7 +177,7 @@ fun WeatherAlertsScreen(
                                 selected = settings.municipalityCode == municipality.code,
                                 onClick = {
                                     preferences.setMunicipalityCode(municipality.code)
-                                    settings = preferences.read()
+                                    settingsChanged()
                                 },
                                 label = { Text(municipality.name) },
                             )
@@ -173,29 +187,125 @@ fun WeatherAlertsScreen(
             }
 
             item {
-                SectionCard(title = "Probabilidad mínima") {
-                    Text(
-                        text = "Avisar desde ${settings.thresholdPercent}%",
-                        style = MaterialTheme.typography.titleMedium,
-                    )
+                SectionCard(title = "Tipos de aviso") {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        listOf(50, 60, 70, 80).forEach { threshold ->
-                            FilterChip(
-                                selected = settings.thresholdPercent == threshold,
-                                onClick = {
-                                    preferences.setThresholdPercent(threshold)
-                                    preferences.setLastNotificationKey(null)
-                                    settings = preferences.read()
-                                    if (settings.notificationsEnabled) {
-                                        WeatherRainAlertScheduler.checkNow(context)
-                                    }
-                                },
-                                label = { Text("$threshold%") },
-                            )
+                        FilterChip(
+                            selected = settings.rainAlertEnabled,
+                            onClick = {
+                                preferences.setRainAlertEnabled(!settings.rainAlertEnabled)
+                                settingsChanged()
+                            },
+                            label = { Text("Lluvia") },
+                        )
+                        FilterChip(
+                            selected = settings.windAlertEnabled,
+                            onClick = {
+                                preferences.setWindAlertEnabled(!settings.windAlertEnabled)
+                                settingsChanged()
+                            },
+                            label = { Text("Viento") },
+                        )
+                        FilterChip(
+                            selected = settings.frostAlertEnabled,
+                            onClick = {
+                                preferences.setFrostAlertEnabled(!settings.frostAlertEnabled)
+                                settingsChanged()
+                            },
+                            label = { Text("Helada") },
+                        )
+                    }
+                    Text(
+                        text = "Viento y helada están desactivados inicialmente y solo se activan cuando tú los seleccionas.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+
+            if (settings.rainAlertEnabled) {
+                item {
+                    SectionCard(title = "Lluvia") {
+                        Text(
+                            text = "Avisar desde ${settings.thresholdPercent}% de probabilidad",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            listOf(50, 60, 70, 80).forEach { threshold ->
+                                FilterChip(
+                                    selected = settings.thresholdPercent == threshold,
+                                    onClick = {
+                                        preferences.setThresholdPercent(threshold)
+                                        settingsChanged()
+                                    },
+                                    label = { Text("$threshold%") },
+                                )
+                            }
                         }
+                    }
+                }
+            }
+
+            if (settings.windAlertEnabled) {
+                item {
+                    SectionCard(title = "Viento") {
+                        Text(
+                            text = "Avisar desde ${settings.windThresholdKmh} km/h",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            listOf(30, 40, 50, 60).forEach { threshold ->
+                                FilterChip(
+                                    selected = settings.windThresholdKmh == threshold,
+                                    onClick = {
+                                        preferences.setWindThresholdKmh(threshold)
+                                        settingsChanged()
+                                    },
+                                    label = { Text("$threshold") },
+                                )
+                            }
+                        }
+                        Text(
+                            text = "Mágina Olivo usa el máximo diario previsto. A partir de 60 km/h se etiqueta como nivel alto interno.",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            }
+
+            if (settings.frostAlertEnabled) {
+                item {
+                    SectionCard(title = "Temperatura mínima / helada") {
+                        Text(
+                            text = "Avisar si la mínima prevista es ≤ ${settings.frostThresholdC} °C",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            listOf(0, 1, 2, 3).forEach { threshold ->
+                                FilterChip(
+                                    selected = settings.frostThresholdC == threshold,
+                                    onClick = {
+                                        preferences.setFrostThresholdC(threshold)
+                                        settingsChanged()
+                                    },
+                                    label = { Text("$threshold °C") },
+                                )
+                            }
+                        }
+                        Text(
+                            text = "0 °C o menos se etiqueta como nivel alto interno. Entre 1 °C y el umbral elegido se muestra como posible riesgo, porque una predicción municipal no representa exactamente cada parcela.",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
                     }
                 }
             }
@@ -215,11 +325,7 @@ fun WeatherAlertsScreen(
                                 selected = settings.horizonDays == days,
                                 onClick = {
                                     preferences.setHorizonDays(days)
-                                    preferences.setLastNotificationKey(null)
-                                    settings = preferences.read()
-                                    if (settings.notificationsEnabled) {
-                                        WeatherRainAlertScheduler.checkNow(context)
-                                    }
+                                    settingsChanged()
                                 },
                                 label = { Text(if (days == 1) "1 día" else "$days días") },
                             )
@@ -232,9 +338,9 @@ fun WeatherAlertsScreen(
                 SectionCard(title = "Notificaciones Android") {
                     Text(
                         text = if (settings.notificationsEnabled) {
-                            "Activadas. Mágina Olivo revisará la previsión periódicamente."
+                            "Activadas. Mágina Olivo revisará periódicamente solo los tipos de aviso que hayas seleccionado."
                         } else {
-                            "Desactivadas. Los avisos siguen disponibles dentro de la app."
+                            "Desactivadas. Los avisos siguen visibles dentro de la app."
                         },
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -243,7 +349,7 @@ fun WeatherAlertsScreen(
                         Button(
                             onClick = {
                                 preferences.setNotificationsEnabled(false)
-                                preferences.setLastNotificationKey(null)
+                                preferences.clearLastNotificationKeys()
                                 WeatherRainAlertScheduler.cancel(context)
                                 settings = preferences.read()
                             },
@@ -282,7 +388,7 @@ fun WeatherAlertsScreen(
             }
 
             when (val current = state) {
-                RainAlertsUiState.Loading -> {
+                PlanningAlertsUiState.Loading -> {
                     item {
                         Row(
                             modifier = Modifier
@@ -295,7 +401,7 @@ fun WeatherAlertsScreen(
                     }
                 }
 
-                is RainAlertsUiState.Error -> {
+                is PlanningAlertsUiState.Error -> {
                     item {
                         SectionCard(title = "Previsión no disponible") {
                             Text(current.message)
@@ -306,8 +412,8 @@ fun WeatherAlertsScreen(
                     }
                 }
 
-                is RainAlertsUiState.Ready -> {
-                    val alerts = RainAlertEngine.evaluate(
+                is PlanningAlertsUiState.Ready -> {
+                    val alerts = WeatherPlanningAlertEngine.evaluate(
                         forecast = current.result.forecast,
                         settings = settings,
                     )
@@ -324,7 +430,7 @@ fun WeatherAlertsScreen(
                         item {
                             SectionCard(title = "Datos guardados") {
                                 Text(
-                                    "La predicción mostrada procede de caché. Puede consultarse, pero no se genera una nueva notificación automática con datos degradados.",
+                                    "La predicción mostrada procede de caché. Puede consultarse, pero no se generan nuevas notificaciones automáticas con datos degradados.",
                                 )
                             }
                         }
@@ -334,16 +440,16 @@ fun WeatherAlertsScreen(
                         item {
                             SectionCard(title = "Sin avisos activos") {
                                 Text(
-                                    "Ninguno de los días revisados alcanza el ${settings.thresholdPercent}% de probabilidad de lluvia.",
+                                    "Ninguno de los tipos activados supera su umbral dentro del horizonte seleccionado.",
                                 )
                             }
                         }
                     } else {
                         items(
                             items = alerts,
-                            key = { it.date },
+                            key = { it.kind.name + "|" + it.date },
                         ) { alert ->
-                            RainAlertCard(alert)
+                            PlanningAlertCard(alert)
                         }
                     }
                 }
@@ -376,8 +482,8 @@ private fun SectionCard(
 }
 
 @Composable
-private fun RainAlertCard(
-    alert: RainAlert,
+private fun PlanningAlertCard(
+    alert: WeatherPlanningAlert,
 ) {
     Card(
         modifier = Modifier
@@ -389,14 +495,11 @@ private fun RainAlertCard(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(
-                text = when (alert.level) {
-                    RainAlertLevel.HIGH -> "Alta probabilidad de lluvia"
-                    RainAlertLevel.NOTICE -> "Lluvia prevista"
-                },
+                text = alertTitle(alert),
                 style = MaterialTheme.typography.titleMedium,
             )
             Text(
-                text = "${alert.precipitationProbabilityPercent}%",
+                text = alertValue(alert),
                 style = MaterialTheme.typography.headlineMedium,
             )
             Text(
@@ -404,12 +507,51 @@ private fun RainAlertCard(
                 style = MaterialTheme.typography.bodyLarge,
             )
             Text(
-                text = "Revisa la previsión antes de planificar trabajos en el olivar.",
+                text = alertAdvice(alert),
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
     }
 }
+
+private fun alertTitle(alert: WeatherPlanningAlert): String =
+    when (alert.kind) {
+        WeatherPlanningAlertKind.RAIN ->
+            if (alert.level == WeatherPlanningAlertLevel.HIGH) {
+                "Alta probabilidad de lluvia"
+            } else {
+                "Lluvia prevista"
+            }
+        WeatherPlanningAlertKind.WIND ->
+            if (alert.level == WeatherPlanningAlertLevel.HIGH) {
+                "Viento fuerte previsto"
+            } else {
+                "Aviso de viento"
+            }
+        WeatherPlanningAlertKind.FROST ->
+            if (alert.level == WeatherPlanningAlertLevel.HIGH) {
+                "Temperatura mínima de helada"
+            } else {
+                "Posible riesgo de helada"
+            }
+    }
+
+private fun alertValue(alert: WeatherPlanningAlert): String =
+    when (alert.kind) {
+        WeatherPlanningAlertKind.RAIN -> "${alert.value.toInt()}%"
+        WeatherPlanningAlertKind.WIND -> "${formatAlertNumber(alert.value)} km/h"
+        WeatherPlanningAlertKind.FROST -> "${formatAlertNumber(alert.value)} °C"
+    }
+
+private fun alertAdvice(alert: WeatherPlanningAlert): String =
+    when (alert.kind) {
+        WeatherPlanningAlertKind.RAIN ->
+            "Revisa la previsión antes de planificar trabajos en el olivar."
+        WeatherPlanningAlertKind.WIND ->
+            "Comprueba el viento local antes de realizar trabajos expuestos."
+        WeatherPlanningAlertKind.FROST ->
+            "La mínima municipal no representa exactamente la parcela; confirma la situación local."
+    }
 
 private fun formatAlertDate(value: String): String =
     runCatching {
@@ -423,3 +565,10 @@ private fun formatAlertDate(value: String): String =
             ).replaceFirstChar { it.uppercase(Locale("es", "ES")) }
         }
     }.getOrDefault(value)
+
+private fun formatAlertNumber(value: Double): String =
+    if (value % 1.0 == 0.0) {
+        value.toInt().toString()
+    } else {
+        String.format(Locale("es", "ES"), "%.1f", value)
+    }

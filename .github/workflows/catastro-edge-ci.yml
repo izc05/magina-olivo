@@ -35,3 +35,6 @@ jobs:
 
       - name: Catastro adapter tests
         run: deno test --allow-read supabase/functions/catastro-map/
+
+      - name: Catastro E2E helper tests
+        run: deno test supabase/e2e/catastro-e2e_test.ts

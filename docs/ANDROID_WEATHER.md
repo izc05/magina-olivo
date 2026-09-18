@@ -83,3 +83,31 @@ Si el historial está vacío, Android muestra el estado de configuración pendie
 
 El bucket no es público. Android no recibe credenciales de Storage ni la clave AEMET.
 La Edge Function usa la clave secreta de Supabase exclusivamente en servidor para almacenar y firmar los fotogramas.
+
+
+## Avisos de lluvia V1
+
+Los avisos de Mágina Olivo son una ayuda de planificación basada en la probabilidad diaria de precipitación de AEMET. No son avisos oficiales meteorológicos ni sustituyen avisos de Protección Civil.
+
+### Reglas
+
+- Umbral por defecto: 60 %.
+- Umbrales configurables: 50, 60, 70 u 80 %.
+- Horizonte configurable: 1, 2 o 3 días.
+- Nivel `NOTICE`: desde el umbral elegido hasta 79 %.
+- Nivel `HIGH`: 80 % o más.
+- La selección se hace únicamente con días válidos de la predicción AEMET.
+- Si la app solo dispone de caché degradada, no genera una nueva notificación automática.
+
+### Notificaciones Android
+
+- Las notificaciones están desactivadas por defecto.
+- En Android 13+ se solicita `POST_NOTIFICATIONS` únicamente cuando el usuario pulsa Activar notificaciones.
+- WorkManager revisa la predicción aproximadamente cada 6 horas, con restricción de red.
+- Al activar o cambiar umbral/horizonte se puede ejecutar una comprobación inmediata.
+- Se deduplica por municipio, fecha, nivel y umbral para evitar repetir el mismo aviso.
+- Si ya no existe ningún día que supere el umbral, el estado de deduplicación se limpia para permitir un nuevo aviso futuro.
+
+### Dependencia
+
+WorkManager estable `2.11.2`, verificado contra la documentación oficial de AndroidX en septiembre de 2026.

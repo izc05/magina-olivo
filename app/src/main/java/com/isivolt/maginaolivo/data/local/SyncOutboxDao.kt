@@ -20,7 +20,14 @@ interface SyncOutboxDao {
     @Query(
         """
         SELECT * FROM sync_outbox
-        ORDER BY enqueuedAtEpochMs ASC
+        ORDER BY
+            CASE entityType
+                WHEN 'farm' THEN 0
+                WHEN 'plot' THEN 1
+                ELSE 2
+            END ASC,
+            enqueuedAtEpochMs ASC,
+            entityId ASC
         LIMIT :limit
         """,
     )

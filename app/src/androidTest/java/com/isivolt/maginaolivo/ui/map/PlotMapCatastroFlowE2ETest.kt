@@ -91,6 +91,7 @@ class PlotMapCatastroFlowE2ETest {
         repository = LocalFieldRepository(
             farmDao = database.farmDao(),
             plotDao = database.plotDao(),
+            fieldWriteDao = database.fieldWriteDao(),
             clock = { 1_789_752_000_000L },
             idFactory = { ids.next() },
         )

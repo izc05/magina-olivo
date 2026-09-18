@@ -66,6 +66,7 @@ class CatastroRoomE2ETest {
             val repository = LocalFieldRepository(
                 farmDao = database.farmDao(),
                 plotDao = database.plotDao(),
+                fieldWriteDao = database.fieldWriteDao(),
                 clock = { 1_789_748_000_000L },
                 idFactory = sequenceOf("farm-e2e", "plot-e2e").iterator()::next,
             )

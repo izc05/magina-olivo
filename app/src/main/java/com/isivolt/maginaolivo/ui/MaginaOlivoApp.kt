@@ -18,6 +18,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -44,7 +45,7 @@ fun MaginaOlivoApp() {
 
     var showMap by rememberSaveable { mutableStateOf(false) }
     var showAddParcel by rememberSaveable { mutableStateOf(false) }
-    var pendingCatastroReference by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingCatastroReferences by remember { mutableStateOf<List<String>>(emptyList()) }
     var showCreateFarm by rememberSaveable { mutableStateOf(false) }
     var farmName by rememberSaveable { mutableStateOf("") }
     var farmError by rememberSaveable { mutableStateOf<String?>(null) }
@@ -55,27 +56,33 @@ fun MaginaOlivoApp() {
 
     MaterialTheme {
         if (showAddParcel) {
-            AddParcelByReferenceScreen(
-                farms = farms,
-                repository = repository,
-                gateway = catastroGateway,
-                initialReference = pendingCatastroReference,
-                onBack = {
-                    pendingCatastroReference = null
-                    showAddParcel = false
-                },
-                onSaved = {
-                    pendingCatastroReference = null
-                    showAddParcel = false
-                },
-            )
+            key(pendingCatastroReferences.firstOrNull()) {
+                AddParcelByReferenceScreen(
+                    farms = farms,
+                    repository = repository,
+                    gateway = catastroGateway,
+                    initialReference = pendingCatastroReferences.firstOrNull(),
+                    onBack = {
+                        pendingCatastroReferences = emptyList()
+                        showAddParcel = false
+                    },
+                    onSaved = {
+                        if (pendingCatastroReferences.size > 1) {
+                            pendingCatastroReferences = pendingCatastroReferences.drop(1)
+                        } else {
+                            pendingCatastroReferences = emptyList()
+                            showAddParcel = false
+                        }
+                    },
+                )
+            }
         } else if (showMap) {
             PlotMapScreen(
                 plots = plots,
                 catastroGateway = catastroGateway,
-                onCatastroReferenceSelected = { reference ->
-                    pendingCatastroReference = reference
-                    showAddParcel = true
+                onCatastroReferencesSelected = { references ->
+                    pendingCatastroReferences = references.distinct()
+                    showAddParcel = pendingCatastroReferences.isNotEmpty()
                 },
                 onBack = { showMap = false },
             )
@@ -141,7 +148,7 @@ fun MaginaOlivoApp() {
 
                     Button(
                         onClick = {
-                            pendingCatastroReference = null
+                            pendingCatastroReferences = emptyList()
                             showAddParcel = true
                         },
                         enabled = farms.isNotEmpty(),

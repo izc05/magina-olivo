@@ -1,9 +1,15 @@
+import proj4 from "npm:proj4@2.22.0";
+
 const CATASTRO_WFS_URL = "https://ovc.catastro.meh.es/INSPIRE/wfsCP.aspx";
+const CATASTRO_SRS = "EPSG::25830";
+const WGS84 = "EPSG:4326";
+const ETRS89_UTM30 =
+  "+proj=utm +zone=30 +ellps=GRS80 +units=m +no_defs +type=crs";
+
 const TIMEOUT_MS = 8_000;
 const MAX_FEATURES = 80;
 const MAX_XML_BYTES = 2_000_000;
 const MAX_BBOX_SPAN = 0.05;
-const WEB_MERCATOR_RADIUS = 6_378_137;
 
 type Bbox = {
   minLongitude: number;
@@ -28,6 +34,8 @@ type Parcel = {
 type Body =
   | { operation: "reference"; reference: string }
   | { operation: "bbox"; bbox: Bbox };
+
+proj4.defs("EPSG:25830", ETRS89_UTM30);
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -75,20 +83,14 @@ function validateBbox(bbox: Bbox): string | null {
   return null;
 }
 
-function lonLatToMercator(longitude: number, latitude: number): [number, number] {
-  const x = WEB_MERCATOR_RADIUS * longitude * Math.PI / 180;
-  const safeLatitude = Math.max(-85.05112878, Math.min(85.05112878, latitude));
-  const y = WEB_MERCATOR_RADIUS *
-    Math.log(Math.tan(Math.PI / 4 + safeLatitude * Math.PI / 360));
-  return [x, y];
+function lonLatToUtm30(longitude: number, latitude: number): [number, number] {
+  const result = proj4(WGS84, "EPSG:25830", [longitude, latitude]);
+  return [result[0], result[1]];
 }
 
-function mercatorToLonLat(x: number, y: number): [number, number] {
-  const longitude = x / WEB_MERCATOR_RADIUS * 180 / Math.PI;
-  const latitude = (
-    2 * Math.atan(Math.exp(y / WEB_MERCATOR_RADIUS)) - Math.PI / 2
-  ) * 180 / Math.PI;
-  return [longitude, latitude];
+function utm30ToLonLat(easting: number, northing: number): [number, number] {
+  const result = proj4("EPSG:25830", WGS84, [easting, northing]);
+  return [result[0], result[1]];
 }
 
 function buildReferenceUrl(reference: string): string {
@@ -98,20 +100,32 @@ function buildReferenceUrl(reference: string): string {
   url.searchParams.set("request", "GetFeature");
   url.searchParams.set("STOREDQUERY_ID", "GetParcel");
   url.searchParams.set("refcat", reference);
-  url.searchParams.set("srsName", "EPSG::3857");
+  url.searchParams.set("srsName", CATASTRO_SRS);
   return url.toString();
 }
 
 function buildBboxUrl(bbox: Bbox): string {
-  const [minX, minY] = lonLatToMercator(bbox.minLongitude, bbox.minLatitude);
-  const [maxX, maxY] = lonLatToMercator(bbox.maxLongitude, bbox.maxLatitude);
+  const corners = [
+    lonLatToUtm30(bbox.minLongitude, bbox.minLatitude),
+    lonLatToUtm30(bbox.minLongitude, bbox.maxLatitude),
+    lonLatToUtm30(bbox.maxLongitude, bbox.minLatitude),
+    lonLatToUtm30(bbox.maxLongitude, bbox.maxLatitude),
+  ];
+
+  const eastings = corners.map(([easting]) => easting);
+  const northings = corners.map(([, northing]) => northing);
+
+  const minX = Math.min(...eastings);
+  const minY = Math.min(...northings);
+  const maxX = Math.max(...eastings);
+  const maxY = Math.max(...northings);
 
   const url = new URL(CATASTRO_WFS_URL);
   url.searchParams.set("service", "WFS");
   url.searchParams.set("version", "2.0.0");
   url.searchParams.set("request", "GetFeature");
   url.searchParams.set("typenames", "cp:CadastralParcel");
-  url.searchParams.set("srsName", "EPSG::3857");
+  url.searchParams.set("srsName", CATASTRO_SRS);
   url.searchParams.set("bbox", `${minX},${minY},${maxX},${maxY}`);
   url.searchParams.set("count", String(MAX_FEATURES));
   return url.toString();
@@ -155,7 +169,7 @@ function parseRing(text: string): number[][] | null {
 
   const ring: number[][] = [];
   for (let index = 0; index < values.length; index += 2) {
-    ring.push(mercatorToLonLat(values[index], values[index + 1]));
+    ring.push(utm30ToLonLat(values[index], values[index + 1]));
     if (ring.length > 10_000) return null;
   }
 
@@ -270,7 +284,7 @@ function sourceMetadata() {
   return {
     provider: "Dirección General del Catastro",
     dataset: "INSPIRE Cadastral Parcels",
-    service: "WFS 2.0",
+    service: "WFS 2.0 / EPSG:25830",
     checkedAt: new Date().toISOString(),
   };
 }

@@ -38,7 +38,6 @@ data class CampaignEntity(
         Index("ownerId"),
         Index("campaignId"),
         Index("parcelId"),
-        Index(value = ["campaignId", "parcelId"], unique = true),
     ],
 )
 data class CampaignParcelEntity(

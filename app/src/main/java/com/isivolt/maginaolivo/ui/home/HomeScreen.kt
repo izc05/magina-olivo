@@ -17,6 +17,11 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
@@ -25,7 +30,31 @@ fun HomeScreen(
     innerPadding: PaddingValues,
     onOpenOliveGrove: () -> Unit,
     onQuickRegister: () -> Unit,
+    weatherSource: HomeWeatherSummarySource? = null,
 ) {
+    var weatherState by remember(weatherSource) {
+        mutableStateOf<HomeWeatherCardState>(
+            if (weatherSource == null) {
+                HomeWeatherCardState.PendingIntegration
+            } else {
+                HomeWeatherCardState.Loading
+            },
+        )
+    }
+
+    LaunchedEffect(weatherSource) {
+        val source = weatherSource ?: return@LaunchedEffect
+        weatherState = HomeWeatherCardState.Loading
+        weatherState = source.loadSummary()
+            .fold(
+                onSuccess = { HomeWeatherCardState.Ready(it) },
+                onFailure = {
+                    HomeWeatherCardState.Error(
+                        it.message ?: "No se ha podido cargar el tiempo.",
+                    )
+                },
+            )
+    }
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -57,13 +86,7 @@ fun HomeScreen(
         }
 
         item {
-            HomeStatusCard(
-                eyebrow = "TIEMPO Y RADAR",
-                title = "Meteorología de tus fincas",
-                body = "Previsión, radar y avisos se conectarán aquí desde el módulo meteorológico validado.",
-                status = "Pendiente de integración",
-                emphasized = true,
-            )
+            HomeWeatherCard(state = weatherState)
         }
 
         item {
@@ -174,3 +197,76 @@ private fun HomeStatusCard(
         }
     }
 }
+
+
+@Composable
+private fun HomeWeatherCard(
+    state: HomeWeatherCardState,
+) {
+    when (state) {
+        HomeWeatherCardState.PendingIntegration -> {
+            HomeStatusCard(
+                eyebrow = "TIEMPO Y RADAR",
+                title = "Meteorología de tus fincas",
+                body = "Previsión, radar y avisos se conectarán aquí desde el módulo meteorológico validado.",
+                status = "Pendiente de integración",
+                emphasized = true,
+            )
+        }
+
+        HomeWeatherCardState.Loading -> {
+            HomeStatusCard(
+                eyebrow = "TIEMPO Y RADAR",
+                title = "Actualizando meteorología",
+                body = "Consultando la predicción disponible para el municipio de referencia.",
+                status = "Cargando…",
+                emphasized = true,
+            )
+        }
+
+        is HomeWeatherCardState.Error -> {
+            HomeStatusCard(
+                eyebrow = "TIEMPO Y RADAR",
+                title = "Meteorología no disponible",
+                body = state.message,
+                status = "Sin datos nuevos",
+                emphasized = true,
+            )
+        }
+
+        is HomeWeatherCardState.Ready -> {
+            val summary = state.summary
+            val min = summary.temperatureMinC?.let(::formatHomeTemperature) ?: "—"
+            val max = summary.temperatureMaxC?.let(::formatHomeTemperature) ?: "—"
+            val rain = summary.precipitationProbabilityPercent?.let { "${it}%" } ?: "—"
+            val source = if (summary.degraded) {
+                "${summary.providerLabel} · caché"
+            } else {
+                summary.providerLabel
+            }
+
+            HomeStatusCard(
+                eyebrow = "TIEMPO Y RADAR",
+                title = summary.municipalityName,
+                body = buildString {
+                    append(summary.skyDescription ?: "Predicción disponible")
+                    append(" · ")
+                    append(min)
+                    append("° / ")
+                    append(max)
+                    append("° · Lluvia ")
+                    append(rain)
+                },
+                status = "${source} · ${summary.freshnessLabel}",
+                emphasized = true,
+            )
+        }
+    }
+}
+
+private fun formatHomeTemperature(value: Double): String =
+    if (value % 1.0 == 0.0) {
+        value.toInt().toString()
+    } else {
+        String.format(java.util.Locale("es", "ES"), "%.1f", value)
+    }

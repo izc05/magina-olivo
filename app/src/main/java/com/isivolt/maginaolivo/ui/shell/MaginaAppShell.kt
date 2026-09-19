@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.isivolt.maginaolivo.ui.MaginaOlivoApp
 import com.isivolt.maginaolivo.ui.calendar.CalendarScreen
 import com.isivolt.maginaolivo.ui.home.HomeScreen
+import com.isivolt.maginaolivo.ui.home.HomeWeatherSummarySource
 import com.isivolt.maginaolivo.ui.profile.ProfileScreen
 import com.isivolt.maginaolivo.ui.register.RegisterScreen
 
@@ -33,7 +34,9 @@ enum class MainDestination(
 }
 
 @Composable
-fun MaginaAppShell() {
+fun MaginaAppShell(
+    weatherSource: HomeWeatherSummarySource? = null,
+) {
     var destination by remember { mutableStateOf(MainDestination.HOME) }
 
     Scaffold(
@@ -65,6 +68,7 @@ fun MaginaAppShell() {
                 innerPadding = innerPadding,
                 onOpenOliveGrove = { destination = MainDestination.OLIVE_GROVE },
                 onQuickRegister = { destination = MainDestination.REGISTER },
+                weatherSource = weatherSource,
             )
             MainDestination.OLIVE_GROVE -> {
                 Surface(

@@ -68,4 +68,21 @@ class CanonicalUiContractTest {
         composeRule.onNodeWithText("Perfil").performClick()
         composeRule.onNodeWithText("Cuenta, datos, avisos y preferencias de Mágina Olivo.").assertIsDisplayed()
     }
+
+    @Test
+    fun home_exposesCanonicalInformationBlocksAndQuickRegister() {
+        composeRule.setContent {
+            MaginaOlivoTheme {
+                MaginaAppShell()
+            }
+        }
+
+        composeRule.onNodeWithText("TIEMPO Y RADAR").assertIsDisplayed()
+        composeRule.onNodeWithText("ALERTAS").assertIsDisplayed()
+        composeRule.onNodeWithText("MERCADO DEL ACEITE").assertIsDisplayed()
+        composeRule.onNodeWithText("AVISOS").assertIsDisplayed()
+
+        composeRule.onNodeWithText("Registrar una actividad").performClick()
+        composeRule.onNodeWithText("Elige qué quieres añadir. La estructura queda preparada para conectarse después con campaña, finca y parcela sin duplicar lógica.").assertIsDisplayed()
+    }
 }

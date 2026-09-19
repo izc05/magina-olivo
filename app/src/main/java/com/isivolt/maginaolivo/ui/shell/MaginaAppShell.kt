@@ -1,11 +1,8 @@
 package com.isivolt.maginaolivo.ui.shell
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -21,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.isivolt.maginaolivo.ui.MaginaOlivoApp
 import com.isivolt.maginaolivo.ui.calendar.CalendarScreen
+import com.isivolt.maginaolivo.ui.home.HomeScreen
 import com.isivolt.maginaolivo.ui.profile.ProfileScreen
 import com.isivolt.maginaolivo.ui.register.RegisterScreen
 
@@ -63,7 +61,11 @@ fun MaginaAppShell() {
         },
     ) { innerPadding ->
         when (destination) {
-            MainDestination.HOME -> HomeShellScreen(innerPadding)
+            MainDestination.HOME -> HomeScreen(
+                innerPadding = innerPadding,
+                onOpenOliveGrove = { destination = MainDestination.OLIVE_GROVE },
+                onQuickRegister = { destination = MainDestination.REGISTER },
+            )
             MainDestination.OLIVE_GROVE -> {
                 Surface(
                     modifier = Modifier
@@ -76,73 +78,6 @@ fun MaginaAppShell() {
             MainDestination.REGISTER -> RegisterScreen(innerPadding)
             MainDestination.CALENDAR -> CalendarScreen(innerPadding)
             MainDestination.PROFILE -> ProfileScreen(innerPadding)
-        }
-    }
-}
-
-@Composable
-private fun HomeShellScreen(
-    innerPadding: PaddingValues,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(innerPadding)
-            .padding(horizontal = 22.dp, vertical = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
-    ) {
-        Text(
-            text = "Buenos días",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Text(
-            text = "Tu olivar de un vistazo",
-            style = MaterialTheme.typography.headlineLarge,
-        )
-        Text(
-            text = "Inicio queda preparado para tiempo y radar, alertas, mercado del aceite, avisos y accesos rápidos a tus fincas.",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        ShellCard(
-            title = "Tiempo y radar",
-            body = "Resumen meteorológico y avisos por finca.",
-        )
-        ShellCard(
-            title = "Mercado del aceite",
-            body = "AOVE, virgen y lampante con evolución cuando la fuente lo permita.",
-        )
-        ShellCard(
-            title = "Mi Olivar",
-            body = "Acceso a fincas, parcelas, campañas y actividad.",
-        )
-    }
-}
-
-@Composable
-private fun ShellCard(
-    title: String,
-    body: String,
-) {
-    Surface(
-        shape = RoundedCornerShape(22.dp),
-        tonalElevation = 2.dp,
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-            )
-            Text(
-                text = body,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }

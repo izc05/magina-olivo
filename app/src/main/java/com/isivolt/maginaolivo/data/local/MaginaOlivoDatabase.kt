@@ -210,12 +210,6 @@ abstract class MaginaOlivoDatabase : RoomDatabase() {
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_campaign_parcels_parcelId ON campaign_parcels(parcelId)",
                 )
-                db.execSQL(
-                    """
-                    CREATE UNIQUE INDEX IF NOT EXISTS index_campaign_parcels_campaignId_parcelId
-                    ON campaign_parcels(campaignId, parcelId)
-                    """.trimIndent(),
-                )
             }
         }
     }

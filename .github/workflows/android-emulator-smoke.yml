@@ -11,6 +11,7 @@ on:
       - "gradle.properties"
       - ".github/workflows/android-emulator-smoke.yml"
       - ".github/scripts/android-smoke-ui.py"
+      - ".github/scripts/android-emulator-smoke.sh"
   pull_request:
     paths:
       - "app/**"
@@ -19,6 +20,7 @@ on:
       - "gradle.properties"
       - ".github/workflows/android-emulator-smoke.yml"
       - ".github/scripts/android-smoke-ui.py"
+      - ".github/scripts/android-emulator-smoke.sh"
 
 concurrency:
   group: android-emulator-smoke-${{ github.ref }}
@@ -63,31 +65,8 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          script: |
-            set -eu
-
-            gradle :app:installDebug --stacktrace
-
-            adb shell settings put global hide_error_dialogs 1
-            adb logcat -c
-            adb shell am force-stop com.isivolt.maginaolivo
-            adb shell am start -W -n com.isivolt.maginaolivo/.MainActivity
-            sleep 3
-
-            adb shell uiautomator dump /sdcard/home.xml
-            adb pull /sdcard/home.xml /tmp/home.xml
-
-            python3 .github/scripts/android-smoke-ui.py tap /tmp/home.xml "Abrir mapa de parcelas"
-
-            sleep 5
-            adb shell uiautomator dump /sdcard/map.xml
-            adb pull /sdcard/map.xml /tmp/map.xml
-
-            python3 .github/scripts/android-smoke-ui.py assert /tmp/map.xml "Volver" "Mi ubicación" "PNOA" "Catastro"
-            echo "ANDROID_MAP_SMOKE_OK"
-
-            adb exec-out screencap -p > /tmp/map-smoke.png
-            adb logcat -d > /tmp/map-smoke-logcat.txt
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
+          script: bash .github/scripts/android-emulator-smoke.sh
 
       - name: Upload smoke evidence
         if: always()

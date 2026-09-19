@@ -95,6 +95,12 @@ python3 .github/scripts/android-smoke-ui.py tap /tmp/home.xml "Mi Olivar"
 
 sleep 2
 dump_ui /sdcard/olivar.xml /tmp/olivar.xml
+if ! grep -q 'text="Abrir mapa de parcelas"' /tmp/olivar.xml; then
+  echo "Map action is below the fold; scrolling Mi Olivar"
+  adb_safe adb shell input swipe 540 1900 540 900 400
+  sleep 1
+  dump_ui /sdcard/olivar.xml /tmp/olivar.xml
+fi
 python3 .github/scripts/android-smoke-ui.py tap /tmp/olivar.xml "Abrir mapa de parcelas"
 
 sleep 5

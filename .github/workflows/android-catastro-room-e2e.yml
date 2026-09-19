@@ -9,6 +9,8 @@ on:
       - "app/**"
       - "supabase/functions/catastro-map/**"
       - ".github/workflows/android-catastro-room-e2e.yml"
+      - ".github/scripts/android-catastro-room-e2e.sh"
+      - ".github/scripts/android-catastro-room-e2e.sh"
   pull_request:
     paths:
       - "app/**"
@@ -73,45 +75,7 @@ jobs:
           profile: pixel_6
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
           disable-animations: true
-          script: |
-            set -eu
-
-            set +e
-            gradle :app:connectedDebugAndroidTest --info --stacktrace > /tmp/catastro-first-attempt.log 2>&1
-            first_status=$?
-            set -e
-
-            cat /tmp/catastro-first-attempt.log
-            if [ "$first_status" -eq 0 ]; then
-              exit 0
-            fi
-
-            if ! grep -Eqi 'Failed to find ColorBuffer|device offline|adb.*failed|Unable to connect to adb|emulator.*disconnect|transport error' /tmp/catastro-first-attempt.log; then
-              echo "::error::Catastro E2E failed for a non-infrastructure reason; not retrying"
-              exit "$first_status"
-            fi
-
-            echo "::warning::Detected emulator/ADB infrastructure failure; performing one controlled retry"
-            adb kill-server >/dev/null 2>&1 || true
-            sleep 2
-            adb start-server
-            adb wait-for-device
-
-            i=0
-            while [ "$i" -lt 20 ]; do
-              if [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then
-                break
-              fi
-              i=$((i + 1))
-              sleep 2
-            done
-
-            if [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" != "1" ]; then
-              echo "::error::Emulator did not recover before retry"
-              exit "$first_status"
-            fi
-
-            gradle :app:connectedDebugAndroidTest --rerun-tasks --info --stacktrace
+          script: bash .github/scripts/android-catastro-room-e2e.sh
 
       - name: Upload Android E2E test reports
         if: always()

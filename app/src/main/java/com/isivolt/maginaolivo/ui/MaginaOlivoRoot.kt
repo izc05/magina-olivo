@@ -35,7 +35,7 @@ fun MaginaOlivoRoot() {
     val weatherAlertSource = remember(application, weatherPreferences) {
         WeatherRepositoryHomeAlertSummarySource(
             repository = application.weatherRepository,
-            preferences = weatherPreferences,
+            settingsProvider = { weatherPreferences.read() },
         )
     }
     val farmsFlow = remember(application) {

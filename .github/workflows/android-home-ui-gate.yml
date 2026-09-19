@@ -1,0 +1,78 @@
+name: Android Home UI Gate
+
+on:
+  push:
+    branches:
+      - feat/android-home-dashboard-v1
+  pull_request:
+    branches:
+      - feat/android-secondary-shell-v1
+    paths:
+      - "app/src/main/java/com/isivolt/maginaolivo/ui/**"
+      - "app/src/androidTest/java/com/isivolt/maginaolivo/ui/**"
+      - "docs/ANDROID_HOME_DASHBOARD_V1.md"
+      - ".github/workflows/android-home-ui-gate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-home-ui-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ui-gate:
+    name: Android Home UI Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android command-line tools
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ""
+
+      - name: Android SDK 36
+        run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Gradle 9.6
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.6.0"
+
+      - name: Enforce UI-only scope
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          changed="$(git diff --name-only "$BASE_SHA"...HEAD)"
+          echo "$changed"
+          if echo "$changed" | grep -E '^(app/src/main/java/com/isivolt/maginaolivo/(data|domain)/|app/schemas/|supabase/)'; then
+            echo "Home UI branch modified protected data/domain/backend paths."
+            exit 1
+          fi
+
+      - name: Unit tests
+        run: gradle :app:testDebugUnitTest --stacktrace
+
+      - name: Build debug
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Home contract source present
+        shell: bash
+        run: |
+          test -f app/src/main/java/com/isivolt/maginaolivo/ui/home/HomeScreen.kt
+          test -f docs/ANDROID_HOME_DASHBOARD_V1.md

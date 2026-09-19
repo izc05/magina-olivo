@@ -1,5 +1,7 @@
 package com.isivolt.maginaolivo.ui
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -54,7 +56,7 @@ fun MaginaOlivoApp() {
         SupabaseProvider.client?.let(::SupabaseCatastroParcelGateway)
     }
 
-    MaterialTheme {
+    com.isivolt.maginaolivo.ui.theme.MaginaOlivoTheme {
         if (showAddParcel) {
             key(pendingCatastroReferences.firstOrNull()) {
                 AddParcelByReferenceScreen(
@@ -98,6 +100,7 @@ fun MaginaOlivoApp() {
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
+                        .verticalScroll(rememberScrollState())
                         .padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {

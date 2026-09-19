@@ -1,0 +1,63 @@
+name: Android Home Weather Bridge Gate
+
+on:
+  push:
+    branches:
+      - feat/android-home-weather-bridge-v1
+  pull_request:
+    branches:
+      - feat/android-home-dashboard-v1
+    paths:
+      - "app/src/main/java/com/isivolt/maginaolivo/ui/home/**"
+      - "app/src/main/java/com/isivolt/maginaolivo/ui/shell/**"
+      - "docs/ANDROID_HOME_WEATHER_BRIDGE_V1.md"
+      - ".github/workflows/android-home-weather-bridge-gate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-home-weather-bridge-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bridge:
+    name: Android Home Weather Bridge Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android command-line tools
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ""
+
+      - name: Android SDK 36
+        run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Gradle 9.6
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.6.0"
+
+      - name: Unit tests
+        run: gradle :app:testDebugUnitTest --stacktrace
+
+      - name: Build debug
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Contract files
+        shell: bash
+        run: |
+          test -f app/src/main/java/com/isivolt/maginaolivo/ui/home/HomeWeatherContract.kt
+          test -f docs/ANDROID_HOME_WEATHER_BRIDGE_V1.md

@@ -8,6 +8,7 @@ import com.isivolt.maginaolivo.data.local.SyncOutboxEntity
 
 class RoomFieldSyncLocalStore(
     private val database: MaginaOlivoDatabase,
+    private val clock: () -> Long = System::currentTimeMillis,
 ) : FieldSyncLocalStore {
 
     override suspend fun pending(limit: Int): List<SyncOutboxEntity> =
@@ -21,7 +22,7 @@ class RoomFieldSyncLocalStore(
 
     override suspend fun markFarmSynced(entry: SyncOutboxEntity) {
         database.withTransaction {
-            database.farmDao().updateSyncState(entry.entityId, "synced")
+            database.farmDao().updateSyncState(entry.entityId, "synced", clock())
             database.syncOutboxDao().delete(
                 entry.entityType,
                 entry.entityId,
@@ -31,7 +32,7 @@ class RoomFieldSyncLocalStore(
 
     override suspend fun markPlotSynced(entry: SyncOutboxEntity) {
         database.withTransaction {
-            database.plotDao().updateSyncState(entry.entityId, "synced")
+            database.plotDao().updateSyncState(entry.entityId, "synced", clock())
             database.syncOutboxDao().delete(
                 entry.entityType,
                 entry.entityId,

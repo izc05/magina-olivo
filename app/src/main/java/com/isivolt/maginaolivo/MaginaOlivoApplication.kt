@@ -2,6 +2,7 @@ package com.isivolt.maginaolivo
 
 import android.app.Application
 import androidx.room.Room
+import com.isivolt.maginaolivo.data.local.LocalIdentityRepository
 import com.isivolt.maginaolivo.data.local.MaginaOlivoDatabase
 import com.isivolt.maginaolivo.data.notification.WeatherAlertNotifier
 import com.isivolt.maginaolivo.data.remote.SupabaseProvider
@@ -34,8 +35,15 @@ class MaginaOlivoApplication : Application() {
             MaginaOlivoDatabase::class.java,
             "magina-olivo.db",
         )
-            .addMigrations(MaginaOlivoDatabase.MIGRATION_1_2)
+            .addMigrations(
+                MaginaOlivoDatabase.MIGRATION_1_2,
+                MaginaOlivoDatabase.MIGRATION_2_3,
+            )
             .build()
+    }
+
+    val localIdentityRepository: LocalIdentityRepository by lazy {
+        LocalIdentityRepository(database.localProfileDao())
     }
 
     val fieldSyncScheduler: FieldSyncScheduler by lazy {
@@ -52,6 +60,7 @@ class MaginaOlivoApplication : Application() {
             plotDao = database.plotDao(),
             fieldWriteDao = database.fieldWriteDao(),
             syncScheduler = fieldSyncScheduler,
+            localIdentityRepository = localIdentityRepository,
         )
     }
 

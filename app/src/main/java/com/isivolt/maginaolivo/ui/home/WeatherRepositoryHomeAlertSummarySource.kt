@@ -1,7 +1,7 @@
 package com.isivolt.maginaolivo.ui.home
 
-import com.isivolt.maginaolivo.data.repository.WeatherAlertPreferences
 import com.isivolt.maginaolivo.data.repository.WeatherRepository
+import com.isivolt.maginaolivo.domain.weather.RainAlertSettings
 import com.isivolt.maginaolivo.domain.weather.WeatherPlanningAlert
 import com.isivolt.maginaolivo.domain.weather.WeatherPlanningAlertEngine
 import com.isivolt.maginaolivo.domain.weather.WeatherPlanningAlertKind
@@ -10,11 +10,11 @@ import java.util.Locale
 
 class WeatherRepositoryHomeAlertSummarySource(
     private val repository: WeatherRepository,
-    private val preferences: WeatherAlertPreferences,
+    private val settingsProvider: () -> RainAlertSettings,
 ) : HomeWeatherAlertSummarySource {
 
     override suspend fun loadSummary(): Result<HomeWeatherAlertSummary> {
-        val settings = preferences.read()
+        val settings = settingsProvider()
         return repository.loadForecast(settings.municipalityCode).map { loaded ->
             val alerts = WeatherPlanningAlertEngine.evaluate(
                 forecast = loaded.forecast,

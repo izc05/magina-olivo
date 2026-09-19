@@ -25,7 +25,7 @@ import org.junit.runner.RunWith
 class RoomCoreMigrationTest {
 
     @Test
-    fun migration2To3PreservesLegacyDataAndSeedsLocalIdentity() = runBlocking {
+    fun migration2To3PreservesLegacyDataAndSeedsLocalIdentity() = runBlocking<Unit> {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val name = "room-core-migration-" + System.nanoTime() + ".db"
         val file = context.getDatabasePath(name)
@@ -140,7 +140,7 @@ class RoomCoreMigrationTest {
     }
 
     @Test
-    fun freshDatabaseCreatesOneStableLocalIdentity() = runBlocking {
+    fun freshDatabaseCreatesOneStableLocalIdentity() = runBlocking<Unit> {
         val database = inMemoryDatabase()
         try {
             val identity = LocalIdentityRepository(
@@ -162,7 +162,7 @@ class RoomCoreMigrationTest {
     }
 
     @Test
-    fun futureCampaignOutboxIsDurableButLegacyWorkerDoesNotConsumeIt() = runBlocking {
+    fun futureCampaignOutboxIsDurableButLegacyWorkerDoesNotConsumeIt() = runBlocking<Unit> {
         val database = inMemoryDatabase()
         try {
             val campaign = CampaignEntity(
@@ -193,7 +193,7 @@ class RoomCoreMigrationTest {
     }
 
     @Test
-    fun canonicalRoomRepositoriesPreserveExactAreaAndSoftDelete() = runBlocking {
+    fun canonicalRoomRepositoriesPreserveExactAreaAndSoftDelete() = runBlocking<Unit> {
         val database = inMemoryDatabase()
         try {
             val farmRepository = RoomFarmRepository(

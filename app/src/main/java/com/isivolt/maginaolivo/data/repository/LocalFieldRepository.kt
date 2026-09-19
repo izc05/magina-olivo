@@ -3,11 +3,13 @@ package com.isivolt.maginaolivo.data.repository
 import com.isivolt.maginaolivo.data.local.FarmDao
 import com.isivolt.maginaolivo.data.local.FarmEntity
 import com.isivolt.maginaolivo.data.local.FieldWriteDao
+import com.isivolt.maginaolivo.data.local.LocalIdentityRepository
 import com.isivolt.maginaolivo.data.local.PlotDao
 import com.isivolt.maginaolivo.data.local.PlotEntity
 import com.isivolt.maginaolivo.data.local.SyncOutboxEntity
 import com.isivolt.maginaolivo.data.sync.FieldSyncScheduler
 import com.isivolt.maginaolivo.domain.catastro.CatastroParcel
+import java.math.BigDecimal
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 
@@ -16,6 +18,7 @@ class LocalFieldRepository(
     private val plotDao: PlotDao,
     private val fieldWriteDao: FieldWriteDao,
     private val syncScheduler: FieldSyncScheduler = FieldSyncScheduler {},
+    private val localIdentityRepository: LocalIdentityRepository? = null,
     private val clock: () -> Long = System::currentTimeMillis,
     private val idFactory: () -> String = { UUID.randomUUID().toString() },
 ) {
@@ -32,11 +35,14 @@ class LocalFieldRepository(
         val normalizedName = name.trim()
         require(normalizedName.isNotEmpty()) { "FARM_NAME_REQUIRED" }
 
+        val timestamp = clock()
         val farm = FarmEntity(
             id = idFactory(),
+            ownerId = currentOwnerId(),
             name = normalizedName,
             coverImageUri = coverImageUri,
-            updatedAtEpochMs = clock(),
+            createdAtEpochMs = timestamp,
+            updatedAtEpochMs = timestamp,
             syncState = SyncState.PENDING_UPLOAD,
         )
         fieldWriteDao.upsertFarmWithOutbox(
@@ -60,18 +66,30 @@ class LocalFieldRepository(
         val existing = plotDao.findByCadastralReference(parcel.cadastralReference)
         check(existing == null) { "CADASTRAL_REFERENCE_ALREADY_ADDED" }
 
+        val farm = checkNotNull(farmDao.findById(farmId)) { "FARM_NOT_FOUND" }
+        check(farm.deletedAtEpochMs == null) { "FARM_DELETED" }
+
         val normalizedName = workingName.trim()
         require(normalizedName.isNotEmpty()) { "PLOT_NAME_REQUIRED" }
 
+        val timestamp = clock()
+        val exactSquareMeters = parcel.areaM2
+            ?.let(BigDecimal::valueOf)
+            ?.stripTrailingZeros()
+            ?.toPlainString()
+
         val plot = PlotEntity(
             id = idFactory(),
+            ownerId = farm.ownerId.ifBlank { currentOwnerId() },
             farmId = farmId,
             name = normalizedName,
             cadastralReference = parcel.cadastralReference,
             areaHa = parcel.areaM2?.div(10_000.0),
+            areaSquareMetersDecimal = exactSquareMeters,
             boundaryGeoJson = parcel.geometryGeoJson,
             boundarySource = BoundarySource.CATASTRO,
-            updatedAtEpochMs = clock(),
+            createdAtEpochMs = timestamp,
+            updatedAtEpochMs = timestamp,
             syncState = SyncState.PENDING_UPLOAD,
         )
         fieldWriteDao.upsertPlotWithOutbox(
@@ -87,6 +105,9 @@ class LocalFieldRepository(
         plot
     }
 
+    private suspend fun currentOwnerId(): String =
+        localIdentityRepository?.ownerId() ?: TEST_FALLBACK_OWNER_ID
+
     private fun requestSync() {
         runCatching { syncScheduler.schedule() }
     }
@@ -97,5 +118,9 @@ class LocalFieldRepository(
 
     private object BoundarySource {
         const val CATASTRO = "catastro"
+    }
+
+    private companion object {
+        const val TEST_FALLBACK_OWNER_ID = "00000000-0000-4000-8000-000000000001"
     }
 }

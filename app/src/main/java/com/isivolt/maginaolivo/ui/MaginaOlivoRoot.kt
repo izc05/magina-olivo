@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.isivolt.maginaolivo.MaginaOlivoApplication
 import com.isivolt.maginaolivo.data.repository.WeatherAlertPreferences
+import com.isivolt.maginaolivo.ui.home.WeatherRepositoryHomeAlertSummarySource
 import com.isivolt.maginaolivo.ui.home.WeatherRepositoryHomeSummarySource
 import com.isivolt.maginaolivo.ui.onboarding.OnboardingPreferences
 import com.isivolt.maginaolivo.ui.onboarding.OnboardingScreen
@@ -31,6 +32,12 @@ fun MaginaOlivoRoot() {
             },
         )
     }
+    val weatherAlertSource = remember(application, weatherPreferences) {
+        WeatherRepositoryHomeAlertSummarySource(
+            repository = application.weatherRepository,
+            preferences = weatherPreferences,
+        )
+    }
     val farmsFlow = remember(application) {
         application.fieldRepository.observeFarms()
     }
@@ -51,6 +58,7 @@ fun MaginaOlivoRoot() {
         } else {
             MaginaAppShell(
                 weatherSource = weatherSource,
+                weatherAlertSource = weatherAlertSource,
                 weatherRepository = application.weatherRepository,
                 weatherRadarRepository = application.weatherRadarRepository,
                 farms = farms,

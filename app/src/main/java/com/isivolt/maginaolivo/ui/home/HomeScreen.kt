@@ -90,10 +90,10 @@ fun HomeScreen(
             HomeWeatherCard(state = weatherState)
         }
 
-        if (onOpenWeather != null) {
+        onOpenWeather?.let { openWeather ->
             item {
                 OutlinedButton(
-                    onClick = onOpenWeather,
+                    onClick = openWeather,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text("Abrir tiempo, radar y avisos")

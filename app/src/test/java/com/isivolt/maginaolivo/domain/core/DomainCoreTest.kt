@@ -64,6 +64,17 @@ class DomainCoreTest {
     }
 
     @Test
+    fun `D1-06b reject empty campaign name`() = runBlocking {
+        val farms = FakeFarmRepository().apply { upsert(farm("farm-1", owner)) }
+        val result = CreateCampaign(farms, FakeCampaignRepository())(
+            owner,
+            "farm-1",
+            "   ",
+        )
+        assertEquals(DomainError.InvalidCampaignName, (result as DomainResult.Failure).error)
+    }
+
+    @Test
     fun `D1-07 reject campaign end before start`() = runBlocking {
         val farms = FakeFarmRepository().apply { upsert(farm("farm-1", owner)) }
         val result = CreateCampaign(farms, FakeCampaignRepository())(

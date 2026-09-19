@@ -57,6 +57,37 @@ class CreateFarm(
     }
 }
 
+class UpdateFarm(
+    private val farms: FarmRepository,
+    private val now: () -> Instant = Instant::now,
+) {
+    suspend operator fun invoke(
+        ownerId: String,
+        farmId: String,
+        name: String,
+        municipality: String? = null,
+        province: String? = null,
+        description: String? = null,
+        coverDocumentId: String? = null,
+    ): DomainResult<Farm> {
+        val current = farms.getById(farmId)
+            ?: return DomainResult.Failure(DomainError.FarmNotFound)
+        if (current.ownerId != ownerId) return DomainResult.Failure(DomainError.OwnerMismatch)
+        val normalizedName = name.trim()
+        if (normalizedName.isEmpty()) return DomainResult.Failure(DomainError.InvalidFarmName)
+        val updated = current.copy(
+            name = normalizedName,
+            municipality = municipality?.trim()?.takeIf(String::isNotEmpty),
+            province = province?.trim()?.takeIf(String::isNotEmpty),
+            description = description?.trim()?.takeIf(String::isNotEmpty),
+            coverDocumentId = coverDocumentId,
+            updatedAt = now(),
+        )
+        farms.upsert(updated)
+        return DomainResult.Success(updated)
+    }
+}
+
 class CreateParcel(
     private val farms: FarmRepository,
     private val parcels: ParcelRepository,
@@ -99,6 +130,44 @@ class CreateParcel(
         )
         parcels.upsert(parcel)
         return DomainResult.Success(parcel)
+    }
+}
+
+class UpdateParcel(
+    private val parcels: ParcelRepository,
+    private val now: () -> Instant = Instant::now,
+) {
+    suspend operator fun invoke(
+        ownerId: String,
+        parcelId: String,
+        alias: String,
+        cadastralReference: String? = null,
+        area: Area? = null,
+        oliveTreeCount: Int? = null,
+        mainVariety: String? = null,
+        geometry: ParcelGeometry? = null,
+        geometrySource: GeometrySource? = null,
+    ): DomainResult<Parcel> {
+        val current = parcels.getById(parcelId)
+            ?: return DomainResult.Failure(DomainError.ParcelNotFound)
+        if (current.ownerId != ownerId) return DomainResult.Failure(DomainError.OwnerMismatch)
+        val normalizedAlias = alias.trim()
+        if (normalizedAlias.isEmpty()) return DomainResult.Failure(DomainError.InvalidParcelAlias)
+        if (oliveTreeCount != null && oliveTreeCount < 0) {
+            return DomainResult.Failure(DomainError.InvalidOliveTreeCount)
+        }
+        val updated = current.copy(
+            alias = normalizedAlias,
+            cadastralReference = cadastralReference?.trim()?.takeIf(String::isNotEmpty),
+            area = area,
+            oliveTreeCount = oliveTreeCount,
+            mainVariety = mainVariety?.trim()?.takeIf(String::isNotEmpty),
+            geometry = geometry,
+            geometrySource = geometrySource,
+            updatedAt = now(),
+        )
+        parcels.upsert(updated)
+        return DomainResult.Success(updated)
     }
 }
 

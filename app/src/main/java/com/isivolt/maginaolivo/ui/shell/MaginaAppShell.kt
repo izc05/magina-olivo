@@ -16,12 +16,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.isivolt.maginaolivo.data.local.FarmEntity
+import com.isivolt.maginaolivo.data.repository.WeatherRadarRepository
+import com.isivolt.maginaolivo.data.repository.WeatherRepository
 import com.isivolt.maginaolivo.ui.MaginaOlivoApp
 import com.isivolt.maginaolivo.ui.calendar.CalendarScreen
 import com.isivolt.maginaolivo.ui.home.HomeScreen
 import com.isivolt.maginaolivo.ui.home.HomeWeatherSummarySource
 import com.isivolt.maginaolivo.ui.profile.ProfileScreen
 import com.isivolt.maginaolivo.ui.register.RegisterScreen
+import com.isivolt.maginaolivo.ui.weather.WeatherScreen
 
 enum class MainDestination(
     val label: String,
@@ -36,8 +40,26 @@ enum class MainDestination(
 @Composable
 fun MaginaAppShell(
     weatherSource: HomeWeatherSummarySource? = null,
+    weatherRepository: WeatherRepository? = null,
+    weatherRadarRepository: WeatherRadarRepository? = null,
+    farms: List<FarmEntity> = emptyList(),
 ) {
     var destination by remember { mutableStateOf(MainDestination.HOME) }
+    var showWeatherDetails by remember { mutableStateOf(false) }
+
+    if (
+        showWeatherDetails &&
+        weatherRepository != null &&
+        weatherRadarRepository != null
+    ) {
+        WeatherScreen(
+            repository = weatherRepository,
+            radarRepository = weatherRadarRepository,
+            farms = farms,
+            onBack = { showWeatherDetails = false },
+        )
+        return
+    }
 
     Scaffold(
         bottomBar = {
@@ -69,6 +91,14 @@ fun MaginaAppShell(
                 onOpenOliveGrove = { destination = MainDestination.OLIVE_GROVE },
                 onQuickRegister = { destination = MainDestination.REGISTER },
                 weatherSource = weatherSource,
+                onOpenWeather = if (
+                    weatherRepository != null &&
+                    weatherRadarRepository != null
+                ) {
+                    { showWeatherDetails = true }
+                } else {
+                    null
+                },
             )
             MainDestination.OLIVE_GROVE -> {
                 Surface(

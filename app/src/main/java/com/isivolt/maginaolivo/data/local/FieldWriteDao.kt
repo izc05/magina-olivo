@@ -13,6 +13,12 @@ abstract class FieldWriteDao {
     protected abstract suspend fun upsertPlot(plot: PlotEntity)
 
     @Upsert
+    protected abstract suspend fun upsertCampaign(campaign: CampaignEntity)
+
+    @Upsert
+    protected abstract suspend fun upsertCampaignParcel(link: CampaignParcelEntity)
+
+    @Upsert
     protected abstract suspend fun upsertOutbox(entry: SyncOutboxEntity)
 
     @Transaction
@@ -30,6 +36,24 @@ abstract class FieldWriteDao {
         outbox: SyncOutboxEntity,
     ) {
         upsertPlot(plot)
+        upsertOutbox(outbox)
+    }
+
+    @Transaction
+    open suspend fun upsertCampaignWithOutbox(
+        campaign: CampaignEntity,
+        outbox: SyncOutboxEntity,
+    ) {
+        upsertCampaign(campaign)
+        upsertOutbox(outbox)
+    }
+
+    @Transaction
+    open suspend fun upsertCampaignParcelWithOutbox(
+        link: CampaignParcelEntity,
+        outbox: SyncOutboxEntity,
+    ) {
+        upsertCampaignParcel(link)
         upsertOutbox(outbox)
     }
 }

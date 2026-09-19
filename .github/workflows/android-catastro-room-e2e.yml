@@ -76,13 +76,15 @@ jobs:
           script: |
             set -eu
 
-            if gradle :app:connectedDebugAndroidTest --info --stacktrace > /tmp/catastro-first-attempt.log 2>&1; then
-              cat /tmp/catastro-first-attempt.log
+            set +e
+            gradle :app:connectedDebugAndroidTest --info --stacktrace > /tmp/catastro-first-attempt.log 2>&1
+            first_status=$?
+            set -e
+
+            cat /tmp/catastro-first-attempt.log
+            if [ "$first_status" -eq 0 ]; then
               exit 0
             fi
-
-            first_status=$?
-            cat /tmp/catastro-first-attempt.log
 
             if ! grep -Eqi 'Failed to find ColorBuffer|device offline|adb.*failed|Unable to connect to adb|emulator.*disconnect|transport error' /tmp/catastro-first-attempt.log; then
               echo "::error::Catastro E2E failed for a non-infrastructure reason; not retrying"

@@ -31,6 +31,7 @@ fun HomeScreen(
     onOpenOliveGrove: () -> Unit,
     onQuickRegister: () -> Unit,
     weatherSource: HomeWeatherSummarySource? = null,
+    weatherAlertSource: HomeWeatherAlertSummarySource? = null,
     onOpenWeather: (() -> Unit)? = null,
 ) {
     var weatherState by remember(weatherSource) {
@@ -39,6 +40,16 @@ fun HomeScreen(
                 HomeWeatherCardState.PendingIntegration
             } else {
                 HomeWeatherCardState.Loading
+            },
+        )
+    }
+
+    var alertState by remember(weatherAlertSource) {
+        mutableStateOf<HomeWeatherAlertCardState>(
+            if (weatherAlertSource == null) {
+                HomeWeatherAlertCardState.PendingIntegration
+            } else {
+                HomeWeatherAlertCardState.Loading
             },
         )
     }
@@ -56,6 +67,21 @@ fun HomeScreen(
                 },
             )
     }
+
+    LaunchedEffect(weatherAlertSource) {
+        val source = weatherAlertSource ?: return@LaunchedEffect
+        alertState = HomeWeatherAlertCardState.Loading
+        alertState = source.loadSummary()
+            .fold(
+                onSuccess = { HomeWeatherAlertCardState.Ready(it) },
+                onFailure = {
+                    HomeWeatherAlertCardState.Error(
+                        it.message ?: "No se han podido calcular los avisos.",
+                    )
+                },
+            )
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -102,12 +128,7 @@ fun HomeScreen(
         }
 
         item {
-            HomeStatusCard(
-                eyebrow = "ALERTAS",
-                title = "Lo que merece tu atención",
-                body = "Lluvia, viento, helada y recordatorios agrícolas aparecerán aquí sin duplicar notificaciones.",
-                status = "Sin alertas conectadas",
-            )
+            HomeWeatherAlertCard(state = alertState)
         }
 
         item {
@@ -282,3 +303,69 @@ private fun formatHomeTemperature(value: Double): String =
     } else {
         String.format(java.util.Locale("es", "ES"), "%.1f", value)
     }
+
+
+@Composable
+private fun HomeWeatherAlertCard(
+    state: HomeWeatherAlertCardState,
+) {
+    when (state) {
+        HomeWeatherAlertCardState.PendingIntegration -> {
+            HomeStatusCard(
+                eyebrow = "ALERTAS",
+                title = "Lo que merece tu atención",
+                body = "Lluvia, viento y helada aparecerán aquí cuando el motor meteorológico esté conectado.",
+                status = "Pendiente de integración",
+            )
+        }
+
+        HomeWeatherAlertCardState.Loading -> {
+            HomeStatusCard(
+                eyebrow = "ALERTAS",
+                title = "Revisando avisos",
+                body = "Analizando la previsión y tus umbrales configurados.",
+                status = "Calculando…",
+            )
+        }
+
+        is HomeWeatherAlertCardState.Error -> {
+            HomeStatusCard(
+                eyebrow = "ALERTAS",
+                title = "Avisos no disponibles",
+                body = state.message,
+                status = "Sin datos nuevos",
+            )
+        }
+
+        is HomeWeatherAlertCardState.Ready -> {
+            val summary = state.summary
+            val body = if (summary.totalCount == 0) {
+                "No hay avisos de lluvia, viento o helada con la configuración actual."
+            } else {
+                summary.primaryDetail
+                    ?: "${summary.totalCount} aviso(s) meteorológico(s) activo(s)."
+            }
+            val status = buildString {
+                if (summary.totalCount == 0) {
+                    append("Sin avisos")
+                } else {
+                    append("${summary.totalCount} aviso(s)")
+                    if (summary.highCount > 0) {
+                        append(" · ${summary.highCount} importante(s)")
+                    }
+                }
+                append(" · ${summary.horizonDays} día(s)")
+                if (summary.degraded) {
+                    append(" · caché")
+                }
+            }
+
+            HomeStatusCard(
+                eyebrow = "ALERTAS",
+                title = summary.primaryTitle ?: "Sin avisos meteorológicos",
+                body = body,
+                status = status,
+            )
+        }
+    }
+}

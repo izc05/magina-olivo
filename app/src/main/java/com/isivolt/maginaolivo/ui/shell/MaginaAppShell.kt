@@ -22,6 +22,7 @@ import com.isivolt.maginaolivo.data.repository.WeatherRepository
 import com.isivolt.maginaolivo.ui.MaginaOlivoApp
 import com.isivolt.maginaolivo.ui.calendar.CalendarScreen
 import com.isivolt.maginaolivo.ui.home.HomeScreen
+import com.isivolt.maginaolivo.ui.home.HomeWeatherAlertSummarySource
 import com.isivolt.maginaolivo.ui.home.HomeWeatherSummarySource
 import com.isivolt.maginaolivo.ui.profile.ProfileScreen
 import com.isivolt.maginaolivo.ui.register.RegisterScreen
@@ -40,6 +41,7 @@ enum class MainDestination(
 @Composable
 fun MaginaAppShell(
     weatherSource: HomeWeatherSummarySource? = null,
+    weatherAlertSource: HomeWeatherAlertSummarySource? = null,
     weatherRepository: WeatherRepository? = null,
     weatherRadarRepository: WeatherRadarRepository? = null,
     farms: List<FarmEntity> = emptyList(),
@@ -91,6 +93,7 @@ fun MaginaAppShell(
                 onOpenOliveGrove = { destination = MainDestination.OLIVE_GROVE },
                 onQuickRegister = { destination = MainDestination.REGISTER },
                 weatherSource = weatherSource,
+                weatherAlertSource = weatherAlertSource,
                 onOpenWeather = if (
                     weatherRepository != null &&
                     weatherRadarRepository != null

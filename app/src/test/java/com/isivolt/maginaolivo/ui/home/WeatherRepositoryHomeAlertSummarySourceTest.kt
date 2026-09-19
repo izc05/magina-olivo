@@ -48,8 +48,8 @@ class WeatherRepositoryHomeAlertSummarySourceTest {
 
         assertEquals(2, summary.totalCount)
         assertEquals(1, summary.highCount)
-        assertEquals("Viento", summary.primaryTitle)
-        assertEquals("Viento 45km/h · 2026-09-19", summary.primaryDetail)
+        assertEquals("Lluvia", summary.primaryTitle)
+        assertEquals("Lluvia 85% · 2026-09-19", summary.primaryDetail)
         assertEquals(2, summary.horizonDays)
         assertFalse(summary.degraded)
     }

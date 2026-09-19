@@ -10,6 +10,18 @@ interface FarmDao {
     @Query("SELECT * FROM farms WHERE deletedAtEpochMs IS NULL ORDER BY name COLLATE NOCASE")
     fun observeAll(): Flow<List<FarmEntity>>
 
+    @Query(
+        """
+        SELECT * FROM farms
+        WHERE ownerId = :ownerId AND deletedAtEpochMs IS NULL
+        ORDER BY name COLLATE NOCASE
+        """,
+    )
+    fun observeByOwner(ownerId: String): Flow<List<FarmEntity>>
+
+    @Query("SELECT * FROM farms WHERE id = :id LIMIT 1")
+    fun observeById(id: String): Flow<FarmEntity?>
+
     @Query("SELECT * FROM farms WHERE id = :id LIMIT 1")
     suspend fun findById(id: String): FarmEntity?
 

@@ -30,6 +30,22 @@ class DomainCoreTest {
     }
 
     @Test
+    fun `D1-02b update farm preserves identity`() = runBlocking {
+        val farms = FakeFarmRepository().apply { upsert(farm("farm-1", owner)) }
+        val result = UpdateFarm(farms, { instant.plusSeconds(60) })(
+            ownerId = owner,
+            farmId = "farm-1",
+            name = "Finca editada",
+            municipality = "Bedmar",
+        )
+        val updated = (result as DomainResult.Success).value
+        assertEquals("farm-1", updated.id)
+        assertEquals("Finca editada", updated.name)
+        assertEquals("Bedmar", updated.municipality)
+        assertEquals(instant, updated.createdAt)
+    }
+
+    @Test
     fun `D1-03 create valid parcel`() = runBlocking {
         val farms = FakeFarmRepository().apply { upsert(farm("farm-1", owner)) }
         val parcels = FakeParcelRepository()
@@ -43,6 +59,23 @@ class DomainCoreTest {
         val farms = FakeFarmRepository().apply { upsert(farm("farm-1", owner)) }
         val result = CreateParcel(farms, FakeParcelRepository())(owner, "farm-1", " ")
         assertEquals(DomainError.InvalidParcelAlias, (result as DomainResult.Failure).error)
+    }
+
+    @Test
+    fun `D1-04b update parcel preserves farm and identity`() = runBlocking {
+        val parcels = FakeParcelRepository().apply { upsert(parcel("p1", owner, "farm-1")) }
+        val result = UpdateParcel(parcels, { instant.plusSeconds(60) })(
+            ownerId = owner,
+            parcelId = "p1",
+            alias = "Parcela Norte",
+            area = Area.ofHectares("2.75"),
+            oliveTreeCount = 240,
+        )
+        val updated = (result as DomainResult.Success).value
+        assertEquals("p1", updated.id)
+        assertEquals("farm-1", updated.farmId)
+        assertEquals("Parcela Norte", updated.alias)
+        assertEquals(240, updated.oliveTreeCount)
     }
 
     @Test(expected = IllegalArgumentException::class)

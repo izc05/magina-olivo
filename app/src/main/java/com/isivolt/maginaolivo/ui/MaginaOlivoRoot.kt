@@ -1,6 +1,7 @@
 package com.isivolt.maginaolivo.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,6 +31,11 @@ fun MaginaOlivoRoot() {
             },
         )
     }
+    val farmsFlow = remember(application) {
+        application.fieldRepository.observeFarms()
+    }
+    val farms by farmsFlow.collectAsState(initial = emptyList())
+
     var showOnboarding by remember {
         mutableStateOf(!onboardingPreferences.isCompleted())
     }
@@ -45,6 +51,9 @@ fun MaginaOlivoRoot() {
         } else {
             MaginaAppShell(
                 weatherSource = weatherSource,
+                weatherRepository = application.weatherRepository,
+                weatherRadarRepository = application.weatherRadarRepository,
+                farms = farms,
             )
         }
     }

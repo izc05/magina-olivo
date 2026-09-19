@@ -20,6 +20,8 @@ interface SyncOutboxDao {
     @Query(
         """
         SELECT * FROM sync_outbox
+        WHERE entityType IN ('farm', 'plot')
+          AND operation = 'upsert'
         ORDER BY
             CASE entityType
                 WHEN 'farm' THEN 0
@@ -32,6 +34,14 @@ interface SyncOutboxDao {
         """,
     )
     suspend fun pending(limit: Int): List<SyncOutboxEntity>
+
+    @Query(
+        """
+        SELECT * FROM sync_outbox
+        ORDER BY enqueuedAtEpochMs ASC, entityType ASC, entityId ASC
+        """,
+    )
+    suspend fun allPending(): List<SyncOutboxEntity>
 
     @Query(
         """

@@ -54,7 +54,7 @@ fun PlotEntity.toDomain(): Parcel =
         alias = name,
         cadastralReference = cadastralReference,
         area = areaSquareMetersDecimal
-            ?.let(Area::ofSquareMeters)
+            ?.let { Area.ofSquareMeters(it) }
             ?: areaHa?.let { Area.ofHectares(BigDecimal.valueOf(it)) },
         oliveTreeCount = oliveTreeCount,
         mainVariety = mainVariety,

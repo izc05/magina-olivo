@@ -1,2 +1,13 @@
 [functions.catastro-map]
 verify_jwt = true
+
+[functions.weather-forecast]
+verify_jwt = true
+
+[functions.weather-radar]
+verify_jwt = true
+
+[storage.buckets.weather-radar]
+public = false
+file_size_limit = "5MiB"
+allowed_mime_types = ["image/png", "image/gif", "image/jpeg", "image/webp"]

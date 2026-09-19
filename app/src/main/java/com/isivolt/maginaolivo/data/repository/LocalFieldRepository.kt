@@ -78,9 +78,11 @@ class LocalFieldRepository(
             ?.stripTrailingZeros()
             ?.toPlainString()
 
+        val ownerId = if (farm.ownerId.isBlank()) currentOwnerId() else farm.ownerId
+
         val plot = PlotEntity(
             id = idFactory(),
-            ownerId = farm.ownerId.ifBlank { currentOwnerId() },
+            ownerId = ownerId,
             farmId = farmId,
             name = normalizedName,
             cadastralReference = parcel.cadastralReference,

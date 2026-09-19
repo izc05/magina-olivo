@@ -29,6 +29,9 @@ interface PlotDao {
     suspend fun findByCadastralReference(reference: String): PlotEntity?
 
     @Query("SELECT * FROM plots WHERE id = :id LIMIT 1")
+    fun observeById(id: String): Flow<PlotEntity?>
+
+    @Query("SELECT * FROM plots WHERE id = :id LIMIT 1")
     suspend fun findById(id: String): PlotEntity?
 
     @Query(

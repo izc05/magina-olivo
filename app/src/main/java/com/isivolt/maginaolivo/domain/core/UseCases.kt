@@ -7,6 +7,7 @@ import java.util.UUID
 sealed interface DomainError {
     data object InvalidOwner : DomainError
     data object InvalidFarmName : DomainError
+    data object InvalidCampaignName : DomainError
     data object InvalidParcelAlias : DomainError
     data object InvalidDateRange : DomainError
     data object InvalidOliveTreeCount : DomainError
@@ -117,7 +118,7 @@ class CreateCampaign(
     ): DomainResult<Campaign> {
         if (ownerId.isBlank()) return DomainResult.Failure(DomainError.InvalidOwner)
         val normalizedName = name.trim()
-        if (normalizedName.isEmpty()) return DomainResult.Failure(DomainError.InvalidFarmName)
+        if (normalizedName.isEmpty()) return DomainResult.Failure(DomainError.InvalidCampaignName)
         if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
             return DomainResult.Failure(DomainError.InvalidDateRange)
         }

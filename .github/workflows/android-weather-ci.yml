@@ -4,9 +4,21 @@ on:
   push:
     branches:
       - "feat/android-weather-v1"
+      - "integration/android-ui-weather-v1"
     paths:
       - "app/**"
       - "supabase/functions/weather-forecast/**"
+      - "supabase/functions/weather-radar/**"
+      - "supabase/config.toml"
+      - "gradle/**"
+      - "*.gradle.kts"
+      - "gradle.properties"
+      - ".github/workflows/android-weather-ci.yml"
+  pull_request:
+    paths:
+      - "app/**"
+      - "supabase/functions/weather-forecast/**"
+      - "supabase/functions/weather-radar/**"
       - "supabase/config.toml"
       - "gradle/**"
       - "*.gradle.kts"

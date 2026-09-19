@@ -74,7 +74,7 @@ class LocalFieldRepository(
 
         val timestamp = clock()
         val exactSquareMeters = parcel.areaM2
-            ?.let(BigDecimal::valueOf)
+            ?.let { BigDecimal.valueOf(it) }
             ?.stripTrailingZeros()
             ?.toPlainString()
 

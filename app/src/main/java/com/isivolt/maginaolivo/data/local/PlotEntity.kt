@@ -10,7 +10,7 @@ import androidx.room.PrimaryKey
     indices = [
         Index("ownerId"),
         Index("farmId"),
-        Index(value = ["cadastralReference"], unique = true),
+        Index(value = ["ownerId", "cadastralReference"], unique = true),
     ],
 )
 data class PlotEntity(

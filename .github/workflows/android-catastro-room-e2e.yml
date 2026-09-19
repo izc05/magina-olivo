@@ -9,11 +9,13 @@ on:
       - "app/**"
       - "supabase/functions/catastro-map/**"
       - ".github/workflows/android-catastro-room-e2e.yml"
+      - ".github/scripts/android-catastro-room-e2e.sh"
   pull_request:
     paths:
       - "app/**"
       - "supabase/functions/catastro-map/**"
       - ".github/workflows/android-catastro-room-e2e.yml"
+      - ".github/scripts/android-catastro-room-e2e.sh"
 
 concurrency:
   group: android-catastro-room-e2e-${{ github.ref }}
@@ -71,8 +73,9 @@ jobs:
           api-level: 35
           arch: x86_64
           profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
           disable-animations: true
-          script: gradle :app:connectedDebugAndroidTest --info --stacktrace
+          script: bash .github/scripts/android-catastro-room-e2e.sh
 
       - name: Upload Android E2E test reports
         if: always()
@@ -83,3 +86,4 @@ jobs:
           path: |
             app/build/reports/androidTests/connected/
             app/build/outputs/androidTest-results/connected/
+            /tmp/catastro-first-attempt.log

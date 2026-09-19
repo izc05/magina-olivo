@@ -12,7 +12,6 @@ on:
       - ".github/workflows/android-emulator-smoke.yml"
       - ".github/scripts/android-smoke-ui.py"
       - ".github/scripts/android-emulator-smoke.sh"
-      - ".github/scripts/android-emulator-smoke.sh"
   pull_request:
     paths:
       - "app/**"
@@ -21,6 +20,7 @@ on:
       - "gradle.properties"
       - ".github/workflows/android-emulator-smoke.yml"
       - ".github/scripts/android-smoke-ui.py"
+      - ".github/scripts/android-emulator-smoke.sh"
 
 concurrency:
   group: android-emulator-smoke-${{ github.ref }}

@@ -36,7 +36,7 @@ class WeatherRepositoryHomeSummarySourceTest {
         assertEquals(29.0, summary.temperatureMaxC)
         assertEquals(10, summary.precipitationProbabilityPercent)
         assertEquals("AEMET", summary.providerLabel)
-        assertEquals("Actualizado · 1.5 h", summary.freshnessLabel)
+        assertEquals("Actualizado · 1,5 h", summary.freshnessLabel)
         assertFalse(summary.degraded)
     }
 

@@ -11,6 +11,8 @@ on:
       - "gradle.properties"
       - ".github/workflows/android-emulator-smoke.yml"
       - ".github/scripts/android-smoke-ui.py"
+      - ".github/scripts/android-emulator-smoke.sh"
+      - ".github/scripts/android-emulator-smoke.sh"
   pull_request:
     paths:
       - "app/**"
@@ -64,58 +66,7 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
-          script: |
-            set -eu
-
-            adb_recover() {
-              adb kill-server >/dev/null 2>&1 || true
-              sleep 2
-              adb start-server
-              adb wait-for-device
-              i=0
-              while [ "$i" -lt 20 ]; do
-                if [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then
-                  return 0
-                fi
-                i=$((i + 1))
-                sleep 2
-              done
-              echo "::error::Emulator did not become ready after ADB recovery"
-              return 1
-            }
-
-            adb_safe() {
-              if "$@"; then
-                return 0
-              fi
-              echo "::warning::ADB command failed once; recovering ADB and retrying"
-              adb_recover
-              "$@"
-            }
-
-            gradle :app:installDebug --stacktrace
-
-            adb_recover
-            adb_safe adb shell settings put global hide_error_dialogs 1
-            adb_safe adb logcat -c
-            adb_safe adb shell am force-stop com.isivolt.maginaolivo
-            adb_safe adb shell am start -W -n com.isivolt.maginaolivo/.MainActivity
-            sleep 3
-
-            adb_safe adb shell uiautomator dump /sdcard/home.xml
-            adb_safe adb pull /sdcard/home.xml /tmp/home.xml
-
-            python3 .github/scripts/android-smoke-ui.py tap /tmp/home.xml "Abrir mapa de parcelas"
-
-            sleep 5
-            adb_safe adb shell uiautomator dump /sdcard/map.xml
-            adb_safe adb pull /sdcard/map.xml /tmp/map.xml
-
-            python3 .github/scripts/android-smoke-ui.py assert /tmp/map.xml "Volver" "Mi ubicación" "PNOA" "Catastro"
-            echo "ANDROID_MAP_SMOKE_OK"
-
-            adb_safe adb exec-out screencap -p > /tmp/map-smoke.png
-            adb_safe adb logcat -d > /tmp/map-smoke-logcat.txt
+          script: bash .github/scripts/android-emulator-smoke.sh
 
       - name: Upload smoke evidence
         if: always()

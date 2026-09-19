@@ -1,0 +1,81 @@
+name: Android UI Weather Integration Gate
+
+on:
+  pull_request:
+    branches:
+      - integration/android-v1
+    paths:
+      - "app/**"
+      - "supabase/**"
+      - ".github/workflows/android-ui-weather-integration-gate.yml"
+      - "docs/ANDROID_UI_WEATHER_INTEGRATION_V1.md"
+  push:
+    branches:
+      - integration/android-ui-weather-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-ui-weather-integration-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration:
+    name: Android UI Weather Integration Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android command-line tools
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ""
+
+      - name: Android SDK 36
+        run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Gradle 9.6
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.6.0"
+
+      - name: Verify convergence wiring
+        shell: bash
+        run: |
+          set -eu
+          test -f app/src/main/java/com/isivolt/maginaolivo/ui/home/WeatherRepositoryHomeSummarySource.kt
+          test -f app/src/main/java/com/isivolt/maginaolivo/ui/weather/WeatherScreen.kt
+          test -f app/src/main/java/com/isivolt/maginaolivo/data/repository/WeatherRepository.kt
+          test -f app/src/main/java/com/isivolt/maginaolivo/data/sync/FieldSyncWorker.kt
+
+          grep -q 'MIGRATION_1_2' app/src/main/java/com/isivolt/maginaolivo/MaginaOlivoApplication.kt
+          grep -q 'fieldSyncScheduler.schedule()' app/src/main/java/com/isivolt/maginaolivo/MaginaOlivoApplication.kt
+          grep -q 'WeatherRainAlertScheduler.ensureScheduled' app/src/main/java/com/isivolt/maginaolivo/MaginaOlivoApplication.kt
+          grep -q 'WeatherRepository' app/src/main/java/com/isivolt/maginaolivo/MaginaOlivoApplication.kt
+
+          grep -q '\[functions.catastro-map\]' supabase/config.toml
+          grep -q '\[functions.weather-forecast\]' supabase/config.toml
+          grep -q '\[functions.weather-radar\]' supabase/config.toml
+          grep -q '\[storage.buckets.weather-radar\]' supabase/config.toml
+
+          if git grep -n -E '(service[_-]?role|SUPABASE_SERVICE_ROLE_KEY)' -- app; then
+            echo "Privileged Supabase credential reference found in Android app."
+            exit 1
+          fi
+
+      - name: Unit tests
+        run: gradle :app:testDebugUnitTest --stacktrace
+
+      - name: Build debug
+        run: gradle :app:assembleDebug --stacktrace

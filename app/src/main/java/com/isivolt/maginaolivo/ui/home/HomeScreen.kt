@@ -31,6 +31,7 @@ fun HomeScreen(
     onOpenOliveGrove: () -> Unit,
     onQuickRegister: () -> Unit,
     weatherSource: HomeWeatherSummarySource? = null,
+    onOpenWeather: (() -> Unit)? = null,
 ) {
     var weatherState by remember(weatherSource) {
         mutableStateOf<HomeWeatherCardState>(
@@ -87,6 +88,17 @@ fun HomeScreen(
 
         item {
             HomeWeatherCard(state = weatherState)
+        }
+
+        if (onOpenWeather != null) {
+            item {
+                OutlinedButton(
+                    onClick = onOpenWeather,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Abrir tiempo, radar y avisos")
+                }
+            }
         }
 
         item {

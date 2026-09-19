@@ -10,12 +10,12 @@ on:
       - "supabase/functions/catastro-map/**"
       - ".github/workflows/android-catastro-room-e2e.yml"
       - ".github/scripts/android-catastro-room-e2e.sh"
-      - ".github/scripts/android-catastro-room-e2e.sh"
   pull_request:
     paths:
       - "app/**"
       - "supabase/functions/catastro-map/**"
       - ".github/workflows/android-catastro-room-e2e.yml"
+      - ".github/scripts/android-catastro-room-e2e.sh"
 
 concurrency:
   group: android-catastro-room-e2e-${{ github.ref }}

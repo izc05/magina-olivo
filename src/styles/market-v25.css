@@ -1,0 +1,81 @@
+/* V2.5 — Mercado: AOVE protagonista y lectura menos financiera */
+
+.market-grid {
+  grid-template-columns: 1.35fr .82fr .82fr;
+}
+
+.market-grid article:first-child {
+  border-color: rgba(46,58,34,.12);
+  background: linear-gradient(135deg, var(--color-olive-950), #4f633d);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(46,58,34,.12);
+}
+
+.market-grid article:first-child span,
+.market-grid article:first-child small,
+.market-grid article:first-child .market-up {
+  color: rgba(255,255,255,.76);
+}
+
+.market-grid article:first-child strong {
+  color: #fff;
+  font-size: 27px;
+}
+
+.market-grid article:not(:first-child) {
+  align-content: center;
+  background: rgba(255,255,255,.62);
+}
+
+.market-grid article:not(:first-child) strong {
+  font-size: 18px;
+}
+
+.market-chart-card {
+  border-color: rgba(92,122,70,.14);
+  background: linear-gradient(180deg, rgba(255,255,255,.7), rgba(244,241,230,.62));
+}
+
+.market-chart-card > svg path:first-of-type {
+  stroke-width: 3;
+}
+
+.market-chart-card > svg path:last-of-type {
+  opacity: .12;
+}
+
+@media (max-width: 430px) {
+  .market-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+
+  .market-grid article:first-child {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0,1fr) auto;
+    grid-template-areas:
+      'label value'
+      'trend value';
+    align-items: center;
+    min-height: 82px;
+    padding: 12px 14px;
+  }
+
+  .market-grid article:first-child > span { grid-area: label; }
+  .market-grid article:first-child > strong { grid-area: value; font-size: 29px; }
+  .market-grid article:first-child > small { grid-area: trend; }
+
+  .market-grid article:not(:first-child) {
+    min-height: 72px;
+    padding: 10px;
+  }
+
+  .market-grid article:not(:first-child) strong {
+    font-size: 18px;
+  }
+}
+
+@media (min-width: 820px) {
+  .market-chart-card > svg {
+    height: 255px;
+  }
+}

@@ -1,0 +1,212 @@
+.welcome-tour {
+  min-height: 100dvh;
+  background: linear-gradient(180deg, var(--color-ivory-50), var(--color-ivory-100));
+  color: var(--color-text);
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-ui);
+}
+
+.welcome-tour__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 10px;
+}
+
+.welcome-tour__skip {
+  min-height: 44px;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  color: var(--color-olive-700);
+  font: inherit;
+  font-weight: 700;
+}
+
+.welcome-tour__content {
+  width: min(100%, 720px);
+  margin: 0 auto;
+  padding: 8px 20px 22px;
+  flex: 1;
+}
+
+.welcome-tour__visual {
+  position: relative;
+  min-height: clamp(280px, 45vh, 430px);
+  border-radius: 30px;
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.welcome-tour__shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(21, 28, 16, 0.05), rgba(21, 28, 16, 0.5));
+}
+
+.welcome-tour__icon {
+  position: absolute;
+  left: 22px;
+  bottom: 22px;
+  width: 66px;
+  height: 66px;
+  border-radius: 22px;
+  display: grid;
+  place-items: center;
+  background: rgba(250, 248, 241, 0.92);
+  color: var(--color-olive-950);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 30px rgba(20, 26, 15, 0.18);
+}
+
+.welcome-tour__mini-badge {
+  position: absolute;
+  right: 18px;
+  bottom: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 13px;
+  border-radius: 999px;
+  background: rgba(250, 248, 241, 0.92);
+  color: var(--color-olive-950);
+  font-size: 13px;
+  font-weight: 700;
+  backdrop-filter: blur(8px);
+}
+
+.welcome-tour__copy {
+  padding: 24px 2px 0;
+}
+
+.welcome-tour__step {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.welcome-tour__copy h1 {
+  margin: 6px 0 12px;
+  max-width: 640px;
+  font-family: var(--font-editorial);
+  font-size: clamp(34px, 8vw, 54px);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+}
+
+.welcome-tour__copy > p {
+  margin: 0;
+  max-width: 620px;
+  color: var(--color-text-muted);
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.welcome-tour__points {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.welcome-tour__points span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-olive-950);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.welcome-tour__points i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-oil-500);
+  flex: 0 0 auto;
+}
+
+.welcome-tour__footer {
+  width: min(100%, 720px);
+  margin: 0 auto;
+  padding: 14px 20px calc(18px + env(safe-area-inset-bottom));
+}
+
+.welcome-tour__dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.welcome-tour__dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(46, 58, 34, 0.2);
+  transition: width 160ms ease, background 160ms ease;
+}
+
+.welcome-tour__dot--active {
+  width: 26px;
+  background: var(--color-olive-700);
+}
+
+.welcome-tour__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.welcome-tour__back,
+.welcome-tour__next {
+  min-height: 54px;
+  border-radius: 18px;
+  font: inherit;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.welcome-tour__back {
+  border: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.65);
+  color: var(--color-olive-950);
+  padding: 0 16px;
+}
+
+.welcome-tour__next {
+  flex: 1;
+  border: 0;
+  background: var(--color-olive-950);
+  color: white;
+  padding: 0 22px;
+}
+
+@media (min-width: 760px) {
+  .welcome-tour__content {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    align-items: center;
+    gap: 34px;
+    padding-top: 30px;
+  }
+
+  .welcome-tour__copy {
+    padding-top: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-tour__dot {
+    transition: none;
+  }
+}

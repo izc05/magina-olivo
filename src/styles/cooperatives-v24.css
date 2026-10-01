@@ -1,0 +1,111 @@
+/* V2.4 — Cooperativas: más territorio, menos ficha administrativa */
+
+.cooperatives-v24 .coop-card--territorial {
+  overflow: hidden;
+  padding: 0;
+  background: rgba(255,255,255,.72);
+  box-shadow: 0 8px 24px rgba(46,58,34,.05);
+}
+
+.coop-card__photo {
+  position: relative;
+  min-height: 104px;
+  overflow: hidden;
+  background-color: #4d5a40;
+  background-image: url('/photos/field-olivares-magina.webp');
+  background-size: cover;
+}
+
+.coop-card__photo--1 { background-position: center 48%; }
+.coop-card__photo--2 { background-position: center 60%; }
+.coop-card__photo--3 { background-position: center 72%; }
+
+.coop-card__photo-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(30,39,25,.04), rgba(30,39,25,.54));
+}
+
+.coop-card__photo > span {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 9px;
+  border: 1px solid rgba(255,255,255,.36);
+  border-radius: 999px;
+  background: rgba(250,248,241,.88);
+  color: var(--color-olive-950);
+  backdrop-filter: blur(8px);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.coop-card__body { padding: 12px; }
+
+.cooperatives-v24 .coop-card__mark {
+  background: var(--color-olive-950);
+  color: #fff;
+}
+
+.cooperatives-v24 .coop-card__head strong {
+  font-family: var(--font-editorial);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.cooperatives-v24 .coop-card__head > div:nth-child(2) > span {
+  font-size: 10px;
+}
+
+.cooperatives-v24 .coop-card__metrics > div {
+  border: 1px solid rgba(92,122,70,.09);
+  background: rgba(244,241,230,.62);
+}
+
+.coop-demo-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 11px;
+  border: 1px solid rgba(212,160,23,.18);
+  border-radius: 12px;
+  background: rgba(212,160,23,.07);
+  color: #715917;
+}
+
+.coop-demo-note svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.coop-demo-note span {
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+@media (max-width: 430px) {
+  .coop-card__photo { min-height: 92px; }
+
+  .cooperatives-v24 .coop-card__head {
+    grid-template-columns: 42px minmax(0,1fr);
+  }
+
+  .cooperatives-v24 .coop-card__mark {
+    width: 42px;
+    height: 42px;
+  }
+
+  .cooperatives-v24 .coop-card__head small {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+@media (min-width: 820px) {
+  .coop-card__photo { min-height: 126px; }
+}

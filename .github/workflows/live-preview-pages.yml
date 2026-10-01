@@ -1,0 +1,215 @@
+name: Mágina Olivo original app review
+# Canonical public Pages publisher. The Visual V2 review remains at the root.
+# Controlled post-staging previews are published only below /dev-preview/*.
+
+on:
+  push:
+    branches:
+      - feat/visual-v2-foundation
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: magina-olivo-original-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout original Visual V2 app
+        uses: actions/checkout@v6
+
+      - name: Setup Node for Visual V2
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Visual V2 dependencies
+        run: npm install
+
+      - name: Generate approved photography
+        run: npm run photos:sync
+
+      - name: Build original app for GitHub Pages
+        run: npm run build -- --base=/magina-olivo/
+
+      - name: Prepare stable Visual V2 review root
+        run: |
+          cp dist/index.html dist/404.html
+          cp dist/index.html dist/visual-v2-review.html
+          printf '{"source":"feat/visual-v2-foundation","commit":"%s"}\n' "$GITHUB_SHA" > dist/review-build.json
+          touch dist/.nojekyll
+
+      - name: Checkout rewards and notifications preview
+        uses: actions/checkout@v6
+        with:
+          ref: feat/web-push-tasks-rewards-v1
+          path: .preview-rewards
+
+      - name: Setup Node for development previews
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .preview-rewards/.nvmrc
+
+      - name: Install rewards preview dependencies
+        working-directory: .preview-rewards
+        run: npm ci
+
+      - name: Build rewards preview
+        working-directory: .preview-rewards
+        env:
+          VITE_BASE_PATH: /magina-olivo/dev-preview/rewards/
+          VITE_DEMO_MODE: "true"
+        run: npm run build --workspace @magina/web
+
+      - name: Publish rewards preview under isolated subpath
+        run: |
+          mkdir -p dist/dev-preview/rewards
+          cp -R .preview-rewards/apps/web/dist/. dist/dev-preview/rewards/
+          for route in \
+            cuenta \
+            notificaciones \
+            calendario \
+            tu-olivo \
+            recompensas \
+            recompensas/validar \
+            magina \
+            magina/directorio \
+            magina/tiempo \
+            magina/campo \
+            magina/noticias \
+            magina/mercado
+          do
+            mkdir -p "dist/dev-preview/rewards/$route"
+            cp dist/dev-preview/rewards/index.html "dist/dev-preview/rewards/$route/index.html"
+          done
+          printf '{"source":"feat/web-push-tasks-rewards-v1","commit":"%s","mode":"demo-preview"}\n' "$(git -C .preview-rewards rev-parse HEAD)" > dist/dev-preview/rewards/preview-build.json
+
+      - name: Checkout business and admin preview
+        uses: actions/checkout@v6
+        with:
+          ref: feat/advertiser-analytics-v1
+          path: .preview-business
+
+      - name: Install business preview dependencies
+        working-directory: .preview-business
+        run: npm ci
+
+      - name: Build business preview
+        working-directory: .preview-business
+        env:
+          VITE_BASE_PATH: /magina-olivo/dev-preview/business/
+          VITE_DEMO_MODE: "true"
+        run: npm run build --workspace @magina/web
+
+      - name: Publish business preview under isolated subpath
+        run: |
+          mkdir -p dist/dev-preview/business
+          cp -R .preview-business/apps/web/dist/. dist/dev-preview/business/
+          for route in \
+            admin \
+            admin/soporte \
+            admin/contenido \
+            admin/operaciones \
+            admin/finanzas \
+            admin/comercial \
+            admin/estadisticas \
+            admin/anunciantes \
+            admin/roles \
+            admin/publicidad \
+            anunciate \
+            anunciante \
+            anunciante/estadisticas \
+            contacto \
+            legal/privacidad \
+            legal/cookies \
+            legal/terminos \
+            cuenta \
+            calendario \
+            magina \
+            magina/directorio \
+            magina/tiempo \
+            magina/campo \
+            magina/noticias \
+            magina/mercado
+          do
+            mkdir -p "dist/dev-preview/business/$route"
+            cp dist/dev-preview/business/index.html "dist/dev-preview/business/$route/index.html"
+          done
+          printf '{"source":"feat/advertiser-analytics-v1","commit":"%s","mode":"demo-preview"}\n' "$(git -C .preview-business rev-parse HEAD)" > dist/dev-preview/business/preview-build.json
+
+      - name: Create development preview selector
+        run: |
+          mkdir -p dist/dev-preview
+          cat > dist/dev-preview/index.html <<'HTML'
+          <!doctype html>
+          <html lang="es">
+          <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width,initial-scale=1" />
+            <title>Mágina Olivo · Preview de desarrollo</title>
+            <style>
+              :root { font-family: Inter, system-ui, sans-serif; color: #173d2b; background: #f5f1e7; }
+              * { box-sizing: border-box; }
+              body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 28px; }
+              main { width: min(920px, 100%); }
+              .eyebrow { text-transform: uppercase; letter-spacing: .14em; font-size: .75rem; font-weight: 800; opacity: .68; }
+              h1 { font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1; margin: .5rem 0 1rem; }
+              .intro { max-width: 760px; font-size: 1.05rem; line-height: 1.6; }
+              .grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap: 18px; margin-top: 28px; }
+              .card { display: block; padding: 24px; border-radius: 24px; background: rgba(255,255,255,.82); color: inherit; text-decoration: none; box-shadow: 0 18px 48px rgba(23,61,43,.12); border: 1px solid rgba(23,61,43,.08); }
+              .card:hover { transform: translateY(-2px); }
+              .icon { font-size: 2.1rem; }
+              h2 { margin: .8rem 0 .5rem; }
+              .card p { line-height: 1.5; margin-bottom: 0; }
+              .note { margin-top: 24px; padding: 16px 18px; border-radius: 16px; background: rgba(23,61,43,.08); line-height: 1.5; }
+              .back { display: inline-block; margin-top: 22px; color: inherit; font-weight: 700; }
+            </style>
+          </head>
+          <body>
+            <main>
+              <div class="eyebrow">Mágina Olivo · revisión interna</div>
+              <h1>Preview de desarrollo</h1>
+              <p class="intro">Estas superficies permiten revisar visualmente funciones post-staging sin tocar la Visual V2 estable, main ni el candidato V6. Funcionan en modo demo: algunas acciones que necesitan backend real no persisten.</p>
+              <section class="grid">
+                <a class="card" href="/magina-olivo/dev-preview/rewards/">
+                  <div class="icon">🫒</div>
+                  <h2>Recompensas y avisos</h2>
+                  <p>Tu olivo, Mis Aceitunas, catálogo de recompensas, canjes QR, centro de avisos y Web Push.</p>
+                </a>
+                <a class="card" href="/magina-olivo/dev-preview/business/">
+                  <div class="icon">📊</div>
+                  <h2>Negocio y administración</h2>
+                  <p>Publicidad, área del anunciante, estadísticas, embudo comercial, finanzas, roles y centro de mando.</p>
+                </a>
+              </section>
+              <div class="note"><strong>Importante:</strong> esto es una vitrina de revisión, no staging ni producción. La referencia operativa para el Mini-PC continúa siendo el candidato congelado correspondiente.</div>
+              <a class="back" href="/magina-olivo/">← Volver a Visual V2 estable</a>
+            </main>
+          </body>
+          </html>
+          HTML
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./dist
+
+  deploy:
+    environment:
+      name: pages-original-review
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy original Mágina Olivo review app and isolated previews
+        id: deployment
+        uses: actions/deploy-pages@v4

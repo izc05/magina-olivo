@@ -1,0 +1,28 @@
+:root {
+  --color-olive-950: #2e3a22;
+  --color-olive-700: #5c7a46;
+  --color-sage-400: #a7b497;
+  --color-ivory-100: #f4f1e6;
+  --color-ivory-50: #faf8f1;
+  --color-oil-500: #d4a017;
+  --color-danger-500: #b85345;
+  --color-warning-500: #c98a21;
+  --color-info-500: #4a7fa7;
+  --color-text: #20261b;
+  --color-text-muted: #6e7467;
+  --color-border: rgba(46, 58, 34, 0.12);
+  --shadow-card: 0 10px 28px rgba(46, 58, 34, 0.08);
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --tap-target: 48px;
+  --font-ui: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-editorial: Georgia, "Times New Roman", serif;
+}

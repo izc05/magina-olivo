@@ -2,43 +2,6 @@
 -- Issues: #737, #735, #726, #727
 -- Addressed P0-3 (Strict Storage RLS checking contract parties), P0-4 (Bilateral acceptance RPCs), P0-5 (70% Exploiter / 30% Owner share)
 
--- Ensure storage schema & tables exist for standalone / test environments
-CREATE SCHEMA IF NOT EXISTS storage;
-
-CREATE TABLE IF NOT EXISTS storage.buckets (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    public BOOLEAN DEFAULT false,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS storage.objects (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    bucket_id TEXT REFERENCES storage.buckets(id),
-    name TEXT NOT NULL,
-    owner UUID REFERENCES auth.users(id),
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now(),
-    last_accessed_at TIMESTAMPTZ DEFAULT now(),
-    metadata JSONB
-);
-
-CREATE OR REPLACE FUNCTION storage.foldername(name text)
-RETURNS text[]
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    parts text[];
-BEGIN
-    parts := regexp_split_to_array(name, '/');
-    IF array_length(parts, 1) <= 1 THEN
-        RETURN ARRAY[]::text[];
-    END IF;
-    RETURN parts[1:array_length(parts, 1) - 1];
-END;
-$$;
-
 -- 1. Farm Contracts (Lease / Operating agreements)
 CREATE TABLE IF NOT EXISTS public.farm_contracts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -156,6 +119,46 @@ BEGIN
     );
 END;
 $$;
+
+-- Trigger to enforce bilateral acceptance integrity on farm contracts
+CREATE OR REPLACE FUNCTION public.check_contract_acceptance_integrity()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    -- Prevent altering contract parties or farm
+    IF NEW.owner_user_id <> OLD.owner_user_id OR NEW.exploiter_user_id <> OLD.exploiter_user_id OR NEW.farm_id <> OLD.farm_id THEN
+        RAISE EXCEPTION 'Cannot alter contract parties or farm';
+    END IF;
+
+    -- accepted_by_owner_at cannot be altered directly unless by owner
+    IF NEW.accepted_by_owner_at IS DISTINCT FROM OLD.accepted_by_owner_at THEN
+        IF auth.uid() <> OLD.owner_user_id THEN
+            RAISE EXCEPTION 'Only the contract owner can accept for the owner';
+        END IF;
+    END IF;
+
+    -- accepted_by_exploiter_at cannot be altered directly unless by exploiter
+    IF NEW.accepted_by_exploiter_at IS DISTINCT FROM OLD.accepted_by_exploiter_at THEN
+        IF auth.uid() <> OLD.exploiter_user_id THEN
+            RAISE EXCEPTION 'Only the exploiter can accept for the exploiter';
+        END IF;
+    END IF;
+
+    -- Status cannot be set to ACCEPTED unless both parties have accepted
+    IF NEW.status = 'ACCEPTED' AND (NEW.accepted_by_owner_at IS NULL OR NEW.accepted_by_exploiter_at IS NULL) THEN
+        RAISE EXCEPTION 'Contract cannot be ACCEPTED without bilateral acceptance timestamps';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_contract_acceptance_integrity ON public.farm_contracts;
+CREATE TRIGGER trg_contract_acceptance_integrity
+    BEFORE UPDATE ON public.farm_contracts
+    FOR EACH ROW
+    EXECUTE FUNCTION public.check_contract_acceptance_integrity();
 
 -- 2. Farm Contract Attachments (Bilateral PDFs, scans, photos)
 CREATE TABLE IF NOT EXISTS public.farm_contract_attachments (
@@ -320,6 +323,47 @@ BEGIN
     );
 END;
 $$;
+
+-- Trigger to enforce bilateral acceptance integrity on harvest share agreements
+CREATE OR REPLACE FUNCTION public.check_share_agreement_acceptance_integrity()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    -- Prevent altering core parties or linkage
+    IF NEW.owner_user_id <> OLD.owner_user_id OR NEW.exploiter_user_id <> OLD.exploiter_user_id
+       OR NEW.farm_id <> OLD.farm_id OR NEW.campaign_id <> OLD.campaign_id THEN
+        RAISE EXCEPTION 'Cannot alter agreement parties, farm, or campaign';
+    END IF;
+
+    -- accepted_by_owner_at cannot be altered directly unless by owner
+    IF NEW.accepted_by_owner_at IS DISTINCT FROM OLD.accepted_by_owner_at THEN
+        IF auth.uid() <> OLD.owner_user_id THEN
+            RAISE EXCEPTION 'Only the agreement owner can accept for the owner';
+        END IF;
+    END IF;
+
+    -- accepted_by_exploiter_at cannot be altered directly unless by exploiter
+    IF NEW.accepted_by_exploiter_at IS DISTINCT FROM OLD.accepted_by_exploiter_at THEN
+        IF auth.uid() <> OLD.exploiter_user_id THEN
+            RAISE EXCEPTION 'Only the exploiter can accept for the exploiter';
+        END IF;
+    END IF;
+
+    -- Status cannot be forged to ACCEPTED without both acceptance timestamps
+    IF NEW.status = 'ACCEPTED' AND (NEW.accepted_by_owner_at IS NULL OR NEW.accepted_by_exploiter_at IS NULL) THEN
+        RAISE EXCEPTION 'Share agreement cannot be ACCEPTED without bilateral acceptance timestamps';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_share_agreement_acceptance_integrity ON public.campaign_harvest_share_agreements;
+CREATE TRIGGER trg_share_agreement_acceptance_integrity
+    BEFORE UPDATE ON public.campaign_harvest_share_agreements
+    FOR EACH ROW
+    EXECUTE FUNCTION public.check_share_agreement_acceptance_integrity();
 
 -- 4. Private Storage Buckets Provisioning & RLS Policies (P0-3)
 INSERT INTO storage.buckets (id, name, public)

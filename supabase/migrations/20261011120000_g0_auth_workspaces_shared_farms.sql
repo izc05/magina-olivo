@@ -18,29 +18,7 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$;
 
--- Ensure auth schema & role authenticated exist
-CREATE SCHEMA IF NOT EXISTS auth;
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
-        CREATE ROLE authenticated;
-    END IF;
-END;
-$$;
-CREATE TABLE IF NOT EXISTS auth.users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email TEXT,
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-CREATE OR REPLACE FUNCTION auth.uid()
-RETURNS UUID
-LANGUAGE sql
-STABLE
-AS $$
-    SELECT NULLIF(current_setting('request.jwt.claim.sub', true), '')::uuid;
-$$;
-
--- 1. User Profiles (1:1 with auth.users)
+-- 1. User Profiles (1:1 with auth.users natively provided by Supabase)
 CREATE TABLE IF NOT EXISTS public.user_profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     display_name TEXT NOT NULL,

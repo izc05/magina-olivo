@@ -157,29 +157,43 @@ Se han implementado y ejecutado dos suites complementarias de pruebas con 100 % 
 
 ### 7.2. Pruebas Reales de Motor PostgreSQL 18.3 y RLS con 4 Usuarios
 `node --experimental-strip-types --test supabase/tests/postgres_rls_real.test.ts`
-Ejecutadas sobre una instancia real aislada de PostgreSQL (PGlite WASM) con 4 roles diferenciados (User A Propietario, User B Explotador, User C Trabajador, User D Intruso):
+Ejecutadas sobre una instancia real aislada de PostgreSQL (PGlite WASM) con 4 roles diferenciados (User A Propietario, User B Explotador, User C Trabajador, User D Intruso), inicializando primero el entorno simulado nativo de plataforma (`supabase/tests/fixtures/mock_supabase_environment.sql`) y aplicando las 3 migraciones de producción limpias:
 ```text
-✔ RLS 1: User A (Owner) sees farm; User D (Intruder) sees nothing (1598.7ms)
-✔ RLS 2: User D cannot insert farm into User A's workspace (3.7ms)
-✔ RLS 3: Secure QR Invitation Claim & Replay Prevention (P0-2) (17.2ms)
-✔ RLS 4: Worker C Invitation with Restricted Capabilities (7.1ms)
-✔ RLS 5: Composite FK Prevents Cross-Farm Delivery (P0-7) (2.6ms)
-✔ RLS 6: Exploiter B records 1.200 kg delivery; Owner A reads it; Intruder D gets nothing (8.0ms)
-✔ RLS 7: Delivery Immutability & Soft-Delete Enforcement (P0-8) (11.2ms)
-✔ RLS 8: Bilateral Farm Contract & 70/30 Harvest Share Agreement (P0-4, P0-5) (34.3ms)
-✔ RLS 9: Storage RLS verifying Contract Parties (P0-3) (16.3ms)
-✔ RLS 10: Grant Revocation Instantly Closes Access (6.3ms)
+✔ RLS 1: User A (Owner) sees farm; User D (Intruder) sees nothing (1842.4ms)
+✔ RLS 2: User D cannot insert farm into User A's workspace (4.9ms)
+✔ RLS 3: Secure QR Invitation Claim & Replay Prevention (P0-2) (19.0ms)
+✔ RLS 4: Worker C Invitation with Restricted Capabilities (7.8ms)
+✔ RLS 5: Composite FK Prevents Cross-Farm Delivery (P0-7) (2.9ms)
+✔ RLS 6: Exploiter B records 1.200 kg delivery; Owner A reads it; Intruder D gets nothing (9.2ms)
+✔ RLS 7: Delivery Immutability & Soft-Delete Enforcement (P0-8) (12.7ms)
+✔ RLS 8: Bilateral Farm Contract & 70/30 Harvest Share Agreement (P0-4, P0-5) (28.7ms)
+✔ RLS 9: Direct Tampering of Contract Acceptance Integrity is Blocked by Triggers (18.4ms)
+✔ RLS 10: Storage RLS verifying Contract Parties (P0-3) (18.0ms)
+✔ RLS 11: Grant Revocation Instantly Closes Access (6.6ms)
 ```
 
-**Total acumulado:** 15 pruebas de integración y RLS pasando sin fallos.
+**Total acumulado:** 16 pruebas de integración y RLS pasando sin fallos (11 en PostgreSQL real + 5 en simulación).
 
 ---
 
-## 8. Gestión de Riesgos y Bloqueos Reales
+## 8. Gestión de Riesgos, Bloqueos Reales y Diagnóstico de CI
 
-1. **Bloqueo 1 — No modificar Supabase de producción en G0:**  
+1. **Separación Limpia de Entornos (Producción vs. Pruebas Locales):**  
+   Las migraciones reales de producción en `supabase/migrations/` no contienen esquemas ni funciones emuladas de `auth` ni `storage`. Todos los objetos mock para ejecución local offline se desacoplaron en `supabase/tests/fixtures/mock_supabase_environment.sql`. La reproducibilidad en clones limpios queda garantizada mediante `supabase/package.json`.
+2. **Protección contra Manipulación Directa de Aceptaciones:**  
+   Se añadieron los triggers `trg_contract_acceptance_integrity` y `trg_share_agreement_acceptance_integrity`. Ningún usuario puede alterar unilateralmente las marcas temporales de aceptación de la otra parte ni conmutar contratos/acuerdos al estado `ACCEPTED` mediante sentencias `UPDATE` directas; se exige el flujo RPC transaccional estricto.
+3. **Diagnóstico del Fallo de CI de GitHub Actions en #743:**  
+   La inspección del log del job `Gate 3 Android Emulator Evidence` (`run 38161043945`) confirma que el fallo fue estrictamente de **infraestructura del runner de GitHub**:
+   ```text
+   Warning: IO exception while downloading manifest
+   Warning: An error occurred while preparing SDK package Android Emulator: Error on ZipFile unknown archive.
+   error: could not connect to TCP port 5554: Connection refused
+   ```
+   El error se debió a un corte de red durante la descarga del SDK de Android Emulator en la máquina virtual de GitHub, sin relación alguna con el código backend, las migraciones o los tests unitarios.
+4. **Bloqueo 1 — No modificar Supabase de producción en G0:**  
    Las migraciones DDL (`supabase/migrations/20261011120000_*.sql` a `20261011120002_*.sql`) quedan incorporadas en el repositorio para revisión técnica. **No deben ejecutarse en la base viva hasta la aprobación expresa del gate**.
-2. **Bloqueo 2 — Coexistencia con PR #721 (Room v26):**  
-   Esta rama se basa directamente en `v20/main` y no toca ninguna tabla territorial de Bedmar-Jódar. La futura migración Room v27 añadirá los campos de enlace a Supabase Auth sin entrar en conflicto con la migración 25→26.
-3. **Bloqueo 3 — Revocación de acceso y copias offline locales:**  
-   La revocación de un grant impide de inmediato nuevas lecturas o escrituras remotas hacia Supabase. No obstante, una copia que ya fue descargada localmente a un dispositivo Android antes de la revocación física requiere que la app invalide la base de datos local en su próximo *handshake* con red.
+5. **Bloqueo 2 — Coexistencia con PR #721 (Room v26) y Trabajo de Claude:**  
+   Esta rama no toca ninguna tabla territorial de Bedmar-Jódar (PR #721) ni ningún archivo Android Compose/UI en el que trabaja Claude (PR #740).
+6. **Bloqueo 3 — Revocación de acceso y copias offline locales:**  
+   La revocación de un grant corta inmediatamente el acceso en backend y Storage. El cliente Android invalidará su caché local en el próximo ciclo de sincronización.
+

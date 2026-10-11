@@ -126,9 +126,39 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
+    IF TG_OP = 'INSERT' THEN
+        -- On INSERT, a contract cannot be created directly as ACCEPTED or with foreign acceptance timestamps
+        IF NEW.status = 'ACCEPTED' THEN
+            RAISE EXCEPTION 'Contract cannot be directly created with status ACCEPTED; bilateral acceptance flow required';
+        END IF;
+
+        IF NEW.accepted_by_owner_at IS NOT NULL AND auth.uid() <> NEW.owner_user_id THEN
+            RAISE EXCEPTION 'Cannot forge owner acceptance on insert';
+        END IF;
+        IF NEW.accepted_by_exploiter_at IS NOT NULL AND auth.uid() <> NEW.exploiter_user_id THEN
+            RAISE EXCEPTION 'Cannot forge exploiter acceptance on insert';
+        END IF;
+        IF NEW.accepted_by_owner_at IS NOT NULL AND NEW.accepted_by_exploiter_at IS NOT NULL THEN
+            RAISE EXCEPTION 'Cannot create contract with both acceptance timestamps pre-filled';
+        END IF;
+
+        RETURN NEW;
+    END IF;
+
+    -- TG_OP = 'UPDATE':
     -- Prevent altering contract parties or farm
     IF NEW.owner_user_id <> OLD.owner_user_id OR NEW.exploiter_user_id <> OLD.exploiter_user_id OR NEW.farm_id <> OLD.farm_id THEN
         RAISE EXCEPTION 'Cannot alter contract parties or farm';
+    END IF;
+
+    -- Once a contract is ACCEPTED, core conditions and acceptance timestamps cannot be modified
+    IF OLD.status = 'ACCEPTED' THEN
+        IF NEW.start_date <> OLD.start_date OR NEW.end_date <> OLD.end_date OR NEW.contract_type <> OLD.contract_type THEN
+            RAISE EXCEPTION 'Cannot modify conditions of an already ACCEPTED contract; create a new contract or amendment';
+        END IF;
+        IF NEW.accepted_by_owner_at IS DISTINCT FROM OLD.accepted_by_owner_at OR NEW.accepted_by_exploiter_at IS DISTINCT FROM OLD.accepted_by_exploiter_at THEN
+            RAISE EXCEPTION 'Cannot alter acceptance timestamps of an already ACCEPTED contract';
+        END IF;
     END IF;
 
     -- accepted_by_owner_at cannot be altered directly unless by owner
@@ -156,7 +186,7 @@ $$;
 
 DROP TRIGGER IF EXISTS trg_contract_acceptance_integrity ON public.farm_contracts;
 CREATE TRIGGER trg_contract_acceptance_integrity
-    BEFORE UPDATE ON public.farm_contracts
+    BEFORE INSERT OR UPDATE ON public.farm_contracts
     FOR EACH ROW
     EXECUTE FUNCTION public.check_contract_acceptance_integrity();
 
@@ -330,10 +360,40 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
+    IF TG_OP = 'INSERT' THEN
+        -- On INSERT, agreement cannot be created directly as ACCEPTED
+        IF NEW.status = 'ACCEPTED' THEN
+            RAISE EXCEPTION 'Harvest share agreement cannot be directly created with status ACCEPTED; bilateral acceptance required';
+        END IF;
+
+        IF NEW.accepted_by_owner_at IS NOT NULL AND auth.uid() <> NEW.owner_user_id THEN
+            RAISE EXCEPTION 'Cannot forge owner acceptance on insert';
+        END IF;
+        IF NEW.accepted_by_exploiter_at IS NOT NULL AND auth.uid() <> NEW.exploiter_user_id THEN
+            RAISE EXCEPTION 'Cannot forge exploiter acceptance on insert';
+        END IF;
+        IF NEW.accepted_by_owner_at IS NOT NULL AND NEW.accepted_by_exploiter_at IS NOT NULL THEN
+            RAISE EXCEPTION 'Cannot create agreement with both acceptance timestamps pre-filled';
+        END IF;
+
+        RETURN NEW;
+    END IF;
+
+    -- TG_OP = 'UPDATE':
     -- Prevent altering core parties or linkage
     IF NEW.owner_user_id <> OLD.owner_user_id OR NEW.exploiter_user_id <> OLD.exploiter_user_id
        OR NEW.farm_id <> OLD.farm_id OR NEW.campaign_id <> OLD.campaign_id THEN
         RAISE EXCEPTION 'Cannot alter agreement parties, farm, or campaign';
+    END IF;
+
+    -- Once a share agreement is ACCEPTED, agreed percentages and acceptance timestamps cannot be modified
+    IF OLD.status = 'ACCEPTED' THEN
+        IF NEW.owner_percentage <> OLD.owner_percentage OR NEW.exploiter_percentage <> OLD.exploiter_percentage THEN
+            RAISE EXCEPTION 'Cannot modify percentages of an already ACCEPTED agreement; renegotiations require a new agreement version';
+        END IF;
+        IF NEW.accepted_by_owner_at IS DISTINCT FROM OLD.accepted_by_owner_at OR NEW.accepted_by_exploiter_at IS DISTINCT FROM OLD.accepted_by_exploiter_at THEN
+            RAISE EXCEPTION 'Cannot alter acceptance timestamps of an already ACCEPTED agreement';
+        END IF;
     END IF;
 
     -- accepted_by_owner_at cannot be altered directly unless by owner
@@ -361,7 +421,7 @@ $$;
 
 DROP TRIGGER IF EXISTS trg_share_agreement_acceptance_integrity ON public.campaign_harvest_share_agreements;
 CREATE TRIGGER trg_share_agreement_acceptance_integrity
-    BEFORE UPDATE ON public.campaign_harvest_share_agreements
+    BEFORE INSERT OR UPDATE ON public.campaign_harvest_share_agreements
     FOR EACH ROW
     EXECUTE FUNCTION public.check_share_agreement_acceptance_integrity();
 

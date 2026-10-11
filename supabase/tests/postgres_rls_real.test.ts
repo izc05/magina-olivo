@@ -484,6 +484,56 @@ test("RLS 9: Direct Tampering of Contract Acceptance Integrity is Blocked by Tri
     }),
     /Share agreement cannot be ACCEPTED without bilateral acceptance timestamps/i
   );
+
+  // TAREA 2: Direct INSERT with status = 'ACCEPTED' and pre-filled signatures: BLOCKED
+  await assert.rejects(
+    asUser(USER_A, async () => {
+      await db.query(
+        `INSERT INTO public.farm_contracts
+           (farm_id, contract_type, start_date, end_date, owner_user_id, exploiter_user_id, status, accepted_by_owner_at, accepted_by_exploiter_at)
+         VALUES
+           ('${farmId}', 'LEASE', '2026-10-01', '2031-09-30', '${USER_A}', '${USER_B}', 'ACCEPTED', now(), now());`
+      );
+    }),
+    /Contract cannot be directly created with status ACCEPTED/i
+  );
+
+  await assert.rejects(
+    asUser(USER_A, async () => {
+      await db.query(
+        `INSERT INTO public.campaign_harvest_share_agreements
+           (farm_id, campaign_id, owner_user_id, exploiter_user_id, owner_percentage, exploiter_percentage, version, status, accepted_by_owner_at, accepted_by_exploiter_at)
+         VALUES
+           ('${farmId}', '${campaignId}', '${USER_A}', '${USER_B}', 30.00, 70.00, 3, 'ACCEPTED', now(), now());`
+      );
+    }),
+    /Harvest share agreement cannot be directly created with status ACCEPTED/i
+  );
+
+  // TAREA 3: Modifying terms/percentages after bilateral ACCEPTANCE: BLOCKED
+  // contractId from RLS 8 is already in status 'ACCEPTED'
+  await assert.rejects(
+    asUser(USER_A, async () => {
+      await db.query(
+        `UPDATE public.farm_contracts
+         SET start_date = '2026-11-01'
+         WHERE id = '${contractId}';`
+      );
+    }),
+    /Cannot modify conditions of an already ACCEPTED contract/i
+  );
+
+  // agreementId from RLS 8 is already in status 'ACCEPTED' with 30/70 split
+  await assert.rejects(
+    asUser(USER_A, async () => {
+      await db.query(
+        `UPDATE public.campaign_harvest_share_agreements
+         SET owner_percentage = 50.00, exploiter_percentage = 50.00
+         WHERE id = '${agreementId}';`
+      );
+    }),
+    /Cannot modify percentages of an already ACCEPTED agreement/i
+  );
 });
 
 test("RLS 10: Storage RLS verifying Contract Parties (P0-3)", async () => {

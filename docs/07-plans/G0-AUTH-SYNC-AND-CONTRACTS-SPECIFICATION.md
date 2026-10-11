@@ -180,8 +180,10 @@ Ejecutadas sobre una instancia real aislada de PostgreSQL (PGlite WASM) con 4 ro
 
 1. **Separación Limpia de Entornos (Producción vs. Pruebas Locales):**  
    Las migraciones reales de producción en `supabase/migrations/` no contienen esquemas ni funciones emuladas de `auth` ni `storage`. Todos los objetos mock para ejecución local offline se desacoplaron en `supabase/tests/fixtures/mock_supabase_environment.sql`. La reproducibilidad en clones limpios queda garantizada mediante `supabase/package.json`.
-2. **Protección contra Manipulación Directa de Aceptaciones:**  
-   Se añadieron los triggers `trg_contract_acceptance_integrity` y `trg_share_agreement_acceptance_integrity`. Ningún usuario puede alterar unilateralmente las marcas temporales de aceptación de la otra parte ni conmutar contratos/acuerdos al estado `ACCEPTED` mediante sentencias `UPDATE` directas; se exige el flujo RPC transaccional estricto.
+2. **Protección contra Manipulación Directa de Aceptaciones (INSERT y UPDATE):**  
+   Se reforzaron los triggers `trg_contract_acceptance_integrity` y `trg_share_agreement_acceptance_integrity` con ejecución `BEFORE INSERT OR UPDATE`:
+   - En **INSERT**: Se prohíbe la creación directa con `status = 'ACCEPTED'` o con marcas temporales de aceptación de la contraparte prellenadas; se exige el flujo RPC transaccional bilateral.
+   - En **UPDATE**: Una vez que un contrato o acuerdo alcanza el estado `ACCEPTED`, sus condiciones esenciales (fechas, tipo de contrato y porcentajes de reparto 70/30) devienen estrictamente inmutables. Cualquier modificación exige formalizar una adenda o una nueva versión de acuerdo (`version INT`).
 3. **Diagnóstico del Fallo de CI de GitHub Actions en #743:**  
    La inspección del log del job `Gate 3 Android Emulator Evidence` (`run 38161043945`) confirma que el fallo fue estrictamente de **infraestructura del runner de GitHub**:
    ```text

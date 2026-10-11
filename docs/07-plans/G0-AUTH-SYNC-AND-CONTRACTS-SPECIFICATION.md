@@ -107,52 +107,71 @@ Todos los identificadores son **UUID nativos**, garantizando inserciones determi
 
 ## 5. Acuerdos de Cosecha 70/30 ([#735](https://github.com/izc05/magina-olivo-v20/issues/735))
 
-### Principio de Inmutabilidad de Pesadas
+### Principio de Inmutabilidad de Pesadas y Cuota Configurable
 - Las pesadas individuales (`deliveries`) **NO se alteran, NO se descuentan y NO se duplican**.
-- Si durante la campaña se registran 8 pesadas que suman **10.000 kg netos** (`net_grams = 10_000_000`):
+- El acuerdo de reparto de cosecha por defecto estipulado en la especificación es **70 % para el explotador (arrendatario)** y **30 % para el propietario** (totalmente configurable en `campaign_harvest_share_agreements` sumando 100,00 %):
+- Si durante la campaña se registran pesadas que suman **10.000 kg netos** (`net_grams = 10_000_000`):
   - El acuerdo 70/30 vigente en `campaign_harvest_share_agreements` calcula de forma determinista:
-    $$\text{Cuota Propietario} = 10.000 \times 0,70 = 7.000\text{ kg}$$
-    $$\text{Cuota Explotador} = 10.000 \times 0,30 = 3.000\text{ kg}$$
-  - La suma de las cuotas es idéntica al total entregado: $7.000 + 3.000 = 10.000\text{ kg}$.
-- Los gastos económicos (`expenses`) no se prorratean automáticamente según la cuota de aceituna, salvo pacto expreso recogido en el contrato.
+    $$\text{Cuota Explotador (Arrendatario)} = 10.000 \times 0,70 = 7.000\text{ kg}$$
+    $$\text{Cuota Propietario} = 10.000 \times 0,30 = 3.000\text{ kg}$$
+  - La suma de las cuotas es idéntica al total entregado: $7.000 + 3.000 = 10.000\text{ kg}$ ($10.000.000\text{ g}$).
+- Los acuerdos de reparto soportan versionado incremental (`version INT`) con `UNIQUE (farm_id, campaign_id, version)` para permitir renegociaciones mid-season sin destruir el histórico.
+- La aceptación es estrictamente bilateral mediante la RPC transaccional `public.accept_harvest_share_agreement(p_agreement_id UUID)`, impidiendo que una parte modifique unilateralmente el timestamp de la otra.
 
 ---
 
 ## 6. Contratos de Arrendamiento y Almacenamiento Privado ([#737](https://github.com/izc05/magina-olivo-v20/issues/737))
 
-### 6.1. Subida Bilateral de Documentos
+### 6.1. Subida Bilateral de Documentos y RPC Transaccional
 - Propietario y explotador pueden subir de forma independiente su copia o escaneo del contrato a la misma ficha.
 - Cada archivo genera un registro en `farm_contract_attachments` con:
   - `uploader_user_id` y `uploader_role` (`OWNER` o `EXPLOITER`).
   - `sha256`, tamaño y tipo MIME validado.
   - Estado: `PENDING_REVIEW` hasta que la otra parte confirme la lectura.
-- La presencia del archivo **no constituye firma electrónica cualificada** ni garantiza legalidad civil; la aplicación refleja honestamente «Documento aportado por la otra parte (pendiente de tu revisión)».
+- La aceptación del contrato rústico se formaliza mediante la RPC `public.accept_farm_contract(p_contract_id UUID)`, que verifica que el llamante sea `owner_user_id` o `exploiter_user_id` y conmuta el estado a `ACCEPTED` solo cuando ambas partes han aceptado.
 
-### 6.2. Seguridad en Supabase Storage
+### 6.2. Seguridad en Supabase Storage (P0-3)
 - Buckets privados: `farm-attachments` y `farm-contracts` (`public = false`).
 - Convención de rutas:
   - Fotos de pesadas: `farm-attachments/{farm_id}/{document_id}.jpg`
   - Contratos: `farm-contracts/{farm_id}/{contract_id}/{attachment_id}.pdf`
-- Políticas RLS en `storage.objects`:
-  - Solo los usuarios con `has_farm_capability(farm_id, 'view_contracts')` pueden descargar el archivo.
-  - Solo los usuarios con `upload_contracts` pueden subir archivos al prefijo de esa finca.
-  - Intrusos o trabajadores sin ese permiso específico reciben `403 Forbidden` al intentar resolver URLs firmadas o leer el objeto.
+- Políticas RLS estrictas en `storage.objects`:
+  - `farm-attachments`: Valida que el llamante tenga capacidad `view_deliveries` o `add_deliveries` sobre la finca.
+  - `farm-contracts`: Valida no solo la capacidad sobre la finca, sino expresamente que `contract_id` exista en `public.farm_contracts` para esa finca y que `auth.uid()` sea parte legítima del contrato (`owner_user_id` o `exploiter_user_id`) o el creador de la finca. Esto previene que un arrendatario vea contratos ajenos de otros arrendatarios en una misma finca.
 
 ---
 
-## 7. Pruebas Automatizadas y Validación
+## 7. Pruebas Automatizadas y Validación (Simulación + PostgreSQL 18.3 Real)
 
-Se ha implementado y ejecutado con éxito la suite de pruebas automatizadas:
-`supabase/tests/auth_sync_rls_simulation.test.ts` (ejecutable mediante `node --experimental-strip-types --test`).
+Se han implementado y ejecutado dos suites complementarias de pruebas con 100 % de éxito:
 
-**Resultados obtenidos (100% pasando):**
+### 7.1. Pruebas de Simulación de Dominio y Sincronización
+`node --experimental-strip-types --test supabase/tests/auth_sync_rls_simulation.test.ts`
 ```text
-✔ G0 Multi-Tenant: User A owns farm, User D (uninvited) cannot read or write (3.7ms)
-✔ G0 Invitations: Single-use temporary QR, claim by User B, replay prevention (1.1ms)
+✔ G0 Multi-Tenant: User A owns farm, User D (uninvited) cannot read or write (2.2ms)
+✔ G0 Invitations: Single-use temporary QR, claim by User B, replay prevention (0.9ms)
 ✔ G0 Offline Delivery & Sync: User B records 1.200 kg offline, User A sees it once after sync (0.3ms)
-✔ G0 Harvest Share Agreement: 70/30 split on 10.000 kg netos computes exactly without altering pesadas (0.1ms)
-✔ G0 Storage RLS & Grant Revocation: Private contracts accessible only to authorized parties (0.6ms)
+✔ G0 Harvest Share Agreement: 70/30 split (70% Explotador / 30% Propietario) on 10.000 kg netos computes exactly without altering pesadas (0.8ms)
+✔ G0 Storage RLS & Grant Revocation: Private contracts accessible only to authorized parties (0.5ms)
 ```
+
+### 7.2. Pruebas Reales de Motor PostgreSQL 18.3 y RLS con 4 Usuarios
+`node --experimental-strip-types --test supabase/tests/postgres_rls_real.test.ts`
+Ejecutadas sobre una instancia real aislada de PostgreSQL (PGlite WASM) con 4 roles diferenciados (User A Propietario, User B Explotador, User C Trabajador, User D Intruso):
+```text
+✔ RLS 1: User A (Owner) sees farm; User D (Intruder) sees nothing (1598.7ms)
+✔ RLS 2: User D cannot insert farm into User A's workspace (3.7ms)
+✔ RLS 3: Secure QR Invitation Claim & Replay Prevention (P0-2) (17.2ms)
+✔ RLS 4: Worker C Invitation with Restricted Capabilities (7.1ms)
+✔ RLS 5: Composite FK Prevents Cross-Farm Delivery (P0-7) (2.6ms)
+✔ RLS 6: Exploiter B records 1.200 kg delivery; Owner A reads it; Intruder D gets nothing (8.0ms)
+✔ RLS 7: Delivery Immutability & Soft-Delete Enforcement (P0-8) (11.2ms)
+✔ RLS 8: Bilateral Farm Contract & 70/30 Harvest Share Agreement (P0-4, P0-5) (34.3ms)
+✔ RLS 9: Storage RLS verifying Contract Parties (P0-3) (16.3ms)
+✔ RLS 10: Grant Revocation Instantly Closes Access (6.3ms)
+```
+
+**Total acumulado:** 15 pruebas de integración y RLS pasando sin fallos.
 
 ---
 

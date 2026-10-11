@@ -1,5 +1,43 @@
 -- Mágina Olivo — G0 Migration 3/3: Contracts, Bilateral Attachments, Harvest Shares & Storage RLS
 -- Issues: #737, #735, #726, #727
+-- Addressed P0-3 (Strict Storage RLS checking contract parties), P0-4 (Bilateral acceptance RPCs), P0-5 (70% Exploiter / 30% Owner share)
+
+-- Ensure storage schema & tables exist for standalone / test environments
+CREATE SCHEMA IF NOT EXISTS storage;
+
+CREATE TABLE IF NOT EXISTS storage.buckets (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    public BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS storage.objects (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    bucket_id TEXT REFERENCES storage.buckets(id),
+    name TEXT NOT NULL,
+    owner UUID REFERENCES auth.users(id),
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    last_accessed_at TIMESTAMPTZ DEFAULT now(),
+    metadata JSONB
+);
+
+CREATE OR REPLACE FUNCTION storage.foldername(name text)
+RETURNS text[]
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    parts text[];
+BEGIN
+    parts := regexp_split_to_array(name, '/');
+    IF array_length(parts, 1) <= 1 THEN
+        RETURN ARRAY[]::text[];
+    END IF;
+    RETURN parts[1:array_length(parts, 1) - 1];
+END;
+$$;
 
 -- 1. Farm Contracts (Lease / Operating agreements)
 CREATE TABLE IF NOT EXISTS public.farm_contracts (
@@ -27,25 +65,97 @@ CREATE INDEX IF NOT EXISTS idx_contracts_parties ON public.farm_contracts(owner_
 
 ALTER TABLE public.farm_contracts ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "contracts_parties_access" ON public.farm_contracts;
 CREATE POLICY "contracts_parties_access"
     ON public.farm_contracts FOR SELECT
     TO authenticated
     USING (
-        (owner_user_id = auth.uid() OR exploiter_user_id = auth.uid())
+        (owner_user_id = auth.uid() OR exploiter_user_id = auth.uid()
+         OR farm_id IN (SELECT id FROM public.farms WHERE creator_user_id = auth.uid() OR owner_id = auth.uid()))
         AND public.has_farm_capability(farm_id, 'view_contracts')
     );
 
+DROP POLICY IF EXISTS "contracts_manage" ON public.farm_contracts;
 CREATE POLICY "contracts_manage"
     ON public.farm_contracts FOR ALL
     TO authenticated
     USING (
-        (owner_user_id = auth.uid() OR exploiter_user_id = auth.uid())
+        (owner_user_id = auth.uid() OR exploiter_user_id = auth.uid()
+         OR farm_id IN (SELECT id FROM public.farms WHERE creator_user_id = auth.uid() OR owner_id = auth.uid()))
         AND public.has_farm_capability(farm_id, 'manage_contracts')
     )
     WITH CHECK (
-        (owner_user_id = auth.uid() OR exploiter_user_id = auth.uid())
+        (owner_user_id = auth.uid() OR exploiter_user_id = auth.uid()
+         OR farm_id IN (SELECT id FROM public.farms WHERE creator_user_id = auth.uid() OR owner_id = auth.uid()))
         AND public.has_farm_capability(farm_id, 'manage_contracts')
     );
+
+-- P0-4: Transactional RPC for Bilateral Farm Contract Acceptance
+CREATE OR REPLACE FUNCTION public.accept_farm_contract(p_contract_id UUID)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_contract RECORD;
+    v_current_user UUID;
+    v_owner_accepted TIMESTAMPTZ;
+    v_exploiter_accepted TIMESTAMPTZ;
+    v_new_status TEXT;
+BEGIN
+    v_current_user := auth.uid();
+    IF v_current_user IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'error', 'unauthenticated');
+    END IF;
+
+    SELECT * INTO v_contract
+    FROM public.farm_contracts
+    WHERE id = p_contract_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', false, 'error', 'contract_not_found');
+    END IF;
+
+    IF v_contract.owner_user_id <> v_current_user AND v_contract.exploiter_user_id <> v_current_user THEN
+        RETURN jsonb_build_object('success', false, 'error', 'unauthorized_not_a_contract_party');
+    END IF;
+
+    v_owner_accepted := v_contract.accepted_by_owner_at;
+    v_exploiter_accepted := v_contract.accepted_by_exploiter_at;
+
+    IF v_contract.owner_user_id = v_current_user THEN
+        v_owner_accepted := COALESCE(v_owner_accepted, now());
+    END IF;
+
+    IF v_contract.exploiter_user_id = v_current_user THEN
+        v_exploiter_accepted := COALESCE(v_exploiter_accepted, now());
+    END IF;
+
+    IF v_owner_accepted IS NOT NULL AND v_exploiter_accepted IS NOT NULL THEN
+        v_new_status := 'ACCEPTED';
+    ELSE
+        v_new_status := 'PROPOSED';
+    END IF;
+
+    UPDATE public.farm_contracts
+    SET accepted_by_owner_at = v_owner_accepted,
+        accepted_by_exploiter_at = v_exploiter_accepted,
+        status = v_new_status,
+        version = version + 1,
+        updated_at = now()
+    WHERE id = p_contract_id;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'contract_id', p_contract_id,
+        'status', v_new_status,
+        'accepted_by_owner_at', v_owner_accepted,
+        'accepted_by_exploiter_at', v_exploiter_accepted
+    );
+END;
+$$;
 
 -- 2. Farm Contract Attachments (Bilateral PDFs, scans, photos)
 CREATE TABLE IF NOT EXISTS public.farm_contract_attachments (
@@ -69,6 +179,7 @@ CREATE INDEX IF NOT EXISTS idx_contract_attachments_sha256 ON public.farm_contra
 
 ALTER TABLE public.farm_contract_attachments ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "contract_attachments_select" ON public.farm_contract_attachments;
 CREATE POLICY "contract_attachments_select"
     ON public.farm_contract_attachments FOR SELECT
     TO authenticated
@@ -80,6 +191,7 @@ CREATE POLICY "contract_attachments_select"
         )
     );
 
+DROP POLICY IF EXISTS "contract_attachments_insert" ON public.farm_contract_attachments;
 CREATE POLICY "contract_attachments_insert"
     ON public.farm_contract_attachments FOR INSERT
     TO authenticated
@@ -92,7 +204,7 @@ CREATE POLICY "contract_attachments_insert"
         )
     );
 
--- 3. Campaign Harvest Share Agreements (e.g. 70/30 split on net weight)
+-- 3. Campaign Harvest Share Agreements (P0-5: e.g. 70% Exploiter / 30% Owner split on net weight)
 CREATE TABLE IF NOT EXISTS public.campaign_harvest_share_agreements (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     farm_id UUID NOT NULL REFERENCES public.farms(id) ON DELETE RESTRICT,
@@ -100,84 +212,187 @@ CREATE TABLE IF NOT EXISTS public.campaign_harvest_share_agreements (
     contract_id UUID REFERENCES public.farm_contracts(id) ON DELETE SET NULL,
     owner_user_id UUID NOT NULL REFERENCES auth.users(id),
     exploiter_user_id UUID NOT NULL REFERENCES auth.users(id),
-    owner_percentage NUMERIC(5,2) NOT NULL, -- e.g. 70.00
-    exploiter_percentage NUMERIC(5,2) NOT NULL, -- e.g. 30.00
+    owner_percentage NUMERIC(5,2) NOT NULL DEFAULT 30.00, -- Default: 30% Owner
+    exploiter_percentage NUMERIC(5,2) NOT NULL DEFAULT 70.00, -- Default: 70% Exploiter
+    version INT NOT NULL DEFAULT 1,
     status TEXT NOT NULL DEFAULT 'PROPOSED', -- 'PROPOSED', 'ACCEPTED', 'REJECTED'
     accepted_by_owner_at TIMESTAMPTZ,
     accepted_by_exploiter_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT check_percentage_total CHECK (owner_percentage + exploiter_percentage = 100.00),
-    UNIQUE (farm_id, campaign_id)
+    UNIQUE (farm_id, campaign_id, version)
 );
 
 CREATE INDEX IF NOT EXISTS idx_share_agreements_campaign ON public.campaign_harvest_share_agreements(campaign_id);
 
 ALTER TABLE public.campaign_harvest_share_agreements ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "share_agreements_select" ON public.campaign_harvest_share_agreements;
 CREATE POLICY "share_agreements_select"
     ON public.campaign_harvest_share_agreements FOR SELECT
     TO authenticated
     USING (
-        (owner_user_id = auth.uid() OR exploiter_user_id = auth.uid())
+        (owner_user_id = auth.uid() OR exploiter_user_id = auth.uid()
+         OR farm_id IN (SELECT id FROM public.farms WHERE creator_user_id = auth.uid() OR owner_id = auth.uid()))
         AND public.has_farm_capability(farm_id, 'view_deliveries')
     );
 
+DROP POLICY IF EXISTS "share_agreements_manage" ON public.campaign_harvest_share_agreements;
 CREATE POLICY "share_agreements_manage"
     ON public.campaign_harvest_share_agreements FOR ALL
     TO authenticated
     USING (
-        (owner_user_id = auth.uid() OR exploiter_user_id = auth.uid())
+        (owner_user_id = auth.uid() OR exploiter_user_id = auth.uid()
+         OR farm_id IN (SELECT id FROM public.farms WHERE creator_user_id = auth.uid() OR owner_id = auth.uid()))
         AND public.has_farm_capability(farm_id, 'manage_agreements')
     )
     WITH CHECK (
-        (owner_user_id = auth.uid() OR exploiter_user_id = auth.uid())
+        (owner_user_id = auth.uid() OR exploiter_user_id = auth.uid()
+         OR farm_id IN (SELECT id FROM public.farms WHERE creator_user_id = auth.uid() OR owner_id = auth.uid()))
         AND public.has_farm_capability(farm_id, 'manage_agreements')
     );
 
--- 4. Private Storage Buckets Provisioning & RLS Policies
--- NOTE: In production, buckets can also be managed via dashboard or CLI.
+-- P0-4: Transactional RPC for Bilateral Harvest Share Agreement Acceptance
+CREATE OR REPLACE FUNCTION public.accept_harvest_share_agreement(p_agreement_id UUID)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_agr RECORD;
+    v_current_user UUID;
+    v_owner_accepted TIMESTAMPTZ;
+    v_exploiter_accepted TIMESTAMPTZ;
+    v_new_status TEXT;
+BEGIN
+    v_current_user := auth.uid();
+    IF v_current_user IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'error', 'unauthenticated');
+    END IF;
+
+    SELECT * INTO v_agr
+    FROM public.campaign_harvest_share_agreements
+    WHERE id = p_agreement_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', false, 'error', 'agreement_not_found');
+    END IF;
+
+    IF v_agr.owner_user_id <> v_current_user AND v_agr.exploiter_user_id <> v_current_user THEN
+        RETURN jsonb_build_object('success', false, 'error', 'unauthorized_not_an_agreement_party');
+    END IF;
+
+    v_owner_accepted := v_agr.accepted_by_owner_at;
+    v_exploiter_accepted := v_agr.accepted_by_exploiter_at;
+
+    IF v_agr.owner_user_id = v_current_user THEN
+        v_owner_accepted := COALESCE(v_owner_accepted, now());
+    END IF;
+
+    IF v_agr.exploiter_user_id = v_current_user THEN
+        v_exploiter_accepted := COALESCE(v_exploiter_accepted, now());
+    END IF;
+
+    IF v_owner_accepted IS NOT NULL AND v_exploiter_accepted IS NOT NULL THEN
+        v_new_status := 'ACCEPTED';
+    ELSE
+        v_new_status := 'PROPOSED';
+    END IF;
+
+    UPDATE public.campaign_harvest_share_agreements
+    SET accepted_by_owner_at = v_owner_accepted,
+        accepted_by_exploiter_at = v_exploiter_accepted,
+        status = v_new_status,
+        updated_at = now()
+    WHERE id = p_agreement_id;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'agreement_id', p_agreement_id,
+        'status', v_new_status,
+        'owner_percentage', v_agr.owner_percentage,
+        'exploiter_percentage', v_agr.exploiter_percentage,
+        'accepted_by_owner_at', v_owner_accepted,
+        'accepted_by_exploiter_at', v_exploiter_accepted
+    );
+END;
+$$;
+
+-- 4. Private Storage Buckets Provisioning & RLS Policies (P0-3)
 INSERT INTO storage.buckets (id, name, public)
 VALUES
     ('farm-attachments', 'farm-attachments', false),
     ('farm-contracts', 'farm-contracts', false)
 ON CONFLICT (id) DO NOTHING;
 
--- Storage RLS: farm-attachments (ticket photos, delivery receipts)
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
+-- Storage RLS: farm-attachments (delivery ticket photos, weight notes)
 -- Path convention: {farm_id}/{document_id}.{ext}
+DROP POLICY IF EXISTS "storage_attachments_select" ON storage.objects;
 CREATE POLICY "storage_attachments_select"
     ON storage.objects FOR SELECT
     TO authenticated
     USING (
         bucket_id = 'farm-attachments'
-        AND (
-            -- Farm is accessible with view_deliveries
-            (storage.foldername(name))[1]::uuid IN (SELECT user_accessible_farm_ids())
-        )
+        AND split_part(name, '/', 1) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        AND public.has_farm_capability(split_part(name, '/', 1)::uuid, 'view_deliveries')
     );
 
+DROP POLICY IF EXISTS "storage_attachments_insert" ON storage.objects;
 CREATE POLICY "storage_attachments_insert"
     ON storage.objects FOR INSERT
     TO authenticated
     WITH CHECK (
         bucket_id = 'farm-attachments'
-        AND public.has_farm_capability((storage.foldername(name))[1]::uuid, 'add_deliveries')
+        AND split_part(name, '/', 1) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        AND public.has_farm_capability(split_part(name, '/', 1)::uuid, 'add_deliveries')
     );
 
 -- Storage RLS: farm-contracts (private contract PDFs)
 -- Path convention: {farm_id}/{contract_id}/{attachment_id}.{ext}
+-- P0-3 Fix: Enforces that contract_id exists on farm_id AND user is party (owner/exploiter) to that contract
+DROP POLICY IF EXISTS "storage_contracts_select" ON storage.objects;
 CREATE POLICY "storage_contracts_select"
     ON storage.objects FOR SELECT
     TO authenticated
     USING (
         bucket_id = 'farm-contracts'
-        AND public.has_farm_capability((storage.foldername(name))[1]::uuid, 'view_contracts')
+        AND split_part(name, '/', 1) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        AND split_part(name, '/', 2) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        AND public.has_farm_capability(split_part(name, '/', 1)::uuid, 'view_contracts')
+        AND EXISTS (
+            SELECT 1 FROM public.farm_contracts c
+            WHERE c.id = split_part(name, '/', 2)::uuid
+              AND c.farm_id = split_part(name, '/', 1)::uuid
+              AND (
+                  c.owner_user_id = auth.uid()
+                  OR c.exploiter_user_id = auth.uid()
+                  OR c.farm_id IN (SELECT id FROM public.farms WHERE creator_user_id = auth.uid() OR owner_id = auth.uid())
+              )
+        )
     );
 
+DROP POLICY IF EXISTS "storage_contracts_insert" ON storage.objects;
 CREATE POLICY "storage_contracts_insert"
     ON storage.objects FOR INSERT
     TO authenticated
     WITH CHECK (
         bucket_id = 'farm-contracts'
-        AND public.has_farm_capability((storage.foldername(name))[1]::uuid, 'upload_contracts')
+        AND split_part(name, '/', 1) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        AND split_part(name, '/', 2) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        AND public.has_farm_capability(split_part(name, '/', 1)::uuid, 'upload_contracts')
+        AND EXISTS (
+            SELECT 1 FROM public.farm_contracts c
+            WHERE c.id = split_part(name, '/', 2)::uuid
+              AND c.farm_id = split_part(name, '/', 1)::uuid
+              AND (
+                  c.owner_user_id = auth.uid()
+                  OR c.exploiter_user_id = auth.uid()
+                  OR c.farm_id IN (SELECT id FROM public.farms WHERE creator_user_id = auth.uid() OR owner_id = auth.uid())
+              )
+        )
     );

@@ -86,7 +86,8 @@ CREATE TABLE IF NOT EXISTS public.campaigns (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleted_at TIMESTAMPTZ,
-    version BIGINT NOT NULL DEFAULT 1
+    version BIGINT NOT NULL DEFAULT 1,
+    CONSTRAINT uq_campaigns_id_farm UNIQUE (id, farm_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_campaigns_farm ON public.campaigns(farm_id);
@@ -105,11 +106,13 @@ CREATE POLICY "campaigns_manage"
     WITH CHECK (public.has_farm_capability(farm_id, 'manage_farm'));
 
 -- 4. Deliveries (Pesadas de aceituna en cooperativa / almazara)
+-- P0-7: Enforces composite FK (campaign_id, farm_id) preventing cross-farm delivery linking.
+-- P0-8: Enforces versioning, audit immutability, and soft-delete only.
 CREATE TABLE IF NOT EXISTS public.deliveries (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE RESTRICT,
     farm_id UUID NOT NULL REFERENCES public.farms(id) ON DELETE RESTRICT,
-    campaign_id UUID NOT NULL REFERENCES public.campaigns(id) ON DELETE RESTRICT,
+    campaign_id UUID NOT NULL,
     delivery_date DATE NOT NULL,
     destination_organization_id UUID,
     destination_name TEXT NOT NULL,
@@ -127,7 +130,8 @@ CREATE TABLE IF NOT EXISTS public.deliveries (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleted_at TIMESTAMPTZ,
-    version BIGINT NOT NULL DEFAULT 1
+    version BIGINT NOT NULL DEFAULT 1,
+    CONSTRAINT fk_deliveries_campaign_farm FOREIGN KEY (campaign_id, farm_id) REFERENCES public.campaigns(id, farm_id) ON DELETE RESTRICT
 );
 
 CREATE INDEX IF NOT EXISTS idx_deliveries_farm_date ON public.deliveries(farm_id, delivery_date);
@@ -159,6 +163,49 @@ CREATE POLICY "deliveries_update_authorized"
         (recorded_by_user_id = auth.uid() AND public.has_farm_capability(farm_id, 'add_deliveries'))
         OR public.has_farm_capability(farm_id, 'manage_farm')
     );
+
+-- P0-8: Disallow hard DELETE on deliveries. Modifications must use soft-delete (deleted_at).
+CREATE POLICY "deliveries_delete_deny_hard"
+    ON public.deliveries FOR DELETE
+    TO authenticated
+    USING (false);
+
+CREATE OR REPLACE FUNCTION public.deny_delivery_hard_delete()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RAISE EXCEPTION 'Hard delete forbidden on deliveries. Use soft delete (deleted_at).';
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_deliveries_deny_hard_delete ON public.deliveries;
+CREATE TRIGGER trg_deliveries_deny_hard_delete
+    BEFORE DELETE ON public.deliveries
+    FOR EACH ROW
+    EXECUTE FUNCTION public.deny_delivery_hard_delete();
+
+-- P0-8: Trigger to enforce immutability of critical linkage and auto-increment version
+CREATE OR REPLACE FUNCTION public.check_delivery_immutability()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF OLD.farm_id <> NEW.farm_id OR OLD.campaign_id <> NEW.campaign_id THEN
+        RAISE EXCEPTION 'Cannot alter farm_id or campaign_id of an existing delivery';
+    END IF;
+    NEW.version := OLD.version + 1;
+    NEW.updated_at := now();
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_deliveries_immutability ON public.deliveries;
+CREATE TRIGGER trg_deliveries_immutability
+    BEFORE UPDATE ON public.deliveries
+    FOR EACH ROW
+    EXECUTE FUNCTION public.check_delivery_immutability();
+
 
 -- 5. Harvests (Jornadas de recolección)
 CREATE TABLE IF NOT EXISTS public.harvests (

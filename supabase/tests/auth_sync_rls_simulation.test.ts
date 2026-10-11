@@ -337,7 +337,7 @@ test("G0 Offline Delivery & Sync: User B records 1.200 kg offline, User A sees i
   assert.equal(deliveriesAfterRetry.length, 1);
 });
 
-test("G0 Harvest Share Agreement: 70/30 split on 10.000 kg netos computes exactly without altering pesadas", () => {
+test("G0 Harvest Share Agreement: 70/30 split (70% Explotador / 30% Propietario) on 10.000 kg netos computes exactly without altering pesadas", () => {
   const totalNetGrams = 10000000; // 10.000 kg in grams
   const agreement: HarvestShareAgreement = {
     id: randomUUID(),
@@ -345,8 +345,8 @@ test("G0 Harvest Share Agreement: 70/30 split on 10.000 kg netos computes exactl
     campaignId: randomUUID(),
     ownerUserId: randomUUID(),
     exploiterUserId: randomUUID(),
-    ownerPercentage: 70.0,
-    exploiterPercentage: 30.0,
+    ownerPercentage: 30.0, // 30% Propietario
+    exploiterPercentage: 70.0, // 70% Explotador / Arrendatario
     status: "ACCEPTED",
   };
 
@@ -355,8 +355,8 @@ test("G0 Harvest Share Agreement: 70/30 split on 10.000 kg netos computes exactl
   const ownerShareGrams = Math.round((totalNetGrams * agreement.ownerPercentage) / 100);
   const exploiterShareGrams = Math.round((totalNetGrams * agreement.exploiterPercentage) / 100);
 
-  assert.equal(ownerShareGrams, 7000000); // 7.000 kg
-  assert.equal(exploiterShareGrams, 3000000); // 3.000 kg
+  assert.equal(ownerShareGrams, 3000000); // 3.000 kg para el propietario
+  assert.equal(exploiterShareGrams, 7000000); // 7.000 kg para el explotador
   assert.equal(ownerShareGrams + exploiterShareGrams, totalNetGrams);
 });
 

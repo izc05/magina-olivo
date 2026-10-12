@@ -514,7 +514,15 @@ VALUES
     ('farm-contracts', 'farm-contracts', false)
 ON CONFLICT (id) DO NOTHING;
 
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- Native Storage owns this table and enables RLS itself. Do not ALTER its schema.
+-- Refuse an unprotected platform rather than bypassing its ownership boundary.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_class WHERE oid = 'storage.objects'::regclass AND relrowsecurity) THEN
+        RAISE EXCEPTION 'Native Storage must have row-level security enabled';
+    END IF;
+END;
+$$;
 
 -- Storage RLS: farm-attachments (delivery ticket photos, weight notes)
 -- Path convention: {farm_id}/{document_id}.{ext}

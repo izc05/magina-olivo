@@ -50,6 +50,9 @@ CREATE TABLE IF NOT EXISTS storage.objects (
     metadata JSONB
 );
 
+-- Mirror the native platform's pre-enabled RLS; production does not own this table.
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
 CREATE OR REPLACE FUNCTION storage.foldername(name text)
 RETURNS text[]
 LANGUAGE plpgsql

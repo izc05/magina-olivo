@@ -9,3 +9,6 @@ Validación local: Gradle `testDevDebugUnitTest assembleDevDebug assembleDevDebu
 Revisión independiente de solo lectura: sin bloqueos; comprobada generación Room de transacciones y métodos protected. Schema JSON no cambia porque no se cambia DDL.
 
 Pendiente antes de autorizar merge: revisión/corrección de fuentes del catálogo heredado y controles GitHub del nuevo HEAD. No se declara esta PR completa por los CI históricos de otro SHA.
+## Validación con main actualizado
+
+Base actualizada mediante merges ordinarios, sin conflictos ni force: origin/main 7c49dcd4 incluye #742 (fallo raster real) y #745 autorizada. Gradle correcto, 595 JVM sin fallos; 34/34 instrumentadas (32 Room más 2 fallback MapLibre claro/oscuro), sobre serial emulator-5612 y último binario. Las cinco regresiones siguen verdes. Los logs room-after.log reflejan esta última ejecución. CI final aún pendiente. No se modifican cálculos de las gráficas ni se crea APK candidata.

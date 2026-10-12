@@ -27,6 +27,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -270,6 +272,65 @@ class FarmMapViewModelTest {
         assertEquals(setOf("23044A00400021"), viewModel.state.value.taken)
         viewModel.addInspected()
         assertEquals(FarmMapMode.VIEW, viewModel.state.value.mode)
+    }
+
+    @Test
+    fun aTapOnThePathBetweenParcelsDoesNotOfferTheFirstNearbyParcel() = runTest(dispatcher) {
+        val parcels = FakeParcels()
+        val viewModel = FarmMapViewModel(farmId, FakeFarms(), parcels,
+            FakeClient(listOf(square("23044A00400021", -3.48, 37.63), square("23044A00400022", -3.46, 37.63))))
+        advanceUntilIdle()
+        viewModel.tapMap(37.635, -3.465)
+        advanceUntilIdle()
+        assertNull(viewModel.state.value.inspected)
+        assertNull(viewModel.state.value.selectedSavedId)
+        assertNotNull(viewModel.state.value.error)
+        viewModel.addInspected()
+        assertTrue(viewModel.state.value.selected.isEmpty())
+        assertTrue(parcels.created.isEmpty())
+    }
+
+    @Test
+    fun overlappingCandidatesRequireAnotherTapInsteadOfChoosingByServiceOrder() = runTest(dispatcher) {
+        val viewModel = FarmMapViewModel(farmId, FakeFarms(), FakeParcels(),
+            FakeClient(listOf(square("23044A00400021", -3.48, 37.63), square("23044A00400022", -3.48, 37.63))))
+        advanceUntilIdle()
+        viewModel.tapMap(37.635, -3.475)
+        advanceUntilIdle()
+        assertNull(viewModel.state.value.inspected)
+        assertNotNull(viewModel.state.value.error)
+    }
+
+    @Test
+    fun aTapExactlyOnAParcelBoundaryDoesNotAssumeOwnership() = runTest(dispatcher) {
+        val viewModel = FarmMapViewModel(farmId, FakeFarms(), FakeParcels(),
+            FakeClient(listOf(square("23044A00400021", -3.48, 37.63))))
+        advanceUntilIdle()
+        viewModel.tapMap(37.635, -3.48)
+        advanceUntilIdle()
+        assertNull(viewModel.state.value.inspected)
+        assertNotNull(viewModel.state.value.error)
+    }
+
+    @Test
+    fun anInteriorHoleIsNotPartOfTheParcel() {
+        val exterior = square("23044A00400021", -3.48, 37.63).polygons.single().single()
+        val hole = square("hole", -3.478, 37.632).polygons.single().single()
+            .map { (x, y) -> -3.478 + (x + 3.478) / 2 to 37.632 + (y - 37.632) / 2 }
+        val withHole = candidate("23044A00400021").copy(polygons = listOf(listOf(exterior, hole)))
+        assertFalse(withHole.covers(-3.475, 37.635))
+        assertTrue(withHole.covers(-3.479, 37.631))
+        assertFalse(withHole.covers(-3.478, 37.635)) // hole boundary
+    }
+
+    @Test
+    fun multipartParcelAcceptsEitherInteriorButNotTheGap() {
+        val west = square("west", -3.48, 37.63).polygons.single()
+        val east = square("east", -3.46, 37.63).polygons.single()
+        val multipart = candidate("23044A00400021").copy(polygons = listOf(west, east))
+        assertTrue(multipart.covers(-3.475, 37.635))
+        assertTrue(multipart.covers(-3.455, 37.635))
+        assertFalse(multipart.covers(-3.465, 37.635))
     }
 
     /** A closed square of about 0,01° of side, so a coordinate is unambiguously inside or outside. */

@@ -158,9 +158,16 @@ class FarmMapViewModel(
             try {
                 val found = client.findNear(latitude, longitude)
                 // The parcel under the finger, not merely the first one the service returned.
-                val candidate = found.firstOrNull { it.covers(longitude, latitude) } ?: found.firstOrNull()
+                val containing = found.filter { it.covers(longitude, latitude) }.distinctBy { it.reference }
+                val candidate = containing.singleOrNull()
                 if (candidate == null) {
-                    mutableState.update { it.copy(searching = false, error = "Catastro no devolvió parcelas en ese punto.") }
+                    mutableState.update {
+                        it.copy(searching = false, error = if (containing.size > 1) {
+                            "El punto coincide con varias parcelas. Toca dentro de la que quieres consultar."
+                        } else {
+                            "No se identifica una parcela en ese punto. Toca dentro de sus límites."
+                        })
+                    }
                     return@launch
                 }
                 val own = mutableState.value.parcels.firstOrNull { it.cadastralReference == candidate.reference }
@@ -417,19 +424,30 @@ private fun ruralPart(reference: String, from: Int, to: Int): String? =
 private val RURAL = Regex("\\d{5}[A-Z]\\d{8}")
 
 /**
- * Whether the touched coordinate falls inside this parcel: ray casting over each polygon's
- * exterior ring. Holes are not subtracted, so a tap inside the parcel always counts as inside.
+ * Strict interior of a Polygon/MultiPolygon, excluding holes and their boundaries.
+ * A boundary tap cannot reliably identify which adjacent parcel the farmer intended.
  */
 internal fun CadastralCandidate.covers(longitude: Double, latitude: Double): Boolean =
-    polygons.any { rings -> rings.firstOrNull()?.let { ring -> ringCovers(ring, longitude, latitude) } == true }
+    polygons.any { rings ->
+        rings.firstOrNull()?.let { ring -> ringCovers(ring, longitude, latitude) } == true &&
+            rings.drop(1).none { hole -> ringCovers(hole, longitude, latitude, includeBoundary = true) }
+    }
 
-private fun ringCovers(ring: List<Pair<Double, Double>>, x: Double, y: Double): Boolean {
-    if (ring.size < 3) return false
+private fun ringCovers(ring: List<Pair<Double, Double>>, x: Double, y: Double, includeBoundary: Boolean = false): Boolean {
+    if (ring.size < 3 || !x.isFinite() || !y.isFinite() || ring.any { !it.first.isFinite() || !it.second.isFinite() }) return false
     var inside = false
     var previous = ring.size - 1
     for (current in ring.indices) {
         val (xi, yi) = ring[current]
         val (xj, yj) = ring[previous]
+        val dx = xi - xj
+        val dy = yi - yj
+        val length = kotlin.math.hypot(dx, dy)
+        // WGS84 numeric tolerance (~0.1 mm); do not turn exact edges into an arbitrary side.
+        val tolerance = 1e-9
+        if (length > 0 && kotlin.math.abs((x - xj) * dy - (y - yj) * dx) <= tolerance * length &&
+            x >= minOf(xi, xj) - tolerance && x <= maxOf(xi, xj) + tolerance &&
+            y >= minOf(yi, yj) - tolerance && y <= maxOf(yi, yj) + tolerance) return includeBoundary
         if ((yi > y) != (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside
         previous = current
     }

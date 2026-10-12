@@ -63,6 +63,9 @@ data class FarmMapState(
     val inspected: CadastralCandidate? = null,
     /** Municipality/province Catastro gives for [inspected]; null while unknown or unavailable. */
     val inspectedPlace: RegistryLocation? = null,
+    val placeCandidates: List<MapPlace> = emptyList(),
+    val placeSearching: Boolean = false,
+    val placeError: String? = null,
 ) {
     val selectedCandidates: List<CadastralCandidate> get() = candidates.filter { it.reference in selected }
 }
@@ -73,12 +76,67 @@ class FarmMapViewModel(
     private val parcels: ParcelRepository,
     private val client: CadastreClient,
     locateParcelId: UUID? = null,
+    private val placeClient: PlaceSearchClient = OfficialPlaceSearchClient(),
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(
         FarmMapState(mode = if (locateParcelId != null) FarmMapMode.LOCATE else FarmMapMode.VIEW),
     )
     val state: StateFlow<FarmMapState> = mutableState.asStateFlow()
     private var searchJob: Job? = null
+    private var placeSearchJob: Job? = null
+
+    fun cancelPlaceSearch() {
+        placeSearchJob?.cancel()
+        mutableState.update { it.copy(placeCandidates = emptyList(), placeSearching = false, placeError = null) }
+    }
+
+    fun searchPlace(text: String) {
+        cancelPlaceSearch()
+        val query = text.trim()
+        if (query.length < 2 || parseCoordinates(query) != null) {
+            mutableState.update { it.copy(placeError = "Escribe un pueblo o paraje; las coordenadas tienen su propio campo.") }
+            return
+        }
+        val local = localMapPlaces(query).firstOrNull {
+            normalizedPlaceName(it.label.substringBefore(" · ")) == normalizedPlaceName(query)
+        }
+        if (local != null) {
+            goTo(requireNotNull(local.point))
+            return
+        }
+        mutableState.update { it.copy(placeSearching = true, error = null) }
+        placeSearchJob = viewModelScope.launch {
+            try {
+                val choices = placeClient.candidates(query)
+                mutableState.update { it.copy(placeSearching = false, placeCandidates = choices,
+                    placeError = if (choices.isEmpty()) "No se ha encontrado ese lugar. Prueba otro nombre." else null) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                mutableState.update { it.copy(placeSearching = false, placeError = "No se puede consultar ese lugar ahora. Comprueba la conexión o usa coordenadas.") }
+            }
+        }
+    }
+
+    fun selectPlace(choice: MapPlace) {
+        val selected = localMapPlaces("").firstOrNull { it.id == choice.id && it.type == choice.type }
+            ?: mutableState.value.placeCandidates.firstOrNull { it.id == choice.id && it.type == choice.type }
+            ?: return
+        cancelPlaceSearch()
+        selected.point?.let { goTo(it); return }
+        mutableState.update { it.copy(placeSearching = true) }
+        placeSearchJob = viewModelScope.launch {
+            try {
+                val point = placeClient.resolve(selected)
+                mutableState.update { it.copy(placeSearching = false) }
+                focusOn(point)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                mutableState.update { it.copy(placeSearching = false, placeError = "No se ha podido situar ese lugar. Prueba otra opción o usa coordenadas.") }
+            }
+        }
+    }
 
     init {
         viewModelScope.launch { farms.observeById(farmId).collect { farm -> mutableState.update { it.copy(farm = farm) } } }
@@ -92,6 +150,7 @@ class FarmMapViewModel(
 
     fun setMode(mode: FarmMapMode) {
         if (mutableState.value.mode == FarmMapMode.LOCATE || mode == FarmMapMode.LOCATE) return
+        cancelPlaceSearch()
         searchJob?.cancel()
         mutableState.update {
             it.copy(mode = mode, candidates = emptyList(), selected = emptySet(), selectedSavedId = null,
@@ -102,6 +161,7 @@ class FarmMapViewModel(
 
     /** Coordinates typed or pasted by the farmer; in ADD/LOCATE the nearby parcels are fetched too. */
     fun searchCoordinates(text: String) {
+        cancelPlaceSearch()
         val point = parseCoordinates(text)
         if (point == null) {
             mutableState.update { it.copy(error = "Escribe coordenadas como 37.636, -3.480 o 37°38'09\"N 3°28'48\"W.") }
@@ -112,12 +172,18 @@ class FarmMapViewModel(
 
     /** "Mi ubicación" and coordinate searches end here. */
     fun goTo(point: GeoPoint) {
+        cancelPlaceSearch()
+        focusOn(point)
+    }
+
+    private fun focusOn(point: GeoPoint) {
         mutableState.update { it.copy(focus = MapFocus(point), error = null, message = null, locationProblem = null) }
         if (mutableState.value.mode != FarmMapMode.VIEW) findNear(point.latitude, point.longitude)
     }
 
     /** #361/#617: precise fixes may query Catastro; approximate ones only centre the map. */
     fun myLocationFound(point: GeoPoint, approximate: Boolean = false) {
+        cancelPlaceSearch()
         if (!approximate) {
             mutableState.update { it.copy(myLocation = point) }
             goTo(point)
@@ -137,6 +203,7 @@ class FarmMapViewModel(
     fun dismissLocationProblem() = mutableState.update { it.copy(locationProblem = null) }
 
     fun tapMap(latitude: Double, longitude: Double) {
+        cancelPlaceSearch()
         if (mutableState.value.mode == FarmMapMode.VIEW) {
             inspect(latitude, longitude)
             return
@@ -231,12 +298,14 @@ class FarmMapViewModel(
     }
 
     fun searchPolygonParcel(province: String, municipality: String, polygon: String, parcel: String) {
+        cancelPlaceSearch()
         if (mutableState.value.mode == FarmMapMode.VIEW) mutableState.update { it.copy(mode = FarmMapMode.ADD) }
         load(replace = true) { client.findByPolygonParcel(province, municipality, polygon, parcel) }
     }
 
     /** Tap on a drawn parcel: a saved one opens its card, a candidate is (de)selected. */
     fun tapParcel(id: String) {
+        cancelPlaceSearch()
         val current = mutableState.value
         val candidate = current.candidates.firstOrNull { it.reference == id }
         when {
@@ -364,9 +433,12 @@ class FarmMapViewModel(
 
     fun dismissMessage() = mutableState.update { it.copy(message = null, error = null) }
 
-    fun locationUnavailable(problem: LocationProblem = LocationProblem.NO_FIX) = mutableState.update {
-        // Codex #379: an older dot is not where the farmer is now; it goes with the failure.
-        it.copy(locationProblem = problem, error = null, myLocation = null)
+    fun locationUnavailable(problem: LocationProblem = LocationProblem.NO_FIX) {
+        cancelPlaceSearch()
+        mutableState.update {
+            // Codex #379: an older dot is not where the farmer is now; it goes with the failure.
+            it.copy(locationProblem = problem, error = null, myLocation = null)
+        }
     }
 
     private fun findNear(latitude: Double, longitude: Double) = load(replace = false) { client.findNear(latitude, longitude) }

@@ -5,7 +5,7 @@
 **Autor:** Antigravity (Arquitectura Backend & Contratos)  
 **Issues vinculadas:** [#727](https://github.com/izc05/magina-olivo-v20/issues/727), [#726](https://github.com/izc05/magina-olivo-v20/issues/726), [#735](https://github.com/izc05/magina-olivo-v20/issues/735), [#737](https://github.com/izc05/magina-olivo-v20/issues/737), [#739](https://github.com/izc05/magina-olivo-v20/issues/739), [#738](https://github.com/izc05/magina-olivo-v20/pull/738)  
 **Fecha:** 11 de octubre de 2026  
-**Estado:** G0 COMPLETADO — Aprobado en Principio (Pendiente de Implementación Productiva)
+**Estado:** G0 PARCIAL — correcciones de seguridad en revisión; validación Supabase nativa DEV pendiente. No aprobado para integración ni producción.
 
 ---
 

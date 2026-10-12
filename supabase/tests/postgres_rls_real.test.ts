@@ -9,7 +9,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 
-import { pathToFileURL } from "node:url";
+import { pathToFileURL, fileURLToPath } from "node:url";
 
 // Dynamically resolve PGlite from local package, supabase/node_modules, or scratch/node_modules
 let PGlite: any;
@@ -75,7 +75,7 @@ async function asSuperuser<T>(fn: () => Promise<T>): Promise<T> {
 
 before(async () => {
   db = new PGlite();
-  const rootDir = process.cwd();
+  const rootDir = fileURLToPath(new URL("../../", import.meta.url));
 
   // 1. Run mock environment fixture (emulating native Supabase auth and storage platform objects)
   const mockEnv = readFileSync(
@@ -536,6 +536,122 @@ test("RLS 9: Direct Tampering of Contract Acceptance Integrity is Blocked by Tri
   );
 });
 
+async function freshContract(signers = [USER_A, USER_B]) {
+  const row = await asUser(USER_A, () => db.query(`
+    INSERT INTO public.farm_contracts
+      (farm_id, start_date, end_date, owner_user_id, exploiter_user_id, terms_notes, cost_responsibilities)
+    VALUES ('${farmId}', '2026-10-01', '2027-09-30', '${USER_A}', '${USER_B}', 'Agreed terms', '{"fuel":"exploiter"}') RETURNING id;`));
+  const id = row.rows[0].id;
+  for (const actor of signers) {
+    const result = await asUser(actor, () => db.query(`SELECT public.accept_farm_contract('${id}') AS result;`));
+    assert.equal(result.rows[0].result.success, true);
+  }
+  return id;
+}
+
+let agreementVersion = 100;
+async function freshAgreement(signers = [USER_A, USER_B]) {
+  const row = await asUser(USER_A, () => db.query(`
+    INSERT INTO public.campaign_harvest_share_agreements
+      (farm_id, campaign_id, contract_id, owner_user_id, exploiter_user_id, version)
+    VALUES ('${farmId}', '${campaignId}', '${contractId}', '${USER_A}', '${USER_B}', ${agreementVersion++}) RETURNING id;`));
+  const id = row.rows[0].id;
+  for (const actor of signers) {
+    const result = await asUser(actor, () => db.query(`SELECT public.accept_harvest_share_agreement('${id}') AS result;`));
+    assert.equal(result.rows[0].result.success, true);
+  }
+  return id;
+}
+
+for (const [field, value] of [
+  ["terms_notes", "'Changed after signing'"],
+  ["cost_responsibilities", "'{\"fuel\":\"owner\"}'::jsonb"],
+  ["duration_years", "99"],
+]) {
+  test(`P0: accepted contract freezes ${field}`, async () => {
+    const id = await freshContract();
+    await assert.rejects(asUser(USER_A, () => db.query(`UPDATE public.farm_contracts SET ${field}=${value} WHERE id='${id}';`)), /conditions|signed/i);
+  });
+}
+
+test("P0: ACCEPTED -> PROPOSED -> changed contract cannot reuse signatures", async () => {
+  const id = await freshContract();
+  await assert.rejects(asUser(USER_A, async () => {
+    await db.query(`UPDATE public.farm_contracts SET status='PROPOSED' WHERE id='${id}';`);
+    await db.query(`UPDATE public.farm_contracts SET start_date='2026-11-01', status='ACCEPTED' WHERE id='${id}';`);
+  }), /status|signed|downgrade/i);
+  const row = await asUser(USER_A, () => db.query(`SELECT status FROM public.farm_contracts WHERE id='${id}';`));
+  assert.equal(row.rows[0].status, "ACCEPTED");
+});
+
+test("P0: ACCEPTED -> PROPOSED -> 50/50 agreement cannot reuse signatures", async () => {
+  const id = await freshAgreement();
+  await assert.rejects(asUser(USER_A, async () => {
+    await db.query(`UPDATE public.campaign_harvest_share_agreements SET status='PROPOSED' WHERE id='${id}';`);
+    await db.query(`UPDATE public.campaign_harvest_share_agreements SET owner_percentage=50, exploiter_percentage=50, status='ACCEPTED' WHERE id='${id}';`);
+  }), /status|signed|downgrade/i);
+  const row = await asUser(USER_A, () => db.query(`SELECT status, owner_percentage FROM public.campaign_harvest_share_agreements WHERE id='${id}';`));
+  assert.equal(row.rows[0].status, "ACCEPTED");
+  assert.equal(row.rows[0].owner_percentage, "30.00");
+});
+
+test("P0: first contract signature freezes terms before the second consent", async () => {
+  const id = await freshContract([USER_A]);
+  await assert.rejects(asUser(USER_A, () => db.query(`UPDATE public.farm_contracts SET terms_notes='Different bargain' WHERE id='${id}';`)), /conditions|signed/i);
+});
+
+test("P0: first agreement signature freezes percentages and negotiated version", async () => {
+  const id = await freshAgreement([USER_A]);
+  await assert.rejects(asUser(USER_A, () => db.query(`UPDATE public.campaign_harvest_share_agreements SET owner_percentage=50, exploiter_percentage=50 WHERE id='${id}';`)), /percentages|signed/i);
+  await assert.rejects(asUser(USER_A, () => db.query(`UPDATE public.campaign_harvest_share_agreements SET version=999 WHERE id='${id}';`)), /version|signed/i);
+});
+
+test("P1: own contract signature must also use the RPC", async () => {
+  const id = await freshContract([]);
+  await assert.rejects(asUser(USER_A, () => db.query(`UPDATE public.farm_contracts SET accepted_by_owner_at=now() WHERE id='${id}';`)), /RPC/i);
+});
+
+test("P1: own agreement signature must also use the RPC", async () => {
+  const id = await freshAgreement([]);
+  await assert.rejects(asUser(USER_A, () => db.query(`UPDATE public.campaign_harvest_share_agreements SET accepted_by_owner_at=now() WHERE id='${id}';`)), /RPC/i);
+});
+
+test("P0: temporary catalog shadow cannot impersonate the trusted acceptance RPC", async () => {
+  const contract = await freshContract([]);
+  const agreement = await freshAgreement([]);
+  await asSuperuser(() => db.exec(`DO $$ BEGIN EXECUTE format('GRANT TEMPORARY ON DATABASE %I TO authenticated', current_database()); END $$;`));
+  await asUser(USER_A, async () => {
+    await db.exec(`CREATE TEMP TABLE pg_proc (oid oid, proowner oid);
+      INSERT INTO pg_temp.pg_proc SELECT oid, 'authenticated'::regrole::oid FROM pg_catalog.pg_proc
+      WHERE oid IN ('public.accept_farm_contract(uuid)'::regprocedure, 'public.accept_harvest_share_agreement(uuid)'::regprocedure);`);
+    try {
+      await assert.rejects(db.query(`UPDATE public.farm_contracts SET accepted_by_owner_at=now() WHERE id='${contract}';`), /RPC/i);
+      await assert.rejects(db.query(`UPDATE public.campaign_harvest_share_agreements SET accepted_by_owner_at=now() WHERE id='${agreement}';`), /RPC/i);
+    } finally {
+      await db.exec(`DROP TABLE pg_temp.pg_proc;`);
+    }
+  });
+});
+
+test("P1: contract INSERT cannot carry a prefilled own signature", async () => {
+  await assert.rejects(asUser(USER_A, () => db.query(`INSERT INTO public.farm_contracts
+    (farm_id, start_date, end_date, owner_user_id, exploiter_user_id, accepted_by_owner_at)
+    VALUES ('${farmId}', '2026-10-01', '2027-09-30', '${USER_A}', '${USER_B}', now());`)), /RPC|pre-filled|timestamps/i);
+});
+
+test("P0: the same identity cannot provide both contract consents", async () => {
+  await assert.rejects(asUser(USER_A, () => db.query(`INSERT INTO public.farm_contracts
+    (farm_id, start_date, end_date, owner_user_id, exploiter_user_id)
+    VALUES ('${farmId}', '2026-10-01', '2027-09-30', '${USER_A}', '${USER_A}');`)), /distinct|different/i);
+});
+
+test("P0: signed rows cannot be hard deleted", async () => {
+  const id = await freshContract();
+  const agreement = await freshAgreement();
+  await assert.rejects(asUser(USER_A, () => db.query(`DELETE FROM public.farm_contracts WHERE id='${id}';`)), /signed|delete/i);
+  await assert.rejects(asUser(USER_A, () => db.query(`DELETE FROM public.campaign_harvest_share_agreements WHERE id='${agreement}';`)), /signed|delete/i);
+});
+
 test("RLS 10: Storage RLS verifying Contract Parties (P0-3)", async () => {
   const contractPdfPath = `${farmId}/${contractId}/contrato_arrendamiento_2026.pdf`;
 
@@ -605,4 +721,20 @@ test("RLS 11: Grant Revocation Instantly Closes Access", async () => {
     }),
     /violates row-level security policy/i
   );
+  const revokedAccept = await asUser(USER_B, () => db.query(`SELECT public.accept_farm_contract('${contractId}') AS result;`));
+  assert.equal(revokedAccept.rows[0].result.success, false, "SECURITY DEFINER must respect revoked contract access");
+  const revokedShare = await asUser(USER_B, () => db.query(`SELECT public.accept_harvest_share_agreement('${agreementId}') AS result;`));
+  assert.equal(revokedShare.rows[0].result.success, false, "SECURITY DEFINER must respect revoked agreement access");
+});
+
+test("P0: agreement cannot link another farm's campaign", async () => {
+  await assert.rejects(asUser(USER_A, () => db.query(`INSERT INTO public.campaign_harvest_share_agreements
+    (farm_id, campaign_id, owner_user_id, exploiter_user_id, version)
+    VALUES ('${farm2Id}', '${campaignId}', '${USER_A}', '${USER_B}', 700);`)), /foreign key|campaign.*farm/i);
+});
+
+test("P0: agreement cannot link a contract with different parties", async () => {
+  await assert.rejects(asUser(USER_A, () => db.query(`INSERT INTO public.campaign_harvest_share_agreements
+    (farm_id, campaign_id, contract_id, owner_user_id, exploiter_user_id, version)
+    VALUES ('${farmId}', '${campaignId}', '${contractId}', '${USER_A}', '${USER_C}', 701);`)), /foreign key|contract.*parties/i);
 });

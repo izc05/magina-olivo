@@ -21,6 +21,8 @@ import com.isivoltpro.maginaolivo.domain.territorial.TerritorialMunicipality
  * - Consejo Regulador D.O.P. Sierra Mágina
  */
 object TerritorialCatalogData {
+    // Source review date, not the time this offline seed happens to be inserted.
+    private const val SOURCE_CHECKED_AT_MS = 1791763200000L // 2026-10-12 UTC
 
     val MUNICIPALITIES: List<TerritorialMunicipality> = listOf(
         TerritorialMunicipality(
@@ -32,8 +34,8 @@ object TerritorialCatalogData {
             comarca = "Sierra Mágina",
             officialUrl = "https://www.bedmargarciez.es/",
             electronicSeatUrl = "https://bedmargarciez.sedelectronica.es/",
-            centerLatitude = 37.8183,
-            centerLongitude = -3.4144,
+            centerLatitude = 37.82311842,
+            centerLongitude = -3.40977505,
             sourceUrl = "https://www.aemet.es/es/eltiempo/prediccion/municipios/bedmar-y-garciez-id23902",
             localities = listOf(
                 TerritorialLocality(
@@ -48,7 +50,7 @@ object TerritorialCatalogData {
                     name = "Garcíez",
                     municipalitySlug = "bedmar-y-garciez",
                     isPedaniaOrLocalEntity = true,
-                    postalCode = "23537",
+                    postalCode = "23539",
                 ),
             ),
         ),
@@ -61,8 +63,8 @@ object TerritorialCatalogData {
             comarca = "Sierra Mágina",
             officialUrl = "https://www.jodar.es/",
             electronicSeatUrl = "https://jodar.sedelectronica.es/",
-            centerLatitude = 37.8406,
-            centerLongitude = -3.3537,
+            centerLatitude = 37.84139859,
+            centerLongitude = -3.35042356,
             sourceUrl = "https://www.aemet.es/es/eltiempo/prediccion/municipios/jodar-id23053",
             localities = listOf(
                 TerritorialLocality(
@@ -70,7 +72,7 @@ object TerritorialCatalogData {
                     name = "Jódar",
                     municipalitySlug = "jodar",
                     isPedaniaOrLocalEntity = false,
-                    postalCode = "23540",
+                    postalCode = "23500",
                 ),
             ),
         ),
@@ -85,47 +87,43 @@ object TerritorialCatalogData {
             localitySlug = "bedmar",
             entityType = "cooperative_sca",
             dopSierraMagina = true,
-            mainBrands = listOf("Magnasur", "Oro de Cánava Selección"),
+            mainBrands = listOf("Magnasur", "Oro de Magnasur"),
             services = listOf(
                 "molturacion",
                 "bodega",
                 "envasado",
                 "tienda_aove",
-                "suministros_agricolas",
-                "carburantes",
-                "seccion_credito",
             ),
-            address = "Ctra. Garcíez, s/n, 23537 Bedmar, Jaén",
-            phone = "+34953760011",
-            email = "info@magnasur.es",
-            websiteUrl = "https://www.magnasur.es/",
+            address = "Polígono Industrial Los Llanos, s/n, 23537 Bedmar, Jaén",
+            phone = "+34953760524",
+            email = "magnasur@magnasur.com",
+            websiteUrl = "https://magnasur.com/",
             verificationStatus = "verified",
-            sourceUrl = "https://www.magnasur.es/",
+            sourceUrl = "https://sierramagina.org/project/s-c-a-bedmarense/",
         ),
         TerritorialCooperativeInfo(
             id = "10000000-0000-4000-8000-000000000002",
             officialName = "S.A.T. Ntra. Sra. del Camino",
-            brandName = "Ntra. Sra. del Camino",
+            brandName = "Marquesado de Garcíez",
             municipalitySlug = "bedmar-y-garciez",
             localitySlug = "garciez",
             entityType = "sat",
             dopSierraMagina = true,
-            mainBrands = listOf("Ntra. Sra. del Camino"),
+            mainBrands = listOf("Marquesado de Garcíez"),
             services = listOf(
                 "molturacion",
-                "almacenamiento",
                 "venta_aove",
             ),
-            address = "Garcíez, 23537 Bedmar y Garcíez, Jaén",
-            phone = null,
-            email = null,
+            address = "Plaza Juan Carlos I, 1, 23539 Garcíez, Jaén",
+            phone = "+34953359098",
+            email = "garciez@tuaceitedejaen.com",
             websiteUrl = null,
             verificationStatus = "verified",
-            sourceUrl = "https://www.boe.es/diario_boe/xml.php?id=BOE-B-2025-43655",
+            sourceUrl = "https://sierramagina.org/project/s-a-t-ntra-sra-del-camino/",
         ),
         TerritorialCooperativeInfo(
             id = "10000000-0000-4000-8000-000000000003",
-            officialName = "S.C.A. El Pilar del Andaraje",
+            officialName = "S.C.A. Nuestra Señora del Pilar del Andaraje",
             brandName = "El Pilar del Andaraje",
             municipalitySlug = "jodar",
             localitySlug = "jodar",
@@ -134,16 +132,13 @@ object TerritorialCatalogData {
             mainBrands = listOf("El Pilar del Andaraje"),
             services = listOf(
                 "molturacion",
-                "bodega",
-                "tienda_aove",
-                "suministros",
             ),
-            address = "Ctra. Cabra del Santo Cristo, km 1, 23540 Jódar, Jaén",
-            phone = "+34953785106",
-            email = "cooperativa@elpilar.es",
-            websiteUrl = "https://elpilar.es/",
+            address = "Calle Juan Martín, 144, 23500 Jódar, Jaén",
+            phone = "+34953787624",
+            email = null,
+            websiteUrl = "https://pilardeandaraje.es/",
             verificationStatus = "verified",
-            sourceUrl = "https://elpilar.es/",
+            sourceUrl = "https://sierramagina.org/project/s-c-a-ntra-sra-pilar-del-andaraje/",
         ),
         TerritorialCooperativeInfo(
             id = "10000000-0000-4000-8000-000000000004",
@@ -158,14 +153,13 @@ object TerritorialCatalogData {
                 "molturacion",
                 "envasado_premium",
                 "tienda_aove",
-                "suministros_agricolas",
             ),
-            address = "Calle Tras del Pilar, s/n, 23540 Jódar, Jaén",
-            phone = "+34953785010",
+            address = "Camino del Canónigo, s/n, 23500 Jódar, Jaén",
+            phone = "+34953785031",
             email = "info@laquintaesencia.com",
             websiteUrl = "https://laquintaesencia.com/",
             verificationStatus = "verified",
-            sourceUrl = "https://laquintaesencia.com/",
+            sourceUrl = "https://sierramagina.org/project/s-c-a-santisimo-cristo-de-la-misericordia/",
         ),
     )
 
@@ -196,21 +190,21 @@ object TerritorialCatalogData {
             email = null,
             websiteUrl = null,
             verificationStatus = "verified",
-            notes = "Zona regable parajes Lagunillas y Cerrón en Bedmar. Convocatorias verificadas en BOE.",
+            notes = "Ordenanzas expuestas en el Ayuntamiento de Bedmar y Garcíez, BOE-B-2026-19273. No publica turnos de riego.",
         ),
         TerritorialIrrigationCommunityInfo(
             id = "20000000-0000-4000-8000-000000000003",
-            officialName = "S.A.T. Fique",
+            officialName = "Comunidad de Regantes SAT Fique",
             shortName = "SAT Fique (Riego)",
             primaryMunicipalitySlug = "bedmar-y-garciez",
-            entityType = "sat_irrigation",
+            entityType = "community_of_irrigation",
             bulletinReference = "BOE-B-2025-43655",
-            address = "Garcíez, Bedmar y Garcíez, Jaén",
+            address = "Bedmar, Jaén",
             phone = null,
             email = null,
             websiteUrl = null,
             verificationStatus = "verified",
-            notes = "Sociedad Agraria de Transformación para riego olivarero en término de Garcíez/Bedmar.",
+            notes = "Comunidad de Regantes SAT Fique, convocatoria en Bedmar: BOE-B-2025-43655. No confundir con la SAT Ntra. Sra. del Camino de Garcíez.",
         ),
         TerritorialIrrigationCommunityInfo(
             id = "20000000-0000-4000-8000-000000000004",
@@ -224,7 +218,7 @@ object TerritorialCatalogData {
             email = null,
             websiteUrl = null,
             verificationStatus = "verified",
-            notes = "Regadío tradicional histórico de Jódar documentado en Boletín Oficial de Jaén.",
+            notes = "Convocatoria de asamblea en Jódar: BOP-2025-761, 14/03/2025. No publica turnos de riego.",
         ),
     )
 
@@ -242,7 +236,7 @@ object TerritorialCatalogData {
                 centerLatitude = m.centerLatitude,
                 centerLongitude = m.centerLongitude,
                 sourceUrl = m.sourceUrl,
-                lastCheckedAtMs = System.currentTimeMillis(),
+                lastCheckedAtMs = SOURCE_CHECKED_AT_MS,
                 active = true,
             )
         }
@@ -262,7 +256,7 @@ object TerritorialCatalogData {
                 electronicSeatUrl = c.electronicSeatUrl,
                 verificationStatus = c.verificationStatus,
                 sourceBulletinRef = c.bulletinReference,
-                lastCheckedAtMs = System.currentTimeMillis(),
+                lastCheckedAtMs = SOURCE_CHECKED_AT_MS,
                 active = true,
             )
         }

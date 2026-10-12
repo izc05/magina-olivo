@@ -55,7 +55,7 @@ class TerritorialCatalogComprehensiveTest {
 
         val garciezLoc = localities.find { it.slug == "garciez" }!!
         assertTrue(garciezLoc.isPedaniaOrLocalEntity)
-        assertEquals("23537", garciezLoc.postalCode)
+        assertEquals("23539", garciezLoc.postalCode)
         assertEquals("bedmar-y-garciez", garciezLoc.municipalitySlug)
     }
 
@@ -72,7 +72,8 @@ class TerritorialCatalogComprehensiveTest {
         assertTrue(bedmarense.dopSierraMagina)
         assertTrue(bedmarense.services.contains("molturacion"))
         assertTrue(bedmarense.services.contains("tienda_aove"))
-        assertTrue(bedmarense.services.contains("carburantes"))
+        // The cited directory does not establish a fuel service.
+        assertFalse(bedmarense.services.contains("carburantes"))
         assertEquals("verified", bedmarense.verificationStatus)
 
         val camino = cooperatives.find { it.officialName == "S.A.T. Ntra. Sra. del Camino" }
@@ -108,9 +109,9 @@ class TerritorialCatalogComprehensiveTest {
 
         val satFique = communities.find { it.bulletinReference == "BOE-B-2025-43655" }
         assertNotNull(satFique)
-        assertEquals("S.A.T. Fique", satFique!!.officialName)
+        assertEquals("Comunidad de Regantes SAT Fique", satFique!!.officialName)
         assertEquals("bedmar-y-garciez", satFique.primaryMunicipalitySlug)
-        assertEquals("sat_irrigation", satFique.entityType)
+        assertEquals("community_of_irrigation", satFique.entityType)
 
         val jandulilla = communities.find { it.bulletinReference == "BOE-B-2025-14108" }
         assertNotNull(jandulilla)

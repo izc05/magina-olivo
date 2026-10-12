@@ -450,7 +450,7 @@ INSTRUMENTATION_STATUS: test=migration10To11KeepsParcelsAndLeavesTheirGroveDescr
 INSTRUMENTATION_STATUS_CODE: 0
 INSTRUMENTATION_RESULT: stream=
 
-Time: 6.463
+Time: 6.454
 
 OK (32 tests)
 

@@ -190,11 +190,11 @@ test("RLS 3: Secure QR Invitation Claim & Replay Prevention (P0-2)", async () =>
     await db.exec(`SET request.jwt.claim.sub = '${USER_A}';`);
     await db.query(
       `INSERT INTO public.farm_invitations
-         (farm_id, issued_by_user_id, token_hash, role, capabilities, expires_at, max_uses)
+         (farm_id, issued_by_user_id, token_hash, role, capabilities, expires_at, max_uses, invitee_email_hash)
        VALUES
          ('${farmId}', '${USER_A}', '${tokenHash}', 'EXPLOITER',
           ARRAY['view_farm', 'add_deliveries', 'view_deliveries', 'view_contracts', 'upload_contracts', 'manage_agreements'],
-          '${expiresAt}', 1);`
+          '${expiresAt}', 1, '${hashToken('explotador.b@magina.es')}');`
     );
     await db.exec(`SET request.jwt.claim.sub = '';`);
   });
@@ -242,11 +242,11 @@ test("RLS 4: Worker C Invitation with Restricted Capabilities", async () => {
     await db.exec(`SET request.jwt.claim.sub = '${USER_A}';`);
     await db.query(
       `INSERT INTO public.farm_invitations
-         (farm_id, issued_by_user_id, token_hash, role, capabilities, expires_at, max_uses)
+         (farm_id, issued_by_user_id, token_hash, role, capabilities, expires_at, max_uses, invitee_email_hash)
        VALUES
          ('${farmId}', '${USER_A}', '${tokenHash}', 'WORKER',
           ARRAY['view_farm', 'add_deliveries'],
-          '${expiresAt}', 1);`
+          '${expiresAt}', 1, '${hashToken('trabajador.c@magina.es')}');`
     );
     await db.exec(`SET request.jwt.claim.sub = '';`);
   });
@@ -737,4 +737,95 @@ test("P0: agreement cannot link a contract with different parties", async () => 
   await assert.rejects(asUser(USER_A, () => db.query(`INSERT INTO public.campaign_harvest_share_agreements
     (farm_id, campaign_id, contract_id, owner_user_id, exploiter_user_id, version)
     VALUES ('${farmId}', '${campaignId}', '${contractId}', '${USER_A}', '${USER_C}', 701);`)), /foreign key|contract.*parties/i);
+});
+
+test("P0: delivery cannot claim a workspace unrelated to its farm", async () => {
+  const other = await asUser(USER_D, () => db.query(`INSERT INTO public.workspaces (owner_user_id,name) VALUES ('${USER_D}','Isolated intruder workspace') RETURNING id;`));
+  await assert.rejects(asUser(USER_A, () => db.query(`INSERT INTO public.deliveries
+    (workspace_id,farm_id,campaign_id,delivery_date,destination_name,net_grams,recorded_by_user_id)
+    VALUES ('${other.rows[0].id}','${farmId}','${campaignId}','2026-10-12','QA',1000,'${USER_A}');`)), /workspace|foreign key/i);
+});
+
+test("P0: harvest cannot use another farm's campaign", async () => {
+  await assert.rejects(asUser(USER_A, () => db.query(`INSERT INTO public.harvests
+    (workspace_id,farm_id,campaign_id,harvest_date,weight_grams,recorded_by_user_id)
+    VALUES ('${workspaceAId}','${farm2Id}','${campaignId}','2026-10-12',1000,'${USER_A}');`)), /campaign.*farm|foreign key/i);
+});
+
+test("P0: delegated manage_farm cannot promote itself to creator/owner", async () => {
+  const isolated = await asSuperuser(() => db.query(`INSERT INTO public.farms (workspace_id,creator_user_id,owner_id,name)
+    VALUES ('${workspaceAId}','${USER_A}','${USER_A}','Isolated delegated farm') RETURNING id;`));
+  const id = isolated.rows[0].id;
+  await asUser(USER_A, () => db.query(`INSERT INTO public.farm_access_grants (farm_id,user_id,granted_by_user_id,role,capabilities)
+    VALUES ('${id}','${USER_B}','${USER_A}','EXPLOITER',ARRAY['view_farm','manage_farm']);`));
+  await assert.rejects(asUser(USER_B, () => db.query(`UPDATE public.farms SET creator_user_id='${USER_B}',owner_id='${USER_B}' WHERE id='${id}';`)), /principal|owner|creator/i);
+});
+
+test("P0: grants starting in the future cannot expose a farm or capability", async () => {
+  await asUser(USER_A, () => db.query(`INSERT INTO public.farm_access_grants (farm_id,user_id,granted_by_user_id,role,capabilities,valid_from)
+    VALUES ('${farm2Id}','${USER_C}','${USER_A}','VIEWER',ARRAY['view_farm','view_deliveries'],now()+interval '1 day');`));
+  const capability = await asUser(USER_C, () => db.query(`SELECT public.has_farm_capability('${farm2Id}','view_deliveries') AS allowed;`));
+  assert.equal(capability.rows[0].allowed, false);
+  const visible = await asUser(USER_C, () => db.query(`SELECT id FROM public.farms WHERE id='${farm2Id}';`));
+  assert.equal(visible.rows.length, 0);
+});
+
+test("P0: email-bound invitation cannot be claimed by a different native identity", async () => {
+  const isolated = await asSuperuser(() => db.query(`INSERT INTO public.farms (workspace_id,creator_user_id,owner_id,name)
+    VALUES ('${workspaceAId}','${USER_A}','${USER_A}','Email-bound invitation farm') RETURNING id;`));
+  const token = 'qa-email-bound-invite-token';
+  await asUser(USER_A, () => db.query(`INSERT INTO public.farm_invitations
+    (farm_id,issued_by_user_id,token_hash,invitee_email_hash,expires_at)
+    VALUES ('${isolated.rows[0].id}','${USER_A}','${hashToken(token)}','${hashToken('explotador.b@magina.es')}',now()+interval '1 hour');`));
+  const result = await asUser(USER_D, () => db.query(`SELECT public.claim_farm_invitation('${token}') AS result;`));
+  assert.equal(result.rows[0].result.success, false);
+});
+
+test("P0: confirming an expired claimed invitation must not open access", async () => {
+  const token = 'qa-expiring-claimed-invitation';
+  const invitation = await asUser(USER_A, () => db.query(`INSERT INTO public.farm_invitations
+    (farm_id,issued_by_user_id,token_hash,expires_at,requires_issuer_confirmation)
+    VALUES ('${farm2Id}','${USER_A}','${hashToken(token)}',now()+interval '1 hour',true) RETURNING id;`));
+  await asUser(USER_D, () => db.query(`SELECT public.claim_farm_invitation('${token}');`));
+  await asUser(USER_A, () => db.query(`UPDATE public.farm_invitations SET expires_at=now()-interval '1 minute' WHERE id='${invitation.rows[0].id}';`));
+  const result = await asUser(USER_A, () => db.query(`SELECT public.confirm_farm_invitation('${invitation.rows[0].id}') AS result;`));
+  assert.equal(result.rows[0].result.success, false);
+});
+
+test("RLS: owner can create a farm through INSERT RETURNING", async () => {
+  const created = await asUser(USER_A, () => db.query(`INSERT INTO public.farms (workspace_id,creator_user_id,owner_id,name)
+    VALUES ('${workspaceAId}','${USER_A}','${USER_A}','Owner-created canonical farm') RETURNING id,name;`));
+  assert.equal(created.rows.length, 1);
+  assert.equal(created.rows[0].name, 'Owner-created canonical farm');
+});
+
+test("P0: unbound invitation waits for issuer confirmation even if caller disables the flag", async () => {
+  const token = 'qa-unbound-invitation-token';
+  const invitation = await asUser(USER_A, () => db.query(`INSERT INTO public.farm_invitations
+    (farm_id,issued_by_user_id,token_hash,expires_at,requires_issuer_confirmation)
+    VALUES ('${farm2Id}','${USER_A}','${hashToken(token)}',now()+interval '1 hour',false) RETURNING id;`));
+  const result = await asUser(USER_B, () => db.query(`SELECT public.claim_farm_invitation('${token}') AS result;`));
+  assert.equal(result.rows[0].result.status, 'CLAIMED');
+  const before = await asUser(USER_B, () => db.query(`SELECT id FROM public.farms WHERE id='${farm2Id}';`));
+  assert.equal(before.rows.length, 0);
+  const confirmed = await asUser(USER_A, () => db.query(`SELECT public.confirm_farm_invitation('${invitation.rows[0].id}') AS result;`));
+  assert.equal(confirmed.rows[0].result.success, true);
+  const after = await asUser(USER_B, () => db.query(`SELECT id FROM public.farms WHERE id='${farm2Id}';`));
+  assert.equal(after.rows.length, 1);
+});
+
+test("Migration: unknown legacy permissive farm policy fails closed instead of remaining OR-authorized", async () => {
+  const isolated = new PGlite();
+  const root = fileURLToPath(new URL('../../', import.meta.url));
+  try {
+    await isolated.exec(readFileSync(join(root, 'supabase/tests/fixtures/mock_supabase_environment.sql'), 'utf8'));
+    await isolated.exec(`CREATE TABLE public.farms (id uuid PRIMARY KEY, owner_id uuid, name text);
+      ALTER TABLE public.farms ENABLE ROW LEVEL SECURITY;
+      CREATE POLICY unexpected_public_access ON public.farms FOR SELECT USING (true);`);
+    const migration = readFileSync(join(root, 'supabase/migrations/20261011120000_g0_auth_workspaces_shared_farms.sql'), 'utf8');
+    await assert.rejects(isolated.exec(`BEGIN; ${migration} COMMIT;`), /legacy.*polic/i);
+  } finally {
+    await isolated.exec('ROLLBACK;');
+    await isolated.close();
+  }
 });

@@ -4,7 +4,7 @@ import { before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 
 const project = process.env.G0_NATIVE_PROJECT_ID;
 assert.match(project ?? '', /^magina-g0-native-[a-z0-9-]+$/);
@@ -73,12 +73,14 @@ before(async () => {
     assert.ok(created.ok && created.data.id, 'Native Auth user creation must succeed');
     const login = await request('/auth/v1/token?grant_type=password', { method: 'POST', body: { email, password } });
     assert.ok(login.ok && login.data.access_token, 'Native password login must issue a JWT');
-    users[actor] = { id: created.data.id, token: login.data.access_token };
+    users[actor] = { id: created.data.id, token: login.data.access_token, email };
   }
   if (baseline === 'legacy') {
     sql(`CREATE TABLE public.farms (
       id uuid PRIMARY KEY, owner_id uuid REFERENCES auth.users(id), name text NOT NULL,
       cover_image_uri text, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now());
+      ALTER TABLE public.farms ENABLE ROW LEVEL SECURITY;
+      CREATE POLICY farms_select_own ON public.farms FOR SELECT TO authenticated USING (owner_id=auth.uid());
       INSERT INTO public.farms (id, owner_id, name, cover_image_uri)
       VALUES ('${legacyId}', '${users.A.id}', 'Legacy preserved farm', 'local://original-cover');`);
     const backup = execFileSync('docker', ['exec', container, 'pg_dump', '-U', 'postgres', '-d', 'postgres', '--table=public.farms', '--data-only', '--column-inserts', '--no-owner', '--no-privileges'], { encoding: 'utf8' });
@@ -128,6 +130,9 @@ test('Native migration preserves legacy UUID, owner, name and cover; backup rest
     return;
   }
   assert.equal(sql(`SELECT owner_id=creator_user_id AND workspace_id IS NULL AND name='Legacy preserved farm' AND cover_image_uri='local://original-cover' FROM public.farms WHERE id='${legacyId}';`).trim(), 't');
+  // Preserve legacy identity without silently claiming it into a new account's
+  // canonical workspace. Client/audited legacy claim is a separate #725/#726 gate.
+  assert.equal(sql(`SELECT count(*) FROM pg_catalog.pg_policies WHERE schemaname='public' AND tablename='farms' AND policyname='farms_select_own';`).trim(), '0');
   sql('CREATE SCHEMA g0_backup_verify; CREATE TABLE g0_backup_verify.farms (LIKE public.farms INCLUDING DEFAULTS);');
   const backup = readFileSync(`${evidence}/legacy-farms-before.sql`, 'utf8').replaceAll('public.farms', 'g0_backup_verify.farms');
   sql(backup);
@@ -205,6 +210,47 @@ test('Native private delivery photo uploads require farm capability', async () =
 test('Native transaction rollback leaves agricultural data unchanged', () => {
   sql(`BEGIN; UPDATE public.farms SET name='Uncommitted edit' WHERE id='${farm.id}'; ROLLBACK;`);
   assert.equal(sql(`SELECT name FROM public.farms WHERE id='${farm.id}';`).trim(), 'Native shared farm');
+});
+
+test('Native workspace/campaign references and delegated principals cannot be forged', async () => {
+  const other = await insert('workspaces', 'D', { id: randomUUID(), owner_user_id: users.D.id, name: 'Isolated workspace D' });
+  const mismatch = await request('/rest/v1/deliveries', { actor: 'A', method: 'POST', body: {
+    workspace_id: other.id, farm_id: farm.id, campaign_id: campaign.id, delivery_date: '2026-10-02',
+    destination_name: 'Mismatched workspace', net_grams: 1000, recorded_by_user_id: users.A.id } });
+  assert.equal(mismatch.status, 409);
+  const wrongHarvest = await request('/rest/v1/harvests', { actor: 'A', method: 'POST', body: {
+    workspace_id: workspace.id, farm_id: farm2.id, campaign_id: campaign.id, harvest_date: '2026-10-02',
+    weight_grams: 1000, recorded_by_user_id: users.A.id } });
+  assert.equal(wrongHarvest.status, 409);
+  await insert('farm_access_grants', 'A', { farm_id: farm2.id, user_id: users.B.id, granted_by_user_id: users.A.id,
+    role: 'EXPLOITER', capabilities: ['view_farm', 'manage_farm'] });
+  const promoted = await request(`/rest/v1/farms?id=eq.${farm2.id}`, { actor: 'B', method: 'PATCH', body: {
+    creator_user_id: users.B.id, owner_id: users.B.id } });
+  assert.ok(!promoted.ok);
+  await insert('farm_access_grants', 'A', { farm_id: farm2.id, user_id: users.C.id, granted_by_user_id: users.A.id,
+    role: 'VIEWER', capabilities: ['view_farm'], valid_from: new Date(Date.now() + 86400000).toISOString() });
+  assert.deepEqual((await request(`/rest/v1/farms?id=eq.${farm2.id}&select=id`, { actor: 'C' })).data, []);
+});
+
+test('Native invitations bind real Auth email and unbound links require confirmation', async () => {
+  const isolated = await insert('farms', 'A', { id: randomUUID(), workspace_id: workspace.id, creator_user_id: users.A.id,
+    owner_id: users.A.id, name: 'Isolated invitation farm' });
+  const token = randomUUID() + randomUUID();
+  await insert('farm_invitations', 'A', { farm_id: isolated.id, issued_by_user_id: users.A.id,
+    token_hash: createHash('sha256').update(token).digest('hex'), role: 'VIEWER', capabilities: ['view_farm'],
+    invitee_email_hash: createHash('sha256').update(users.D.email.toLowerCase()).digest('hex'),
+    expires_at: new Date(Date.now() + 3600000).toISOString() });
+  assert.equal((await rpc('claim_farm_invitation', 'C', { token_plaintext: token })).success, false);
+  assert.equal((await rpc('claim_farm_invitation', 'D', { token_plaintext: token })).status, 'ACCEPTED');
+  assert.equal((await rpc('claim_farm_invitation', 'D', { token_plaintext: token })).success, false);
+  const unbound = randomUUID() + randomUUID();
+  const invitation = await insert('farm_invitations', 'A', { farm_id: isolated.id, issued_by_user_id: users.A.id,
+    token_hash: createHash('sha256').update(unbound).digest('hex'), role: 'VIEWER', capabilities: ['view_farm'],
+    requires_issuer_confirmation: false, expires_at: new Date(Date.now() + 3600000).toISOString() });
+  assert.equal((await rpc('claim_farm_invitation', 'B', { token_plaintext: unbound })).status, 'CLAIMED');
+  assert.deepEqual((await request(`/rest/v1/farms?id=eq.${isolated.id}&select=id`, { actor: 'B' })).data, []);
+  assert.equal((await rpc('confirm_farm_invitation', 'A', { p_invitation_id: invitation.id })).success, true);
+  assert.equal((await request(`/rest/v1/farms?id=eq.${isolated.id}&select=id`, { actor: 'B' })).data.length, 1);
 });
 
 test('Native grant revocation closes RLS, Storage and definer RPC with the same Auth session', async () => {

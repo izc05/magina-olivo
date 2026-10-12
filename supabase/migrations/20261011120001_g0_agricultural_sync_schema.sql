@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS public.parcels (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleted_at TIMESTAMPTZ,
-    version BIGINT NOT NULL DEFAULT 1
+    version BIGINT NOT NULL DEFAULT 1,
+    CONSTRAINT uq_parcels_id_workspace UNIQUE (id, workspace_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_parcels_workspace ON public.parcels(workspace_id);
@@ -54,7 +55,9 @@ CREATE TABLE IF NOT EXISTS public.farm_parcel_memberships (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleted_at TIMESTAMPTZ,
-    version BIGINT NOT NULL DEFAULT 1
+    version BIGINT NOT NULL DEFAULT 1,
+    CONSTRAINT fk_fpm_farm_workspace FOREIGN KEY (farm_id, workspace_id) REFERENCES public.farms(id, workspace_id),
+    CONSTRAINT fk_fpm_parcel_workspace FOREIGN KEY (parcel_id, workspace_id) REFERENCES public.parcels(id, workspace_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_fpm_farm ON public.farm_parcel_memberships(farm_id);
@@ -87,7 +90,10 @@ CREATE TABLE IF NOT EXISTS public.campaigns (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleted_at TIMESTAMPTZ,
     version BIGINT NOT NULL DEFAULT 1,
-    CONSTRAINT uq_campaigns_id_farm UNIQUE (id, farm_id)
+    CONSTRAINT uq_campaigns_id_farm UNIQUE (id, farm_id),
+    CONSTRAINT uq_campaigns_id_farm_workspace UNIQUE (id, farm_id, workspace_id),
+    CONSTRAINT uq_campaigns_id_workspace UNIQUE (id, workspace_id),
+    CONSTRAINT fk_campaigns_farm_workspace FOREIGN KEY (farm_id, workspace_id) REFERENCES public.farms(id, workspace_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_campaigns_farm ON public.campaigns(farm_id);
@@ -131,7 +137,8 @@ CREATE TABLE IF NOT EXISTS public.deliveries (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleted_at TIMESTAMPTZ,
     version BIGINT NOT NULL DEFAULT 1,
-    CONSTRAINT fk_deliveries_campaign_farm FOREIGN KEY (campaign_id, farm_id) REFERENCES public.campaigns(id, farm_id) ON DELETE RESTRICT
+    CONSTRAINT uq_deliveries_id_workspace UNIQUE (id, workspace_id),
+    CONSTRAINT fk_deliveries_campaign_farm FOREIGN KEY (campaign_id, farm_id, workspace_id) REFERENCES public.campaigns(id, farm_id, workspace_id) ON DELETE RESTRICT
 );
 
 CREATE INDEX IF NOT EXISTS idx_deliveries_farm_date ON public.deliveries(farm_id, delivery_date);
@@ -225,7 +232,9 @@ CREATE TABLE IF NOT EXISTS public.harvests (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleted_at TIMESTAMPTZ,
-    version BIGINT NOT NULL DEFAULT 1
+    version BIGINT NOT NULL DEFAULT 1,
+    CONSTRAINT fk_harvests_farm_workspace FOREIGN KEY (farm_id, workspace_id) REFERENCES public.farms(id, workspace_id),
+    CONSTRAINT fk_harvests_campaign_farm FOREIGN KEY (campaign_id, farm_id, workspace_id) REFERENCES public.campaigns(id, farm_id, workspace_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_harvests_farm_date ON public.harvests(farm_id, harvest_date);
@@ -268,7 +277,12 @@ CREATE TABLE IF NOT EXISTS public.expenses (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleted_at TIMESTAMPTZ,
-    version BIGINT NOT NULL DEFAULT 1
+    version BIGINT NOT NULL DEFAULT 1,
+    CONSTRAINT fk_expenses_farm_workspace FOREIGN KEY (farm_id, workspace_id) REFERENCES public.farms(id, workspace_id),
+    CONSTRAINT fk_expenses_campaign_workspace FOREIGN KEY (campaign_id, workspace_id) REFERENCES public.campaigns(id, workspace_id),
+    CONSTRAINT fk_expenses_campaign_farm FOREIGN KEY (campaign_id, farm_id) REFERENCES public.campaigns(id, farm_id),
+    CONSTRAINT fk_expenses_parcel_workspace FOREIGN KEY (parcel_id, workspace_id) REFERENCES public.parcels(id, workspace_id),
+    CONSTRAINT fk_expenses_delivery_workspace FOREIGN KEY (delivery_id, workspace_id) REFERENCES public.deliveries(id, workspace_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_expenses_farm ON public.expenses(farm_id, expense_date);

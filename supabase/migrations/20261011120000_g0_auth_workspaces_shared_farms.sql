@@ -2,6 +2,21 @@
 -- Issues: #726, #735, #739, #727
 -- Reconciles existing Supabase schema (farms with legacy owner_id) and enforces strict RLS.
 
+-- Permissive policies are OR-combined: an unknown old policy could undo every
+-- new private predicate. Require explicit review instead of dropping unknown SQL.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_catalog.pg_policies
+        WHERE schemaname = 'public' AND tablename = 'farms'
+          AND policyname NOT IN ('farms_select_own', 'farms_insert_own', 'farms_update_own', 'farms_delete_own',
+                                 'farms_select_accessible', 'farms_insert_creator', 'farms_update_authorized')
+    ) THEN
+        RAISE EXCEPTION 'Unknown legacy farms policies require explicit review before G0 migration';
+    END IF;
+END;
+$$;
+
 DO $$
 BEGIN
     CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -104,6 +119,23 @@ UPDATE public.farms SET creator_user_id = owner_id WHERE creator_user_id IS NULL
 CREATE INDEX IF NOT EXISTS idx_farms_workspace ON public.farms(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_farms_creator ON public.farms(creator_user_id);
 CREATE INDEX IF NOT EXISTS idx_farms_status ON public.farms(status);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_farms_id_workspace ON public.farms(id, workspace_id);
+
+-- Ordinary farm management never grants authority to rewrite access principals.
+-- Linking a legacy NULL workspace needs a separate audited claim/transfer flow.
+CREATE OR REPLACE FUNCTION public.check_farm_principal_immutability()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    IF ROW(NEW.id, NEW.workspace_id, NEW.creator_user_id, NEW.owner_id)
+       IS DISTINCT FROM ROW(OLD.id, OLD.workspace_id, OLD.creator_user_id, OLD.owner_id) THEN
+        RAISE EXCEPTION 'Cannot alter farm access principals (creator, owner, workspace) through ordinary management';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+DROP TRIGGER IF EXISTS trg_farm_principals ON public.farms;
+CREATE TRIGGER trg_farm_principals BEFORE UPDATE ON public.farms
+    FOR EACH ROW EXECUTE FUNCTION public.check_farm_principal_immutability();
 
 ALTER TABLE public.farms ENABLE ROW LEVEL SECURITY;
 
@@ -129,8 +161,10 @@ CREATE INDEX IF NOT EXISTS idx_grants_status ON public.farm_access_grants(status
 
 ALTER TABLE public.farm_access_grants ENABLE ROW LEVEL SECURITY;
 
--- Security Definer helper function: Check if current user has capability on farm
-CREATE OR REPLACE FUNCTION public.has_farm_capability(f_id UUID, req_cap TEXT)
+-- Internal actor-aware helper is not an exposed Data API endpoint.
+CREATE SCHEMA IF NOT EXISTS magina_private;
+REVOKE ALL ON SCHEMA magina_private FROM PUBLIC;
+CREATE OR REPLACE FUNCTION magina_private.has_farm_capability_for(f_id UUID, req_cap TEXT, actor UUID)
 RETURNS BOOLEAN
 LANGUAGE sql
 SECURITY DEFINER
@@ -141,21 +175,27 @@ AS $$
         -- Farm owner/creator always has full capability
         SELECT 1 FROM public.farms
         WHERE id = f_id AND (
-            creator_user_id = auth.uid()
-            OR owner_id = auth.uid()
+            creator_user_id = actor
+            OR owner_id = actor
             OR (workspace_id IS NOT NULL AND workspace_id IN (
-                SELECT id FROM public.workspaces WHERE owner_user_id = auth.uid()
+                SELECT id FROM public.workspaces WHERE owner_user_id = actor
             ))
         )
         UNION
         -- Active grant with requested capability
         SELECT 1 FROM public.farm_access_grants
         WHERE farm_id = f_id
-          AND user_id = auth.uid()
+          AND user_id = actor
           AND status = 'ACTIVE'
+          AND valid_from <= now()
           AND (valid_until IS NULL OR valid_until > now())
           AND (req_cap = ANY(capabilities) OR 'manage_all' = ANY(capabilities))
     );
+$$;
+
+CREATE OR REPLACE FUNCTION public.has_farm_capability(f_id UUID, req_cap TEXT)
+RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER SET search_path = public STABLE AS $$
+    SELECT magina_private.has_farm_capability_for(f_id, req_cap, auth.uid());
 $$;
 
 -- Security Definer helper function: List of accessible farms for current user
@@ -176,6 +216,7 @@ AS $$
     SELECT farm_id FROM public.farm_access_grants
     WHERE user_id = auth.uid()
       AND status = 'ACTIVE'
+      AND valid_from <= now()
       AND (valid_until IS NULL OR valid_until > now());
 $$;
 
@@ -192,7 +233,11 @@ DROP POLICY IF EXISTS "farms_update_authorized" ON public.farms;
 CREATE POLICY "farms_select_accessible"
     ON public.farms FOR SELECT
     TO authenticated
-    USING (id IN (SELECT user_accessible_farm_ids()));
+    USING (
+        creator_user_id = auth.uid() OR owner_id = auth.uid()
+        OR workspace_id IN (SELECT id FROM public.workspaces WHERE owner_user_id = auth.uid())
+        OR id IN (SELECT user_accessible_farm_ids())
+    );
 
 CREATE POLICY "farms_insert_creator"
     ON public.farms FOR INSERT
@@ -280,6 +325,8 @@ DECLARE
     v_inv RECORD;
     v_farm RECORD;
     v_current_user UUID;
+    v_invitee_email TEXT;
+    v_requires_confirmation BOOLEAN;
 BEGIN
     v_current_user := auth.uid();
     IF v_current_user IS NULL THEN
@@ -302,20 +349,33 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'error', 'invitation_invalid_or_expired');
     END IF;
 
+    IF NOT magina_private.has_farm_capability_for(v_inv.farm_id, 'manage_grants', v_inv.issued_by_user_id) THEN
+        RETURN jsonb_build_object('success', false, 'error', 'invitation_issuer_no_longer_authorized');
+    END IF;
+    IF v_inv.invitee_email_hash IS NOT NULL THEN
+        SELECT email INTO v_invitee_email FROM auth.users WHERE id = v_current_user;
+        IF v_invitee_email IS NULL OR encode(sha256(lower(btrim(v_invitee_email))::bytea), 'hex') <> v_inv.invitee_email_hash THEN
+            RETURN jsonb_build_object('success', false, 'error', 'invitation_identity_mismatch');
+        END IF;
+    END IF;
+    -- Unbound bearer links must be confirmed by an authorized issuer, regardless
+    -- of a client-selected flag. Email-bound links may be accepted immediately.
+    v_requires_confirmation := v_inv.requires_issuer_confirmation OR v_inv.invitee_email_hash IS NULL;
+
     SELECT id, name, municipality INTO v_farm
     FROM public.farms WHERE id = v_inv.farm_id;
 
     -- Update invitation usage
     UPDATE public.farm_invitations
-    SET state = CASE WHEN v_inv.requires_issuer_confirmation THEN 'CLAIMED' ELSE 'ACCEPTED' END,
+    SET state = CASE WHEN v_requires_confirmation THEN 'CLAIMED' ELSE 'ACCEPTED' END,
         claimed_by_user_id = v_current_user,
         use_count = use_count + 1,
-        confirmed_at = CASE WHEN NOT v_inv.requires_issuer_confirmation THEN now() ELSE NULL END,
+        confirmed_at = CASE WHEN NOT v_requires_confirmation THEN now() ELSE NULL END,
         updated_at = now()
     WHERE id = v_inv.id;
 
     -- If immediate acceptance (no manual issuer confirmation required), create grant atomically
-    IF NOT v_inv.requires_issuer_confirmation THEN
+    IF NOT v_requires_confirmation THEN
         INSERT INTO public.farm_access_grants (
             farm_id,
             user_id,
@@ -350,8 +410,8 @@ BEGIN
         'farm_name', v_farm.name,
         'role', v_inv.role,
         'capabilities', v_inv.capabilities,
-        'requires_confirmation', v_inv.requires_issuer_confirmation,
-        'status', CASE WHEN v_inv.requires_issuer_confirmation THEN 'CLAIMED' ELSE 'ACCEPTED' END
+        'requires_confirmation', v_requires_confirmation,
+        'status', CASE WHEN v_requires_confirmation THEN 'CLAIMED' ELSE 'ACCEPTED' END
     );
 END;
 $$;
@@ -367,6 +427,9 @@ DECLARE
     v_current_user UUID;
 BEGIN
     v_current_user := auth.uid();
+    IF v_current_user IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'error', 'unauthenticated');
+    END IF;
     SELECT * INTO v_inv FROM public.farm_invitations WHERE id = p_invitation_id FOR UPDATE;
     IF NOT FOUND THEN
         RETURN jsonb_build_object('success', false, 'error', 'invitation_not_found');
@@ -374,6 +437,10 @@ BEGIN
 
     IF NOT public.has_farm_capability(v_inv.farm_id, 'manage_grants') THEN
         RETURN jsonb_build_object('success', false, 'error', 'unauthorized');
+    END IF;
+
+    IF v_inv.expires_at <= now() OR NOT magina_private.has_farm_capability_for(v_inv.farm_id, 'manage_grants', v_inv.issued_by_user_id) THEN
+        RETURN jsonb_build_object('success', false, 'error', 'invitation_invalid_or_expired');
     END IF;
 
     IF v_inv.state <> 'CLAIMED' OR v_inv.claimed_by_user_id IS NULL THEN

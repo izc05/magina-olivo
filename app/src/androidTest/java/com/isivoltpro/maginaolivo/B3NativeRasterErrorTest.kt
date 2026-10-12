@@ -135,6 +135,26 @@ class B3NativeRasterErrorTest {
         assertSavedGeometry(nativeMap, parcel.id.toString())
         compose.waitForIdle()
         saveWindow("b3-${mode.name.lowercase()}-native-error")
+        val previousStyle = AtomicReference<org.maplibre.android.maps.Style>()
+        val previousCamera = AtomicReference<org.maplibre.android.camera.CameraPosition>()
+        compose.runOnIdle {
+            previousStyle.set(nativeMap.get().style)
+            previousCamera.set(nativeMap.get().cameraPosition)
+        }
+        nativeError.set(null)
+        compose.onNodeWithTag("farm-map-tile-retry").assertIsDisplayed().performClick()
+        compose.waitUntil(15_000) {
+            var reloaded = false
+            compose.runOnIdle { reloaded = nativeMap.get()?.style?.let { it !== previousStyle.get() } == true }
+            nativeError.get() == "base" && reloaded
+        }
+        compose.onNodeWithTag("farm-map-tile-error").assertIsDisplayed()
+        assertSavedGeometry(nativeMap, parcel.id.toString())
+        compose.runOnIdle {
+            assertEquals(previousCamera.get().target!!.latitude, nativeMap.get().cameraPosition.target!!.latitude, 0.000001)
+            assertEquals(previousCamera.get().target!!.longitude, nativeMap.get().cameraPosition.target!!.longitude, 0.000001)
+            assertEquals(previousCamera.get().zoom, nativeMap.get().cameraPosition.zoom, 0.000001)
+        }
         compose.onNodeWithTag("farm-map-offline-fallback").assertIsDisplayed().performClick()
         compose.waitUntil(10_000) {
             var localOnly = false

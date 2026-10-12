@@ -7,6 +7,23 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ParcelMapFeatureTest {
+    @Test fun explicitRetryRefreshesOnlyOfficialRasterCacheKeys() {
+        val before = JsonParser.parseString(parcelStyle(MapBase.AERIAL, true, sigpacLines = true)).asJsonObject
+        val after = JsonParser.parseString(parcelStyle(MapBase.AERIAL, true, sigpacLines = true, tileRetryToken = 123L)).asJsonObject
+        val oldSources = before.getAsJsonObject("sources")
+        val newSources = after.getAsJsonObject("sources")
+        assertEquals(oldSources["saved-parcels"], newSources["saved-parcels"])
+        assertEquals(before["layers"], after["layers"])
+        for (id in listOf("base", "cadastre", "sigpac")) {
+            val original = oldSources.getAsJsonObject(id).getAsJsonArray("tiles")[0].asString
+            val refreshed = newSources.getAsJsonObject(id).getAsJsonArray("tiles")[0].asString
+            assertFalse(original.contains("magina_retry="))
+            assertEquals("$original&magina_retry=123", refreshed)
+        }
+        val local = parcelStyle(MapBase.NONE, true, sigpacLines = true, tileRetryToken = 123L)
+        assertFalse(local.contains("https://"))
+    }
+
     @Test fun appearanceChangesTheOfflineCanvasWithoutRecoloringSourceTiles() {
         for (base in MapBase.entries) {
             val light = JsonParser.parseString(parcelStyle(base, cadastreLines = true)).asJsonObject

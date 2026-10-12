@@ -189,6 +189,7 @@ fun FarmMapScreen(
     var cadastreLines by rememberSaveable { mutableStateOf(true) }
     var sigpacLines by rememberSaveable { mutableStateOf(true) }
     var tileError by remember { mutableStateOf<String?>(null) }
+    var tileRetryToken by remember { mutableStateOf(0L) }
     LaunchedEffect(base, cadastreLines, sigpacLines) { tileError = null }
     var searchOpen by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(state.focus?.token) {
@@ -225,6 +226,7 @@ fun FarmMapScreen(
                 base = base,
                 cadastreLines = cadastreLines,
                 sigpacLines = sigpacLines,
+                tileRetryToken = tileRetryToken,
                 selectedId = state.selectedSavedId?.toString(),
                 selectedIds = state.selected + setOfNotNull(state.inspected?.reference),
                 onSelected = onTapParcel,
@@ -382,10 +384,11 @@ fun FarmMapScreen(
                     when {
                         source == "sigpac" -> "Algunos recintos SIGPAC no se han podido cargar."
                         source == "cadastre" -> "Algunos límites de Catastro no se han podido cargar."
-                        base == MapBase.AERIAL -> "Parte de la foto aérea no se ha podido cargar."
+                        base == MapBase.AERIAL -> "Algunas imágenes aéreas no están disponibles."
                         else -> "Parte del mapa no se ha podido cargar."
                     },
                     onOffline = { tileError = null; base = MapBase.NONE },
+                    onRetry = { tileError = null; tileRetryToken = System.nanoTime() },
                 )
             }
             state.locationProblem?.let { problem ->
@@ -441,15 +444,20 @@ fun FarmMapScreen(
 
 /** #711 B3: a remote raster failure must not prevent use of the local parcels. */
 @Composable
-private fun MapTileProblemNotice(message: String, onOffline: () -> Unit) {
+private fun MapTileProblemNotice(message: String, onOffline: () -> Unit, onRetry: () -> Unit) {
     Surface(
         Modifier.fillMaxWidth().testTag("farm-map-tile-error"),
         shape = MoShape.card, color = MoSurfaceTokens.cardSurface.copy(alpha = 0.97f), shadowElevation = 2.dp,
     ) {
         Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(message, color = MoColors.current.errorText, style = MaterialTheme.typography.bodyMedium)
-            TextButton(onClick = onOffline, modifier = Modifier.testTag("farm-map-offline-fallback")) {
-                Text("Solo parcelas")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = onRetry, modifier = Modifier.testTag("farm-map-tile-retry")) {
+                    Text("Reintentar")
+                }
+                TextButton(onClick = onOffline, modifier = Modifier.testTag("farm-map-offline-fallback")) {
+                    Text("Solo parcelas")
+                }
             }
         }
     }

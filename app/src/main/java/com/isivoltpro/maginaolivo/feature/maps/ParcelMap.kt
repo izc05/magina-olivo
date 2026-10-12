@@ -94,7 +94,6 @@ data class MapCameraInsets(
 
 private data class MapFrameKey(
     val parcels: List<Pair<String, String>>,
-    val padding: MapCameraInsets,
 )
 
 /** A projected parcel label before collision filtering. Pure data so priority can be unit-tested. */
@@ -144,6 +143,8 @@ fun ParcelMap(
     onTileError: (String) -> Unit = {},
     /** Optional official SIGPAC recintos, a reference only; never imported as owned parcels. */
     sigpacLines: Boolean = false,
+    /** Explicit retry reloads the current sources without touching local geometry or camera. */
+    tileRetryToken: Long = 0L,
 ) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
@@ -215,9 +216,9 @@ fun ParcelMap(
         }
     }
     val showsMyLocation = myLocation != null
-    LaunchedEffect(map, effectiveBase, cadastreLines, sigpacLines, overlayTiles, showsMyLocation, dark) {
+    LaunchedEffect(map, effectiveBase, cadastreLines, sigpacLines, overlayTiles, showsMyLocation, dark, tileRetryToken) {
         loadedStyle = null
-        map?.setStyle(Style.Builder().fromJson(parcelStyle(effectiveBase, cadastreLines, overlayTiles, showsMyLocation, dark, sigpacLines))) { loadedStyle = it }
+        map?.setStyle(Style.Builder().fromJson(parcelStyle(effectiveBase, cadastreLines, overlayTiles, showsMyLocation, dark, sigpacLines, tileRetryToken))) { loadedStyle = it }
     }
     LaunchedEffect(loadedStyle, myLocation) {
         val style = loadedStyle ?: return@LaunchedEffect
@@ -226,7 +227,7 @@ fun ParcelMap(
     }
     val selection = remember(selectedId, selectedIds) { selectedIds + listOfNotNull(selectedId) }
     val data = remember(parcels, selection) { mapFeatureCollection(parcels, selection) }
-    DisposableEffect(map, loadedStyle, data, parcels.map { it.id to it.geometry }, framePadding, snapshot != null) {
+    DisposableEffect(map, loadedStyle, data, parcels.map { it.id to it.geometry }, framePadding, mapWidthPx, mapHeightPx, snapshot != null) {
         val current = map
         val style = loadedStyle
         if (style == null || current == null) return@DisposableEffect onDispose {}
@@ -248,8 +249,10 @@ fun ParcelMap(
         }
         style.getSourceAs<GeoJsonSource>("saved-parcels")?.setGeoJson(data)
         val saved = parcels.filter { it.kind == MapParcelKind.SAVED }
-        val savedKey = MapFrameKey(saved.map { it.id to it.geometry }, framePadding)
-        if (framedKey != savedKey && focus == null) {
+        val savedKey = MapFrameKey(saved.map { it.id to it.geometry })
+        if (framedKey != savedKey && focus == null &&
+            mapWidthPx > framePadding.leftPx + framePadding.rightPx &&
+            mapHeightPx > framePadding.topPx + framePadding.bottomPx) {
             fitParcels(current, saved, framePadding)
             framedKey = savedKey
         }
@@ -260,20 +263,20 @@ fun ParcelMap(
     }
     LaunchedEffect(map, focus, framePadding, mapWidthPx, mapHeightPx) {
         val current = map ?: return@LaunchedEffect
-        val requested = focus ?: return@LaunchedEffect
+        val requested = focus
         if (mapWidthPx <= framePadding.leftPx + framePadding.rightPx ||
             mapHeightPx <= framePadding.topPx + framePadding.bottomPx) return@LaunchedEffect
         // Insets change with search/IME/panels. Apply them absolutely without replaying an
-        // already consumed focus over a later user pan, zoom or explicit parcel framing.
+        // already consumed focus or auto-framing parcels over a later user pan/zoom.
         val camera = CameraPosition.Builder(current.cameraPosition).padding(
             framePadding.leftPx.toDouble(), framePadding.topPx.toDouble(),
             framePadding.rightPx.toDouble(), framePadding.bottomPx.toDouble(),
         )
-        if (appliedFocusToken != requested.token) {
+        if (requested != null && appliedFocusToken != requested.token) {
             camera.target(LatLng(requested.point.latitude, requested.point.longitude)).zoom(requested.zoom)
         }
         current.moveCamera(CameraUpdateFactory.newCameraPosition(camera.build()))
-        appliedFocusToken = requested.token
+        if (requested != null) appliedFocusToken = requested.token
     }
     val labelled = remember(parcels) { parcels.mapNotNull { p -> p.label?.let { label -> labelPoint(p.geometry)?.let { Triple(p.id, label, it) } } } }
     LaunchedEffect(
@@ -511,7 +514,10 @@ internal fun parcelStyle(imagery: Boolean): String = parcelStyle(if (imagery) Ma
  * to twice its size: roads, olive rows and boundaries looked blurred on the phone. Catastro's
  * WMS is asked for real 512 px images and stays at 512.
  */
-internal fun parcelStyle(base: MapBase, cadastreLines: Boolean, overlayTiles: String? = null, myLocation: Boolean = false, dark: Boolean = false, sigpacLines: Boolean = false): String {
+internal fun parcelStyle(base: MapBase, cadastreLines: Boolean, overlayTiles: String? = null, myLocation: Boolean = false, dark: Boolean = false, sigpacLines: Boolean = false, tileRetryToken: Long = 0L): String {
+    // Only an explicit retry bypasses a failed native resource/cache entry. Ordinary URLs and
+    // the offline cache remain intact; these official KVP services accept additional parameters.
+    fun officialTiles(template: String) = if (tileRetryToken == 0L) template else "$template&magina_retry=$tileRetryToken"
     // Theme our own canvas only. Raster source pixels and raster paints stay unchanged.
     val background = if (dark) "#171914" else "#F3F1E6"
     val savedLine = if (dark && base == MapBase.NONE) "#B6D39E" else "#25371C"
@@ -520,15 +526,15 @@ internal fun parcelStyle(base: MapBase, cadastreLines: Boolean, overlayTiles: St
         add(""""saved-parcels":{"type":"geojson","data":{"type":"FeatureCollection","features":[]}}""")
         if (myLocation) add(""""my-location":{"type":"geojson","data":{"type":"FeatureCollection","features":[]}}""")
         when (base) {
-            MapBase.AERIAL -> add(""""base":{"type":"raster","tileSize":256,"maxzoom":19,"tiles":["$PNOA"]}""")
-            MapBase.MAP -> add(""""base":{"type":"raster","tileSize":256,"maxzoom":17,"tiles":["$IGN_BASE"]}""")
+            MapBase.AERIAL -> add(""""base":{"type":"raster","tileSize":256,"maxzoom":19,"tiles":["${officialTiles(PNOA)}"]}""")
+            MapBase.MAP -> add(""""base":{"type":"raster","tileSize":256,"maxzoom":17,"tiles":["${officialTiles(IGN_BASE)}"]}""")
             MapBase.NONE -> Unit
         }
         if (cadastreLines && base != MapBase.NONE) {
-            add(""""cadastre":{"type":"raster","tileSize":512,"tiles":["$CADASTRE_WMS"]}""")
+            add(""""cadastre":{"type":"raster","tileSize":512,"tiles":["${officialTiles(CADASTRE_WMS)}"]}""")
         }
         if (sigpacLines && base != MapBase.NONE) {
-            add(""""sigpac":{"type":"raster","tileSize":512,"tiles":["$SIGPAC_WMS"]}""")
+            add(""""sigpac":{"type":"raster","tileSize":512,"tiles":["${officialTiles(SIGPAC_WMS)}"]}""")
         }
         // Radar pictures are published up to a low zoom; MapLibre enlarges them beyond it. #360: a
         // 512 px picture is declared at 512, so it is drawn at its own resolution, not stretched.

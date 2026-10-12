@@ -199,35 +199,7 @@ class OfflineFirstTerritorialRepository(
 
     override fun observeMunicipalPublications(municipalitySlug: String): Flow<List<MunicipalPublication>> =
         flow {
-            // Contrato preparado para fuentes de ingestión municipal (#532).
-            // Devuelve publicaciones oficiales verificadas sin inventar contenido.
-            val publications = when (municipalitySlug) {
-                "bedmar-y-garciez" -> listOf(
-                    MunicipalPublication(
-                        id = "pub-bedmar-01",
-                        municipalitySlug = "bedmar-y-garciez",
-                        category = "aviso_agrario",
-                        title = "Información municipal para agricultores de Bedmar y Garcíez",
-                        summary = "Trámites, sedes electrónicas y servicios agrarios del Ayuntamiento.",
-                        sourceUrl = "https://bedmargarciez.sedelectronica.es/",
-                        publishedAtEpochMs = 1775779200000L,
-                        isOfficial = true,
-                    ),
-                )
-                "jodar" -> listOf(
-                    MunicipalPublication(
-                        id = "pub-jodar-01",
-                        municipalitySlug = "jodar",
-                        category = "aviso_agrario",
-                        title = "Información municipal para agricultores de Jódar",
-                        summary = "Trámites y servicios del Ayuntamiento de Jódar para el sector agrícola.",
-                        sourceUrl = "https://jodar.sedelectronica.es/",
-                        publishedAtEpochMs = 1775779200000L,
-                        isOfficial = true,
-                    ),
-                )
-                else -> emptyList()
-            }
-            emit(publications)
+            // A verified municipal feed is not connected yet; catalog links are not dated news.
+            emit(emptyList<MunicipalPublication>())
         }.flowOn(dispatchers.io)
 }

@@ -30,3 +30,6 @@ Cuenta/login/logout/delete, datos del agricultor, relación real con fincas, col
 18 capturas originales adjuntas, tres por perfil (selector y Perfil claro/oscuro). Revisadas directamente 360/390/430 dp/font1.3: título roto en 360, descripción elidida en 390 y texto offline elidido también en 430. Los logs verdes de persistencia/apariencia no descartan esos defectos visuales.
 
 Pendientes: captura del resto de controles y hojas; navegación completa MainActivity, permisos/canal reales y regreso, DEMO con adjuntos independientes, prueba física/luz exterior, E2E Auth/sync DEV/STAGING. Nunca cerrar #725 solo por documentación o CI.
+## Contrato adicional de avisos
+
+18/18 instrumentadas Room pasan (ReminderPreferencesContractTest 4, AgendaReminderContractTest 14), log reminder-contracts.log. Prueban persistencia de hora al reabrir, desactivar sin borrar avisos, cambiar municipio/avisos sin sobrescribirse, conservación del trabajo PLANNED, retirar alarmas al completar y no reemitir avisos ya vencidos. Los planificadores son RecordingScheduler/FakeScheduler: verifican reconciliación del contrato, no sonido ni entrega de AlarmManager real. Bases propias reminder-preferences-contract-test.db y agenda-reminder-contract-test.db; no datos operativos. No se añade ni modifica código de test/producto en esta entrega.

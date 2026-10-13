@@ -5,8 +5,6 @@ import com.isivoltpro.maginaolivo.ui.theme.MoColors
 import com.isivoltpro.maginaolivo.ui.components.OnEachSave
 import androidx.compose.ui.unit.dp
 import java.time.ZoneId
-import com.isivoltpro.maginaolivo.feature.maps.ParcelMap
-import com.isivoltpro.maginaolivo.feature.maps.MapParcel
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.heightIn
@@ -448,11 +446,7 @@ private fun ParcelDataBlocks(parcel: Parcel) {
                 }
                 // Phase 18: the saved boundary, drawn from this phone's copy (works offline).
                 parcel.geometryGeoJson?.let { geometry ->
-                    ParcelMap(
-                        listOf(MapParcel(parcel.id.toString(), parcel.displayName, geometry)),
-                        Modifier.fillMaxWidth().height(240.dp).clip(MoShape.card).testTag("parcel-map"),
-                        base = com.isivoltpro.maginaolivo.feature.maps.MapBase.MAP,
-                    )
+                    ParcelBoundaryPreview(parcel.id.toString(), parcel.displayName, geometry)
                 }
             }
         }

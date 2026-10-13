@@ -159,10 +159,13 @@ fun ParcelMap(
     val snapshot by rememberUpdatedState(onMapSnapshot)
     val tileError by rememberUpdatedState(onTileError)
     val density = LocalDensity.current
+    var attributionHeightPx by remember { mutableStateOf(0) }
     val frameMarginPx = with(density) { MAP_FRAME_MARGIN.roundToPx() }
     val labelHorizontalSpacingPx = with(density) { LABEL_HORIZONTAL_SPACING.roundToPx() }
     val labelVerticalSpacingPx = with(density) { LABEL_VERTICAL_SPACING.roundToPx() }
-    val framePadding = remember(cameraInsets, frameMarginPx) { cameraInsets.withMargin(frameMarginPx) }
+    val framePadding = remember(cameraInsets, frameMarginPx, attributionHeightPx) {
+        cameraInsets.copy(bottomPx = cameraInsets.bottomPx + attributionHeightPx).withMargin(frameMarginPx)
+    }
     val effectiveBase = base ?: if (imagery) MapBase.AERIAL else MapBase.NONE
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
@@ -262,7 +265,7 @@ fun ParcelMap(
         style.getSourceAs<GeoJsonSource>("saved-parcels")?.setGeoJson(data)
         val saved = parcels.filter { it.kind == MapParcelKind.SAVED }
         val savedKey = MapFrameKey(saved.map { it.id to it.geometry })
-        if (framedKey != savedKey && focus == null &&
+        if (framedKey != savedKey && focus == null && attributionHeightPx > 0 &&
             mapWidthPx > framePadding.leftPx + framePadding.rightPx &&
             mapHeightPx > framePadding.topPx + framePadding.bottomPx) {
             fitParcels(current, saved, framePadding)
@@ -363,6 +366,7 @@ fun ParcelMap(
                 + (if (effectiveBase != MapBase.NONE && overlayTiles != null) overlayAttribution?.let { " · $it" } ?: "" else ""),
             modifier = Modifier.align(Alignment.BottomStart)
                 .padding(start = 4.dp, bottom = with(density) { cameraInsets.bottomPx.toDp() } + 4.dp)
+                .onSizeChanged { attributionHeightPx = it.height }
                 .semantics { contentDescription = "Atribución del mapa" },
         )
     }

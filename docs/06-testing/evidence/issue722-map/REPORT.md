@@ -90,3 +90,13 @@ Verificación conjunta final: 16 pruebas nativas sin fallos (scale-final-joint-n
 
 
 Matriz adicional de mini mapa tras introducir escala/pie: 8/8, mismos cuatro perfiles y ambos temas, scale-preview-matrix.log. Mantiene las cuatro esquinas por encima del crédito, fallback reversible, zoom y contraste de la ventana ampliada; densidad/fuente restauradas sin borrar datos.
+
+## Bloque 8 — evidencia aérea nativa real, sin cambiar producción
+
+LiveNativePnoaProbeTest requiere activación explícita `-e live_pnoa true`; la suite ordinaria lo omite mediante Assume (live-pnoa-default-skip.log), de modo que la disponibilidad externa no es un gate determinista. En el emulador DEV se ejecutó sobre el mismo punto 37,823/-3,411 (Bedmar) a zoom nativo 15/17/19 y retorno a 17: 1/1, live-pnoa-native.log. Observa las URLs IGN originales sin reescribirlas, mantiene el mismo estilo/fuentes y espera un evento fully-rendered posterior a cada movimiento cuya cámara coincide con el destino. Una revisión detectó contador global que podía incluir otro zoom; se vinculó el evento al destino y se tomó el baseline después de moveCamera en el mismo bloque main. La revisión posterior no encontró bloqueos concretos.
+
+Cuatro capturas directas del motor MapLibre y el registro native-pnoa.txt están en live-pnoa-captures. Son imágenes reales © IGN/PNOA, no una captura de navegación completa ni prueba de titularidad; no se inventa fecha/resolución de vuelo. La inspección muestra el mismo lugar con detalle creciente y suavidad/mosaico visibles en z19: no se promete resolución adicional ni cobertura completa de todo el territorio. La cámara nativa usa z15/17/19; las solicitudes observadas incluyen distintos TILEMATRIX por cobertura/padres, no se equiparan automáticamente el zoom de cámara y un nivel único del proveedor.
+
+Retorno a z17: PNG idéntico, SHA256 1A29F7369C6D4050CBD574FBA278E9274553691B627D5B6F2484AE17B9D09937, sin reconstruir estilo ni limpiar caché. El observer puede ver recursos servidos desde caché; no mide fetches de red ni acredita funcionamiento offline. Las pruebas deterministas de error/reintento/contorno local del bloque 7 siguen verdes; esta comprobación no reemplaza GPS/permisos/desconexión/rotación/cambio de finca ni luz exterior. Sin cambios de producción, cálculos, Room, datos o APK candidata; sin Supabase producción.
+
+El script verify-live-pnoa.ps1 se ejecutó también sobre el emulador DEV: 1/1, live-pnoa-script-run.log y live-pnoa-script-instrumentation.log. Comprueba serial/QEMU/arranque, rechaza skip o fallo, conserva las capturas disponibles y no modifica red/densidad/fuente/datos.

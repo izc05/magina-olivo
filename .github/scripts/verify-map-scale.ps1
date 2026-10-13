@@ -54,4 +54,3 @@ try {
     }
 }
 Write-Output "Evidence: $OutputDirectory; original density/font restored. App data was not cleared."
-

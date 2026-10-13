@@ -34,10 +34,10 @@ gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:21.1659478Z targ
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:21.1659988Z CPU architecture: x86_64
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:21.1660542Z Hardware profile: pixel_6
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:21.1661003Z Cores: 2
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:21.1661338Z RAM size: 
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:21.1661965Z Heap size: 
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:21.1663071Z SD card path or size: 
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:21.1664357Z Disk size: 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:21.1661338Z RAM size:
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:21.1661965Z Heap size:
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:21.1663071Z SD card path or size:
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:21.1664357Z Disk size:
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:21.1664769Z AVD name: test
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:21.1665343Z force avd creation: true
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:21.1665844Z Emulator boot timeout: 600
@@ -64,10 +64,10 @@ gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:49.4202206Z ##[e
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:49.4203809Z ##[group]Create AVD
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:49.4204521Z Creating AVD.
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:49.4229074Z [command]/usr/bin/sh -c \echo no | avdmanager create avd --force -n test --package 'system-images;android-35;default;x86_64' --device 'pixel_6'
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:50.2188030Z Loading local repository...                                                     
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:50.2196025Z [=========                              ] 25% Loading local repository...       
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:50.2211176Z [=========                              ] 25% Fetch remote repository...        
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:50.2212060Z [=======================================] 100% Fetch remote repository...       
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:50.2188030Z Loading local repository...
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:50.2196025Z [=========                              ] 25% Loading local repository...
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:50.2211176Z [=========                              ] 25% Fetch remote repository...
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:50.2212060Z [=======================================] 100% Fetch remote repository...
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:50.4326014Z Auto-selecting single ABI x86_64
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:50.8625979Z [command]/usr/bin/sh -c \printf 'hw.cpu.ncore=2\n' >> /home/runner/.android/avd/test.avd/config.ini
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:50.8647307Z ##[endgroup]
@@ -93,7 +93,7 @@ gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:51.3232418Z ERRO
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:51.3237533Z INFO         | Storing crashdata in: /tmp/android-runner/emu-crash-37.2.12.db, detection is enabled for process: 3179
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:51.3238581Z INFO         | Initializing gfxstream backend
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:51.3248633Z INFO         | startOpenglesRendererImpl: gpu info
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:51.3249332Z INFO         | 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:51.3249332Z INFO         |
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:51.3252164Z INFO         | initIcdPaths: ICD set to 'swiftshader', using Swiftshader ICD
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:51.3253351Z INFO         | Setting ICD filenames for the loader = /usr/local/lib/android/sdk/emulator/lib64/vulkan/vk_swiftshader_icd.json
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:51.3254314Z INFO         | SharedLibrary::open for [/usr/local/lib/android/sdk/emulator/qemu/linux-x86_64/lib64/vulkan/libvulkan.so]
@@ -126,7 +126,7 @@ gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:51.3780583Z INFO
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:51.3781312Z INFO         | Graphics Adapter Vendor Google (Google Inc.)
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:51.3782186Z INFO         | Graphics Adapter Android Emulator OpenGL ES Translator (Google SwiftShader)
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:51.3783207Z INFO         | Graphics API Version OpenGL ES 3.0 (OpenGL ES 3.0 SwiftShader 4.0.0.1)
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:51.3787428Z INFO         | Graphics API Extensions GL_OES_EGL_sync GL_OES_EGL_image GL_OES_EGL_image_external GL_OES_depth24 GL_OES_depth32 GL_OES_element_index_uint GL_OES_texture_float GL_OES_texture_float_linear GL_OES_compressed_paletted_texture GL_OES_compressed_ETC1_RGB8_texture GL_OES_depth_texture GL_OES_texture_half_float GL_OES_texture_half_float_linear GL_OES_packed_depth_stencil GL_OES_vertex_half_float GL_OES_standard_derivatives GL_OES_texture_npot GL_OES_rgb8_rgba8 GL_EXT_color_buffer_float GL_EXT_color_buffer_half_float GL_EXT_texture_format_BGRA8888 GL_APPLE_texture_format_BGRA8888 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:51.3787428Z INFO         | Graphics API Extensions GL_OES_EGL_sync GL_OES_EGL_image GL_OES_EGL_image_external GL_OES_depth24 GL_OES_depth32 GL_OES_element_index_uint GL_OES_texture_float GL_OES_texture_float_linear GL_OES_compressed_paletted_texture GL_OES_compressed_ETC1_RGB8_texture GL_OES_depth_texture GL_OES_texture_half_float GL_OES_texture_half_float_linear GL_OES_packed_depth_stencil GL_OES_vertex_half_float GL_OES_standard_derivatives GL_OES_texture_npot GL_OES_rgb8_rgba8 GL_EXT_color_buffer_float GL_EXT_color_buffer_half_float GL_EXT_texture_format_BGRA8888 GL_APPLE_texture_format_BGRA8888
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:51.3791421Z INFO         | Graphics Device Extensions N/A
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:51.3792059Z INFO         | Disabling sparse binding feature support
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:51.3815265Z INFO         | Sending adb public key [QAAAAKPze/v1J9aCNlo4Mud3Q8wJXShDt6VUKFsDNmZtKv5LcaPd1CvD7zoClOzn/LPyzrcF5ESPkRKA52Wlg+B4KWA7pH8ZQWknU7vhidnQMUSQKYGNGZ0rBnOdSAycq6yRP8KXTDrISyCzVk8KIZ7tc296ZQASrwgmRg1LVC5c4zvsQIbZ/jbQKu7UJhYZLoZMMbr32bY57DNv8lCd/PsU48jJa1c2q5RWjG6pqGMtsAHhnm74eghoOeK3Jc3HdBByib2KywDzRCjPujJsTsJNtJxednatuo+nUgWIG+iHdrgalzG29BTWxAdK0gmtSWTn2X1/yHj21oNR2M4WOTLuSWFmg62lrGf6+FSAtYtVnSYrcQrSjY/XnE0+udH4oWyCEcq34YDcazelo7+naPBoE573EaCaU1nEqhVUs8nKeezb93TiIbG/MOIDTGrx5PzLNUYFWd/CGPVRb8yRVbsQ/Nn/9tDjbks72uV9Ahc950RjxekJ5awHyiMnpwpY+Csp09BrFZ8iPQXlK1C9d53HbR5IvERzW0pk2X/YuAkikHWI4Xp8HdtgQX18s1gx5HbMpMR3scudc4ZyBrzWUTG9+rgrQnym4kullInWbrTB7nga4ni4nBkjTB3V0kGeyZNa3cP8WIhCisAx2j7Pd1eJQzn4YBJGhEmsjNZ5ETUZ/QzlKorwfwEAAQA= runner@unknown]
@@ -164,13 +164,13 @@ gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:51.4017331Z WARN
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:51.4181879Z INFO         | Monitoring duration of emulator setup.
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:52.4289881Z INFO         | Activated packet streamer for bluetooth emulation
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:52.4290830Z INFO         | Successfully initialized netsim WiFi
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:52.4336846Z INFO         | Setting display: 0 configuration to: 1080x2400, dpi: 420x420 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:52.4336846Z INFO         | Setting display: 0 configuration to: 1080x2400, dpi: 420x420
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:52.4337543Z INFO         | setDisplayActiveConfig: id:0, 1080x2400
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:52.4338332Z INFO         | emulatorSetupEnvironment: Environment scene is not required
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:52.4426866Z INFO         | Loading snapshot 'default_boot'...
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:52.4427807Z WARNING      | Failed to process .ini file /home/runner/.android/emu-update-last-check.ini for reading.
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:52.4538711Z WARNING      | Device 'cache' does not have the requested snapshot 'default_boot'
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:52.4539221Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:52.4539221Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:52.4539398Z WARNING      | Failed to load snapshot 'default_boot'
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:52.4540097Z USER_INFO    | The emulator is performing a cold boot without a saved state because there's no snapshot and you have configured it not to save on exit.
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:35:52.6790322Z WARNING      | Failed to process .ini file /home/runner/.android/emu-update-last-check.ini for reading.
@@ -183,21 +183,21 @@ gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:02.9687808Z [com
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:02.9738903Z adb: device offline
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:02.9743520Z The process '/usr/local/lib/android/sdk/platform-tools/adb' failed with exit code 1
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:04.9799636Z [command]/usr/local/lib/android/sdk/platform-tools/adb -s emulator-5554 shell getprop sys.boot_completed
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:05.0704343Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:05.0704343Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:07.0828140Z [command]/usr/local/lib/android/sdk/platform-tools/adb -s emulator-5554 shell getprop sys.boot_completed
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:07.1198417Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:07.1198417Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:09.1335325Z [command]/usr/local/lib/android/sdk/platform-tools/adb -s emulator-5554 shell getprop sys.boot_completed
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:09.1850148Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:09.1850148Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:11.2037981Z [command]/usr/local/lib/android/sdk/platform-tools/adb -s emulator-5554 shell getprop sys.boot_completed
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:11.2359396Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:11.2359396Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:13.2427914Z [command]/usr/local/lib/android/sdk/platform-tools/adb -s emulator-5554 shell getprop sys.boot_completed
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:13.2603090Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:13.2603090Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:15.2663041Z [command]/usr/local/lib/android/sdk/platform-tools/adb -s emulator-5554 shell getprop sys.boot_completed
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:15.2965234Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:15.2965234Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:17.3047766Z [command]/usr/local/lib/android/sdk/platform-tools/adb -s emulator-5554 shell getprop sys.boot_completed
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:17.3311414Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:17.3311414Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:19.3368370Z [command]/usr/local/lib/android/sdk/platform-tools/adb -s emulator-5554 shell getprop sys.boot_completed
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:19.3541521Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:19.3541521Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:20.9299475Z INFO         | Boot completed in 30020 ms
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:20.9300218Z INFO         | Increasing screen off timeout, logcat buffer size to 2M.
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:21.3758344Z [command]/usr/local/lib/android/sdk/platform-tools/adb -s emulator-5554 shell getprop sys.boot_completed
@@ -215,39 +215,39 @@ gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:29.1657212Z Perf
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:29.1690085Z Success
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:29.3820011Z Performing Streamed Install
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:36:29.3832091Z Success
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:37:16.1507732Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:37:16.1507732Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:37:16.1518557Z com.isivoltpro.maginaolivo.Gate3EvidenceScreenshotTest:..............
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:37:16.1519632Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:37:16.1519632Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:37:16.1552175Z Time: 29.884
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:37:16.1596912Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:37:16.1596912Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:37:16.1626662Z OK (14 tests)
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:37:16.1706427Z 
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:37:16.1707023Z 
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:01.2253629Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:37:16.1706427Z
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:37:16.1707023Z
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:01.2253629Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:01.2285849Z com.isivoltpro.maginaolivo.Gate3EvidenceScreenshotTest:..............
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:01.2317256Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:01.2317256Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:01.2347204Z Time: 28.483
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:01.2366604Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:01.2366604Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:01.2366832Z OK (14 tests)
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:01.2367059Z 
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:01.2367069Z 
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:46.6040784Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:01.2367059Z
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:01.2367069Z
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:46.6040784Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:46.6077626Z com.isivoltpro.maginaolivo.Gate3EvidenceScreenshotTest:..............
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:46.6080249Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:46.6080249Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:46.6116816Z Time: 28.841
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:46.6117356Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:46.6117356Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:46.6146931Z OK (14 tests)
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:46.6176564Z 
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:46.6206511Z 
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:31.9048458Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:46.6176564Z
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:38:46.6206511Z
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:31.9048458Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:31.9138341Z com.isivoltpro.maginaolivo.Gate3EvidenceScreenshotTest:..............
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:31.9196774Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:31.9196774Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:31.9218489Z Time: 28.997
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:31.9282749Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:31.9282749Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:31.9283319Z OK (14 tests)
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:31.9296594Z 
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:31.9316559Z 
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:46.7802364Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:31.9296594Z
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:31.9316559Z
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:46.7802364Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:46.7803329Z com.isivoltpro.maginaolivo.data.local.OfflineFirstFarmRepositoryTest:.............
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:46.7804619Z com.isivoltpro.maginaolivo.data.local.OfflineFirstCampaignRepositoryTest:..
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:46.7806569Z com.isivoltpro.maginaolivo.data.local.ActivityEngineContractTest:..................
@@ -259,12 +259,12 @@ gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:46.7810409Z com.
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:46.7810999Z com.isivoltpro.maginaolivo.data.local.DeliveryContractTest:......................
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:46.7811600Z com.isivoltpro.maginaolivo.data.local.MachineryContractTest:........
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:46.7812187Z com.isivoltpro.maginaolivo.data.local.AgendaReminderContractTest:..............
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:46.7812814Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:46.7812814Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:46.7813003Z Time: 11.618
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:46.7813233Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:46.7813233Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:46.7813407Z OK (196 tests)
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:46.7813625Z 
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:46.7813648Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:46.7813625Z
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:39:46.7813648Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:41:01.2160200Z ERROR        | Failed to find ColorBuffer: 2598
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:41:01.2177194Z ERROR        | Failed to bind to texture: invalid color buffer.
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:41:10.2137328Z ERROR        | Failed to find ColorBuffer: 2667
@@ -455,7 +455,7 @@ gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:56:35.1992588Z ERRO
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:56:35.1995141Z ERROR        | Failed to bind to texture: invalid color buffer.
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:56:43.9100680Z ERROR        | Failed to find ColorBuffer: 12572
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:56:43.9109351Z ERROR        | Failed to bind to texture: invalid color buffer.
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5396800Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5396800Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5408767Z com.isivoltpro.maginaolivo.ActivityEditorCompactTest:....................
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5445893Z com.isivoltpro.maginaolivo.ActivityEditorPresetTest:..
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5477224Z com.isivoltpro.maginaolivo.ActivityRelatedExpenseTest:.............
@@ -525,7 +525,7 @@ gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5663864Z Text
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5665778Z Actions = [ClearTextSubstitution, GetTextLayoutResult, InsertTextAtCursor, MagnifierPositionInRoot, OnClick, OnFillData, OnLongClick, PasteText, PerformImeAction, RequestFocus, SetSelection, SetText, SetTextSubstitution, ShowTextSubstitution]
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5667911Z MergeDescendants = 'true'
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5668643Z Has 11 siblings
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5668985Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5668985Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5669776Z 	at androidx.compose.ui.test.SemanticsNodeInteraction.assertDoesNotExist(SemanticsNodeInteraction.kt:101)
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5671267Z 	at com.isivoltpro.maginaolivo.MapSearchScreenTest.exercise(MapSearchScreenTest.kt:75)
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5672988Z 	at com.isivoltpro.maginaolivo.MapSearchScreenTest.lightSearchKeepsErrorsAndCollapsesOnlyAfterResolution(MapSearchScreenTest.kt:36)
@@ -592,7 +592,7 @@ gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5731066Z com.
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5732027Z com.isivoltpro.maginaolivo.data.remote.EdgeOilMarketResponseTest:....
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5732922Z com.isivoltpro.maginaolivo.data.remote.EdgeRadarResponseTest:..
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5733865Z com.isivoltpro.maginaolivo.data.remote.EdgeWeatherResponseTest:.....
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5734522Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5734522Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5734685Z Time: 1,064.638
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5735104Z There was 1 failure:
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5736337Z 1) lightSearchKeepsErrorsAndCollapsesOnlyAfterResolution(com.isivoltpro.maginaolivo.MapSearchScreenTest)
@@ -612,15 +612,15 @@ gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5744759Z Text
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5746889Z Actions = [ClearTextSubstitution, GetTextLayoutResult, InsertTextAtCursor, MagnifierPositionInRoot, OnClick, OnFillData, OnLongClick, PasteText, PerformImeAction, RequestFocus, SetSelection, SetText, SetTextSubstitution, ShowTextSubstitution]
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5748713Z MergeDescendants = 'true'
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5749092Z Has 11 siblings
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5749289Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5749289Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5749928Z 	at androidx.compose.ui.test.SemanticsNodeInteraction.assertDoesNotExist(SemanticsNodeInteraction.kt:101)
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5751393Z 	at com.isivoltpro.maginaolivo.MapSearchScreenTest.exercise(MapSearchScreenTest.kt:75)
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5752964Z 	at com.isivoltpro.maginaolivo.MapSearchScreenTest.lightSearchKeepsErrorsAndCollapsesOnlyAfterResolution(MapSearchScreenTest.kt:36)
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5754058Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5754058Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5754192Z FAILURES!!!
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5754524Z Tests run: 762,  Failures: 1
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5754785Z 
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:34.0670737Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:33.5754785Z
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:34.0670737Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:34.0671911Z Full instrumented test suite failed (adb rc=0); see evidence/instrumentation-all.txt
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:34.0847709Z ##[error]java.lang.AssertionError: Failed: assertDoesNotExist.
 gate3-evidence	Capture Gate 3 Android evidence		at androidx.compose.ui.test.SemanticsNodeInteraction.assertDoesNotExist(SemanticsNodeInteraction.kt:101)
@@ -638,7 +638,7 @@ gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:34.2652135Z OK: 
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:34.2653543Z OK
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:34.2690867Z ##[endgroup]
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:34.2694169Z INFO         | Wait for emulator (pid 3179) 20 seconds to shutdown gracefully before kill;you can set environment variable ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL(in seconds) to change the default value (20 seconds)
-gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:34.2695363Z 
+gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:34.2695363Z
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:37.4307014Z INFO         | Saving with gfxstream=1
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:37.5398883Z INFO         | Saving snapshot 'default_boot' took 3255 ms
 gate3-evidence	Capture Gate 3 Android evidence	2026-10-13T04:57:38.4793842Z ERROR        | stop: Not implemented

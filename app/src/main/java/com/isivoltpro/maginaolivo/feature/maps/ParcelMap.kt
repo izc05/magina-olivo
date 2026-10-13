@@ -28,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -101,9 +102,18 @@ data class MapCameraInsets(
     )
 }
 
-private data class MapFrameKey(
-    val parcels: List<Pair<String, String>>,
-)
+/** Fixed-size restoration identity: never copy potentially large GeoJSON into Activity state. */
+internal fun savedParcelFrameFingerprint(parcels: List<MapParcel>): String {
+    val digest = java.security.MessageDigest.getInstance("SHA-256")
+    for (parcel in parcels.filter { it.kind == MapParcelKind.SAVED }) {
+        for (value in listOf(parcel.id, parcel.geometry)) {
+            val bytes = value.toByteArray(Charsets.UTF_8)
+            digest.update(java.nio.ByteBuffer.allocate(4).putInt(bytes.size).array())
+            digest.update(bytes)
+        }
+    }
+    return digest.digest().joinToString("") { "%02x".format(it) }
+}
 
 /** A projected parcel label before collision filtering. Pure data so priority can be unit-tested. */
 internal data class MapLabelCandidate(
@@ -204,11 +214,13 @@ fun ParcelMap(
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
     var loadedStyle by remember { mutableStateOf<Style?>(null) }
     // Frame the farmer's own parcels when they change, not on every selection tap.
-    var framedKey by remember { mutableStateOf<MapFrameKey?>(null) }
+    var framedKey by rememberSaveable { mutableStateOf<String?>(null) }
+    val savedFrameKey = remember(parcels) { savedParcelFrameFingerprint(parcels) }
+    var savedCamera by rememberSaveable { mutableStateOf<CameraPosition?>(null) }
     // Screen positions of the labels, refreshed when the camera stops (never while it moves).
     var labelSpots by remember { mutableStateOf<List<Pair<String, IntOffset>>>(emptyList()) }
     var cameraTick by remember { mutableStateOf(0) }
-    var appliedFocusToken by remember(map) { mutableStateOf<Long?>(null) }
+    var appliedFocusToken by rememberSaveable { mutableStateOf<Long?>(null) }
     val view = remember {
         MapLibre.getInstance(context)
         MapView(context).apply { onCreate(Bundle()) }
@@ -235,7 +247,8 @@ fun ParcelMap(
         synchronize()
         view.getMapAsync { loaded ->
             map = loaded
-            loaded.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(37.73, -3.45), 12.0))
+            loaded.moveCamera(savedCamera?.let(CameraUpdateFactory::newCameraPosition)
+                ?: CameraUpdateFactory.newLatLngZoom(LatLng(37.73, -3.45), 12.0))
             loaded.addOnMapClickListener { point ->
                 val hits = loaded.queryRenderedFeatures(loaded.projection.toScreenLocation(point), "parcels-fill")
                     .map { it.getStringProperty("id") }
@@ -244,7 +257,7 @@ fun ParcelMap(
                 true
             }
             loaded.addOnCameraMoveStartedListener { labelSpots = emptyList(); cameraMoving = true }
-            loaded.addOnCameraIdleListener { cameraMoving = false; cameraTick++ }
+            loaded.addOnCameraIdleListener { savedCamera = loaded.cameraPosition; cameraMoving = false; cameraTick++ }
         }
         onDispose {
             active = false
@@ -294,7 +307,7 @@ fun ParcelMap(
         }
         style.getSourceAs<GeoJsonSource>("saved-parcels")?.setGeoJson(data)
         val saved = parcels.filter { it.kind == MapParcelKind.SAVED }
-        val savedKey = MapFrameKey(saved.map { it.id to it.geometry })
+        val savedKey = savedFrameKey
         if (framedKey != savedKey && focus == null && footerHeightPx > 0 &&
             mapWidthPx > framePadding.leftPx + framePadding.rightPx &&
             mapHeightPx > framePadding.topPx + framePadding.bottomPx) {

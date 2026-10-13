@@ -1,0 +1,10 @@
+dark/baseline: 1/1
+dark/denied: 1/1
+dark/grant: 1/1
+dark/precise: 1/1
+dark/rotation: 1/1
+dark/off: 1/1
+dark/no-fix: 1/1
+dark/coarse: 1/1
+dark/offline: 1/1
+Location switch, mock appop, runtime grants and denial flags restored; no app data cleared.

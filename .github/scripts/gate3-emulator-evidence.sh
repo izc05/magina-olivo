@@ -364,6 +364,7 @@ adb pull /sdcard/Android/data/"$PKG"/files/map-layer-evidence evidence/map-layer
 adb pull /sdcard/Android/data/"$PKG"/files/parcel-preview-evidence evidence/parcel-preview >/dev/null 2>&1 || true
 adb pull /sdcard/Android/data/"$PKG"/files/map-scale-evidence evidence/map-scale >/dev/null 2>&1 || true
 adb pull /sdcard/Android/data/"$PKG"/files/map-lifecycle-evidence evidence/map-lifecycle >/dev/null 2>&1 || true
+adb pull /sdcard/Android/data/"$PKG"/files/map-main-navigation-evidence evidence/map-main-navigation >/dev/null 2>&1 || true
 adb pull /sdcard/Android/data/"$PKG"/files/delivery-detail-evidence evidence/delivery-detail >/dev/null 2>&1 || true
 adb pull /sdcard/Android/data/"$PKG"/files/quick-labour-evidence evidence/quick-labour >/dev/null 2>&1 || true
 
@@ -371,6 +372,9 @@ assert_instrumentation_passed \
   evidence/instrumentation-all.txt \
   "Full instrumented test suite" \
   "$INSTRUMENTATION_RC"
+
+# Native GPS/permission/offline states use separate processes and restore device settings.
+bash .github/scripts/verify-map-device.sh evidence/map-device
 
 adb logcat -c
 : > evidence/startup-runs.txt

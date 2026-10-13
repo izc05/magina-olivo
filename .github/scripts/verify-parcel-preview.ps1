@@ -24,7 +24,7 @@ $densityOverride = [regex]::Match($originalDensity, 'Override density:\s*(\d+)')
 $originalFont = Invoke-MapAdb @('shell', 'settings', 'get', 'system', 'font_scale')
 New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 try {
-    foreach ($widthDp in @(360, 390)) {
+    foreach ($widthDp in @(360, 390, 430)) {
         $density = [int][math]::Round($widthPixels * 160.0 / $widthDp)
         Invoke-MapAdb @('shell', 'wm', 'density', "$density") | Out-Null
         foreach ($font in @('1.0', '1.3')) {

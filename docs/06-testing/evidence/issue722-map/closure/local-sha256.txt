@@ -1,0 +1,5 @@
+678790797612f9e7c5ae7732072cf9ab58e0e5a7a83b0c34909542d2b9ec52b8  app/src/main/java/com/isivoltpro/maginaolivo/feature/maps/CurrentLocation.kt
+6bca5d0af2d9268413679f5260a267bd630b895da4a41732839b887f558b52d5  app/src/main/java/com/isivoltpro/maginaolivo/feature/maps/ParcelMap.kt
+cba572924ab20af0da7871d32fff2b681552f13f279e275da0e3fc75d71439d8  app/src/androidTest/java/com/isivoltpro/maginaolivo/NativeMapDeviceQaTest.kt
+58ad05b5c920f190bd9228800eb75cd3a5e23ed415531871ea8b9b7e29c63fbc  app/build/outputs/apk/dev/debug/app-dev-debug.apk
+82c3a5081d61d8f76572447f7bcbb19122ec931099768231b99b55f33c60738e  app/build/outputs/apk/androidTest/dev/debug/app-dev-debug-androidTest.apk

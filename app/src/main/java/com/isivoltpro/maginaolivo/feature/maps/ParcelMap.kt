@@ -166,6 +166,8 @@ fun ParcelMap(
     val snapshot by rememberUpdatedState(onMapSnapshot)
     val tileError by rememberUpdatedState(onTileError)
     val density = LocalDensity.current
+    var mapHeightPx by remember { mutableStateOf(0) }
+    var mapWidthPx by remember { mutableStateOf(0) }
     var footerHeightPx by remember { mutableStateOf(0) }
     var scaleValue by remember { mutableStateOf<MapScaleValue?>(null) }
     var scaleAnchor by remember { mutableStateOf<Offset?>(null) }
@@ -180,10 +182,22 @@ fun ParcelMap(
         }
     }
     val frameMarginPx = with(density) { MAP_FRAME_MARGIN.roundToPx() }
+    val footerGapPx = with(density) { 4.dp.roundToPx() }
     val labelHorizontalSpacingPx = with(density) { LABEL_HORIZONTAL_SPACING.roundToPx() }
     val labelVerticalSpacingPx = with(density) { LABEL_VERTICAL_SPACING.roundToPx() }
-    val framePadding = remember(cameraInsets, frameMarginPx, footerHeightPx) {
-        cameraInsets.copy(bottomPx = cameraInsets.bottomPx + footerHeightPx).withMargin(frameMarginPx)
+    val framePadding = remember(cameraInsets, frameMarginPx, footerHeightPx, footerGapPx, mapWidthPx, mapHeightPx) {
+        val availableWidth = (mapWidthPx - cameraInsets.leftPx - cameraInsets.rightPx).coerceAtLeast(0)
+        val availableHeight = (mapHeightPx - cameraInsets.topPx - cameraInsets.bottomPx - footerHeightPx - footerGapPx).coerceAtLeast(0)
+        // A short usable viewport must still be frameable: reserve at most one quarter
+        // of each dimension per side, keeping the normal 24 dp margin whenever it fits.
+        val horizontalMargin = frameMarginPx.coerceAtMost(availableWidth / 4)
+        val verticalMargin = frameMarginPx.coerceAtMost(availableHeight / 4)
+        MapCameraInsets(
+            leftPx = cameraInsets.leftPx + horizontalMargin,
+            topPx = cameraInsets.topPx + verticalMargin,
+            rightPx = cameraInsets.rightPx + horizontalMargin,
+            bottomPx = cameraInsets.bottomPx + footerHeightPx + footerGapPx + verticalMargin,
+        )
     }
     val effectiveBase = base ?: if (imagery) MapBase.AERIAL else MapBase.NONE
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
@@ -194,10 +208,7 @@ fun ParcelMap(
     // Screen positions of the labels, refreshed when the camera stops (never while it moves).
     var labelSpots by remember { mutableStateOf<List<Pair<String, IntOffset>>>(emptyList()) }
     var cameraTick by remember { mutableStateOf(0) }
-    var mapHeightPx by remember { mutableStateOf(0) }
-    var mapWidthPx by remember { mutableStateOf(0) }
     var appliedFocusToken by remember(map) { mutableStateOf<Long?>(null) }
-    var controlsHeightPx by remember { mutableStateOf(0) }
     val view = remember {
         MapLibre.getInstance(context)
         MapView(context).apply { onCreate(Bundle()) }
@@ -371,21 +382,27 @@ fun ParcelMap(
             ParcelNumber(label, Modifier.offset { IntOffset(spot.x - with(density) { 14.dp.roundToPx() }, spot.y - with(density) { 11.dp.roundToPx() }) })
         }
         val usableTop = cameraInsets.topPx.coerceAtMost(mapHeightPx)
-        val usableBottom = (mapHeightPx - cameraInsets.bottomPx - footerHeightPx).coerceAtLeast(usableTop)
-        // Measured panels protect touch controls as well as framing. Restore controls after
-        // the keyboard closes if it temporarily leaves no usable map area.
-        if (controls && (controlsHeightPx == 0 || usableBottom - usableTop >= controlsHeightPx)) {
-            Column(
-                Modifier.align(Alignment.TopEnd)
-                    .offset { IntOffset(0, usableTop + ((usableBottom - usableTop - controlsHeightPx) / 2).coerceAtLeast(0)) }
-                    .onSizeChanged { controlsHeightPx = it.height }
-                    .padding(end = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                MapButton("+", "Acercar") { map?.animateCamera(CameraUpdateFactory.zoomIn()) }
-                MapButton("−", "Alejar") { map?.animateCamera(CameraUpdateFactory.zoomOut()) }
-                MapButton("⤢", "Encuadrar mis parcelas") {
-                    map?.let { fitParcels(it, parcels.filter { p -> p.kind == MapParcelKind.SAVED }.ifEmpty { parcels }, framePadding) }
+        val usableBottom = (mapHeightPx - cameraInsets.bottomPx - footerHeightPx - footerGapPx).coerceAtLeast(usableTop)
+        // Keep the existing actions reachable when landscape leaves room for one row,
+        // while measured panels and credits still protect their touch area.
+        val availableControlHeight = usableBottom - usableTop
+        val verticalControlHeight = with(density) { (48.dp * 3 + 6.dp * 2).roundToPx() }
+        val minimumControlHeight = with(density) { 48.dp.roundToPx() }
+        val compactControls = availableControlHeight < verticalControlHeight
+        var controlsHeightPx by remember(compactControls) { mutableStateOf(0) }
+        val controlModifier = Modifier.align(Alignment.TopEnd)
+            .offset { IntOffset(-cameraInsets.rightPx, usableTop + ((availableControlHeight - controlsHeightPx) / 2).coerceAtLeast(0)) }
+            .onSizeChanged { controlsHeightPx = it.height }
+            .padding(end = 8.dp)
+        val enoughControlWidth = maxWidth - with(density) { (cameraInsets.leftPx + cameraInsets.rightPx).toDp() } >= 164.dp
+        if (controls && availableControlHeight >= minimumControlHeight && (!compactControls || enoughControlWidth)) {
+            if (compactControls) {
+                Row(controlModifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    MapControlButtons(map, parcels, framePadding)
+                }
+            } else {
+                Column(controlModifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    MapControlButtons(map, parcels, framePadding)
                 }
             }
         }
@@ -444,6 +461,14 @@ private fun ParcelNumber(label: String, modifier: Modifier) {
 }
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun MapControlButtons(map: MapLibreMap?, parcels: List<MapParcel>, framePadding: MapCameraInsets) {
+    MapButton("+", "Acercar") { map?.animateCamera(CameraUpdateFactory.zoomIn()) }
+    MapButton("−", "Alejar") { map?.animateCamera(CameraUpdateFactory.zoomOut()) }
+    MapButton("⤢", "Encuadrar mis parcelas") {
+        map?.let { fitParcels(it, parcels.filter { p -> p.kind == MapParcelKind.SAVED }.ifEmpty { parcels }, framePadding) }
+    }
+}
 @Composable
 private fun MapButton(symbol: String, description: String, onClick: () -> Unit) {
     Surface(

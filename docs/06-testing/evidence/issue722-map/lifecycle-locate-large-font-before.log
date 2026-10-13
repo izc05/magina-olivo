@@ -1,0 +1,77 @@
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=
+com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest:
+INSTRUMENTATION_STATUS: test=lightFarmChangeAndRealRotationKeepOnlyCurrentContour
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: Assert failed: The component with ContentDescription = 'Acercar' (ignoreCase: false) is not displayed!
+	at androidx.compose.ui.test.AssertionsKt.assertIsDisplayed(Assertions.kt:34)
+	at com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest.waitForCurrentContour(NativeFarmMapLifecycleTest.kt:229)
+	at com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest.verify(NativeFarmMapLifecycleTest.kt:198)
+	at com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest.lightFarmChangeAndRealRotationKeepOnlyCurrentContour(NativeFarmMapLifecycleTest.kt:115)
+
+INSTRUMENTATION_STATUS: stream=
+Error in lightFarmChangeAndRealRotationKeepOnlyCurrentContour(com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest):
+java.lang.AssertionError: Assert failed: The component with ContentDescription = 'Acercar' (ignoreCase: false) is not displayed!
+	at androidx.compose.ui.test.AssertionsKt.assertIsDisplayed(Assertions.kt:34)
+	at com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest.waitForCurrentContour(NativeFarmMapLifecycleTest.kt:229)
+	at com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest.verify(NativeFarmMapLifecycleTest.kt:198)
+	at com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest.lightFarmChangeAndRealRotationKeepOnlyCurrentContour(NativeFarmMapLifecycleTest.kt:115)
+
+INSTRUMENTATION_STATUS: test=lightFarmChangeAndRealRotationKeepOnlyCurrentContour
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=darkFarmChangeAndRealRotationKeepOnlyCurrentContour
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: Assert failed: The component with ContentDescription = 'Acercar' (ignoreCase: false) is not displayed!
+	at androidx.compose.ui.test.AssertionsKt.assertIsDisplayed(Assertions.kt:34)
+	at com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest.waitForCurrentContour(NativeFarmMapLifecycleTest.kt:229)
+	at com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest.verify(NativeFarmMapLifecycleTest.kt:198)
+	at com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest.darkFarmChangeAndRealRotationKeepOnlyCurrentContour(NativeFarmMapLifecycleTest.kt:116)
+
+INSTRUMENTATION_STATUS: stream=
+Error in darkFarmChangeAndRealRotationKeepOnlyCurrentContour(com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest):
+java.lang.AssertionError: Assert failed: The component with ContentDescription = 'Acercar' (ignoreCase: false) is not displayed!
+	at androidx.compose.ui.test.AssertionsKt.assertIsDisplayed(Assertions.kt:34)
+	at com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest.waitForCurrentContour(NativeFarmMapLifecycleTest.kt:229)
+	at com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest.verify(NativeFarmMapLifecycleTest.kt:198)
+	at com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest.darkFarmChangeAndRealRotationKeepOnlyCurrentContour(NativeFarmMapLifecycleTest.kt:116)
+
+INSTRUMENTATION_STATUS: test=darkFarmChangeAndRealRotationKeepOnlyCurrentContour
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_RESULT: stream=
+
+Time: 51.429
+There were 2 failures:
+1) lightFarmChangeAndRealRotationKeepOnlyCurrentContour(com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest)
+java.lang.AssertionError: Assert failed: The component with ContentDescription = 'Acercar' (ignoreCase: false) is not displayed!
+	at androidx.compose.ui.test.AssertionsKt.assertIsDisplayed(Assertions.kt:34)
+	at com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest.waitForCurrentContour(NativeFarmMapLifecycleTest.kt:229)
+	at com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest.verify(NativeFarmMapLifecycleTest.kt:198)
+	at com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest.lightFarmChangeAndRealRotationKeepOnlyCurrentContour(NativeFarmMapLifecycleTest.kt:115)
+2) darkFarmChangeAndRealRotationKeepOnlyCurrentContour(com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest)
+java.lang.AssertionError: Assert failed: The component with ContentDescription = 'Acercar' (ignoreCase: false) is not displayed!
+	at androidx.compose.ui.test.AssertionsKt.assertIsDisplayed(Assertions.kt:34)
+	at com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest.waitForCurrentContour(NativeFarmMapLifecycleTest.kt:229)
+	at com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest.verify(NativeFarmMapLifecycleTest.kt:198)
+	at com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest.darkFarmChangeAndRealRotationKeepOnlyCurrentContour(NativeFarmMapLifecycleTest.kt:116)
+
+FAILURES!!!
+Tests run: 2,  Failures: 2
+
+
+INSTRUMENTATION_CODE: -1

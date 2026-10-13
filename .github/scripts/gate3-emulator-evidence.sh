@@ -363,6 +363,7 @@ adb pull /sdcard/Android/data/"$PKG"/files/map-search-evidence evidence/map-sear
 adb pull /sdcard/Android/data/"$PKG"/files/map-layer-evidence evidence/map-layers >/dev/null 2>&1 || true
 adb pull /sdcard/Android/data/"$PKG"/files/parcel-preview-evidence evidence/parcel-preview >/dev/null 2>&1 || true
 adb pull /sdcard/Android/data/"$PKG"/files/map-scale-evidence evidence/map-scale >/dev/null 2>&1 || true
+adb pull /sdcard/Android/data/"$PKG"/files/map-lifecycle-evidence evidence/map-lifecycle >/dev/null 2>&1 || true
 
 assert_instrumentation_passed \
   evidence/instrumentation-all.txt \

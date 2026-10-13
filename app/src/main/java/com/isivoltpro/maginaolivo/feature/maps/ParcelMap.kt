@@ -5,12 +5,16 @@ import com.isivoltpro.maginaolivo.ui.theme.MoSurfaceTokens
 import com.isivoltpro.maginaolivo.ui.theme.MoColors
 
 import android.graphics.Bitmap
+import android.graphics.PointF
 import android.os.Bundle
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -28,6 +32,9 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
@@ -159,12 +166,24 @@ fun ParcelMap(
     val snapshot by rememberUpdatedState(onMapSnapshot)
     val tileError by rememberUpdatedState(onTileError)
     val density = LocalDensity.current
-    var attributionHeightPx by remember { mutableStateOf(0) }
+    var footerHeightPx by remember { mutableStateOf(0) }
+    var scaleValue by remember { mutableStateOf<MapScaleValue?>(null) }
+    var scaleAnchor by remember { mutableStateOf<Offset?>(null) }
+    var mapCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var lineCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var cameraMoving by remember { mutableStateOf(false) }
+    fun updateScaleAnchor() {
+        val parent = mapCoordinates ?: return
+        val line = lineCoordinates ?: return
+        if (parent.isAttached && line.isAttached) {
+            scaleAnchor = parent.localPositionOf(line, Offset(line.size.width.toFloat(), line.size.height / 2f))
+        }
+    }
     val frameMarginPx = with(density) { MAP_FRAME_MARGIN.roundToPx() }
     val labelHorizontalSpacingPx = with(density) { LABEL_HORIZONTAL_SPACING.roundToPx() }
     val labelVerticalSpacingPx = with(density) { LABEL_VERTICAL_SPACING.roundToPx() }
-    val framePadding = remember(cameraInsets, frameMarginPx, attributionHeightPx) {
-        cameraInsets.copy(bottomPx = cameraInsets.bottomPx + attributionHeightPx).withMargin(frameMarginPx)
+    val framePadding = remember(cameraInsets, frameMarginPx, footerHeightPx) {
+        cameraInsets.copy(bottomPx = cameraInsets.bottomPx + footerHeightPx).withMargin(frameMarginPx)
     }
     val effectiveBase = base ?: if (imagery) MapBase.AERIAL else MapBase.NONE
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
@@ -213,8 +232,8 @@ fun ParcelMap(
                 if (selected != null) select(selected) else tap?.invoke(point.latitude, point.longitude)
                 true
             }
-            loaded.addOnCameraMoveStartedListener { labelSpots = emptyList() }
-            loaded.addOnCameraIdleListener { cameraTick++ }
+            loaded.addOnCameraMoveStartedListener { labelSpots = emptyList(); cameraMoving = true }
+            loaded.addOnCameraIdleListener { cameraMoving = false; cameraTick++ }
         }
         onDispose {
             active = false
@@ -265,7 +284,7 @@ fun ParcelMap(
         style.getSourceAs<GeoJsonSource>("saved-parcels")?.setGeoJson(data)
         val saved = parcels.filter { it.kind == MapParcelKind.SAVED }
         val savedKey = MapFrameKey(saved.map { it.id to it.geometry })
-        if (framedKey != savedKey && focus == null && attributionHeightPx > 0 &&
+        if (framedKey != savedKey && focus == null && footerHeightPx > 0 &&
             mapWidthPx > framePadding.leftPx + framePadding.rightPx &&
             mapHeightPx > framePadding.topPx + framePadding.bottomPx) {
             fitParcels(current, saved, framePadding)
@@ -333,13 +352,26 @@ fun ParcelMap(
             ).map { it.label to IntOffset(it.x, it.y) }
         }
     }
-    Box(modifier.onSizeChanged { mapWidthPx = it.width; mapHeightPx = it.height }) {
+    BoxWithConstraints(modifier.onSizeChanged { mapWidthPx = it.width; mapHeightPx = it.height }
+        .onGloballyPositioned { mapCoordinates = it; updateScaleAnchor() }) {
+        val showsScale = controls && maxWidth - with(density) { (cameraInsets.leftPx + cameraInsets.rightPx).toDp() } >= 240.dp
+        LaunchedEffect(map, cameraTick, scaleAnchor, showsScale, density.density) {
+            val current = map
+            val anchor = scaleAnchor
+            scaleValue = if (showsScale && current != null && anchor != null) {
+                val projection = current.projection
+                val right = projection.fromScreenLocation(PointF(anchor.x, anchor.y))
+                projectedMapScale(with(density) { 96.dp.toPx() }) { width ->
+                    right.distanceTo(projection.fromScreenLocation(PointF(anchor.x - width, anchor.y)))
+                }
+            } else null
+        }
         AndroidView(factory = { view }, modifier = Modifier.fillMaxSize().testTag("parcel-map-view"))
         labelSpots.forEach { (label, spot) ->
             ParcelNumber(label, Modifier.offset { IntOffset(spot.x - with(density) { 14.dp.roundToPx() }, spot.y - with(density) { 11.dp.roundToPx() }) })
         }
         val usableTop = cameraInsets.topPx.coerceAtMost(mapHeightPx)
-        val usableBottom = (mapHeightPx - cameraInsets.bottomPx).coerceAtLeast(usableTop)
+        val usableBottom = (mapHeightPx - cameraInsets.bottomPx - footerHeightPx).coerceAtLeast(usableTop)
         // Measured panels protect touch controls as well as framing. Restore controls after
         // the keyboard closes if it temporarily leaves no usable map area.
         if (controls && (controlsHeightPx == 0 || usableBottom - usableTop >= controlsHeightPx)) {
@@ -357,6 +389,13 @@ fun ParcelMap(
                 }
             }
         }
+        Row(Modifier.align(Alignment.BottomStart).fillMaxWidth()
+            .padding(start = with(density) { cameraInsets.leftPx.toDp() } + 4.dp,
+                end = with(density) { cameraInsets.rightPx.toDp() } + 4.dp,
+                bottom = with(density) { cameraInsets.bottomPx.toDp() } + 4.dp)
+            .onSizeChanged { footerHeightPx = it.height },
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         MapAttribution(
             when (effectiveBase) {
                 MapBase.AERIAL -> "© IGN · PNOA" + if (cadastreLines) " · © DG Catastro" else ""
@@ -364,11 +403,14 @@ fun ParcelMap(
                 MapBase.NONE -> "Límites guardados en el teléfono"
             } + (if (sigpacLines && effectiveBase != MapBase.NONE) " · SIGPAC · FEGA/MAPA" else "")
                 + (if (effectiveBase != MapBase.NONE && overlayTiles != null) overlayAttribution?.let { " · $it" } ?: "" else ""),
-            modifier = Modifier.align(Alignment.BottomStart)
-                .padding(start = 4.dp, bottom = with(density) { cameraInsets.bottomPx.toDp() } + 4.dp)
-                .onSizeChanged { attributionHeightPx = it.height }
+            modifier = Modifier.weight(1f)
                 .semantics { contentDescription = "Atribución del mapa" },
         )
+        if (showsScale) MapScaleBar(scaleValue, visible = !cameraMoving && usableBottom > usableTop) {
+            lineCoordinates = it
+            updateScaleAnchor()
+        }
+        }
     }
 }
 

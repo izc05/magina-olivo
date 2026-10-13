@@ -72,3 +72,21 @@ Build DEV/test final correcto, 611 JVM sin fallos/errores; preview-final-build.l
 Las capturas usan geometría sintética cerca de Bedmar y fuente de imágenes deliberadamente fallida; acreditan contorno local y controles, no detalle/disponibilidad de PNOA ni titularidad. Las pruebas no acceden a Room ni modifican registros. #722 permanece abierta/#746 DRAFT: escala y QA integral pendientes. Sin APK candidata ni Supabase producción.
 
 Matriz final posterior al ajuste de capturas: 8/8 (360/390 dp × fuente 1,0/1,3 × claro/oscuro), verify-parcel-preview.ps1, preview-matrix.log y cuatro logs por perfil. Ocho capturas de fuente grande en preview-captures; las ampliadas se toman encuadradas antes de probar el zoom. Se restauró densidad 420/fuente 1,0 sin borrar datos. La matriz verifica también las esquinas sobre el crédito y el contraste de la ventana ampliada. CI del bloque previo 8aac5166 terminó con sus tres controles verdes; no se atribuye esa CI al siguiente SHA.
+
+## Bloque 7 — escala sobre la proyección nativa
+
+La escala calcula la distancia geográfica entre los extremos de su barra visible usando MapLibre Projection, sin asumir tamaño de tesela ni resolución PNOA. Escoge distancias métricas legibles (1/2/5) y resuelve la anchura sobre la proyección real. Reserva espacio estable junto al crédito; el encuadre y los controles respetan la altura medida del pie. No se muestra en miniaturas ni si falta espacio útil. Durante movimientos de cámara se oculta visualmente y de accesibilidad, reapareciendo solo al recibir CameraIdle.
+
+Cinco pruebas JVM nuevas cubren escalones métricos, unidades, proyección no lineal y valores inválidos. Build DEV/test correcto y 616 JVM sin fallos/errores. La revisión encontró una carrera: una actualización de datos reiniciaba la visibilidad durante una animación. La regresión nativa de selección durante animateCamera de cinco segundos falló en ambos temas antes del arreglo (scale-animation-before.log). Se eliminó el reinicio del efecto de cálculo: solo el listener CameraIdle lo hace. Ambos temas pasan tras el arreglo, junto al buscador (4 pruebas, scale-animation-after.log); la revisión independiente no encontró más defectos concretos.
+
+La prueba compara la distancia entre extremos reales de Canvas con el valor mostrado (tolerancia 2 %) en Huelma, z15/z17/z19, y latitud 60°/z17; confirma la posición real de cámara. Utiliza límites sintéticos y Solo parcelas, por lo que no acredita detalle ni disponibilidad de fotos aéreas. Conserva registros, geometría, cálculos y caché.
+
+CI de a232c173: foundation y gate3-emulator verdes; gate3-evidence falló una aserción inmediata del cierre del buscador por coordenadas. MapSearchScreenTest espera ahora la desaparición del panel tras la resolución asíncrona antes de mantener la misma aserción assertDoesNotExist. Se conserva el registro de ese fallo y no se atribuyen sus controles al nuevo SHA.
+
+Matriz final de escala: 8/8 (360/390 dp × fuente 1,0/1,3 × claro/oscuro), verify-map-scale.ps1, scale-matrix.log y cuatro logs por perfil. Ocho capturas de fuente grande en scale-captures muestran z17/z19 sobre la geometría sintética. Densidad 420 y fuente 1,0 restauradas sin borrar datos. Inspección visual de 360 dp confirma escala/crédito completos y contraste en ambos temas. #722 y #746 continúan abiertas: foto aérea nativa z15/z17/z19, permisos/GPS, sin conexión, rotación y cambios de finca pendientes; luz exterior requiere dispositivo físico. Sin APK candidata ni Supabase producción.
+
+
+Verificación conjunta final: 16 pruebas nativas sin fallos (scale-final-joint-native.log): escala/proyección/animación en ambos temas, mini mapa/fallback/ampliación en ambos temas, búsqueda en ambos temas con sincronización final, capas en ambos temas, selección nativa, insets, raster/reintento y viewport/teclado real.
+
+
+Matriz adicional de mini mapa tras introducir escala/pie: 8/8, mismos cuatro perfiles y ambos temas, scale-preview-matrix.log. Mantiene las cuatro esquinas por encima del crédito, fallback reversible, zoom y contraste de la ventana ampliada; densidad/fuente restauradas sin borrar datos.

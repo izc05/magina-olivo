@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -66,12 +67,14 @@ class MapSearchScreenTest {
         capture(mode, "error-keeps-query")
         allowResolution = true
         compose.onNodeWithTag("farm-map-place-go").performScrollTo().performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("farm-map-place-query").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("farm-map-place-query").assertDoesNotExist()
         compose.onNodeWithTag("farm-map-search-toggle").assertIsDisplayed()
         capture(mode, "place-resolved-collapsed")
         compose.onNodeWithTag("farm-map-search-toggle").performClick()
         compose.onNodeWithTag("farm-map-coordinates").performScrollTo().performTextReplacement("37.636, -3.480")
         compose.onNodeWithTag("farm-map-go").performScrollTo().performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("farm-map-coordinates").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("farm-map-coordinates").assertDoesNotExist()
         assertEquals(1, coordinateCalls)
         capture(mode, "coordinates-resolved-collapsed")

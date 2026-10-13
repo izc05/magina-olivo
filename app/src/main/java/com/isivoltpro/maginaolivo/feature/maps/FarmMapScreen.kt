@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -30,6 +31,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -49,6 +51,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -67,6 +70,7 @@ import com.isivoltpro.maginaolivo.ui.theme.MoSpacing
 import java.text.NumberFormat
 import java.util.Locale
 import java.util.UUID
+import kotlin.math.roundToInt
 
 /**
  * Phase 18 — the farm's parcels on a map, and the place to add them: tap several Catastro
@@ -188,6 +192,8 @@ fun FarmMapScreen(
     var base by rememberSaveable { mutableStateOf(MapBase.AERIAL) }
     var cadastreLines by rememberSaveable { mutableStateOf(true) }
     var sigpacLines by rememberSaveable { mutableStateOf(true) }
+    var cadastreOpacity by rememberSaveable { mutableStateOf(0.65f) }
+    var sigpacOpacity by rememberSaveable { mutableStateOf(0.5f) }
     var tileError by remember { mutableStateOf<String?>(null) }
     var tileRetryToken by remember { mutableStateOf(0L) }
     LaunchedEffect(base, cadastreLines, sigpacLines) { tileError = null }
@@ -195,8 +201,8 @@ fun FarmMapScreen(
     LaunchedEffect(state.focus?.token) {
         if (state.focus != null) {
             searchOpen = false
+            focusManager.clearFocus(force = true)
             keyboard?.hide()
-            focusManager.clearFocus()
         }
     }
     var layerMenu by remember { mutableStateOf(false) }
@@ -227,6 +233,8 @@ fun FarmMapScreen(
                 cadastreLines = cadastreLines,
                 sigpacLines = sigpacLines,
                 tileRetryToken = tileRetryToken,
+                cadastreOpacity = cadastreOpacity,
+                sigpacOpacity = sigpacOpacity,
                 selectedId = state.selectedSavedId?.toString(),
                 selectedIds = state.selected + setOfNotNull(state.inspected?.reference),
                 onSelected = onTapParcel,
@@ -249,7 +257,7 @@ fun FarmMapScreen(
         Surface(
             modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()
                 .onSizeChanged { topOverlayHeightPx = it.height }
-                .padding(8.dp),
+                .padding(8.dp).testTag("farm-map-header"),
             shape = MoShape.card,
             color = MoSurfaceTokens.cardSurface.copy(alpha = 0.97f),
             shadowElevation = 3.dp,
@@ -288,7 +296,7 @@ fun FarmMapScreen(
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = {
                         searchOpen = !searchOpen
-                        if (!searchOpen) { keyboard?.hide(); focusManager.clearFocus(); onPlaceQueryChanged() }
+                        if (!searchOpen) { focusManager.clearFocus(force = true); keyboard?.hide(); onPlaceQueryChanged() }
                     }, modifier = Modifier.testTag("farm-map-search-toggle")
                         .semantics { contentDescription = if (searchOpen) "Cerrar búsqueda" else "Abrir búsqueda" }) {
                         Text(if (searchOpen) "Cerrar" else "Buscar")
@@ -323,6 +331,12 @@ fun FarmMapScreen(
                                 enabled = base != MapBase.NONE,
                                 modifier = Modifier.testTag("farm-map-sigpac"),
                             )
+                            MapLayerIntensity("Intensidad de Catastro", cadastreOpacity,
+                                enabled = cadastreLines && base != MapBase.NONE,
+                                tag = "farm-map-cadastre-intensity", onChange = { cadastreOpacity = it })
+                            MapLayerIntensity("Intensidad de SIGPAC", sigpacOpacity,
+                                enabled = sigpacLines && base != MapBase.NONE,
+                                tag = "farm-map-sigpac-intensity", onChange = { sigpacOpacity = it })
                         }
                     }
                 }
@@ -439,6 +453,20 @@ fun FarmMapScreen(
                 onConfirm = { names -> reviewSheet = false; onImport(names) },
             )
         }
+    }
+}
+
+/** #722: official reference layers can be read independently over the photo. */
+@Composable
+private fun MapLayerIntensity(label: String, value: Float, enabled: Boolean, tag: String, onChange: (Float) -> Unit) {
+    Column(Modifier.width(240.dp).padding(horizontal = 16.dp)) {
+        Text("$label · ${(value * 100).roundToInt()} %", style = MaterialTheme.typography.labelMedium,
+            color = MoColors.current.secondaryText)
+        Slider(value = value, onValueChange = onChange, enabled = enabled, valueRange = 0.3f..1f,
+            modifier = Modifier.fillMaxWidth().testTag(tag).semantics {
+                contentDescription = label
+                stateDescription = "${(value * 100).roundToInt()} % de intensidad"
+            })
     }
 }
 

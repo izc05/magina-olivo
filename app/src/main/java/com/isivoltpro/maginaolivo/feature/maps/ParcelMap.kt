@@ -55,6 +55,8 @@ import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
+import org.maplibre.android.style.layers.RasterLayer
+import org.maplibre.android.style.layers.PropertyFactory.rasterOpacity
 import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.android.tile.TileOperation
 
@@ -145,6 +147,8 @@ fun ParcelMap(
     sigpacLines: Boolean = false,
     /** Explicit retry reloads the current sources without touching local geometry or camera. */
     tileRetryToken: Long = 0L,
+    cadastreOpacity: Float = 0.65f,
+    sigpacOpacity: Float = 0.5f,
 ) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
@@ -218,7 +222,12 @@ fun ParcelMap(
     val showsMyLocation = myLocation != null
     LaunchedEffect(map, effectiveBase, cadastreLines, sigpacLines, overlayTiles, showsMyLocation, dark, tileRetryToken) {
         loadedStyle = null
-        map?.setStyle(Style.Builder().fromJson(parcelStyle(effectiveBase, cadastreLines, overlayTiles, showsMyLocation, dark, sigpacLines, tileRetryToken))) { loadedStyle = it }
+        map?.setStyle(Style.Builder().fromJson(parcelStyle(effectiveBase, cadastreLines, overlayTiles, showsMyLocation, dark, sigpacLines, tileRetryToken, cadastreOpacity, sigpacOpacity))) { loadedStyle = it }
+    }
+    LaunchedEffect(loadedStyle, cadastreOpacity, sigpacOpacity) {
+        // Dragging intensity changes paint only; saved geometry, camera and source caches stay live.
+        loadedStyle?.getLayerAs<RasterLayer>("cadastre")?.setProperties(rasterOpacity(cadastreOpacity))
+        loadedStyle?.getLayerAs<RasterLayer>("sigpac")?.setProperties(rasterOpacity(sigpacOpacity))
     }
     LaunchedEffect(loadedStyle, myLocation) {
         val style = loadedStyle ?: return@LaunchedEffect
@@ -514,14 +523,16 @@ internal fun parcelStyle(imagery: Boolean): String = parcelStyle(if (imagery) Ma
  * to twice its size: roads, olive rows and boundaries looked blurred on the phone. Catastro's
  * WMS is asked for real 512 px images and stays at 512.
  */
-internal fun parcelStyle(base: MapBase, cadastreLines: Boolean, overlayTiles: String? = null, myLocation: Boolean = false, dark: Boolean = false, sigpacLines: Boolean = false, tileRetryToken: Long = 0L): String {
+internal fun parcelStyle(base: MapBase, cadastreLines: Boolean, overlayTiles: String? = null, myLocation: Boolean = false, dark: Boolean = false, sigpacLines: Boolean = false, tileRetryToken: Long = 0L, cadastreOpacity: Float = 0.65f, sigpacOpacity: Float = 0.5f): String {
+    require(cadastreOpacity.isFinite() && cadastreOpacity in 0f..1f && sigpacOpacity.isFinite() && sigpacOpacity in 0f..1f)
     // Only an explicit retry bypasses a failed native resource/cache entry. Ordinary URLs and
     // the offline cache remain intact; these official KVP services accept additional parameters.
     fun officialTiles(template: String) = if (tileRetryToken == 0L) template else "$template&magina_retry=$tileRetryToken"
-    // Theme our own canvas only. Raster source pixels and raster paints stay unchanged.
+    // Theme our own canvas only; layer opacity mixes original official pixels with the photo.
     val background = if (dark) "#171914" else "#F3F1E6"
     val savedLine = if (dark && base == MapBase.NONE) "#B6D39E" else "#25371C"
     val candidateLine = if (dark && base == MapBase.NONE) "#E2CC90" else "#8A6A1F"
+    val selectedLine = if (dark && base == MapBase.NONE) "#B6D39E" else "#567342"
     val sources = buildList {
         add(""""saved-parcels":{"type":"geojson","data":{"type":"FeatureCollection","features":[]}}""")
         if (myLocation) add(""""my-location":{"type":"geojson","data":{"type":"FeatureCollection","features":[]}}""")
@@ -543,11 +554,12 @@ internal fun parcelStyle(base: MapBase, cadastreLines: Boolean, overlayTiles: St
     val layers = buildList {
         add("""{"id":"background","type":"background","paint":{"background-color":"$background"}}""")
         if (base != MapBase.NONE) add("""{"id":"base","type":"raster","source":"base"}""")
-        if (cadastreLines && base != MapBase.NONE) add("""{"id":"cadastre","type":"raster","source":"cadastre","minzoom":15}""")
-        if (sigpacLines && base != MapBase.NONE) add("""{"id":"sigpac","type":"raster","source":"sigpac","minzoom":15}""")
+        if (cadastreLines && base != MapBase.NONE) add("""{"id":"cadastre","type":"raster","source":"cadastre","minzoom":15,"paint":{"raster-opacity":$cadastreOpacity}}""")
+        if (sigpacLines && base != MapBase.NONE) add("""{"id":"sigpac","type":"raster","source":"sigpac","minzoom":15,"paint":{"raster-opacity":$sigpacOpacity}}""")
         if (overlayTiles != null && base != MapBase.NONE) add("""{"id":"overlay","type":"raster","source":"overlay","paint":{"raster-opacity":0.7}}""")
-        add("""{"id":"parcels-fill","type":"fill","source":"saved-parcels","paint":{"fill-color":["case",["get","selected"],"#CDA449",["==",["get","kind"],"CANDIDATE"],"#F4EAD0","#567342"],"fill-opacity":["case",["get","selected"],0.55,["==",["get","kind"],"CANDIDATE"],0.30,0.38]}}""")
-        add("""{"id":"parcels-line","type":"line","source":"saved-parcels","paint":{"line-color":["case",["==",["get","kind"],"CANDIDATE"],"$candidateLine","$savedLine"],"line-width":["case",["get","selected"],4,["==",["get","kind"],"CANDIDATE"],2,3]}}""")
+        add("""{"id":"parcels-fill","type":"fill","source":"saved-parcels","paint":{"fill-color":["case",["get","selected"],"#567342",["==",["get","kind"],"CANDIDATE"],"#F4EAD0","#567342"],"fill-opacity":["case",["get","selected"],0.15,["==",["get","kind"],"CANDIDATE"],0.30,0.38]}}""")
+        add("""{"id":"parcels-selection-halo","type":"line","source":"saved-parcels","filter":["==",["get","selected"],true],"paint":{"line-color":"#F3F1E6","line-width":6}}""")
+        add("""{"id":"parcels-line","type":"line","source":"saved-parcels","paint":{"line-color":["case",["get","selected"],"$selectedLine",["==",["get","kind"],"CANDIDATE"],"$candidateLine","$savedLine"],"line-width":["case",["get","selected"],4,["==",["get","kind"],"CANDIDATE"],2,3]}}""")
         // #361: «Mi ubicación» — a blue dot with a soft halo, above everything else.
         if (myLocation) {
             add("""{"id":"my-location-halo","type":"circle","source":"my-location","paint":{"circle-radius":18,"circle-color":"#1D6FD8","circle-opacity":0.18}}""")

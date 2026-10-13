@@ -60,6 +60,16 @@ class NativeMapCameraInsetsTest {
             insets.value = MapCameraInsets(topPx = 100, bottomPx = 0)
         }
         compose.waitForIdle()
+        // Compose idle does not imply that the native renderer has produced the new camera frame.
+        compose.waitUntil(10_000) {
+            var rendered = false
+            compose.runOnIdle {
+                rendered = map.get().queryRenderedFeatures(
+                    map.get().projection.toScreenLocation(LatLng(37.636, -3.480)), "parcels-fill"
+                ).any { it.getStringProperty("id") == "saved" }
+            }
+            rendered
+        }
         compose.runOnIdle {
             val after = map.get().cameraPosition
             assertEquals(before.get().target!!.latitude, after.target!!.latitude, 0.000001)

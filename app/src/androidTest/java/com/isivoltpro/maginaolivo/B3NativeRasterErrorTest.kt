@@ -46,6 +46,7 @@ class B3NativeRasterErrorTest {
     private var observedView: MapView? = null
     private val baseTileRequested = java.util.concurrent.atomic.AtomicBoolean(false)
     private var observer: MapView.OnTileActionListener? = null
+    private val failureRequestId = UUID.randomUUID().toString()
 
     /**
      * #741 — the base layer is whichever IGN WMTS the screen opened on, and since #711 B3 that is
@@ -64,7 +65,7 @@ class B3NativeRasterErrorTest {
                 if (url.startsWith(IGN_WMTS)) {
                     baseTileRequested.set(true)
                     // Closed local TLS port produces a real native connection failure, independent of IGN.
-                    "https://127.0.0.1:1/b3-unavailable/${url.hashCode()}"
+                    "https://127.0.0.1:1/b3-unavailable/$failureRequestId/${url.hashCode()}"
                 } else url
             }
         }
@@ -115,7 +116,9 @@ class B3NativeRasterErrorTest {
                 mapView.getMapAsync { map ->
                     nativeMap.set(map)
                     // A new tile request after the observer is attached, still centred on the parcel.
-                    map.moveCamera(CameraUpdateFactory.newLatLngZoom(CENTRE, 16.5))
+                    // Other map tests populate z16/17 successfully. Exercise a fresh tile level
+                    // after attaching the error listener, rather than depending on that cache.
+                    map.moveCamera(CameraUpdateFactory.newLatLngZoom(CENTRE, 18.0))
                 }
             }
         })

@@ -153,6 +153,7 @@ fun ParcelMap(
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val select by rememberUpdatedState(onSelected)
+    val currentParcels by rememberUpdatedState(parcels)
     val tap by rememberUpdatedState(onTap)
     val ready by rememberUpdatedState(onReady)
     val snapshot by rememberUpdatedState(onMapSnapshot)
@@ -203,8 +204,10 @@ fun ParcelMap(
             map = loaded
             loaded.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(37.73, -3.45), 12.0))
             loaded.addOnMapClickListener { point ->
-                val hit = loaded.queryRenderedFeatures(loaded.projection.toScreenLocation(point), "parcels-fill").firstOrNull()
-                if (hit != null) select(hit.getStringProperty("id")) else tap?.invoke(point.latitude, point.longitude)
+                val hits = loaded.queryRenderedFeatures(loaded.projection.toScreenLocation(point), "parcels-fill")
+                    .map { it.getStringProperty("id") }
+                val selected = uniqueParcelAtPoint(currentParcels, hits, point.longitude, point.latitude)
+                if (selected != null) select(selected) else tap?.invoke(point.latitude, point.longitude)
                 true
             }
             loaded.addOnCameraMoveStartedListener { labelSpots = emptyList() }

@@ -48,3 +48,13 @@ CI de los bloques 2/3 detectó un contrato UI antiguo: B3FocusedPointViewportTes
 La revisión independiente de solo lectura no encontró nuevos defectos concretos. No cambia Room, cálculos ni registros. Este bloque no cierra #722: quedan selección ambigua por hit-test nativo, mini mapa aéreo, escala y QA integral. Los ensayos utilizan geometría sintética en Huelma, no prueban titularidad catastral ni disponibilidad o resolución completa de PNOA. Fotografías © IGN/PNOA; referencias DG Catastro y SIGPAC FEGA/MAPA.
 
 Matriz final del bloque 4: 8/8 (360/390 dp × fuente 1,0/1,3 × claro/oscuro), verify-map-layers.ps1, layers-matrix.log y cuatro logs por perfil. Se restauró densidad 420/fuente 1,0 sin borrar datos. layer-captures conserva ocho capturas de fuente grande: menú en ventana con barras del sistema reservadas y frame nativo de mapa con contorno completo. Las imágenes del frame son capturas del motor MapLibre, no de la navegación completa de la app. Revisión visual de 360 dp confirma textos completos y contorno legible.
+
+## Bloque 5 — selección inequívoca también por toque nativo
+
+La ruta OnMapClick de MapLibre tomaba el primer fill renderizado y podía saltarse la comprobación del ViewModel. Una prueba de toque real sobre dos parcelas guardadas idénticas lo reprodujo: seleccionaba arbitrariamente b, native-selection-before.log. Ahora se deduplican todos los IDs encontrados, se consulta su geometría original vigente y solo se selecciona un interior único. Bordes, huecos, caminos cercanos, solapamientos y geometría inválida no se atribuyen automáticamente; el toque queda disponible para inspección verificada.
+
+No se usan polígonos recortados por tesela, que introducirían bordes artificiales. rememberUpdatedState mantiene los datos vigentes en el listener; el test nativo cambia después las dos parcelas por una identidad nueva c y comprueba que esta sí se selecciona sin ejecutar la consulta ambigua. Se factoriza el mismo algoritmo estricto y tolerancia previa de 1e-9, sin cambiar cálculo de superficie ni registros.
+
+Build DEV/test correcto, 611 JVM sin fallos/errores: seis nuevos casos cubren interior y IDs repetidos, solapamiento en ambos órdenes, bordes/cercanía, huecos, multipart y hits obsoletos/geometría inválida. Seis instrumentadas conjuntas finales pasaron: toque ambiguo y posterior parcela única actualizada, capas en ambos temas, insets y error raster/reintento/fallback en ambos temas; native-selection-after.log. Revisión independiente sin defectos concretos. Las matrices del bloque 4 no se repiten por este cambio sin modificación visual.
+
+#722/#746 permanecen abiertas/DRAFT: mini mapa aéreo, escala y QA integral pendientes. No APK candidata ni cambios Supabase producción.

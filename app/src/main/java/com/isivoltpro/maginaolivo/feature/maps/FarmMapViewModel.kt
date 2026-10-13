@@ -500,6 +500,13 @@ private val RURAL = Regex("\\d{5}[A-Z]\\d{8}")
  * A boundary tap cannot reliably identify which adjacent parcel the farmer intended.
  */
 internal fun CadastralCandidate.covers(longitude: Double, latitude: Double): Boolean =
+    polygonsCoverInterior(polygons, longitude, latitude)
+
+internal fun polygonsCoverInterior(
+    polygons: List<List<List<Pair<Double, Double>>>>,
+    longitude: Double,
+    latitude: Double,
+): Boolean =
     polygons.any { rings ->
         rings.firstOrNull()?.let { ring -> ringCovers(ring, longitude, latitude) } == true &&
             rings.drop(1).none { hole -> ringCovers(hole, longitude, latitude, includeBoundary = true) }

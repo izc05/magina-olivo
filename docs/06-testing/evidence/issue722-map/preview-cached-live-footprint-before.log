@@ -1,0 +1,77 @@
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=
+com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest:
+INSTRUMENTATION_STATUS: test=lightParcelPreviewPreservesContourAcrossFallbackAndExpansion
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stack=androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 15000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:901)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:500)
+	at com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest.expectPreview(ParcelBoundaryPreviewTest.kt:92)
+	at com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest.lightParcelPreviewPreservesContourAcrossFallbackAndExpansion(ParcelBoundaryPreviewTest.kt:72)
+
+INSTRUMENTATION_STATUS: stream=
+Error in lightParcelPreviewPreservesContourAcrossFallbackAndExpansion(com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 15000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:901)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:500)
+	at com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest.expectPreview(ParcelBoundaryPreviewTest.kt:92)
+	at com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest.lightParcelPreviewPreservesContourAcrossFallbackAndExpansion(ParcelBoundaryPreviewTest.kt:72)
+
+INSTRUMENTATION_STATUS: test=lightParcelPreviewPreservesContourAcrossFallbackAndExpansion
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=darkParcelPreviewPreservesContourAcrossFallbackAndExpansion
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stack=androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 15000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:901)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:500)
+	at com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest.expectPreview(ParcelBoundaryPreviewTest.kt:92)
+	at com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest.darkParcelPreviewPreservesContourAcrossFallbackAndExpansion(ParcelBoundaryPreviewTest.kt:73)
+
+INSTRUMENTATION_STATUS: stream=
+Error in darkParcelPreviewPreservesContourAcrossFallbackAndExpansion(com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 15000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:901)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:500)
+	at com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest.expectPreview(ParcelBoundaryPreviewTest.kt:92)
+	at com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest.darkParcelPreviewPreservesContourAcrossFallbackAndExpansion(ParcelBoundaryPreviewTest.kt:73)
+
+INSTRUMENTATION_STATUS: test=darkParcelPreviewPreservesContourAcrossFallbackAndExpansion
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_RESULT: stream=
+
+Time: 45.991
+There were 2 failures:
+1) lightParcelPreviewPreservesContourAcrossFallbackAndExpansion(com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 15000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:901)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:500)
+	at com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest.expectPreview(ParcelBoundaryPreviewTest.kt:92)
+	at com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest.lightParcelPreviewPreservesContourAcrossFallbackAndExpansion(ParcelBoundaryPreviewTest.kt:72)
+2) darkParcelPreviewPreservesContourAcrossFallbackAndExpansion(com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 15000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:901)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:500)
+	at com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest.expectPreview(ParcelBoundaryPreviewTest.kt:92)
+	at com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest.darkParcelPreviewPreservesContourAcrossFallbackAndExpansion(ParcelBoundaryPreviewTest.kt:73)
+
+FAILURES!!!
+Tests run: 2,  Failures: 2
+
+
+INSTRUMENTATION_CODE: -1

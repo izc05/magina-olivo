@@ -73,10 +73,12 @@ class ParcelBoundaryPreviewTest {
     @Test fun darkParcelPreviewPreservesContourAcrossFallbackAndExpansion() = expectPreview(AppearanceMode.DARK)
 
     private fun expectPreview(mode: AppearanceMode) {
-        val geometry = """{"type":"Polygon","coordinates":[[[-3.412,37.822],[-3.410,37.822],[-3.410,37.824],[-3.412,37.824],[-3.412,37.822]]]}"""
+        // The live PNOA probe deliberately caches Bedmar. Keep this failure fixture
+        // geographically separate, without deleting those successful cached images.
+        val geometry = """{"type":"Polygon","coordinates":[[[-3.602,37.792],[-3.600,37.792],[-3.600,37.794],[-3.602,37.794],[-3.602,37.792]]]}"""
         val parcel = Parcel(id = UUID.randomUUID(), workspaceId = UUID.randomUUID(), farmId = UUID.randomUUID(),
             displayName = "Contorno de prueba", cadastralReference = null, cadastralPolygon = null,
-            cadastralParcel = null, municipality = "Bedmar", province = "Jaén", source = ParcelSource.MANUAL,
+            cadastralParcel = null, municipality = null, province = null, source = ParcelSource.MANUAL,
             geometryGeoJson = geometry, cadastralAreaM2 = null, managedAreaM2 = 9000.0,
             notes = null, archivedAt = null, version = 1)
         compose.setContent {
@@ -101,7 +103,7 @@ class ParcelBoundaryPreviewTest {
         compose.runOnIdle { org.junit.Assert.assertNull(native.get().style!!.getSource("base")) }
         compose.onNodeWithTag("parcel-preview-expand").performScrollTo().performClick()
         compose.onNodeWithTag("parcel-preview-expanded").assertIsDisplayed()
-        val expanded = readNativeMap()
+        val expanded = readNativeMap(expanded = true)
         assertDialogContrast(mode)
         waitForContour(expanded, parcel.id.toString())
         assertCompleteContourAboveAttribution(expanded)
@@ -139,9 +141,12 @@ class ParcelBoundaryPreviewTest {
         output.outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 
-    private fun readNativeMap(): AtomicReference<MapLibreMap> {
+    private fun readNativeMap(expanded: Boolean = false): AtomicReference<MapLibreMap> {
         val native = AtomicReference<MapLibreMap>()
-        onView(isAssignableFrom(MapView::class.java)).perform(object : ViewAction {
+        onView(isAssignableFrom(MapView::class.java))
+            .inRoot(if (expanded) androidx.test.espresso.matcher.RootMatchers.isDialog()
+                else org.hamcrest.Matchers.not(androidx.test.espresso.matcher.RootMatchers.isDialog()))
+            .perform(object : ViewAction {
             override fun getConstraints(): Matcher<View> = isAssignableFrom(MapView::class.java)
             override fun getDescription() = "Inspect the actual native preview map"
             override fun perform(uiController: UiController, view: View) {
@@ -157,7 +162,7 @@ class ParcelBoundaryPreviewTest {
             var found = false
             compose.runOnIdle {
                 val map = native.get()
-                found = map.queryRenderedFeatures(map.projection.toScreenLocation(LatLng(37.823, -3.411)), "parcels-fill")
+                found = map.queryRenderedFeatures(map.projection.toScreenLocation(LatLng(37.793, -3.601)), "parcels-fill")
                     .any { it.getStringProperty("id") == id }
             }
             found
@@ -168,7 +173,7 @@ class ParcelBoundaryPreviewTest {
         val bounds = compose.onNodeWithTag("parcel-map-view").fetchSemanticsNode().boundsInRoot
         val attribution = compose.onNodeWithContentDescription("Atribución del mapa").fetchSemanticsNode().boundsInRoot
         compose.runOnIdle {
-            for (latitude in listOf(37.822, 37.824)) for (longitude in listOf(-3.412, -3.410)) {
+            for (latitude in listOf(37.792, 37.794)) for (longitude in listOf(-3.602, -3.600)) {
                 val point = native.get().projection.toScreenLocation(LatLng(latitude, longitude))
                 org.junit.Assert.assertTrue("Stored contour must fit above attribution: $point, map=$bounds, credit=$attribution",
                     point.x >= 0 && point.x <= bounds.width && point.y >= 0 &&
@@ -179,7 +184,7 @@ class ParcelBoundaryPreviewTest {
 
     private fun assertDialogContrast(mode: AppearanceMode) {
         if (android.os.Build.VERSION.SDK_INT < 30) return
-        onView(isAssignableFrom(MapView::class.java)).perform(object : ViewAction {
+        onView(isAssignableFrom(MapView::class.java)).inRoot(androidx.test.espresso.matcher.RootMatchers.isDialog()).perform(object : ViewAction {
             override fun getConstraints(): Matcher<View> = isAssignableFrom(MapView::class.java)
             override fun getDescription() = "Check system icon contrast in the expanded map window"
             override fun perform(uiController: UiController, view: View) {

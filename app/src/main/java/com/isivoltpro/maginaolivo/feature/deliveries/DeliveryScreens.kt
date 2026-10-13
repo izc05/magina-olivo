@@ -15,6 +15,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -48,7 +50,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -86,6 +92,7 @@ import com.isivoltpro.maginaolivo.ui.components.MoMetricCard
 import com.isivoltpro.maginaolivo.ui.components.MoPrimaryButton
 import com.isivoltpro.maginaolivo.ui.components.MoSecondaryButton
 import com.isivoltpro.maginaolivo.ui.components.MoSectionHeader
+import com.isivoltpro.maginaolivo.ui.components.MoSectionCard
 import com.isivoltpro.maginaolivo.ui.components.MoSelectField
 import com.isivoltpro.maginaolivo.ui.components.MoStatusChip
 import com.isivoltpro.maginaolivo.ui.components.MoStatusTone
@@ -899,7 +906,7 @@ fun DeliveryDetailScreen(
                 state.isLoading -> CircularProgressIndicator()
                 delivery == null -> MoErrorState("Pesada no disponible", state.error ?: "No está guardada en este dispositivo.")
                 else -> {
-                    DeliverySummaryBlock(delivery)
+                    DeliverySummaryBlock(delivery, { sheet = "edit" }, state.context != null && !state.isSaving)
                     MoSectionHeader("Rendimiento")
                     val analysis = delivery.analysis
                     if (analysis == null) {
@@ -925,12 +932,6 @@ fun DeliveryDetailScreen(
                         MoSecondaryButton("Quitar rendimiento", { sheet = "remove-yield" }, Modifier.fillMaxWidth())
                     }
                     if (delivery.editable) {
-                        MoSectionHeader("Pesada")
-                        MoSecondaryButton(
-                            "Editar pesada", { sheet = "edit" },
-                            Modifier.fillMaxWidth().testTag("edit-delivery"),
-                            enabled = state.context != null && !state.isSaving,
-                        )
                         MoSecondaryButton(
                             "Eliminar pesada", { sheet = "delete" },
                             Modifier.fillMaxWidth().testTag("delete-delivery"),
@@ -949,7 +950,11 @@ fun DeliveryDetailScreen(
                     }
                     state.message?.let { Text(it, color = MoSurfaceTokens.secondaryText) }
                     state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                    attachmentContent()
+                    MoSectionCard("Notas y foto", MoIcons.Document, Modifier.testTag("delivery-notes-card")) {
+                        DetailValue("Notas", delivery.notes, missingValue = "No registrado")
+                        Text("Foto o archivo opcional", style = MaterialTheme.typography.bodySmall, color = MoSurfaceTokens.secondaryText)
+                        attachmentContent()
+                    }
                 }
             }
             Spacer(Modifier.height(MoSpacing.xl))
@@ -1046,72 +1051,95 @@ private fun YieldEditor(
 }
 
 @Composable
-private fun DeliverySummaryBlock(delivery: Delivery) {
-    Text("Pesada del ${DATE_FORMAT.format(delivery.deliveryDate)}", style = MaterialTheme.typography.headlineMedium, color = MoColors.current.primaryText)
-    Text(
-        listOfNotNull(delivery.farmName, delivery.campaignName).joinToString(" · "),
-        style = MaterialTheme.typography.bodyLarge,
-        color = MoSurfaceTokens.secondaryText,
-    )
-    MoMetricCard(
-        "Kilos pesados",
-        Weight.format(delivery.netGrams),
-        Modifier.fillMaxWidth().testTag("delivery-net-value"),
-        supportingText = delivery.destinationName,
-    )
-    if (delivery.source == DeliverySource.TICKET_OCR) {
-        MoStatusChip("Leído del vale y confirmado por ti", tone = MoStatusTone.Info)
-    }
-    delivery.deliveryTime?.let { DetailValue("Hora", it.toString()) }
-    DetailValue("Origen de la aceituna", delivery.origin?.label ?: "Sin indicar")
-    if (delivery.harvestId != null) {
-        Text(
-            "Forma parte del día de recolección de su fecha: sus kilos cuentan en el total de ese día.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MoSurfaceTokens.secondaryText,
-            modifier = Modifier.testTag("delivery-in-jornada"),
-        )
-    }
-    DetailValue("Peso bruto", delivery.grossGrams?.let(Weight::format))
-    DetailValue("Tara", delivery.tareGrams?.let(Weight::format))
-    DetailValue("Nº de vale", delivery.ticketNumber)
-    DetailValue("Nº de albarán", delivery.deliveryNumber)
-    MoSectionHeader("Parcelas de origen")
-    delivery.shares.forEach { share ->
-        Row(Modifier.fillMaxWidth().testTag("delivery-share"), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(share.parcelName, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-            Text(
-                if (share.allocation == HarvestAllocation.EXACT && share.weightGrams != null) Weight.format(share.weightGrams)
-                else "Kilos no conocidos",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MoSurfaceTokens.secondaryText,
-            )
+private fun DeliverySummaryBlock(delivery: Delivery, onEdit: () -> Unit, editEnabled: Boolean) {
+    MoSectionCard("Pesada", MoIcons.Weight, Modifier.testTag("delivery-header"), action = {
+        if (delivery.editable) TextButton(onEdit, enabled = editEnabled,
+            modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).testTag("edit-delivery")) {
+            Text("Editar")
+        }
+    }) {
+        Column(Modifier.testTag("delivery-net-value"), verticalArrangement = Arrangement.spacedBy(MoSpacing.xxs)) {
+            Text("Peso neto", style = MaterialTheme.typography.bodyMedium, color = MoSurfaceTokens.secondaryText)
+            Text(Weight.format(delivery.netGrams), style = MaterialTheme.typography.headlineMedium, color = MoColors.current.primaryText)
+        }
+        Text("Vale ${delivery.ticketNumber?.takeIf { it.isNotBlank() } ?: "No registrado"} · ${DATE_FORMAT.format(delivery.deliveryDate)}",
+            style = MaterialTheme.typography.bodyMedium, color = MoSurfaceTokens.secondaryText)
+        Text(delivery.destinationName.takeIf { it.isNotBlank() } ?: "No registrado", style = MaterialTheme.typography.bodyLarge)
+        MoStatusChip(delivery.origin?.label ?: "Origen sin indicar", Modifier.testTag("delivery-origin-chip"))
+        if (delivery.source == DeliverySource.TICKET_OCR) {
+            MoStatusChip("Leído del vale y confirmado por ti", tone = MoStatusTone.Info)
         }
     }
-    when (val unallocated = delivery.unallocatedGrams) {
-        null -> Text(
-            "Sin repartir entre parcelas: No disponible",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MoSurfaceTokens.secondaryText,
-            modifier = Modifier.testTag("delivery-unallocated"),
+    MoSectionCard("Resumen", MoIcons.Campaign, Modifier.testTag("delivery-summary-card")) {
+        Text(delivery.farmName?.takeIf { it.isNotBlank() } ?: "Nombre de finca no disponible", style = MaterialTheme.typography.bodyLarge)
+        Text(delivery.campaignName?.takeIf { it.isNotBlank() } ?: "Nombre de campaña no disponible",
+            style = MaterialTheme.typography.bodyMedium, color = MoSurfaceTokens.secondaryText)
+        if (delivery.harvestId != null) Text(
+            "Incluida en la jornada del ${DATE_FORMAT.format(delivery.deliveryDate)}",
+            style = MaterialTheme.typography.bodyMedium, color = MoSurfaceTokens.secondaryText,
+            modifier = Modifier.testTag("delivery-in-jornada").semantics {
+                stateDescription = "Sus kilos cuentan en la suma de ese día; cada vale conserva su propia pesada."
+            },
         )
-        else -> if (unallocated > 0) {
-            Text(
-                "Sin repartir entre parcelas: ${Weight.format(unallocated)}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MoSurfaceTokens.secondaryText,
-                modifier = Modifier.testTag("delivery-unallocated"),
-            )
+    }
+    MoSectionCard("Vale y pesaje", MoIcons.Delivery, Modifier.testTag("delivery-weights-card")) {
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            if (maxWidth < 360.dp && LocalDensity.current.fontScale > 1.15f) {
+                Column(verticalArrangement = Arrangement.spacedBy(MoSpacing.sm)) {
+                    DeliveryWeightRow("Peso bruto", delivery.grossGrams?.let(Weight::format), "delivery-gross")
+                    DeliveryWeightRow("Tara", delivery.tareGrams?.let(Weight::format), "delivery-tare")
+                    DeliveryWeightRow("Peso neto", Weight.format(delivery.netGrams), "delivery-net-weight")
+                }
+            } else {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MoSpacing.sm)) {
+                    DetailValue("Peso bruto", delivery.grossGrams?.let(Weight::format), Modifier.weight(1f).testTag("delivery-gross"), "No registrado")
+                    DetailValue("Tara", delivery.tareGrams?.let(Weight::format), Modifier.weight(1f).testTag("delivery-tare"), "No registrado")
+                    DetailValue("Peso neto", Weight.format(delivery.netGrams), Modifier.weight(1f).testTag("delivery-net-weight"), "No registrado")
+                }
+            }
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MoSpacing.sm)) {
+            DetailValue("Nº de vale", delivery.ticketNumber, Modifier.weight(1f).testTag("delivery-ticket"), "No registrado")
+            DetailValue("Nº de albarán", delivery.deliveryNumber, Modifier.weight(1f).testTag("delivery-receipt"), "No registrado")
+        }
+        delivery.deliveryTime?.let { DetailValue("Hora", it.toString()) }
+    }
+    MoSectionCard("Parcelas de origen", MoIcons.Parcels, Modifier.testTag("delivery-parcels-card")) {
+        if (delivery.shares.isEmpty()) Text("No hay parcelas registradas", color = MoSurfaceTokens.secondaryText)
+        delivery.shares.forEach { share ->
+            Column(Modifier.fillMaxWidth().testTag("delivery-share"), verticalArrangement = Arrangement.spacedBy(MoSpacing.xxs)) {
+                Text(share.parcelName, style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    if (share.allocation == HarvestAllocation.EXACT && share.weightGrams != null) Weight.format(share.weightGrams)
+                    else "Pendiente de distribuir",
+                    style = MaterialTheme.typography.bodyMedium, color = MoSurfaceTokens.secondaryText,
+                )
+            }
+        }
+        when (val unallocated = delivery.unallocatedGrams) {
+            null -> Text("Reparto no disponible", style = MaterialTheme.typography.bodyMedium,
+                color = MoSurfaceTokens.secondaryText, modifier = Modifier.testTag("delivery-unallocated"))
+            else -> if (unallocated > 0) Text("Pendiente de distribuir: ${Weight.format(unallocated)}",
+                style = MaterialTheme.typography.bodyMedium, color = MoSurfaceTokens.secondaryText,
+                modifier = Modifier.testTag("delivery-unallocated"))
         }
     }
-    delivery.notes?.let { DetailValue("Notas", it) }
 }
 
 @Composable
-private fun DetailValue(label: String, value: String?) {
-    Column(verticalArrangement = Arrangement.spacedBy(MoSpacing.xxs)) {
+private fun DeliveryWeightRow(label: String, value: String?, tag: String) {
+    Row(Modifier.fillMaxWidth().testTag(tag), horizontalArrangement = Arrangement.spacedBy(MoSpacing.sm)) {
+        Text(label, style = MaterialTheme.typography.labelLarge, color = MoSurfaceTokens.secondaryText, modifier = Modifier.weight(1f))
+        Text(value ?: "No registrado", style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(2f), textAlign = TextAlign.End)
+    }
+}
+
+@Composable
+private fun DetailValue(label: String, value: String?, modifier: Modifier = Modifier, missingValue: String = "Sin registrar") {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(MoSpacing.xxs)) {
         Text(label, style = MaterialTheme.typography.labelLarge, color = MoSurfaceTokens.secondaryText)
-        Text(value ?: "Sin registrar", style = MaterialTheme.typography.bodyLarge)
+        Text(value?.takeIf { it.isNotBlank() } ?: missingValue, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.fillMaxWidth())
     }
 }
 

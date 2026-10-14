@@ -376,6 +376,7 @@ assert_instrumentation_passed \
 
 # Native GPS/permission/offline states use separate processes and restore device settings.
 bash .github/scripts/verify-map-device.sh evidence/map-device
+bash .github/scripts/verify-context-notifications.sh evidence/context-notifications
 
 adb logcat -c
 : > evidence/startup-runs.txt

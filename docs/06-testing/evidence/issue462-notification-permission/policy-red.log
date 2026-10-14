@@ -1,0 +1,93 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDevDebugBuild UP-TO-DATE
+> Task :app:generateDevDebugBuildConfig FROM-CACHE
+> Task :app:generateDevDebugResValues FROM-CACHE
+> Task :app:generateDevDebugResources FROM-CACHE
+> Task :app:packageDevDebugResources FROM-CACHE
+> Task :app:processDevDebugNavigationResources FROM-CACHE
+> Task :app:parseDevDebugLocalResources FROM-CACHE
+> Task :app:generateDevDebugRFile FROM-CACHE
+> Task :app:javaPreCompileDevDebug FROM-CACHE
+> Task :app:mapDevDebugSourceSetPaths
+> Task :app:compileDevDebugNavigationResources FROM-CACHE
+> Task :app:checkDevDebugAarMetadata
+> Task :app:mergeDevDebugResources FROM-CACHE
+> Task :app:createDevDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDevDebug FROM-CACHE
+> Task :app:processDevDebugMainManifest FROM-CACHE
+> Task :app:processDevDebugManifest FROM-CACHE
+> Task :app:processDevDebugManifestForPackage FROM-CACHE
+> Task :app:processDevDebugResources FROM-CACHE
+> Task :app:preDevDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDevDebugUnitTest FROM-CACHE
+> Task :app:kspDevDebugKotlin
+> Task :app:compileDevDebugKotlin
+w: file:///C:/Users/ISICIO/.codex/worktrees/issue462-notification-permission/MAGINA%20V20/app/src/main/java/com/isivoltpro/maginaolivo/data/repository/ExpenseLedgerWriter.kt:211:48 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ExpenseEntity'.
+w: file:///C:/Users/ISICIO/.codex/worktrees/issue462-notification-permission/MAGINA%20V20/app/src/main/java/com/isivoltpro/maginaolivo/domain/analytics/CampaignAnalytics.kt:125:101 Unnecessary non-null assertion (!!) on a non-null receiver of type 'Long'.
+w: file:///C:/Users/ISICIO/.codex/worktrees/issue462-notification-permission/MAGINA%20V20/app/src/main/java/com/isivoltpro/maginaolivo/domain/analytics/CampaignAnalytics.kt:126:55 Unnecessary non-null assertion (!!) on a non-null receiver of type 'Long'.
+w: file:///C:/Users/ISICIO/.codex/worktrees/issue462-notification-permission/MAGINA%20V20/app/src/main/java/com/isivoltpro/maginaolivo/feature/harvests/HarvestScreens.kt:895:80 Unnecessary safe call on a non-null receiver of type 'LabourCurrencyContext'.
+w: file:///C:/Users/ISICIO/.codex/worktrees/issue462-notification-permission/MAGINA%20V20/app/src/main/java/com/isivoltpro/maginaolivo/feature/harvests/HarvestScreens.kt:895:239 Unnecessary safe call on a non-null receiver of type 'LabourCurrencyContext'.
+w: file:///C:/Users/ISICIO/.codex/worktrees/issue462-notification-permission/MAGINA%20V20/app/src/main/java/com/isivoltpro/maginaolivo/feature/harvests/HarvestScreens.kt:900:31 Unnecessary safe call on a non-null receiver of type 'LabourCurrencyContext'.
+w: file:///C:/Users/ISICIO/.codex/worktrees/issue462-notification-permission/MAGINA%20V20/app/src/main/java/com/isivoltpro/maginaolivo/feature/harvests/HarvestScreens.kt:902:40 Unnecessary safe call on a non-null receiver of type 'LabourCurrencyContext'.
+w: file:///C:/Users/ISICIO/.codex/worktrees/issue462-notification-permission/MAGINA%20V20/app/src/main/java/com/isivoltpro/maginaolivo/feature/home/OilMarketCard.kt:203:63 Unnecessary safe call on a non-null receiver of type 'ConnectivityManager'.
+w: file:///C:/Users/ISICIO/.codex/worktrees/issue462-notification-permission/MAGINA%20V20/app/src/main/java/com/isivoltpro/maginaolivo/feature/maps/CurrentLocation.kt:133:22 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///C:/Users/ISICIO/.codex/worktrees/issue462-notification-permission/MAGINA%20V20/app/src/main/java/com/isivoltpro/maginaolivo/feature/maps/MapSearch.kt:46:72 Unnecessary non-null assertion (!!) on a non-null receiver of type 'Double'.
+w: file:///C:/Users/ISICIO/.codex/worktrees/issue462-notification-permission/MAGINA%20V20/app/src/main/java/com/isivoltpro/maginaolivo/feature/maps/MapSearch.kt:46:85 Unnecessary non-null assertion (!!) on a non-null receiver of type 'Double'.
+w: file:///C:/Users/ISICIO/.codex/worktrees/issue462-notification-permission/MAGINA%20V20/app/src/main/java/com/isivoltpro/maginaolivo/feature/maps/ParcelLabelPoint.kt:135:89 Unnecessary non-null assertion (!!) on a non-null receiver of type 'Pair<Double, Point2>'.
+w: file:///C:/Users/ISICIO/.codex/worktrees/issue462-notification-permission/MAGINA%20V20/app/src/main/java/com/isivoltpro/maginaolivo/feature/notebook/NotebookCharts.kt:62:43 Unnecessary non-null assertion (!!) on a non-null receiver of type 'Long'.
+w: file:///C:/Users/ISICIO/.codex/worktrees/issue462-notification-permission/MAGINA%20V20/app/src/main/java/com/isivoltpro/maginaolivo/feature/notebook/NotebookCharts.kt:84:43 Unnecessary non-null assertion (!!) on a non-null receiver of type 'Long'.
+w: file:///C:/Users/ISICIO/.codex/worktrees/issue462-notification-permission/MAGINA%20V20/app/src/main/java/com/isivoltpro/maginaolivo/feature/notebook/NotebookCharts.kt:104:54 Unnecessary non-null assertion (!!) on a non-null receiver of type 'Long'.
+w: file:///C:/Users/ISICIO/.codex/worktrees/issue462-notification-permission/MAGINA%20V20/app/src/main/java/com/isivoltpro/maginaolivo/feature/parcels/ParcelScreens.kt:503:5 'fun TabRow(selectedTabIndex: Int, modifier: Modifier = ..., containerColor: Color = ..., contentColor: Color = ..., indicator: ComposableFunction1<List<TabPosition>, Unit> = ..., divider: ComposableFunction0<Unit> = ..., tabs: ComposableFunction0<Unit>): Unit' is deprecated. Replaced with PrimaryTabRow and SecondaryTabRow.
+
+> Task :app:compileDevDebugJavaWithJavac
+> Task :app:processDevDebugJavaRes
+> Task :app:bundleDevDebugClassesToRuntimeJar
+> Task :app:bundleDevDebugClassesToCompileJar
+> Task :app:kspDevDebugUnitTestKotlin
+> Task :app:compileDevDebugUnitTestKotlin
+> Task :app:compileDevDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:copyRoomSchemas NO-SOURCE
+> Task :app:processDevDebugUnitTestJavaRes
+
+> Task :app:testDevDebugUnitTest
+
+NotificationPermissionPolicyTest > firstSavedReminderExplainsThePermission FAILED
+    java.lang.AssertionError at NotificationPermissionPolicyTest.kt:22
+
+NotificationPermissionPolicyTest > explicitActionAfterPermanentDenialOpensSettings FAILED
+    java.lang.AssertionError at NotificationPermissionPolicyTest.kt:22
+
+NotificationPermissionPolicyTest > profileActionCanRequestTheMissingRuntimePermission FAILED
+    java.lang.AssertionError at NotificationPermissionPolicyTest.kt:22
+
+NotificationPermissionPolicyTest > settingsStillManageAppAndChannelAfterPermissionIsGranted FAILED
+    java.lang.AssertionError at NotificationPermissionPolicyTest.kt:22
+
+NotificationPermissionPolicyTest > olderAndroidRetainsItsRealSettingsAction FAILED
+    java.lang.AssertionError at NotificationPermissionPolicyTest.kt:22
+
+NotificationPermissionPolicyTest > enablingRemindersIsAnExplicitPermissionContext FAILED
+    java.lang.AssertionError at NotificationPermissionPolicyTest.kt:22
+
+NotificationPermissionPolicyTest > explicitActivationUsesTheRationaleAllowedByAndroid FAILED
+    java.lang.AssertionError at NotificationPermissionPolicyTest.kt:22
+
+11 tests completed, 7 failed
+
+> Task :app:testDevDebugUnitTest FAILED
+
+[Incubating] Problems report is available at: file:///C:/Users/ISICIO/.codex/worktrees/issue462-notification-permission/MAGINA%20V20/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:testDevDebugUnitTest'.
+> There were failing tests. See the report at: file:///C:/Users/ISICIO/.codex/worktrees/issue462-notification-permission/MAGINA%20V20/app/build/reports/tests/testDevDebugUnitTest/index.html
+
+* Try:
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+
+BUILD FAILED in 5m
+29 actionable tasks: 13 executed, 16 from cache

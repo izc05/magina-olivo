@@ -119,12 +119,14 @@ class MyProfileViewModel(
     }
 
     /** Phase 21B: stored first, then every alarm is rebuilt with the new preferences. */
-    fun saveReminders(preferences: ReminderPreferences) {
+    fun saveReminders(preferences: ReminderPreferences, onEnabled: () -> Unit = {}) {
+        val wasEnabled = mutableState.value.settings.reminders.enabled
         viewModelScope.launch {
             mutableState.update { it.copy(isSaving = true, error = null) }
             val result = profile.saveReminders(preferences)
             if (result is AppResult.Success) runCatching { reminders?.reconcile() }
             finish(result)
+            if (result is AppResult.Success && preferences.enabled && !wasEnabled) onEnabled()
         }
     }
 

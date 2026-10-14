@@ -100,6 +100,16 @@ también al reintentar. Los workflows usan ahora Android 35 `google_apis` x86_64
 Pixel 6, igual que el AVD local validado. No cambian API, tests, opt-in de seguridad,
 permisos exigidos, tamaños ni timeout. Requiere nuevos controles verdes del HEAD.
 
+La descarga Google APIs también tuvo un fallo de ZIP antes de arrancar. Se añade
+preinstalación del paquete con tres intentos de 120 s y limpieza de descargas
+parciales solo dentro del SDK del runner Linux efímero. No reintenta tests ni usa
+continue-on-error: tres fallos o archivos incompletos dejan el job rojo. Cinco
+casos de SDK falso validan recuperación, fallo permanente, instalación incompleta
+y conservación del SDK local/rutas ajenas; las seis guardas ADB siguen verdes.
+La revisión estática no encontró defectos importantes. El arranque y QA reales,
+no la presencia de archivos ni estos mocks, deben confirmar la integración CI.
+Incidente equivalente del action: https://github.com/ReactiveCircus/android-emulator-runner/issues/496.
+
 Tras autorizar el gate/build para un dispositivo de pruebas DEV, sin datos reales:
 guardar un trabajo sintético con aviso a unos minutos, comprobar que permanece al
 aceptar/rechazar/Ahora no, cerrar la aplicación y esperar sin cambiar el reloj.

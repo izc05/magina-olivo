@@ -179,6 +179,7 @@ private val OFFLINE = listOf(
     "Lo que necesita internet" to
         "El tiempo, el radar, el mercado del aceite y la consulta al Catastro. Sin cobertura verás el último dato " +
         "guardado con su fecha, o un aviso si no hay ninguno; nunca un dato inventado.",
-    "Los avisos suenan igual" to
-        "Los avisos de trabajos planificados se programan en el teléfono y suenan aunque no haya cobertura.",
+    "Avisos sin cobertura" to
+        "La programación de los avisos es local. Para recibirlos debes activarlos y permitir las notificaciones; " +
+        "el sonido y la vibración dependen de los ajustes del teléfono.",
 )

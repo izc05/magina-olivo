@@ -78,10 +78,20 @@ jobs:
           sudo udevadm trigger --name-match=kvm || true
           ls -l /dev/kvm || true
 
+      - name: Verify SDK image retry guards
+        run: |
+          bash .github/scripts/test-install-gate3-sdk-image.sh
+          bash .github/scripts/test-gate3-launcher-overlay.sh
+
+      - name: Provision Android image with bounded retries
+        run: bash .github/scripts/install-gate3-sdk-image.sh
+
       - name: Capture Gate 3 Android evidence
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         with:
           api-level: 35
+          # Match the verified local QA image; the AOSP 35 ZIP download is failing.
+          target: google_apis
           arch: x86_64
           profile: pixel_6
           disable-animations: true

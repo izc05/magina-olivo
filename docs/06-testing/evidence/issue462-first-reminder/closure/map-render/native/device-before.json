@@ -1,0 +1,17 @@
+{
+  "Location": "true",
+  "Airplane": "disabled",
+  "Bluetooth": "1",
+  "Permissions": {
+    "ACCESS_COARSE_LOCATION": {
+      "Granted": false,
+      "Flags": "USER_SENSITIVE_WHEN_GRANTED|USER_SENSITIVE_WHEN_DENIED"
+    },
+    "ACCESS_FINE_LOCATION": {
+      "Granted": false,
+      "Flags": "USER_SENSITIVE_WHEN_GRANTED|USER_SENSITIVE_WHEN_DENIED"
+    }
+  },
+  "Mock": "default",
+  "Wifi": "1"
+}

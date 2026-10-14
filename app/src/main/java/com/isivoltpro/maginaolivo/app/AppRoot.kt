@@ -16,7 +16,7 @@ fun AppRoot(
 ) {
     val appearance by compositionRoot.appearanceStore.mode.collectAsStateWithLifecycle()
     MaginaOlivoTheme(mode = appearance) {
-        NotificationPermissionHost {
+        NotificationPermissionHost(compositionRoot.localPersistence, compositionRoot.clock) {
             AppNavigation(
                 compositionRoot = compositionRoot,
                 openActivityId = openActivityId,

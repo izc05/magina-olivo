@@ -2,7 +2,9 @@ param(
  [Parameter(Mandatory=$true)][string]$Serial,
  [string]$AdbPath="$env:LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe",
  [ValidateSet('baseline','grant','deny','later')][string[]]$Modes=@('baseline','grant','deny','later'),
- [string]$OutputDirectory=(Join-Path $env:TEMP ('magina-notifications-'+[guid]::NewGuid().ToString('N')))
+ [string]$OutputDirectory=(Join-Path $env:TEMP ('magina-notifications-'+[guid]::NewGuid().ToString('N'))),
+ [ValidateSet('com.isivoltpro.maginaolivo.ContextNotificationPermissionTest','com.isivoltpro.maginaolivo.FirstReminderPermissionTest#firstSavedReminderRequestsPermissionAndPreservesWork','com.isivoltpro.maginaolivo.FirstReminderPermissionTest#saveAcrossRecreationStillRequestsPermission','com.isivoltpro.maginaolivo.MainReminderPersistenceTest')]
+ [string]$ClassName='com.isivoltpro.maginaolivo.ContextNotificationPermissionTest'
 )
 $ErrorActionPreference='Stop'
 $taskPackage='com.isivoltpro.maginaolivo.dev'
@@ -17,7 +19,7 @@ try {
  foreach($taskMode in $Modes){
   Adb @('shell','pm','revoke',$taskPackage,$taskPermission) | Out-Null
   Adb @('shell','pm','clear-permission-flags',$taskPackage,$taskPermission,'user-set','user-fixed') | Out-Null
-  $taskResult=Adb @('shell','am','instrument','-w','-r','-e','notificationQaMode',$taskMode,'-e','class','com.isivoltpro.maginaolivo.ContextNotificationPermissionTest','com.isivoltpro.maginaolivo.dev.test/androidx.test.runner.AndroidJUnitRunner')
+  $taskResult=Adb @('shell','am','instrument','-w','-r','-e','notificationQaMode',$taskMode,'-e','class',$ClassName,'com.isivoltpro.maginaolivo.dev.test/androidx.test.runner.AndroidJUnitRunner')
   [IO.File]::WriteAllText((Join-Path $OutputDirectory ($taskMode+'.log')),$taskResult)
   if($taskResult -notmatch 'OK \(1 test\)' -or $taskResult -match 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed'){throw ('Native notification mode failed: '+$taskMode)}
   Write-Output ($taskMode+': 1/1')

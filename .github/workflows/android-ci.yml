@@ -210,6 +210,8 @@ jobs:
           GATE3_ALLOW_APP_DATA_RESET: "1"
         with:
           api-level: 35
+          # Match the verified local QA image; the AOSP 35 ZIP download is failing.
+          target: google_apis
           arch: x86_64
           profile: pixel_6
           disable-animations: true

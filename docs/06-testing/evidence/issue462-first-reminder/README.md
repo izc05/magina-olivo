@@ -91,6 +91,15 @@ recuperación acotada, no ausencia de parpadeo. No modifica el mapa productivo.
 (10/10), todos correctos, compilación/JVM y hashes de los binarios empleados.
 Permisos, GPS, red y appop mock se restauraron sin limpiar datos.
 
+En `88a4382e` se repitió el cierre local completo sobre el commit publicado:
+641 JVM, 25 notificaciones/Perfil y 10 mapa/restauración, todo correcto.
+Registros y verificación SHA en el directorio local `%TEMP%/issue751-final-88a4382e`.
+Los controles remotos de emulador fallaron antes de arrancar: SDK Manager recibió
+`Error on ZipFile unknown archive` para `system-images;android-35;default;x86_64`,
+también al reintentar. Los workflows usan ahora Android 35 `google_apis` x86_64
+Pixel 6, igual que el AVD local validado. No cambian API, tests, opt-in de seguridad,
+permisos exigidos, tamaños ni timeout. Requiere nuevos controles verdes del HEAD.
+
 Tras autorizar el gate/build para un dispositivo de pruebas DEV, sin datos reales:
 guardar un trabajo sintético con aviso a unos minutos, comprobar que permanece al
 aceptar/rechazar/Ahora no, cerrar la aplicación y esperar sin cambiar el reloj.

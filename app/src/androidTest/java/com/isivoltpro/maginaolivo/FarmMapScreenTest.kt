@@ -70,11 +70,13 @@ class FarmMapScreenTest {
         composeRule.runOnIdle { assertTrue(linked) }
     }
 
-    /** #361: with nothing on the map yet, the steps show and «Añadir de Catastro» is the main action. */
+    /** #722: instructions stay, direct tap is primary; batch selection remains in the menu. */
     @Test fun anEmptyFarmMapSaysWhatToDoFirst() {
         val modes = mutableListOf<FarmMapMode>()
         composeRule.setContent { MaginaOlivoTheme { screen(FarmMapState(mode = FarmMapMode.VIEW), onMode = { modes += it }) } }
         hasTextUnder("farm-map-guide", "Cómo añadir tus parcelas")
+        composeRule.onNodeWithTag("farm-map-mode-add").assertDoesNotExist()
+        composeRule.onNodeWithTag("farm-map-layer").performClick()
         composeRule.onNodeWithTag("farm-map-mode-add").performClick()
         composeRule.runOnIdle { assertEquals(listOf(FarmMapMode.ADD), modes) }
     }

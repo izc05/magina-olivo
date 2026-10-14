@@ -22,11 +22,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -270,6 +273,178 @@ class FarmMapViewModelTest {
         assertEquals(setOf("23044A00400021"), viewModel.state.value.taken)
         viewModel.addInspected()
         assertEquals(FarmMapMode.VIEW, viewModel.state.value.mode)
+    }
+
+    @Test
+    fun aTapOnThePathBetweenParcelsDoesNotOfferTheFirstNearbyParcel() = runTest(dispatcher) {
+        val parcels = FakeParcels()
+        val viewModel = FarmMapViewModel(farmId, FakeFarms(), parcels,
+            FakeClient(listOf(square("23044A00400021", -3.48, 37.63), square("23044A00400022", -3.46, 37.63))))
+        advanceUntilIdle()
+        viewModel.tapMap(37.635, -3.465)
+        advanceUntilIdle()
+        assertNull(viewModel.state.value.inspected)
+        assertNull(viewModel.state.value.selectedSavedId)
+        assertNotNull(viewModel.state.value.error)
+        viewModel.addInspected()
+        assertTrue(viewModel.state.value.selected.isEmpty())
+        assertTrue(parcels.created.isEmpty())
+    }
+
+    @Test
+    fun overlappingCandidatesRequireAnotherTapInsteadOfChoosingByServiceOrder() = runTest(dispatcher) {
+        val viewModel = FarmMapViewModel(farmId, FakeFarms(), FakeParcels(),
+            FakeClient(listOf(square("23044A00400021", -3.48, 37.63), square("23044A00400022", -3.48, 37.63))))
+        advanceUntilIdle()
+        viewModel.tapMap(37.635, -3.475)
+        advanceUntilIdle()
+        assertNull(viewModel.state.value.inspected)
+        assertNotNull(viewModel.state.value.error)
+    }
+
+    @Test
+    fun aTapExactlyOnAParcelBoundaryDoesNotAssumeOwnership() = runTest(dispatcher) {
+        val viewModel = FarmMapViewModel(farmId, FakeFarms(), FakeParcels(),
+            FakeClient(listOf(square("23044A00400021", -3.48, 37.63))))
+        advanceUntilIdle()
+        viewModel.tapMap(37.635, -3.48)
+        advanceUntilIdle()
+        assertNull(viewModel.state.value.inspected)
+        assertNotNull(viewModel.state.value.error)
+    }
+
+    @Test
+    fun anInteriorHoleIsNotPartOfTheParcel() {
+        val exterior = square("23044A00400021", -3.48, 37.63).polygons.single().single()
+        val hole = square("hole", -3.478, 37.632).polygons.single().single()
+            .map { (x, y) -> -3.478 + (x + 3.478) / 2 to 37.632 + (y - 37.632) / 2 }
+        val withHole = candidate("23044A00400021").copy(polygons = listOf(listOf(exterior, hole)))
+        assertFalse(withHole.covers(-3.475, 37.635))
+        assertTrue(withHole.covers(-3.479, 37.631))
+        assertFalse(withHole.covers(-3.478, 37.635)) // hole boundary
+    }
+
+    @Test
+    fun multipartParcelAcceptsEitherInteriorButNotTheGap() {
+        val west = square("west", -3.48, 37.63).polygons.single()
+        val east = square("east", -3.46, 37.63).polygons.single()
+        val multipart = candidate("23044A00400021").copy(polygons = listOf(west, east))
+        assertTrue(multipart.covers(-3.475, 37.635))
+        assertTrue(multipart.covers(-3.455, 37.635))
+        assertFalse(multipart.covers(-3.465, 37.635))
+    }
+
+    @Test
+    fun bedmarTextSearchUsesTheVerifiedOfflinePlaceWithoutCallingCadastre() = runTest(dispatcher) {
+        val client = FakeClient(emptyList())
+        val viewModel = FarmMapViewModel(farmId, FakeFarms(), FakeParcels(), client)
+        advanceUntilIdle()
+        viewModel.searchPlace("BEDMAR")
+        advanceUntilIdle()
+        assertEquals(37.82283439581455, viewModel.state.value.focus!!.point.latitude, 0.0000001)
+        assertEquals(FarmMapMode.VIEW, viewModel.state.value.mode)
+        assertEquals(0, client.nearCalls)
+        assertNull(viewModel.state.value.placeError)
+    }
+
+    @Test
+    fun remotePlaceSearchWaitsForAnExplicitChoiceAndResolvesItsId() = runTest(dispatcher) {
+        val choices = listOf(MapPlace("a", "poblacion", "Ambiguous · Jaén"), MapPlace("b", "poblacion", "Ambiguous · Córdoba"))
+        val resolved = GeoPoint(37.9, -4.1)
+        var selected = ""
+        val places = object : PlaceSearchClient {
+            override suspend fun candidates(query: String) = choices
+            override suspend fun resolve(place: MapPlace): GeoPoint { selected = place.id; return resolved }
+        }
+        val viewModel = FarmMapViewModel(farmId, FakeFarms(), FakeParcels(), FakeClient(emptyList()), placeClient = places)
+        advanceUntilIdle()
+        viewModel.searchPlace("Ambiguous")
+        advanceUntilIdle()
+        assertNull(viewModel.state.value.focus)
+        assertEquals(choices, viewModel.state.value.placeCandidates)
+        viewModel.selectPlace(choices[1])
+        advanceUntilIdle()
+        assertEquals("b", selected)
+        assertEquals(resolved, viewModel.state.value.focus!!.point)
+    }
+
+    @Test
+    fun unavailablePlaceSearchKeepsTheCurrentMapAndReportsAnError() = runTest(dispatcher) {
+        val places = object : PlaceSearchClient {
+            override suspend fun candidates(query: String): List<MapPlace> = throw java.io.IOException("Offline fixture")
+            override suspend fun resolve(place: MapPlace): GeoPoint = error("Not called")
+        }
+        val viewModel = FarmMapViewModel(farmId, FakeFarms(), FakeParcels(), FakeClient(emptyList()), placeClient = places)
+        advanceUntilIdle()
+        viewModel.goTo(GeoPoint(37.6, -3.4))
+        val before = viewModel.state.value.focus
+        viewModel.searchPlace("Unknown location")
+        advanceUntilIdle()
+        assertEquals(before, viewModel.state.value.focus)
+        assertNotNull(viewModel.state.value.placeError)
+        assertTrue(viewModel.state.value.placeCandidates.isEmpty())
+    }
+
+    private fun delayedPlaceClient() = object : PlaceSearchClient {
+        override suspend fun candidates(query: String) = listOf(MapPlace("remote", "poblacion", "Remote place"))
+        override suspend fun resolve(place: MapPlace): GeoPoint {
+            kotlinx.coroutines.delay(500)
+            return GeoPoint(37.9, -4.1)
+        }
+    }
+
+    @Test fun aPolygonSearchCancelsPendingPlaceResolution() = runTest(dispatcher) {
+        val client = FakeClient(emptyList())
+        val viewModel = FarmMapViewModel(farmId, FakeFarms(), FakeParcels(), client, placeClient = delayedPlaceClient())
+        advanceUntilIdle()
+        viewModel.searchPlace("Remote place")
+        advanceUntilIdle()
+        viewModel.selectPlace(viewModel.state.value.placeCandidates.single())
+        advanceTimeBy(1)
+        viewModel.searchPolygonParcel("Jaén", "Huelma", "4", "21")
+        advanceUntilIdle()
+        assertNull(viewModel.state.value.focus)
+        assertEquals(0, client.nearCalls)
+    }
+
+    @Test fun aManualMapTapCancelsPendingPlaceResolution() = runTest(dispatcher) {
+        val viewModel = FarmMapViewModel(farmId, FakeFarms(), FakeParcels(),
+            FakeClient(listOf(square("23044A00400021", -3.48, 37.63))), placeClient = delayedPlaceClient())
+        advanceUntilIdle()
+        viewModel.searchPlace("Remote place")
+        advanceUntilIdle()
+        viewModel.selectPlace(viewModel.state.value.placeCandidates.single())
+        advanceTimeBy(1)
+        viewModel.tapMap(37.635, -3.475)
+        advanceUntilIdle()
+        assertNull(viewModel.state.value.focus)
+        assertEquals("23044A00400021", viewModel.state.value.inspected?.reference)
+    }
+
+    @Test fun manualCoordinatesCancelPendingPlaceResolution() = runTest(dispatcher) {
+        val viewModel = FarmMapViewModel(farmId, FakeFarms(), FakeParcels(), FakeClient(emptyList()), placeClient = delayedPlaceClient())
+        advanceUntilIdle()
+        viewModel.searchPlace("Remote place")
+        advanceUntilIdle()
+        viewModel.selectPlace(viewModel.state.value.placeCandidates.single())
+        advanceTimeBy(1)
+        viewModel.searchCoordinates("37.636, -3.480")
+        advanceUntilIdle()
+        assertEquals(GeoPoint(37.636, -3.480), viewModel.state.value.focus!!.point)
+    }
+
+    @Test fun unavailableGpsCancelsPendingPlaceResolution() = runTest(dispatcher) {
+        val viewModel = FarmMapViewModel(farmId, FakeFarms(), FakeParcels(), FakeClient(emptyList()), placeClient = delayedPlaceClient())
+        advanceUntilIdle()
+        viewModel.searchPlace("Remote place")
+        advanceUntilIdle()
+        viewModel.selectPlace(viewModel.state.value.placeCandidates.single())
+        advanceTimeBy(1)
+        viewModel.locationUnavailable(LocationProblem.LOCATION_OFF)
+        advanceUntilIdle()
+        assertEquals(LocationProblem.LOCATION_OFF, viewModel.state.value.locationProblem)
+        assertNull(viewModel.state.value.focus)
+        assertFalse(viewModel.state.value.placeSearching)
     }
 
     /** A closed square of about 0,01° of side, so a coordinate is unambiguously inside or outside. */

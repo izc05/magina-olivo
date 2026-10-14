@@ -5,12 +5,16 @@ import com.isivoltpro.maginaolivo.ui.theme.MoSurfaceTokens
 import com.isivoltpro.maginaolivo.ui.theme.MoColors
 
 import android.graphics.Bitmap
+import android.graphics.PointF
 import android.os.Bundle
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,10 +28,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
@@ -55,6 +63,8 @@ import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
+import org.maplibre.android.style.layers.RasterLayer
+import org.maplibre.android.style.layers.PropertyFactory.rasterOpacity
 import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.android.tile.TileOperation
 
@@ -92,10 +102,18 @@ data class MapCameraInsets(
     )
 }
 
-private data class MapFrameKey(
-    val parcels: List<Pair<String, String>>,
-    val padding: MapCameraInsets,
-)
+/** Fixed-size restoration identity: never copy potentially large GeoJSON into Activity state. */
+internal fun savedParcelFrameFingerprint(parcels: List<MapParcel>): String {
+    val digest = java.security.MessageDigest.getInstance("SHA-256")
+    for (parcel in parcels.filter { it.kind == MapParcelKind.SAVED }) {
+        for (value in listOf(parcel.id, parcel.geometry)) {
+            val bytes = value.toByteArray(Charsets.UTF_8)
+            digest.update(java.nio.ByteBuffer.allocate(4).putInt(bytes.size).array())
+            digest.update(bytes)
+        }
+    }
+    return digest.digest().joinToString("") { "%02x".format(it) }
+}
 
 /** A projected parcel label before collision filtering. Pure data so priority can be unit-tested. */
 internal data class MapLabelCandidate(
@@ -144,32 +162,65 @@ fun ParcelMap(
     onTileError: (String) -> Unit = {},
     /** Optional official SIGPAC recintos, a reference only; never imported as owned parcels. */
     sigpacLines: Boolean = false,
+    /** Explicit retry reloads the current sources without touching local geometry or camera. */
+    tileRetryToken: Long = 0L,
+    cadastreOpacity: Float = 0.65f,
+    sigpacOpacity: Float = 0.5f,
 ) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val select by rememberUpdatedState(onSelected)
+    val currentParcels by rememberUpdatedState(parcels)
     val tap by rememberUpdatedState(onTap)
     val ready by rememberUpdatedState(onReady)
     val snapshot by rememberUpdatedState(onMapSnapshot)
     val tileError by rememberUpdatedState(onTileError)
     val density = LocalDensity.current
+    var mapHeightPx by remember { mutableStateOf(0) }
+    var mapWidthPx by remember { mutableStateOf(0) }
+    var footerHeightPx by remember { mutableStateOf(0) }
+    var scaleValue by remember { mutableStateOf<MapScaleValue?>(null) }
+    var scaleAnchor by remember { mutableStateOf<Offset?>(null) }
+    var mapCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var lineCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var cameraMoving by remember { mutableStateOf(false) }
+    fun updateScaleAnchor() {
+        val parent = mapCoordinates ?: return
+        val line = lineCoordinates ?: return
+        if (parent.isAttached && line.isAttached) {
+            scaleAnchor = parent.localPositionOf(line, Offset(line.size.width.toFloat(), line.size.height / 2f))
+        }
+    }
     val frameMarginPx = with(density) { MAP_FRAME_MARGIN.roundToPx() }
+    val footerGapPx = with(density) { 4.dp.roundToPx() }
     val labelHorizontalSpacingPx = with(density) { LABEL_HORIZONTAL_SPACING.roundToPx() }
     val labelVerticalSpacingPx = with(density) { LABEL_VERTICAL_SPACING.roundToPx() }
-    val framePadding = remember(cameraInsets, frameMarginPx) { cameraInsets.withMargin(frameMarginPx) }
+    val framePadding = remember(cameraInsets, frameMarginPx, footerHeightPx, footerGapPx, mapWidthPx, mapHeightPx) {
+        val availableWidth = (mapWidthPx - cameraInsets.leftPx - cameraInsets.rightPx).coerceAtLeast(0)
+        val availableHeight = (mapHeightPx - cameraInsets.topPx - cameraInsets.bottomPx - footerHeightPx - footerGapPx).coerceAtLeast(0)
+        // A short usable viewport must still be frameable: reserve at most one quarter
+        // of each dimension per side, keeping the normal 24 dp margin whenever it fits.
+        val horizontalMargin = frameMarginPx.coerceAtMost(availableWidth / 4)
+        val verticalMargin = frameMarginPx.coerceAtMost(availableHeight / 4)
+        MapCameraInsets(
+            leftPx = cameraInsets.leftPx + horizontalMargin,
+            topPx = cameraInsets.topPx + verticalMargin,
+            rightPx = cameraInsets.rightPx + horizontalMargin,
+            bottomPx = cameraInsets.bottomPx + footerHeightPx + footerGapPx + verticalMargin,
+        )
+    }
     val effectiveBase = base ?: if (imagery) MapBase.AERIAL else MapBase.NONE
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
     var loadedStyle by remember { mutableStateOf<Style?>(null) }
     // Frame the farmer's own parcels when they change, not on every selection tap.
-    var framedKey by remember { mutableStateOf<MapFrameKey?>(null) }
+    var framedKey by rememberSaveable { mutableStateOf<String?>(null) }
+    val savedFrameKey = remember(parcels) { savedParcelFrameFingerprint(parcels) }
+    var savedCamera by rememberSaveable { mutableStateOf<CameraPosition?>(null) }
     // Screen positions of the labels, refreshed when the camera stops (never while it moves).
     var labelSpots by remember { mutableStateOf<List<Pair<String, IntOffset>>>(emptyList()) }
     var cameraTick by remember { mutableStateOf(0) }
-    var mapHeightPx by remember { mutableStateOf(0) }
-    var mapWidthPx by remember { mutableStateOf(0) }
-    var appliedFocusToken by remember(map) { mutableStateOf<Long?>(null) }
-    var controlsHeightPx by remember { mutableStateOf(0) }
+    var appliedFocusToken by rememberSaveable { mutableStateOf<Long?>(null) }
     val view = remember {
         MapLibre.getInstance(context)
         MapView(context).apply { onCreate(Bundle()) }
@@ -196,14 +247,17 @@ fun ParcelMap(
         synchronize()
         view.getMapAsync { loaded ->
             map = loaded
-            loaded.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(37.73, -3.45), 12.0))
+            loaded.moveCamera(savedCamera?.let(CameraUpdateFactory::newCameraPosition)
+                ?: CameraUpdateFactory.newLatLngZoom(LatLng(37.73, -3.45), 12.0))
             loaded.addOnMapClickListener { point ->
-                val hit = loaded.queryRenderedFeatures(loaded.projection.toScreenLocation(point), "parcels-fill").firstOrNull()
-                if (hit != null) select(hit.getStringProperty("id")) else tap?.invoke(point.latitude, point.longitude)
+                val hits = loaded.queryRenderedFeatures(loaded.projection.toScreenLocation(point), "parcels-fill")
+                    .map { it.getStringProperty("id") }
+                val selected = uniqueParcelAtPoint(currentParcels, hits, point.longitude, point.latitude)
+                if (selected != null) select(selected) else tap?.invoke(point.latitude, point.longitude)
                 true
             }
-            loaded.addOnCameraMoveStartedListener { labelSpots = emptyList() }
-            loaded.addOnCameraIdleListener { cameraTick++ }
+            loaded.addOnCameraMoveStartedListener { labelSpots = emptyList(); cameraMoving = true }
+            loaded.addOnCameraIdleListener { savedCamera = loaded.cameraPosition; cameraMoving = false; cameraTick++ }
         }
         onDispose {
             active = false
@@ -215,9 +269,14 @@ fun ParcelMap(
         }
     }
     val showsMyLocation = myLocation != null
-    LaunchedEffect(map, effectiveBase, cadastreLines, sigpacLines, overlayTiles, showsMyLocation, dark) {
+    LaunchedEffect(map, effectiveBase, cadastreLines, sigpacLines, overlayTiles, showsMyLocation, dark, tileRetryToken) {
         loadedStyle = null
-        map?.setStyle(Style.Builder().fromJson(parcelStyle(effectiveBase, cadastreLines, overlayTiles, showsMyLocation, dark, sigpacLines))) { loadedStyle = it }
+        map?.setStyle(Style.Builder().fromJson(parcelStyle(effectiveBase, cadastreLines, overlayTiles, showsMyLocation, dark, sigpacLines, tileRetryToken, cadastreOpacity, sigpacOpacity))) { loadedStyle = it }
+    }
+    LaunchedEffect(loadedStyle, cadastreOpacity, sigpacOpacity) {
+        // Dragging intensity changes paint only; saved geometry, camera and source caches stay live.
+        loadedStyle?.getLayerAs<RasterLayer>("cadastre")?.setProperties(rasterOpacity(cadastreOpacity))
+        loadedStyle?.getLayerAs<RasterLayer>("sigpac")?.setProperties(rasterOpacity(sigpacOpacity))
     }
     LaunchedEffect(loadedStyle, myLocation) {
         val style = loadedStyle ?: return@LaunchedEffect
@@ -226,7 +285,7 @@ fun ParcelMap(
     }
     val selection = remember(selectedId, selectedIds) { selectedIds + listOfNotNull(selectedId) }
     val data = remember(parcels, selection) { mapFeatureCollection(parcels, selection) }
-    DisposableEffect(map, loadedStyle, data, parcels.map { it.id to it.geometry }, framePadding, snapshot != null) {
+    DisposableEffect(map, loadedStyle, data, parcels.map { it.id to it.geometry }, framePadding, mapWidthPx, mapHeightPx, snapshot != null) {
         val current = map
         val style = loadedStyle
         if (style == null || current == null) return@DisposableEffect onDispose {}
@@ -248,8 +307,10 @@ fun ParcelMap(
         }
         style.getSourceAs<GeoJsonSource>("saved-parcels")?.setGeoJson(data)
         val saved = parcels.filter { it.kind == MapParcelKind.SAVED }
-        val savedKey = MapFrameKey(saved.map { it.id to it.geometry }, framePadding)
-        if (framedKey != savedKey && focus == null) {
+        val savedKey = savedFrameKey
+        if (framedKey != savedKey && focus == null && footerHeightPx > 0 &&
+            mapWidthPx > framePadding.leftPx + framePadding.rightPx &&
+            mapHeightPx > framePadding.topPx + framePadding.bottomPx) {
             fitParcels(current, saved, framePadding)
             framedKey = savedKey
         }
@@ -260,20 +321,20 @@ fun ParcelMap(
     }
     LaunchedEffect(map, focus, framePadding, mapWidthPx, mapHeightPx) {
         val current = map ?: return@LaunchedEffect
-        val requested = focus ?: return@LaunchedEffect
+        val requested = focus
         if (mapWidthPx <= framePadding.leftPx + framePadding.rightPx ||
             mapHeightPx <= framePadding.topPx + framePadding.bottomPx) return@LaunchedEffect
         // Insets change with search/IME/panels. Apply them absolutely without replaying an
-        // already consumed focus over a later user pan, zoom or explicit parcel framing.
+        // already consumed focus or auto-framing parcels over a later user pan/zoom.
         val camera = CameraPosition.Builder(current.cameraPosition).padding(
             framePadding.leftPx.toDouble(), framePadding.topPx.toDouble(),
             framePadding.rightPx.toDouble(), framePadding.bottomPx.toDouble(),
         )
-        if (appliedFocusToken != requested.token) {
+        if (requested != null && appliedFocusToken != requested.token) {
             camera.target(LatLng(requested.point.latitude, requested.point.longitude)).zoom(requested.zoom)
         }
         current.moveCamera(CameraUpdateFactory.newCameraPosition(camera.build()))
-        appliedFocusToken = requested.token
+        if (requested != null) appliedFocusToken = requested.token
     }
     val labelled = remember(parcels) { parcels.mapNotNull { p -> p.label?.let { label -> labelPoint(p.geometry)?.let { Triple(p.id, label, it) } } } }
     LaunchedEffect(
@@ -315,30 +376,56 @@ fun ParcelMap(
             ).map { it.label to IntOffset(it.x, it.y) }
         }
     }
-    Box(modifier.onSizeChanged { mapWidthPx = it.width; mapHeightPx = it.height }) {
+    BoxWithConstraints(modifier.onSizeChanged { mapWidthPx = it.width; mapHeightPx = it.height }
+        .onGloballyPositioned { mapCoordinates = it; updateScaleAnchor() }) {
+        val showsScale = controls && maxWidth - with(density) { (cameraInsets.leftPx + cameraInsets.rightPx).toDp() } >= 240.dp
+        LaunchedEffect(map, cameraTick, scaleAnchor, showsScale, density.density) {
+            val current = map
+            val anchor = scaleAnchor
+            scaleValue = if (showsScale && current != null && anchor != null) {
+                val projection = current.projection
+                val right = projection.fromScreenLocation(PointF(anchor.x, anchor.y))
+                projectedMapScale(with(density) { 96.dp.toPx() }) { width ->
+                    right.distanceTo(projection.fromScreenLocation(PointF(anchor.x - width, anchor.y)))
+                }
+            } else null
+        }
         AndroidView(factory = { view }, modifier = Modifier.fillMaxSize().testTag("parcel-map-view"))
         labelSpots.forEach { (label, spot) ->
             ParcelNumber(label, Modifier.offset { IntOffset(spot.x - with(density) { 14.dp.roundToPx() }, spot.y - with(density) { 11.dp.roundToPx() }) })
         }
         val usableTop = cameraInsets.topPx.coerceAtMost(mapHeightPx)
-        val usableBottom = (mapHeightPx - cameraInsets.bottomPx).coerceAtLeast(usableTop)
-        // Measured panels protect touch controls as well as framing. Restore controls after
-        // the keyboard closes if it temporarily leaves no usable map area.
-        if (controls && (controlsHeightPx == 0 || usableBottom - usableTop >= controlsHeightPx)) {
-            Column(
-                Modifier.align(Alignment.TopEnd)
-                    .offset { IntOffset(0, usableTop + ((usableBottom - usableTop - controlsHeightPx) / 2).coerceAtLeast(0)) }
-                    .onSizeChanged { controlsHeightPx = it.height }
-                    .padding(end = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                MapButton("+", "Acercar") { map?.animateCamera(CameraUpdateFactory.zoomIn()) }
-                MapButton("−", "Alejar") { map?.animateCamera(CameraUpdateFactory.zoomOut()) }
-                MapButton("⤢", "Encuadrar mis parcelas") {
-                    map?.let { fitParcels(it, parcels.filter { p -> p.kind == MapParcelKind.SAVED }.ifEmpty { parcels }, framePadding) }
+        val usableBottom = (mapHeightPx - cameraInsets.bottomPx - footerHeightPx - footerGapPx).coerceAtLeast(usableTop)
+        // Keep the existing actions reachable when landscape leaves room for one row,
+        // while measured panels and credits still protect their touch area.
+        val availableControlHeight = usableBottom - usableTop
+        val verticalControlHeight = with(density) { (48.dp * 3 + 6.dp * 2).roundToPx() }
+        val minimumControlHeight = with(density) { 48.dp.roundToPx() }
+        val compactControls = availableControlHeight < verticalControlHeight
+        var controlsHeightPx by remember(compactControls) { mutableStateOf(0) }
+        val controlModifier = Modifier.align(Alignment.TopEnd)
+            .offset { IntOffset(-cameraInsets.rightPx, usableTop + ((availableControlHeight - controlsHeightPx) / 2).coerceAtLeast(0)) }
+            .onSizeChanged { controlsHeightPx = it.height }
+            .padding(end = 8.dp)
+        val enoughControlWidth = maxWidth - with(density) { (cameraInsets.leftPx + cameraInsets.rightPx).toDp() } >= 164.dp
+        if (controls && availableControlHeight >= minimumControlHeight && (!compactControls || enoughControlWidth)) {
+            if (compactControls) {
+                Row(controlModifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    MapControlButtons(map, parcels, framePadding)
+                }
+            } else {
+                Column(controlModifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    MapControlButtons(map, parcels, framePadding)
                 }
             }
         }
+        Row(Modifier.align(Alignment.BottomStart).fillMaxWidth()
+            .padding(start = with(density) { cameraInsets.leftPx.toDp() } + 4.dp,
+                end = with(density) { cameraInsets.rightPx.toDp() } + 4.dp,
+                bottom = with(density) { cameraInsets.bottomPx.toDp() } + 4.dp)
+            .onSizeChanged { footerHeightPx = it.height },
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         MapAttribution(
             when (effectiveBase) {
                 MapBase.AERIAL -> "© IGN · PNOA" + if (cadastreLines) " · © DG Catastro" else ""
@@ -346,10 +433,14 @@ fun ParcelMap(
                 MapBase.NONE -> "Límites guardados en el teléfono"
             } + (if (sigpacLines && effectiveBase != MapBase.NONE) " · SIGPAC · FEGA/MAPA" else "")
                 + (if (effectiveBase != MapBase.NONE && overlayTiles != null) overlayAttribution?.let { " · $it" } ?: "" else ""),
-            modifier = Modifier.align(Alignment.BottomStart)
-                .padding(start = 4.dp, bottom = with(density) { cameraInsets.bottomPx.toDp() } + 4.dp)
+            modifier = Modifier.weight(1f)
                 .semantics { contentDescription = "Atribución del mapa" },
         )
+        if (showsScale) MapScaleBar(scaleValue, visible = !cameraMoving && usableBottom > usableTop) {
+            lineCoordinates = it
+            updateScaleAnchor()
+        }
+        }
     }
 }
 
@@ -383,6 +474,14 @@ private fun ParcelNumber(label: String, modifier: Modifier) {
 }
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun MapControlButtons(map: MapLibreMap?, parcels: List<MapParcel>, framePadding: MapCameraInsets) {
+    MapButton("+", "Acercar") { map?.animateCamera(CameraUpdateFactory.zoomIn()) }
+    MapButton("−", "Alejar") { map?.animateCamera(CameraUpdateFactory.zoomOut()) }
+    MapButton("⤢", "Encuadrar mis parcelas") {
+        map?.let { fitParcels(it, parcels.filter { p -> p.kind == MapParcelKind.SAVED }.ifEmpty { parcels }, framePadding) }
+    }
+}
 @Composable
 private fun MapButton(symbol: String, description: String, onClick: () -> Unit) {
     Surface(
@@ -511,24 +610,29 @@ internal fun parcelStyle(imagery: Boolean): String = parcelStyle(if (imagery) Ma
  * to twice its size: roads, olive rows and boundaries looked blurred on the phone. Catastro's
  * WMS is asked for real 512 px images and stays at 512.
  */
-internal fun parcelStyle(base: MapBase, cadastreLines: Boolean, overlayTiles: String? = null, myLocation: Boolean = false, dark: Boolean = false, sigpacLines: Boolean = false): String {
-    // Theme our own canvas only. Raster source pixels and raster paints stay unchanged.
+internal fun parcelStyle(base: MapBase, cadastreLines: Boolean, overlayTiles: String? = null, myLocation: Boolean = false, dark: Boolean = false, sigpacLines: Boolean = false, tileRetryToken: Long = 0L, cadastreOpacity: Float = 0.65f, sigpacOpacity: Float = 0.5f): String {
+    require(cadastreOpacity.isFinite() && cadastreOpacity in 0f..1f && sigpacOpacity.isFinite() && sigpacOpacity in 0f..1f)
+    // Only an explicit retry bypasses a failed native resource/cache entry. Ordinary URLs and
+    // the offline cache remain intact; these official KVP services accept additional parameters.
+    fun officialTiles(template: String) = if (tileRetryToken == 0L) template else "$template&magina_retry=$tileRetryToken"
+    // Theme our own canvas only; layer opacity mixes original official pixels with the photo.
     val background = if (dark) "#171914" else "#F3F1E6"
     val savedLine = if (dark && base == MapBase.NONE) "#B6D39E" else "#25371C"
     val candidateLine = if (dark && base == MapBase.NONE) "#E2CC90" else "#8A6A1F"
+    val selectedLine = if (dark && base == MapBase.NONE) "#B6D39E" else "#567342"
     val sources = buildList {
         add(""""saved-parcels":{"type":"geojson","data":{"type":"FeatureCollection","features":[]}}""")
         if (myLocation) add(""""my-location":{"type":"geojson","data":{"type":"FeatureCollection","features":[]}}""")
         when (base) {
-            MapBase.AERIAL -> add(""""base":{"type":"raster","tileSize":256,"maxzoom":19,"tiles":["$PNOA"]}""")
-            MapBase.MAP -> add(""""base":{"type":"raster","tileSize":256,"maxzoom":17,"tiles":["$IGN_BASE"]}""")
+            MapBase.AERIAL -> add(""""base":{"type":"raster","tileSize":256,"maxzoom":19,"tiles":["${officialTiles(PNOA)}"]}""")
+            MapBase.MAP -> add(""""base":{"type":"raster","tileSize":256,"maxzoom":17,"tiles":["${officialTiles(IGN_BASE)}"]}""")
             MapBase.NONE -> Unit
         }
         if (cadastreLines && base != MapBase.NONE) {
-            add(""""cadastre":{"type":"raster","tileSize":512,"tiles":["$CADASTRE_WMS"]}""")
+            add(""""cadastre":{"type":"raster","tileSize":512,"tiles":["${officialTiles(CADASTRE_WMS)}"]}""")
         }
         if (sigpacLines && base != MapBase.NONE) {
-            add(""""sigpac":{"type":"raster","tileSize":512,"tiles":["$SIGPAC_WMS"]}""")
+            add(""""sigpac":{"type":"raster","tileSize":512,"tiles":["${officialTiles(SIGPAC_WMS)}"]}""")
         }
         // Radar pictures are published up to a low zoom; MapLibre enlarges them beyond it. #360: a
         // 512 px picture is declared at 512, so it is drawn at its own resolution, not stretched.
@@ -537,11 +641,12 @@ internal fun parcelStyle(base: MapBase, cadastreLines: Boolean, overlayTiles: St
     val layers = buildList {
         add("""{"id":"background","type":"background","paint":{"background-color":"$background"}}""")
         if (base != MapBase.NONE) add("""{"id":"base","type":"raster","source":"base"}""")
-        if (cadastreLines && base != MapBase.NONE) add("""{"id":"cadastre","type":"raster","source":"cadastre","minzoom":15}""")
-        if (sigpacLines && base != MapBase.NONE) add("""{"id":"sigpac","type":"raster","source":"sigpac","minzoom":15}""")
+        if (cadastreLines && base != MapBase.NONE) add("""{"id":"cadastre","type":"raster","source":"cadastre","minzoom":15,"paint":{"raster-opacity":$cadastreOpacity}}""")
+        if (sigpacLines && base != MapBase.NONE) add("""{"id":"sigpac","type":"raster","source":"sigpac","minzoom":15,"paint":{"raster-opacity":$sigpacOpacity}}""")
         if (overlayTiles != null && base != MapBase.NONE) add("""{"id":"overlay","type":"raster","source":"overlay","paint":{"raster-opacity":0.7}}""")
-        add("""{"id":"parcels-fill","type":"fill","source":"saved-parcels","paint":{"fill-color":["case",["get","selected"],"#CDA449",["==",["get","kind"],"CANDIDATE"],"#F4EAD0","#567342"],"fill-opacity":["case",["get","selected"],0.55,["==",["get","kind"],"CANDIDATE"],0.30,0.38]}}""")
-        add("""{"id":"parcels-line","type":"line","source":"saved-parcels","paint":{"line-color":["case",["==",["get","kind"],"CANDIDATE"],"$candidateLine","$savedLine"],"line-width":["case",["get","selected"],4,["==",["get","kind"],"CANDIDATE"],2,3]}}""")
+        add("""{"id":"parcels-fill","type":"fill","source":"saved-parcels","paint":{"fill-color":["case",["get","selected"],"#567342",["==",["get","kind"],"CANDIDATE"],"#F4EAD0","#567342"],"fill-opacity":["case",["get","selected"],0.15,["==",["get","kind"],"CANDIDATE"],0.30,0.38]}}""")
+        add("""{"id":"parcels-selection-halo","type":"line","source":"saved-parcels","filter":["==",["get","selected"],true],"paint":{"line-color":"#F3F1E6","line-width":6}}""")
+        add("""{"id":"parcels-line","type":"line","source":"saved-parcels","paint":{"line-color":["case",["get","selected"],"$selectedLine",["==",["get","kind"],"CANDIDATE"],"$candidateLine","$savedLine"],"line-width":["case",["get","selected"],4,["==",["get","kind"],"CANDIDATE"],2,3]}}""")
         // #361: «Mi ubicación» — a blue dot with a soft halo, above everything else.
         if (myLocation) {
             add("""{"id":"my-location-halo","type":"circle","source":"my-location","paint":{"circle-radius":18,"circle-color":"#1D6FD8","circle-opacity":0.18}}""")

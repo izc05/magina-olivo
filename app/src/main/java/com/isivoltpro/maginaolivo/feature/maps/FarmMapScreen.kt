@@ -9,6 +9,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.background
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,6 +21,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -28,6 +31,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -42,9 +46,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -63,6 +70,7 @@ import com.isivoltpro.maginaolivo.ui.theme.MoSpacing
 import java.text.NumberFormat
 import java.util.Locale
 import java.util.UUID
+import kotlin.math.roundToInt
 
 /**
  * Phase 18 — the farm's parcels on a map, and the place to add them: tap several Catastro
@@ -109,9 +117,12 @@ fun FarmMapRoute(
         state = state,
         onMode = viewModel::setMode,
         onSearchCoordinates = viewModel::searchCoordinates,
-        onMyLocation = { if (hasLocationPermission(context)) locate() else permission.launch(LOCATION_PERMISSIONS) },
+        onMyLocation = {
+            viewModel.cancelPlaceSearch()
+            if (hasLocationPermission(context)) locate() else permission.launch(LOCATION_PERMISSIONS)
+        },
         onSearchPolygonParcel = viewModel::searchPolygonParcel,
-        onSearchByReference = onSearchByReference,
+        onSearchByReference = { viewModel.cancelPlaceSearch(); onSearchByReference() },
         onTapMap = viewModel::tapMap,
         onTapParcel = viewModel::tapParcel,
         onImport = viewModel::importSelected,
@@ -141,6 +152,9 @@ fun FarmMapRoute(
             }
         },
         onDismissLocationProblem = viewModel::dismissLocationProblem,
+        onSearchPlace = viewModel::searchPlace,
+        onSelectPlace = viewModel::selectPlace,
+        onPlaceQueryChanged = viewModel::cancelPlaceSearch,
     )
 }
 
@@ -163,8 +177,14 @@ fun FarmMapScreen(
     onDismissLocationProblem: () -> Unit = {},
     onAddInspected: () -> Unit = {},
     onDismissInspected: () -> Unit = {},
+    onSearchPlace: (String) -> Unit = {},
+    onSelectPlace: (MapPlace) -> Unit = {},
+    onPlaceQueryChanged: () -> Unit = {},
 ) {
     var query by rememberSaveable { mutableStateOf("") }
+    var placeQuery by rememberSaveable { mutableStateOf("") }
+    val keyboard = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
     // #711 B3 (owner's order): the map opens on the PNOA photo with the official boundaries
     // already drawn, so the parcels are there to be seen instead of hunted for one by one. Each
     // layer stays one tap away in the layer menu, and a failing source only shows its notice:
@@ -172,9 +192,19 @@ fun FarmMapScreen(
     var base by rememberSaveable { mutableStateOf(MapBase.AERIAL) }
     var cadastreLines by rememberSaveable { mutableStateOf(true) }
     var sigpacLines by rememberSaveable { mutableStateOf(true) }
+    var cadastreOpacity by rememberSaveable { mutableStateOf(0.65f) }
+    var sigpacOpacity by rememberSaveable { mutableStateOf(0.5f) }
     var tileError by remember { mutableStateOf<String?>(null) }
+    var tileRetryToken by remember { mutableStateOf(0L) }
     LaunchedEffect(base, cadastreLines, sigpacLines) { tileError = null }
     var searchOpen by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(state.focus?.token) {
+        if (state.focus != null) {
+            searchOpen = false
+            focusManager.clearFocus(force = true)
+            keyboard?.hide()
+        }
+    }
     var layerMenu by remember { mutableStateOf(false) }
     var polygonSheet by rememberSaveable { mutableStateOf(false) }
     var reviewSheet by rememberSaveable { mutableStateOf(false) }
@@ -193,7 +223,9 @@ fun FarmMapScreen(
     }
     val withBoundary = state.parcels.count { it.geometryGeoJson != null }
 
-    Box(Modifier.fillMaxSize().background(MoSurfaceTokens.appBackground).imePadding().testTag("farm-map-root")) {
+    BoxWithConstraints(Modifier.fillMaxSize().background(MoSurfaceTokens.appBackground).imePadding().testTag("farm-map-root")) {
+        val searchPanelMaxHeight = maxHeight * 0.6f
+        val compactHeader = maxWidth >= 600.dp && maxHeight < 400.dp
         if (showMap) {
             ParcelMap(
                 parcels = mapped,
@@ -201,6 +233,9 @@ fun FarmMapScreen(
                 base = base,
                 cadastreLines = cadastreLines,
                 sigpacLines = sigpacLines,
+                tileRetryToken = tileRetryToken,
+                cadastreOpacity = cadastreOpacity,
+                sigpacOpacity = sigpacOpacity,
                 selectedId = state.selectedSavedId?.toString(),
                 selectedIds = state.selected + setOfNotNull(state.inspected?.reference),
                 onSelected = onTapParcel,
@@ -223,19 +258,20 @@ fun FarmMapScreen(
         Surface(
             modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()
                 .onSizeChanged { topOverlayHeightPx = it.height }
-                .padding(8.dp),
+                .padding(horizontal = 8.dp, vertical = if (compactHeader) 4.dp else 8.dp).testTag("farm-map-header"),
             shape = MoShape.card,
             color = MoSurfaceTokens.cardSurface.copy(alpha = 0.97f),
             shadowElevation = 3.dp,
         ) {
-            Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(Modifier.heightIn(max = searchPanelMaxHeight).verticalScroll(rememberScrollState())
+                .padding(horizontal = 12.dp, vertical = if (compactHeader) 2.dp else 8.dp), verticalArrangement = Arrangement.spacedBy(if (compactHeader) 2.dp else 4.dp)) {
                 Text(
                     if (state.mode == FarmMapMode.LOCATE) "Ubicar «${state.locateParcel?.displayName.orEmpty()}»" else state.farm?.name ?: "Mapa de la finca",
                     style = MaterialTheme.typography.titleMedium,
                     color = MoColors.current.primaryText,
                     maxLines = 1,
                 )
-                Text(
+                if (state.mode != FarmMapMode.VIEW || searchOpen) Text(
                     when (state.mode) {
                         FarmMapMode.LOCATE -> "Toca donde está tu parcela y elige su número."
                         FarmMapMode.ADD -> "Toca donde están tus parcelas y marca sus números."
@@ -250,21 +286,22 @@ fun FarmMapScreen(
                     maxLines = 2,
                     modifier = Modifier.testTag("farm-map-hint"),
                 )
-                // #361: one clear main action. Viewing, «Añadir de Catastro» leads; adding, the way
-                // back to «Mis parcelas» is a quiet secondary link, not a competing button.
+                // #722: direct inspection is primary; batch selection stays a quiet alternative.
                 when (state.mode) {
-                    FarmMapMode.VIEW -> MoPrimaryButton(
-                        "Añadir de Catastro",
-                        { onMode(FarmMapMode.ADD) },
-                        Modifier.fillMaxWidth().testTag("farm-map-mode-add"),
-                    )
-                    FarmMapMode.ADD -> TextButton(onClick = { onMode(FarmMapMode.VIEW) }, modifier = Modifier.testTag("farm-map-mode-view")) {
+                    FarmMapMode.VIEW -> Unit
+                    FarmMapMode.ADD -> if (!compactHeader) TextButton(onClick = { onMode(FarmMapMode.VIEW) }, modifier = Modifier.testTag("farm-map-mode-view")) {
                         Text("← Volver a mis parcelas")
                     }
                     FarmMapMode.LOCATE -> Unit
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = { searchOpen = !searchOpen }, modifier = Modifier.testTag("farm-map-search-toggle")
+                    if (compactHeader && state.mode == FarmMapMode.ADD) TextButton(
+                        onClick = { onMode(FarmMapMode.VIEW) }, modifier = Modifier.testTag("farm-map-mode-view"),
+                    ) { Text("← Volver a mis parcelas") }
+                    TextButton(onClick = {
+                        searchOpen = !searchOpen
+                        if (!searchOpen) { focusManager.clearFocus(force = true); keyboard?.hide(); onPlaceQueryChanged() }
+                    }, modifier = Modifier.testTag("farm-map-search-toggle")
                         .semantics { contentDescription = if (searchOpen) "Cerrar búsqueda" else "Abrir búsqueda" }) {
                         Text(if (searchOpen) "Cerrar" else "Buscar")
                     }
@@ -275,6 +312,11 @@ fun FarmMapScreen(
                             Text(if (base == MapBase.NONE) "Parcelas" else base.label)
                         }
                         DropdownMenu(expanded = layerMenu, onDismissRequest = { layerMenu = false }) {
+                            if (state.mode == FarmMapMode.VIEW) DropdownMenuItem(
+                                text = { Text("Seleccionar varias parcelas") },
+                                onClick = { layerMenu = false; onMode(FarmMapMode.ADD) },
+                                modifier = Modifier.testTag("farm-map-mode-add"),
+                            )
                             MapBase.entries.forEach { option ->
                                 DropdownMenuItem(
                                     modifier = Modifier.testTag("farm-map-base-${option.name}"),
@@ -293,15 +335,54 @@ fun FarmMapScreen(
                                 enabled = base != MapBase.NONE,
                                 modifier = Modifier.testTag("farm-map-sigpac"),
                             )
+                            MapLayerIntensity("Intensidad de Catastro", cadastreOpacity,
+                                enabled = cadastreLines && base != MapBase.NONE,
+                                tag = "farm-map-cadastre-intensity", onChange = { cadastreOpacity = it })
+                            MapLayerIntensity("Intensidad de SIGPAC", sigpacOpacity,
+                                enabled = sigpacLines && base != MapBase.NONE,
+                                tag = "farm-map-sigpac-intensity", onChange = { sigpacOpacity = it })
                         }
                     }
+                    if (compactHeader && base == MapBase.NONE && state.mode == FarmMapMode.VIEW) TextButton(
+                        onClick = onSearchByReference, modifier = Modifier.testTag("farm-map-reference-fallback"),
+                    ) { Text("Añadir por referencia") }
                 }
+                if (!compactHeader && base == MapBase.NONE && state.mode == FarmMapMode.VIEW) TextButton(
+                    onClick = onSearchByReference, modifier = Modifier.testTag("farm-map-reference-fallback"),
+                ) { Text("Añadir por referencia") }
                 if (searchOpen) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        MoTextField(value = placeQuery, onValueChange = { placeQuery = it; onPlaceQueryChanged() },
+                            label = "Pueblo o paraje", modifier = Modifier.weight(1f).testTag("farm-map-place-query"),
+                            isError = state.placeError != null,
+                        )
+                        TextButton(onClick = { onSearchPlace(placeQuery) }, enabled = !state.placeSearching,
+                            modifier = Modifier.testTag("farm-map-place-go")) { Text("Ir") }
+                    }
+                    Row {
+                        localMapPlaces(placeQuery).forEach { place ->
+                            TextButton(onClick = { onSelectPlace(place) }, modifier = Modifier.testTag("farm-map-place-${place.id}")) {
+                                Text(place.label.substringBefore(" · "))
+                            }
+                        }
+                    }
+                    if (state.placeSearching) Text("Buscando lugar…", style = MaterialTheme.typography.bodySmall)
+                    state.placeError?.let {
+                        Text(it, color = MoColors.current.errorText, style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.testTag("farm-map-place-error"))
+                    }
+                    state.placeCandidates.forEach { place ->
+                        TextButton(onClick = { onSelectPlace(place) }, modifier = Modifier.testTag("farm-map-place-${place.id}")) {
+                            Text(place.label, maxLines = 2)
+                        }
+                    }
+                    Text("CartoCiudad · IGN", style = MaterialTheme.typography.labelSmall, color = MoColors.current.secondaryText)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         MoTextField(
                             value = query,
                             onValueChange = { query = it },
-                            label = "Coordenadas (37.636, -3.480)",
+                            label = "Coordenadas",
+                            supportingText = "Ejemplo: 37.636, -3.480",
                             modifier = Modifier.weight(1f).testTag("farm-map-coordinates"),
                         )
                         TextButton(onClick = { onSearchCoordinates(query) }, modifier = Modifier.testTag("farm-map-go")) { Text("Ir") }
@@ -315,7 +396,7 @@ fun FarmMapScreen(
         Column(
             Modifier.align(Alignment.BottomCenter).fillMaxWidth()
                 .onSizeChanged { bottomOverlayHeightPx = it.height }
-                .padding(8.dp),
+                .padding(horizontal = 8.dp, vertical = if (compactHeader) 4.dp else 8.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             if (state.searching) Notice("Consultando Catastro…", MoColors.current.secondaryText, progress = true)
@@ -324,10 +405,11 @@ fun FarmMapScreen(
                     when {
                         source == "sigpac" -> "Algunos recintos SIGPAC no se han podido cargar."
                         source == "cadastre" -> "Algunos límites de Catastro no se han podido cargar."
-                        base == MapBase.AERIAL -> "Parte de la foto aérea no se ha podido cargar."
+                        base == MapBase.AERIAL -> "Algunas imágenes aéreas no están disponibles."
                         else -> "Parte del mapa no se ha podido cargar."
                     },
                     onOffline = { tileError = null; base = MapBase.NONE },
+                    onRetry = { tileError = null; tileRetryToken = System.nanoTime() },
                 )
             }
             state.locationProblem?.let { problem ->
@@ -352,6 +434,7 @@ fun FarmMapScreen(
             BottomPanel(
                 state, onOpenParcel, onSearchByReference, onReview = { reviewSheet = true }, onLink = onLink,
                 onAddInspected = onAddInspected, onDismissInspected = onDismissInspected,
+                compact = compactHeader,
             )
         }
     }
@@ -381,17 +464,36 @@ fun FarmMapScreen(
     }
 }
 
+/** #722: official reference layers can be read independently over the photo. */
+@Composable
+private fun MapLayerIntensity(label: String, value: Float, enabled: Boolean, tag: String, onChange: (Float) -> Unit) {
+    Column(Modifier.width(240.dp).padding(horizontal = 16.dp)) {
+        Text("$label · ${(value * 100).roundToInt()} %", style = MaterialTheme.typography.labelMedium,
+            color = MoColors.current.secondaryText)
+        Slider(value = value, onValueChange = onChange, enabled = enabled, valueRange = 0.3f..1f,
+            modifier = Modifier.fillMaxWidth().testTag(tag).semantics {
+                contentDescription = label
+                stateDescription = "${(value * 100).roundToInt()} % de intensidad"
+            })
+    }
+}
+
 /** #711 B3: a remote raster failure must not prevent use of the local parcels. */
 @Composable
-private fun MapTileProblemNotice(message: String, onOffline: () -> Unit) {
+private fun MapTileProblemNotice(message: String, onOffline: () -> Unit, onRetry: () -> Unit) {
     Surface(
         Modifier.fillMaxWidth().testTag("farm-map-tile-error"),
         shape = MoShape.card, color = MoSurfaceTokens.cardSurface.copy(alpha = 0.97f), shadowElevation = 2.dp,
     ) {
         Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(message, color = MoColors.current.errorText, style = MaterialTheme.typography.bodyMedium)
-            TextButton(onClick = onOffline, modifier = Modifier.testTag("farm-map-offline-fallback")) {
-                Text("Solo parcelas")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = onRetry, modifier = Modifier.testTag("farm-map-tile-retry")) {
+                    Text("Reintentar")
+                }
+                TextButton(onClick = onOffline, modifier = Modifier.testTag("farm-map-offline-fallback")) {
+                    Text("Solo parcelas")
+                }
             }
         }
     }
@@ -425,9 +527,9 @@ private fun FarmMapGuide(modifier: Modifier = Modifier) {
 }
 
 internal val FARM_MAP_STEPS = listOf(
-    "Pulsa «Añadir de Catastro» o busca por coordenadas o polígono.",
+    "Busca el pueblo, coordenadas o polígono.",
     "Usa «Mi ubicación» si estás en la finca.",
-    "Toca los números de tus parcelas en el mapa.",
+    "Toca dentro de tu parcela y revisa sus datos.",
     "Revisa y pulsa «Añadir»: se guardan con su municipio.",
 )
 
@@ -450,6 +552,7 @@ private fun BottomPanel(
     onLink: () -> Unit,
     onAddInspected: () -> Unit = {},
     onDismissInspected: () -> Unit = {},
+    compact: Boolean = false,
 ) {
     when (state.mode) {
         FarmMapMode.VIEW -> {
@@ -475,7 +578,7 @@ private fun BottomPanel(
             }
         }
         FarmMapMode.ADD -> Surface(shape = MoShape.card, color = MoSurfaceTokens.cardSurface.copy(alpha = 0.97f), shadowElevation = 3.dp) {
-            Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(Modifier.padding(horizontal = 10.dp, vertical = if (compact) 0.dp else 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 // One short line per marked parcel instead of a list of every number under the map.
                 state.selectedCandidates.lastOrNull()?.let { last ->
                     Text(
@@ -486,22 +589,26 @@ private fun BottomPanel(
                         modifier = Modifier.testTag("farm-map-selection"),
                     )
                 }
-                MoPrimaryButton(
-                    text = when (state.selected.size) {
-                        0 -> "Toca los números de tus parcelas"
-                        1 -> "Añadir 1 parcela"
-                        else -> "Añadir ${state.selected.size} parcelas"
-                    },
-                    onClick = onReview,
-                    enabled = state.selected.isNotEmpty() && !state.saving,
-                    modifier = Modifier.fillMaxWidth().testTag("farm-map-add-selected"),
-                )
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    MoPrimaryButton(
+                        text = when (state.selected.size) {
+                            0 -> "Toca los números de tus parcelas"
+                            1 -> "Añadir 1 parcela"
+                            else -> "Añadir ${state.selected.size} parcelas"
+                        },
+                        onClick = onReview,
+                        enabled = state.selected.isNotEmpty() && !state.saving,
+                        modifier = (if (compact) Modifier.weight(1f) else Modifier.fillMaxWidth()).testTag("farm-map-add-selected"),
+                    )
+                    if (compact) MoTertiaryButton("Tengo la referencia catastral", onSearchByReference)
+                }
+                if (!compact)
                 MoTertiaryButton("Tengo la referencia catastral", onSearchByReference, Modifier.align(Alignment.CenterHorizontally))
             }
         }
         FarmMapMode.LOCATE -> Surface(shape = MoShape.card, color = MoSurfaceTokens.cardSurface.copy(alpha = 0.97f), shadowElevation = 3.dp) {
             val candidate = state.selectedCandidates.singleOrNull()
-            Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(Modifier.padding(horizontal = 10.dp, vertical = if (compact) 0.dp else 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 candidate?.let { Text(selectionLine(it), style = MaterialTheme.typography.bodyMedium, color = MoColors.current.primaryText, maxLines = 1) }
                 MoPrimaryButton(
                     text = when {

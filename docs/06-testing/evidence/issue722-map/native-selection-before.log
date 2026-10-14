@@ -1,0 +1,44 @@
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeMapParcelSelectionTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=
+com.isivoltpro.maginaolivo.NativeMapParcelSelectionTest:
+INSTRUMENTATION_STATUS: test=overlappingSavedParcelsLeaveTheTapUnselected
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeMapParcelSelectionTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: An overlap cannot identify a unique parcel expected null, but was:<b>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotNull(Assert.java:756)
+	at org.junit.Assert.assertNull(Assert.java:738)
+	at com.isivoltpro.maginaolivo.NativeMapParcelSelectionTest.overlappingSavedParcelsLeaveTheTapUnselected(NativeMapParcelSelectionTest.kt:68)
+
+INSTRUMENTATION_STATUS: stream=
+Error in overlappingSavedParcelsLeaveTheTapUnselected(com.isivoltpro.maginaolivo.NativeMapParcelSelectionTest):
+java.lang.AssertionError: An overlap cannot identify a unique parcel expected null, but was:<b>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotNull(Assert.java:756)
+	at org.junit.Assert.assertNull(Assert.java:738)
+	at com.isivoltpro.maginaolivo.NativeMapParcelSelectionTest.overlappingSavedParcelsLeaveTheTapUnselected(NativeMapParcelSelectionTest.kt:68)
+
+INSTRUMENTATION_STATUS: test=overlappingSavedParcelsLeaveTheTapUnselected
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_RESULT: stream=
+
+Time: 7.116
+There was 1 failure:
+1) overlappingSavedParcelsLeaveTheTapUnselected(com.isivoltpro.maginaolivo.NativeMapParcelSelectionTest)
+java.lang.AssertionError: An overlap cannot identify a unique parcel expected null, but was:<b>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotNull(Assert.java:756)
+	at org.junit.Assert.assertNull(Assert.java:738)
+	at com.isivoltpro.maginaolivo.NativeMapParcelSelectionTest.overlappingSavedParcelsLeaveTheTapUnselected(NativeMapParcelSelectionTest.kt:68)
+
+FAILURES!!!
+Tests run: 1,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1

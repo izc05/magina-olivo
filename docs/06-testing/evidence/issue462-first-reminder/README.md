@@ -119,3 +119,16 @@ Android. Repetir con canal bloqueado y tras regresar de Ajustes. Registrar model
 SDK, SHA/build, hora programada/recibida y estado de permisos/canal/batería.
 No borrar datos ni cambiar canales de la app personal. No se ha ejecutado esta
 comprobación física y no se genera una APK candidata para realizarla ahora.
+
+### Corrección de la prueba de navegación tras recreación
+
+En 579d5d45, foundation y gate3-evidence terminaron correctamente. gate3-emulator
+falló en MainReminderPersistenceTest.kt:104: No compose hierarchies, al editar
+inmediatamente después de reenviar el deep link del mismo trabajo. AppNavigation
+maneja ese intent navegando de nuevo a raíz y ficha; la prueba podía encontrar la
+ficha anterior y perderla antes del clic. Se elimina únicamente ese segundo intent:
+la edición debe usar la ficha restaurada por recreate(), manteniendo todas las
+assertions de Room/permisos/Ajustes. La prueba nativa corregida pasa localmente;
+revisión independiente sin defectos importantes. No se modifica código productivo.
+La primera apertura por deep link sigue probada; no se acredita aquí un segundo
+reenvío concurrente del mismo enlace.

@@ -98,8 +98,8 @@ class MainReminderPersistenceTest {
         compose.waitForIdle()
         assertEquals(ActivityStatus.PLANNED,runBlocking { db.activityDao().findWithTargets(work)!!.activity.status })
         assertEquals(reminderBefore,runBlocking { db.agendaDao().listForOwner("ACTIVITY",work).single() })
-        compose.activityRule.scenario.onActivity { it.startActivity(Intent(it, MainActivity::class.java)
-            .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP).putExtra(ReminderNotifier.EXTRA_ACTIVITY_ID,work.toString())) }
+        // Navigation restores the detail after recreation. Sending its deep link again
+        // would rebuild that back stack asynchronously beneath the next click.
         waitFor("edit-activity")
         compose.onNodeWithTag("edit-activity").performScrollTo().performClick()
         waitFor("activity-description")

@@ -39,6 +39,8 @@ import com.isivoltpro.maginaolivo.app.AppearanceStore
 import com.isivoltpro.maginaolivo.data.reminder.ReminderNotifier
 import com.isivoltpro.maginaolivo.data.reminder.notificationSettingsIntent
 import com.isivoltpro.maginaolivo.data.reminder.notificationsAllowed
+import com.isivoltpro.maginaolivo.feature.notifications.LocalNotificationPermissionAccess
+import com.isivoltpro.maginaolivo.feature.notifications.NotificationPermissionTrigger
 import com.isivoltpro.maginaolivo.ui.brand.OliveMark
 import com.isivoltpro.maginaolivo.ui.components.MoCompactListItem
 import com.isivoltpro.maginaolivo.ui.components.MoIcons
@@ -79,10 +81,13 @@ fun ProfileRoute(
     } else {
         null
     }
-    var notificationsOn by remember { mutableStateOf(notificationsAllowed(context, ReminderNotifier.CHANNEL_ID)) }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { notificationsOn = notificationsAllowed(context, ReminderNotifier.CHANNEL_ID) }
+    val notificationAccess = LocalNotificationPermissionAccess.current
+    var standaloneNotificationsOn by remember { mutableStateOf(notificationsAllowed(context, ReminderNotifier.CHANNEL_ID)) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { standaloneNotificationsOn = notificationsAllowed(context, ReminderNotifier.CHANNEL_ID) }
+    val notificationsOn = notificationAccess?.allowed?.value ?: standaloneNotificationsOn
     val openNotifications = {
-        context.startActivity(notificationSettingsIntent(context, ReminderNotifier.CHANNEL_ID))
+        if (notificationAccess != null) notificationAccess.request(NotificationPermissionTrigger.SETTINGS)
+        else context.startActivity(notificationSettingsIntent(context, ReminderNotifier.CHANNEL_ID))
     }
     ProfileScreen(
         appVersion = appVersion,
@@ -117,7 +122,9 @@ fun ProfileRoute(
                     isSaving = state.isSaving,
                     notificationsOn = notificationsOn,
                     onNotifications = openNotifications,
-                    onChange = profileViewModel::saveReminders,
+                    onChange = { preferences -> profileViewModel.saveReminders(preferences) {
+                        notificationAccess?.request(NotificationPermissionTrigger.ENABLE_REMINDERS)
+                    } },
                 )
             }
         } else {

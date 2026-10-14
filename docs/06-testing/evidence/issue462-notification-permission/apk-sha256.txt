@@ -1,0 +1,10 @@
+
+Algorithm : SHA256
+Hash      : CBE049B313A8C756201E8FFFBA8BF54E212EA2691B4CEC911777424FE984D96C
+Path      : C:\Users\ISICIO\.codex\worktrees\issue462-notification-permission\MAGINA V20\app\build\outputs\apk\dev\debug\app-dev-debug.apk
+
+Algorithm : SHA256
+Hash      : F103D5DF6F5186E0F6821F5D143F3875C0A5458C9925E4D90035AC4D8E7C8F6E
+Path      : C:\Users\ISICIO\.codex\worktrees\issue462-notification-permission\MAGINA V20\app\build\outputs\apk\androidTest\dev\debug\app-dev-debug-androidTest.apk
+
+

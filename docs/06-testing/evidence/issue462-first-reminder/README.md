@@ -76,6 +76,21 @@ integración autorizada.
 
 ## Comprobación física pendiente
 
+### Corrección posterior de la carrera de renderizado en QA del mapa
+
+En `68f1648b`, foundation y gate3-evidence fueron verdes; gate3-emulator falló
+solo en el modo GPS grant, al consultar una vez el contorno inmediatamente después
+del aviso de ubicación. El control de evidencias del mismo SHA sí pasó ese modo.
+La revisión confirma que activar el punto cambia el estilo y repuebla las fuentes:
+[GeoJsonSource documenta que las actualizaciones asíncronas aún no son consultables
+al volver de setGeoJson](https://maplibre.org/maplibre-native/android/api/-map-libre%20-native%20-android/org.maplibre.android.style.sources/-geo-json-source/index.html).
+La prueba ahora espera hasta 15 s el MISMO contorno, ID y capa, como ya hacía al
+abrir el mapa. Mantiene la aserción final: no acepta pérdida permanente. Acredita
+recuperación acotada, no ausencia de parpadeo. No modifica el mapa productivo.
+`closure/map-render` conserva nueve modos GPS y la restauración de exactitud
+(10/10), todos correctos, compilación/JVM y hashes de los binarios empleados.
+Permisos, GPS, red y appop mock se restauraron sin limpiar datos.
+
 Tras autorizar el gate/build para un dispositivo de pruebas DEV, sin datos reales:
 guardar un trabajo sintético con aviso a unos minutos, comprobar que permanece al
 aceptar/rechazar/Ahora no, cerrar la aplicación y esperar sin cambiar el reloj.

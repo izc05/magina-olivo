@@ -4,7 +4,7 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Load only the existing function; never execute the device QA script.
 source <(sed -n '/^dismiss_quickstep_anr() {$/,/^}$/p' "$root/gate3-emulator-evidence.sh")
 tmp="$(mktemp -d)"
-trap 'rm -rf "$tmp"' EXIT
+trap 'rm -f "$tmp/ui.xml"; rmdir "$tmp"' EXIT
 sleep() { :; }
 tap_text_from_xml() { [[ "$1" == 'Close app' ]] || return 1; tapped=true; }
 check_case() {

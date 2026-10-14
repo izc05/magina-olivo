@@ -86,7 +86,7 @@ dump_ui() {
 dismiss_quickstep_anr() {
   local xml_file="$1"
 
-  if grep -q "Quickstep isn't responding" "$xml_file" && grep -q 'text="Close app"' "$xml_file"; then
+  if grep -Eq "text=\"(Quickstep|Pixel Launcher) isn't responding\"" "$xml_file" && grep -q 'text="Close app"' "$xml_file"; then
     echo "Dismissing emulator launcher ANR overlay" >&2
     tap_text_from_xml "Close app" "$xml_file"
     sleep 0.5

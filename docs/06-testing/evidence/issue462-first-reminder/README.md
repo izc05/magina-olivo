@@ -132,3 +132,11 @@ assertions de Room/permisos/Ajustes. La prueba nativa corregida pasa localmente;
 revisión independiente sin defectos importantes. No se modifica código productivo.
 La primera apertura por deep link sigue probada; no se acredita aquí un segundo
 reenvío concurrente del mismo enlace.
+
+En 49004be5 la suite principal falló antes del onboarding: el XML del artefacto
+contiene un ANR de Pixel Launcher (paquete android), mientras el arranque de MainActivity
+retornó Status: ok. La recuperación preexistente de Quickstep se amplía únicamente
+a los títulos exactos Quickstep y Pixel Launcher; no cierra errores de Mágina Olivo
+ni de otros procesos. Cinco pruebas sin ADB comprueban ambos launchers, el rechazo
+de Mágina/otro launcher y la ausencia del botón Close app. Pixel falla antes de la
+corrección y los cinco casos pasan después. No se omiten pruebas de la aplicación.

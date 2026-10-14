@@ -72,11 +72,13 @@ dump_ui() {
   # Preserve the boundary state before emulator-runner tears the device down.
   # A missing hierarchy alone cannot distinguish an app ANR from a lost AVD.
   {
-    adb get-state || true
-    adb shell pidof -s "$PKG" || true
-    adb shell dumpsys activity activities || true
-    adb shell dumpsys meminfo "$PKG" || true
-    adb logcat -b crash -d -v threadtime || true
+    timeout 10s adb get-state || true
+    timeout 10s adb shell pidof -s "$PKG" || true
+    timeout 10s adb shell dumpsys activity activities || true
+    timeout 10s adb shell dumpsys meminfo "$PKG" || true
+    # adb logcat waits indefinitely when the AVD disappears, even with -d.
+    # Diagnostics must retain the original failure rather than consume the job.
+    timeout 10s adb logcat -b crash -d -v threadtime || true
   } > "${destination%.xml}-failure.txt" 2>&1
   return 1
 }
@@ -378,6 +380,8 @@ assert_instrumentation_passed \
 bash .github/scripts/verify-map-device.sh evidence/map-device
 bash .github/scripts/verify-context-notifications.sh evidence/context-notifications
 bash .github/scripts/verify-context-notifications.sh evidence/first-reminder 'com.isivoltpro.maginaolivo.FirstReminderPermissionTest#firstSavedReminderRequestsPermissionAndPreservesWork'
+bash .github/scripts/verify-context-notifications.sh evidence/reminder-persistence com.isivoltpro.maginaolivo.MainReminderPersistenceTest later
+bash .github/scripts/verify-context-notifications.sh evidence/reminder-recreation 'com.isivoltpro.maginaolivo.FirstReminderPermissionTest#saveAcrossRecreationStillRequestsPermission' later
 
 adb logcat -c
 : > evidence/startup-runs.txt

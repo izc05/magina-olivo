@@ -173,6 +173,41 @@ class FirstReminderPermissionTest {
         assertFalse(hasUpcomingReminder(db, UUID.randomUUID(), clock))
     }
 
+    @Test fun saveAcrossRecreationStillRequestsPermission() {
+        val root = AppCompositionRoot.createAndroid(context, BuildConfig.ENVIRONMENT)
+        val local = checkNotNull(root.localPersistence)
+        fun installContent() { compose.setContent {
+            MaginaOlivoTheme { NotificationPermissionHost(local, root.clock) {
+                androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.fillMaxSize().statusBarsPadding()) {
+                    FarmActivitiesRoute(farm, local, {}, startWithEditor = true, editorAsScreen = true,
+                        initialDraft = ActivityDraft(type = ActivityType.OTHER, activityDate = LocalDate.now().plusDays(3),
+                            description = "Guardado durante recreación", parcelIds = setOf(parcel), reminders = listOf(ReminderRequest(ReminderKind.SAME_DAY))))
+                }
+            } }
+        } }
+        installContent()
+        compose.waitUntil(15_000) { compose.onAllNodesWithTag("save-activity").fetchSemanticsNodes().isNotEmpty() }
+        val name = checkNotNull(local.database.openHelper.databaseName)
+        assertTrue(name.startsWith("isolated-main-"))
+        val writer = android.database.sqlite.SQLiteDatabase.openDatabase(context.getDatabasePath(name).path, null,
+            android.database.sqlite.SQLiteDatabase.OPEN_READWRITE or android.database.sqlite.SQLiteDatabase.ENABLE_WRITE_AHEAD_LOGGING)
+        try {
+            writer.beginTransactionNonExclusive()
+            compose.onNodeWithTag("save-activity").performScrollTo().performClick()
+            compose.onNodeWithTag("save-activity").assertIsNotEnabled()
+            compose.activityRule.scenario.recreate()
+            installContent()
+        } finally { if (writer.inTransaction()) writer.endTransaction(); writer.close() }
+        compose.waitUntil(15_000) { runBlocking { local.database.activityDao().countPlannedForFarm(farm) == 1 } }
+        val id = runBlocking { local.database.activityDao().observeForFarm(farm).first().single().activity.id }
+        assertPersisted(id)
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            compose.waitUntil(10_000) { compose.onAllNodesWithTag("notification-permission-dialog").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithTag("notification-permission-later").performClick()
+        }
+        assertPersisted(id)
+    }
+
     private fun assertPersisted(id: UUID) = runBlocking {
         val db = MaginaOlivoDatabase.getInstance(context)
         assertEquals(ActivityStatus.PLANNED, checkNotNull(db.activityDao().findWithTargets(id)).activity.status)

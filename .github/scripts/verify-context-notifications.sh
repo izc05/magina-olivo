@@ -3,7 +3,7 @@ set -euo pipefail
 OUT="${1:-evidence/context-notifications}"
 CLASS="${2:-com.isivoltpro.maginaolivo.ContextNotificationPermissionTest}"
 case "$CLASS" in
- com.isivoltpro.maginaolivo.ContextNotificationPermissionTest|com.isivoltpro.maginaolivo.FirstReminderPermissionTest\#firstSavedReminderRequestsPermissionAndPreservesWork) ;;
+ com.isivoltpro.maginaolivo.ContextNotificationPermissionTest|com.isivoltpro.maginaolivo.FirstReminderPermissionTest\#firstSavedReminderRequestsPermissionAndPreservesWork|com.isivoltpro.maginaolivo.FirstReminderPermissionTest\#saveAcrossRecreationStillRequestsPermission|com.isivoltpro.maginaolivo.MainReminderPersistenceTest) ;;
  *) echo 'Unsupported test class'; exit 1 ;;
 esac
 PKG=com.isivoltpro.maginaolivo.dev
@@ -25,7 +25,12 @@ restore() {
  [[ "$BEFORE" == "$AFTER" ]] || { echo 'Permission/flags restoration failed'; return 1; }
 }
 trap restore EXIT
-for MODE in baseline grant deny later; do
+case "${3:-all}" in
+ all) MODES=(baseline grant deny later) ;;
+ later) MODES=(later) ;;
+ *) echo 'Unsupported permission mode set'; exit 1 ;;
+esac
+for MODE in "${MODES[@]}"; do
  adb shell pm revoke "$PKG" "$PERMISSION"
  adb shell pm clear-permission-flags "$PKG" "$PERMISSION" user-set user-fixed
  adb shell am instrument -w -r -e notificationQaMode "$MODE" -e class "$CLASS" "$PKG.test/androidx.test.runner.AndroidJUnitRunner" > "$OUT/$MODE.log" 2>&1

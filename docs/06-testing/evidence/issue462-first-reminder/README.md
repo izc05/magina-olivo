@@ -41,7 +41,47 @@ Gate 3 ejecuta la nueva prueba y los cuatro modos Android con el script existent
 parametrizado por clase; conserva la matriz anterior de Perfil y mapa. Resultados
 remotos deben verificarse en el SHA publicado, separadamente de estas pruebas locales.
 
-Revisión estática sin defectos importantes. Pendientes explícitos: prueba nativa
-de editar/planificar en detalle y salir/recrear durante el guardado, fallo nativo de
-persistencia, bloqueo permanente/canal→Ajustes y entrega/sonido/vibración física.
-No se cierran #462 ni #725 ni se declara completada esa validación pendiente.
+## Ampliación de cierre Android (14 octubre)
+
+`closure` contiene la compilación/JVM final y 25 ejecuciones instrumentadas:
+9 de base y 16 de matriz. Se conserva arriba la evidencia de la entrega anterior.
+La matriz usa 360 dp oscuro y 390 dp claro, fuente 1,3; repite creación y permiso
+en sus cuatro modos, ficha/recreación y las cuatro regresiones de Perfil en 390.
+Todos los scripts restauran exactamente POST_NOTIFICATIONS y sus flags; al
+terminar se restauraron densidad física 420, fuente 1,0 y modo nocturno original.
+
+MainReminderPersistenceTest abre la ficha en MainActivity mediante el Intent real:
+una escritura rechazada por trigger SQLite en la base aislada conserva DRAFT y
+el recordatorio íntegro, no solicita permiso y permite reintentar. Planificar
+correctamente solicita la explicación; recrear con el diálogo abierto lo conserva.
+Editar después mantiene UUID/fecha del recordatorio y no duplica la solicitud.
+Pasar a segundo plano y volver conserva el agregado. Revisar notificaciones abre
+Ajustes Android reales sin otro diálogo. Un canal bloqueado de UUID sintético
+abre los ajustes de canal cuando POST está concedido; con POST denegado abre los
+ajustes de aplicación. Se elimina solo ese canal de prueba, nunca el canónico.
+
+FirstReminderPermissionTest bloquea el escritor WAL en una base `isolated-main-`:
+recrea ComponentActivity mientras el formulario/ViewModel productivo sigue
+guardando; al liberar el bloqueo verifica trabajo/aviso y la explicación contextual.
+Es evidencia de recreación durante escritura, no una prueba de muerte del proceso
+antes del commit ni de navegación completa de creación desde Inicio en MainActivity.
+
+Revisión estática de estas ampliaciones sin defectos importantes. El control de
+evidencias del SHA anterior 6b2aa007 se canceló porque desapareció el AVD; el log
+diagnóstico quedó esperando dispositivo en `adb logcat`. Se limita cada comando
+diagnóstico a 10 segundos para conservar y reportar el fallo. No se aumenta el
+timeout del job ni se convierte un fallo en éxito. GitHub debe confirmar los tres
+controles del nuevo SHA antes de solicitar merge. No se cierran issues antes de
+integración autorizada.
+
+## Comprobación física pendiente
+
+Tras autorizar el gate/build para un dispositivo de pruebas DEV, sin datos reales:
+guardar un trabajo sintético con aviso a unos minutos, comprobar que permanece al
+aceptar/rechazar/Ahora no, cerrar la aplicación y esperar sin cambiar el reloj.
+Con permiso concedido, canal activo y restricciones de batería conocidas, verificar
+entrega, apertura de la ficha al tocar el aviso y sonido/vibración conforme a Ajustes
+Android. Repetir con canal bloqueado y tras regresar de Ajustes. Registrar modelo,
+SDK, SHA/build, hora programada/recibida y estado de permisos/canal/batería.
+No borrar datos ni cambiar canales de la app personal. No se ha ejecutado esta
+comprobación física y no se genera una APK candidata para realizarla ahora.

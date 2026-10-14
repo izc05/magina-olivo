@@ -3,7 +3,7 @@ param(
  [string]$AdbPath="$env:LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe",
  [ValidateSet('baseline','grant','deny','later')][string[]]$Modes=@('baseline','grant','deny','later'),
  [string]$OutputDirectory=(Join-Path $env:TEMP ('magina-notifications-'+[guid]::NewGuid().ToString('N'))),
- [ValidateSet('com.isivoltpro.maginaolivo.ContextNotificationPermissionTest','com.isivoltpro.maginaolivo.FirstReminderPermissionTest#firstSavedReminderRequestsPermissionAndPreservesWork')]
+ [ValidateSet('com.isivoltpro.maginaolivo.ContextNotificationPermissionTest','com.isivoltpro.maginaolivo.FirstReminderPermissionTest#firstSavedReminderRequestsPermissionAndPreservesWork','com.isivoltpro.maginaolivo.FirstReminderPermissionTest#saveAcrossRecreationStillRequestsPermission','com.isivoltpro.maginaolivo.MainReminderPersistenceTest')]
  [string]$ClassName='com.isivoltpro.maginaolivo.ContextNotificationPermissionTest'
 )
 $ErrorActionPreference='Stop'

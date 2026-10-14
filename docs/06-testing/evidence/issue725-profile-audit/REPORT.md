@@ -1,6 +1,6 @@
 # Auditoría #725 — Perfil existente
 
-Estado: primer bloque de auditoría entregable; #725 continúa abierta. Sin cambios productivos ni Auth/sync declarados completos.
+Estado actual: primer bloque productivo de lectura/copy verificado localmente, con auditoría previa conservada. Resultados y límites en [readability/README.md](readability/README.md). #725 sigue abierta; permisos contextuales, DEMO y Cuenta/Auth/sync pendientes.
 
 Base main 26111d6b. Worktree y rama propios codex/issue725-profile-audit. Se audita el Perfil original: diff de los archivos de Perfil y AppearanceStore entre main y APK DEV instalado 1b94a3b1 vacío. APK de pruebas ya disponible; no nueva candidata ni despliegue. Mapa #746 sin cambios.
 

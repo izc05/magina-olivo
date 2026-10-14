@@ -365,6 +365,7 @@ adb pull /sdcard/Android/data/"$PKG"/files/parcel-preview-evidence evidence/parc
 adb pull /sdcard/Android/data/"$PKG"/files/map-scale-evidence evidence/map-scale >/dev/null 2>&1 || true
 adb pull /sdcard/Android/data/"$PKG"/files/map-lifecycle-evidence evidence/map-lifecycle >/dev/null 2>&1 || true
 adb pull /sdcard/Android/data/"$PKG"/files/map-main-navigation-evidence evidence/map-main-navigation >/dev/null 2>&1 || true
+adb pull /sdcard/Android/data/"$PKG"/files/profile-readability-evidence evidence/profile-readability >/dev/null 2>&1 || true
 adb pull /sdcard/Android/data/"$PKG"/files/delivery-detail-evidence evidence/delivery-detail >/dev/null 2>&1 || true
 adb pull /sdcard/Android/data/"$PKG"/files/quick-labour-evidence evidence/quick-labour >/dev/null 2>&1 || true
 

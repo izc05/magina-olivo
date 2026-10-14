@@ -96,7 +96,8 @@ class ContextNotificationPermissionTest {
             compose.waitUntil(10_000) { clickPermissionButton(button) }
             compose.waitUntil(10_000) {
                 val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-                if (mode == "grant") granted else !granted && compose.onAllNodesWithText("Android bloquea los avisos en este teléfono.").fetchSemanticsNodes().isNotEmpty()
+                if (mode == "grant") granted && compose.onAllNodesWithText("Activados. Android controla el sonido y la vibración.").fetchSemanticsNodes().isNotEmpty()
+                else !granted && compose.onAllNodesWithText("Android bloquea los avisos en este teléfono.").fetchSemanticsNodes().isNotEmpty()
             }
         }
         compose.onNodeWithTag("notification-permission-dialog").assertDoesNotExist()

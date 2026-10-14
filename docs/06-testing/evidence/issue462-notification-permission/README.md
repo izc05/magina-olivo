@@ -20,6 +20,10 @@ este bloque no cierra #462 ni #725.
 - `apk-sha256.txt`: huellas de los binarios DEV y test utilizados; ninguna APK candidata.
 - La primera ejecución nativa pasó baseline, grant, deny y later; sus logs están
   en esta carpeta. Las ejecuciones finales y capturas se conservan por tamaño/tema.
+- Matriz: 4/4 en 360 dp oscuro y 3/3 en 390 dp claro, fuente 1,3. Se reforzó
+  después la aceptación para esperar también el texto efectivo «Activados» antes
+  de capturar (no solo el permiso del sistema): 2/2 adicionales en `ui-360-dark`
+  y `ui-390-light`. Las capturas de aceptación incluyen ese estado confirmado.
 - Cada modo usa MainActivity/Perfil/Room reales con una base UUID sintética.
   IsolatedAppStateRule restaura base y preferencias originales; los scripts
   preservan permiso POST_NOTIFICATIONS y flags, comprobando igualdad exacta.

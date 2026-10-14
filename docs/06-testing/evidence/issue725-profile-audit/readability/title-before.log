@@ -1,0 +1,83 @@
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.ProfileReadabilityTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=
+com.isivoltpro.maginaolivo.ProfileReadabilityTest:
+INSTRUMENTATION_STATUS: test=darkStatusDoesNotSplitOrHideTheNotificationExplanation
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.ProfileReadabilityTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: The whole notification word fits without splitting off its last letter expected:<1> but was:<2>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:120)
+	at com.isivoltpro.maginaolivo.ProfileReadabilityTest.verify(ProfileReadabilityTest.kt:41)
+	at com.isivoltpro.maginaolivo.ProfileReadabilityTest.darkStatusDoesNotSplitOrHideTheNotificationExplanation(ProfileReadabilityTest.kt:28)
+
+INSTRUMENTATION_STATUS: stream=
+Error in darkStatusDoesNotSplitOrHideTheNotificationExplanation(com.isivoltpro.maginaolivo.ProfileReadabilityTest):
+java.lang.AssertionError: The whole notification word fits without splitting off its last letter expected:<1> but was:<2>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:120)
+	at com.isivoltpro.maginaolivo.ProfileReadabilityTest.verify(ProfileReadabilityTest.kt:41)
+	at com.isivoltpro.maginaolivo.ProfileReadabilityTest.darkStatusDoesNotSplitOrHideTheNotificationExplanation(ProfileReadabilityTest.kt:28)
+
+INSTRUMENTATION_STATUS: test=darkStatusDoesNotSplitOrHideTheNotificationExplanation
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.ProfileReadabilityTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=lightStatusDoesNotSplitOrHideTheNotificationExplanation
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.ProfileReadabilityTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: The whole notification word fits without splitting off its last letter expected:<1> but was:<2>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:120)
+	at com.isivoltpro.maginaolivo.ProfileReadabilityTest.verify(ProfileReadabilityTest.kt:41)
+	at com.isivoltpro.maginaolivo.ProfileReadabilityTest.lightStatusDoesNotSplitOrHideTheNotificationExplanation(ProfileReadabilityTest.kt:27)
+
+INSTRUMENTATION_STATUS: stream=
+Error in lightStatusDoesNotSplitOrHideTheNotificationExplanation(com.isivoltpro.maginaolivo.ProfileReadabilityTest):
+java.lang.AssertionError: The whole notification word fits without splitting off its last letter expected:<1> but was:<2>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:120)
+	at com.isivoltpro.maginaolivo.ProfileReadabilityTest.verify(ProfileReadabilityTest.kt:41)
+	at com.isivoltpro.maginaolivo.ProfileReadabilityTest.lightStatusDoesNotSplitOrHideTheNotificationExplanation(ProfileReadabilityTest.kt:27)
+
+INSTRUMENTATION_STATUS: test=lightStatusDoesNotSplitOrHideTheNotificationExplanation
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_RESULT: stream=
+
+Time: 18.099
+There were 2 failures:
+1) darkStatusDoesNotSplitOrHideTheNotificationExplanation(com.isivoltpro.maginaolivo.ProfileReadabilityTest)
+java.lang.AssertionError: The whole notification word fits without splitting off its last letter expected:<1> but was:<2>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:120)
+	at com.isivoltpro.maginaolivo.ProfileReadabilityTest.verify(ProfileReadabilityTest.kt:41)
+	at com.isivoltpro.maginaolivo.ProfileReadabilityTest.darkStatusDoesNotSplitOrHideTheNotificationExplanation(ProfileReadabilityTest.kt:28)
+2) lightStatusDoesNotSplitOrHideTheNotificationExplanation(com.isivoltpro.maginaolivo.ProfileReadabilityTest)
+java.lang.AssertionError: The whole notification word fits without splitting off its last letter expected:<1> but was:<2>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:120)
+	at com.isivoltpro.maginaolivo.ProfileReadabilityTest.verify(ProfileReadabilityTest.kt:41)
+	at com.isivoltpro.maginaolivo.ProfileReadabilityTest.lightStatusDoesNotSplitOrHideTheNotificationExplanation(ProfileReadabilityTest.kt:27)
+
+FAILURES!!!
+Tests run: 2,  Failures: 2
+
+
+INSTRUMENTATION_CODE: -1

@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.view.View
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
@@ -46,6 +47,7 @@ class B3NativeRasterErrorTest {
     private var observedView: MapView? = null
     private val baseTileRequested = java.util.concurrent.atomic.AtomicBoolean(false)
     private var observer: MapView.OnTileActionListener? = null
+    private val failureRequestId = UUID.randomUUID().toString()
 
     /**
      * #741 — the base layer is whichever IGN WMTS the screen opened on, and since #711 B3 that is
@@ -64,7 +66,7 @@ class B3NativeRasterErrorTest {
                 if (url.startsWith(IGN_WMTS)) {
                     baseTileRequested.set(true)
                     // Closed local TLS port produces a real native connection failure, independent of IGN.
-                    "https://127.0.0.1:1/b3-unavailable/${url.hashCode()}"
+                    "https://127.0.0.1:1/b3-unavailable/$failureRequestId/${url.hashCode()}"
                 } else url
             }
         }
@@ -86,7 +88,7 @@ class B3NativeRasterErrorTest {
             id = UUID.fromString("71100000-0000-0000-0000-000000000003"),
             workspaceId = UUID.randomUUID(), farmId = UUID.randomUUID(), displayName = "Parcela conservada",
             cadastralReference = null, cadastralPolygon = null, cadastralParcel = null,
-            municipality = "Huelma", province = "Jaén", source = ParcelSource.MANUAL,
+            municipality = null, province = null, source = ParcelSource.MANUAL,
             geometryGeoJson = GEOMETRY, cadastralAreaM2 = null, managedAreaM2 = 9000.0,
             notes = null, archivedAt = null, version = 1,
         )
@@ -114,11 +116,18 @@ class B3NativeRasterErrorTest {
                 }.also(mapView::addOnTileActionListener)
                 mapView.getMapAsync { map ->
                     nativeMap.set(map)
-                    // A new tile request after the observer is attached, still centred on the parcel.
-                    map.moveCamera(CameraUpdateFactory.newLatLngZoom(CENTRE, 16.5))
                 }
             }
         })
+        // Map readiness precedes style/data readiness. Let the screen finish its first
+        // framing before requesting z18, so that framing cannot replace this request.
+        assertSavedGeometry(nativeMap, parcel.id.toString())
+        compose.runOnIdle { nativeMap.get().moveCamera(CameraUpdateFactory.newLatLngZoom(CENTRE, 18.0)) }
+        compose.waitUntil(10_000) {
+            var requestedCamera = false
+            compose.runOnIdle { requestedCamera = kotlin.math.abs(nativeMap.get().cameraPosition.zoom - 18.0) < 0.000001 }
+            requestedCamera
+        }
         // A timeout here used to read as a slow emulator; it is said plainly when the cause is that
         // the screen never asked for a remote base tile, so the drift above cannot return silently.
         try {
@@ -131,10 +140,34 @@ class B3NativeRasterErrorTest {
             throw timeout
         }
         // Baseline RED must be this assertion, after actual TileOperation.Error was observed.
+        // Tile listeners run before ParcelMap posts the error into Compose state.
+        compose.waitUntil(15_000) { compose.onAllNodesWithTag("farm-map-tile-error").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("farm-map-tile-error").assertIsDisplayed()
         assertSavedGeometry(nativeMap, parcel.id.toString())
         compose.waitForIdle()
         saveWindow("b3-${mode.name.lowercase()}-native-error")
+        val previousStyle = AtomicReference<org.maplibre.android.maps.Style>()
+        val previousCamera = AtomicReference<org.maplibre.android.camera.CameraPosition>()
+        compose.runOnIdle {
+            previousStyle.set(nativeMap.get().style)
+            previousCamera.set(nativeMap.get().cameraPosition)
+        }
+        nativeError.set(null)
+        compose.onNodeWithTag("farm-map-tile-retry").assertIsDisplayed().performClick()
+        compose.waitUntil(15_000) {
+            var reloaded = false
+            compose.runOnIdle { reloaded = nativeMap.get()?.style?.let { it !== previousStyle.get() } == true }
+            nativeError.get() == "base" && reloaded
+        }
+        // Tile listeners run before ParcelMap posts the error into Compose state.
+        compose.waitUntil(15_000) { compose.onAllNodesWithTag("farm-map-tile-error").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("farm-map-tile-error").assertIsDisplayed()
+        assertSavedGeometry(nativeMap, parcel.id.toString())
+        compose.runOnIdle {
+            assertEquals(previousCamera.get().target!!.latitude, nativeMap.get().cameraPosition.target!!.latitude, 0.000001)
+            assertEquals(previousCamera.get().target!!.longitude, nativeMap.get().cameraPosition.target!!.longitude, 0.000001)
+            assertEquals(previousCamera.get().zoom, nativeMap.get().cameraPosition.zoom, 0.000001)
+        }
         compose.onNodeWithTag("farm-map-offline-fallback").assertIsDisplayed().performClick()
         compose.waitUntil(10_000) {
             var localOnly = false
@@ -167,7 +200,10 @@ class B3NativeRasterErrorTest {
     }
 
     companion object {
-        private val CENTRE = LatLng(37.636, -3.480)
-        private const val GEOMETRY = """{"type":"Polygon","coordinates":[[[-3.482,37.634],[-3.478,37.634],[-3.478,37.638],[-3.482,37.638],[-3.482,37.634]]]}"""
+        // Separate synthetic footprint: successful scale/preview/live probes warm the
+        // Huelma tiles. Reusing those images can avoid a native request altogether.
+        // No cache or application data is cleared to force this failure fixture.
+        private val CENTRE = LatLng(37.706, -3.580)
+        private const val GEOMETRY = """{"type":"Polygon","coordinates":[[[-3.582,37.704],[-3.578,37.704],[-3.578,37.708],[-3.582,37.708],[-3.582,37.704]]]}"""
     }
 }

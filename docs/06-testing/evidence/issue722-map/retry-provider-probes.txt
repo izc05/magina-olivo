@@ -1,0 +1,9 @@
+2026-10-12, read-only official tile service probes from Windows, z17.
+Normal and explicit retry query parameter magina_retry=20261012:
+PNOA /wmts/pnoa-ma: both HTTP200 image/jpeg 15582 bytes.
+IGN base /wmts/ign-base: both HTTP200 image/jpeg 3236 bytes.
+Catastro INSPIRE spadgcwms.aspx: both HTTP200 image/png 3530 bytes.
+SIGPAC /wms/ows: both HTTP200 image/png 21217 bytes.
+WMTS GetTile and WMS GetMap retain the existing layer/CRS/tile matrix/size parameters.
+The retry changes only the request cache key; no ambient cache or app data was cleared.
+One valid sample per service verifies parameter acceptance, not continuous availability or full PNOA resolution.

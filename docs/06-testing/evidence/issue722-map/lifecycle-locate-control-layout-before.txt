@@ -1,0 +1,140 @@
+header=Rect.fromLTRB(152.0, 84.0, 2376.0, 386.0) credit=Rect.fromLTRB(140.0, 513.0, 2028.0, 588.0) scale=Rect.fromLTRB(2052.0, 505.0, 2388.0, 588.0) map=Rect.fromLTRB(128.0, 72.0, 2400.0, 828.0)
+Printing with useUnmergedTree = 'true'
+Node #137 at (l=0.0, t=0.0, r=2400.0, b=1080.0)px
+ |-Node #138 at (l=0.0, t=0.0, r=2400.0, b=1080.0)px
+   IsContainer = 'true'
+   Shape = 'RectangleShape'
+    |-Node #177 at (l=128.0, t=72.0, r=2400.0, b=828.0)px, Tag: 'farm-map-root'
+    | Shape = 'RectangleShape'
+    |  |-Node #199 at (l=128.0, t=72.0, r=2400.0, b=828.0)px, Tag: 'parcel-map-view'
+    |  | MergeDescendants = 'true'
+    |  |-Node #201 at (l=140.0, t=513.0, r=2028.0, b=588.0)px
+    |  | ContentDescription = '[Atribución del mapa]'
+    |  | IsContainer = 'true'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 4.0.dp), topEnd = CornerSize(size = 4.0.dp), bottomEnd = CornerSize(size = 4.0.dp), bottomStart = CornerSize(size = 4.0.dp))'
+    |  |  |-Node #202 at (l=152.0, t=519.0, r=2016.0, b=582.0)px
+    |  |    Text = '[Límites guardados en el teléfono]'
+    |  |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |-Node #203 at (l=2052.0, t=505.0, r=2388.0, b=588.0)px, Tag: 'map-scale'
+    |  | ContentDescription = '[Escala del mapa: 200 m]'
+    |  | IsContainer = 'true'
+    |  | Shape = 'RectangleShape'
+    |  | MergeDescendants = 'true'
+    |  |  |-Node #205 at (l=2245.0, t=517.0, r=2364.0, b=564.0)px, Tag: 'map-scale-text'
+    |  |  | Text = '[200 m]'
+    |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |  |-Node #206 at (l=2237.0, t=564.0, r=2364.0, b=576.0)px, Tag: 'map-scale-line'
+    |  |-Node #180 at (l=152.0, t=84.0, r=2376.0, b=386.0)px, Tag: 'farm-map-header'
+    |  | IsContainer = 'true'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 20.0.dp), topEnd = CornerSize(size = 20.0.dp), bottomEnd = CornerSize(size = 20.0.dp), bottomStart = CornerSize(size = 20.0.dp))'
+    |  |  |-Node #181 at (l=152.0, t=84.0, r=2376.0, b=386.0)px
+    |  |    IsTraversalGroup = 'true'
+    |  |    Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@12060d3'
+    |  |    VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=0.0, reverseScrolling=false)'
+    |  |    Actions = [ScrollBy, ScrollByOffset]
+    |  |     |-Node #182 at (l=188.0, t=90.0, r=722.0, b=163.0)px
+    |  |     | Text = '[Ubicar «Contour B»]'
+    |  |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |     |-Node #292 at (l=188.0, t=169.0, r=1228.0, b=230.0)px, Tag: 'farm-map-hint'
+    |  |     | Text = '[Toca donde está tu parcela y elige su número.]'
+    |  |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |     |-Node #269 at (l=188.0, t=244.0, r=435.0, b=373.0)px, Tag: 'farm-map-search-toggle'
+    |  |     | ContentDescription = '[Abrir búsqueda]'
+    |  |     | Focused = 'false'
+    |  |     | Role = 'Button'
+    |  |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |  |     | Actions = [OnClick, RequestFocus]
+    |  |     | MergeDescendants = 'true'
+    |  |     |  |-Node #271 at (l=224.0, t=268.0, r=399.0, b=349.0)px
+    |  |     |    Text = '[Buscar]'
+    |  |     |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |     |-Node #272 at (l=1045.0, t=244.0, r=1439.0, b=373.0)px, Tag: 'farm-map-my-location'
+    |  |     | Focused = 'false'
+    |  |     | Role = 'Button'
+    |  |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |  |     | Actions = [OnClick, RequestFocus]
+    |  |     | MergeDescendants = 'true'
+    |  |     |  |-Node #274 at (l=1081.0, t=268.0, r=1403.0, b=349.0)px
+    |  |     |    Text = '[Mi ubicación]'
+    |  |     |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |     |-Node #276 at (l=2049.0, t=244.0, r=2340.0, b=373.0)px, Tag: 'farm-map-layer'
+    |  |       ContentDescription = '[Solo parcelas]'
+    |  |       Focused = 'false'
+    |  |       Role = 'Button'
+    |  |       Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |  |       Actions = [OnClick, RequestFocus]
+    |  |       MergeDescendants = 'true'
+    |  |        |-Node #278 at (l=2085.0, t=268.0, r=2304.0, b=349.0)px
+    |  |          Text = '[Parcelas]'
+    |  |          Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |  |-Node #293 at (l=152.0, t=612.0, r=2376.0, b=816.0)px
+    |    IsContainer = 'true'
+    |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 20.0.dp), topEnd = CornerSize(size = 20.0.dp), bottomEnd = CornerSize(size = 20.0.dp), bottomStart = CornerSize(size = 20.0.dp))'
+    |     |-Node #295 at (l=182.0, t=642.0, r=2346.0, b=786.0)px, Tag: 'farm-map-link'
+    |       Role = 'Button'
+    |       Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+    |       [Disabled]
+    |       Actions = [OnClick]
+    |       MergeDescendants = 'true'
+    |        |-Node #298 at (l=901.0, t=681.0, r=1627.0, b=747.0)px
+    |          Text = '[Toca el número de tu parcela]'
+    |          Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |-Node #148 at (l=0.0, t=828.0, r=2400.0, b=1080.0)px
+      IsContainer = 'true'
+      Shape = 'RectangleShape'
+       |-Node #150 at (l=24.0, t=840.0, r=520.0, b=996.0)px, Tag: 'bottom-Inicio'
+       | Focused = 'false'
+       | Role = 'Tab'
+       | Selected = 'false'
+       | Actions = [OnClick, RequestFocus]
+       | MergeDescendants = 'true'
+       |  |-Node #151 at (l=197.0, t=849.0, r=347.0, b=933.0)px
+       |  | IsContainer = 'true'
+       |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 999.0.dp), topEnd = CornerSize(size = 999.0.dp), bottomEnd = CornerSize(size = 999.0.dp), bottomStart = CornerSize(size = 999.0.dp))'
+       |  |-Node #154 at (l=217.0, t=933.0, r=327.0, b=987.0)px
+       |    Text = '[Inicio]'
+       |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |-Node #155 at (l=520.0, t=840.0, r=1015.0, b=996.0)px, Tag: 'bottom-Mi Campo'
+       | Focused = 'false'
+       | Role = 'Tab'
+       | Selected = 'true'
+       | Actions = [OnClick, RequestFocus]
+       | MergeDescendants = 'true'
+       |  |-Node #156 at (l=693.0, t=849.0, r=843.0, b=933.0)px
+       |  | IsContainer = 'true'
+       |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 999.0.dp), topEnd = CornerSize(size = 999.0.dp), bottomEnd = CornerSize(size = 999.0.dp), bottomStart = CornerSize(size = 999.0.dp))'
+       |  |-Node #159 at (l=663.0, t=933.0, r=873.0, b=987.0)px
+       |    Text = '[Mi Campo]'
+       |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |-Node #161 at (l=1123.0, t=840.0, r=1279.0, b=996.0)px, Tag: 'bottom-add-record'
+       | ContentDescription = '[Añadir registro]'
+       | Focused = 'false'
+       | IsContainer = 'true'
+       | Role = 'Button'
+       | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+       | Actions = [OnClick, RequestFocus]
+       | MergeDescendants = 'true'
+       |-Node #164 at (l=1386.0, t=840.0, r=1881.0, b=996.0)px, Tag: 'bottom-Cuaderno'
+       | Focused = 'false'
+       | Role = 'Tab'
+       | Selected = 'false'
+       | Actions = [OnClick, RequestFocus]
+       | MergeDescendants = 'true'
+       |  |-Node #165 at (l=1559.0, t=849.0, r=1709.0, b=933.0)px
+       |  | IsContainer = 'true'
+       |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 999.0.dp), topEnd = CornerSize(size = 999.0.dp), bottomEnd = CornerSize(size = 999.0.dp), bottomStart = CornerSize(size = 999.0.dp))'
+       |  |-Node #168 at (l=1535.0, t=933.0, r=1732.0, b=987.0)px
+       |    Text = '[Cuaderno]'
+       |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |-Node #169 at (l=1881.0, t=840.0, r=2376.0, b=996.0)px, Tag: 'bottom-Perfil'
+         Focused = 'false'
+         Role = 'Tab'
+         Selected = 'false'
+         Actions = [OnClick, RequestFocus]
+         MergeDescendants = 'true'
+          |-Node #170 at (l=2054.0, t=849.0, r=2204.0, b=933.0)px
+          | IsContainer = 'true'
+          | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 999.0.dp), topEnd = CornerSize(size = 999.0.dp), bottomEnd = CornerSize(size = 999.0.dp), bottomStart = CornerSize(size = 999.0.dp))'
+          |-Node #173 at (l=2076.0, t=933.0, r=2182.0, b=987.0)px
+            Text = '[Perfil]'
+            Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]

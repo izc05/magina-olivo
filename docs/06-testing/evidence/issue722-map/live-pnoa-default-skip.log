@@ -1,0 +1,28 @@
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.LiveNativePnoaProbeTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=
+com.isivoltpro.maginaolivo.LiveNativePnoaProbeTest:
+INSTRUMENTATION_STATUS: test=sameBedmarPointAtNativeZoom15_17_19
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.LiveNativePnoaProbeTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stack=org.junit.AssumptionViolatedException: Opt in with -e live_pnoa true
+	at org.junit.Assume.assumeTrue(Assume.java:68)
+	at com.isivoltpro.maginaolivo.LiveNativePnoaProbeTest.sameBedmarPointAtNativeZoom15_17_19(LiveNativePnoaProbeTest.kt:57)
+
+INSTRUMENTATION_STATUS: stream=
+com.isivoltpro.maginaolivo.LiveNativePnoaProbeTest:
+INSTRUMENTATION_STATUS: test=sameBedmarPointAtNativeZoom15_17_19
+INSTRUMENTATION_STATUS_CODE: -4
+INSTRUMENTATION_RESULT: stream=
+
+Time: 3.322
+
+OK (1 test)
+
+
+INSTRUMENTATION_CODE: -1

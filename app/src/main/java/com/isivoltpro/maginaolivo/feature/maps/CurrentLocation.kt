@@ -9,6 +9,7 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
+import android.os.CancellationSignal
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -79,11 +80,29 @@ fun requestCurrentLocation(context: Context, onResult: (CurrentLocationFix?) -> 
         .firstNotNullOfOrNull(::accepted)
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        // getCurrentLocation otherwise uses the platform's much longer timeout. Keep the
+        // same bounded one-shot budget as older Android, including cancellation and races.
+        val cancellation = CancellationSignal()
+        val handler = Handler(Looper.getMainLooper())
+        val timeoutToken = Any()
+        var finished = false
+        fun finish(fix: CurrentLocationFix?) {
+            if (finished) return
+            finished = true
+            handler.removeCallbacksAndMessages(timeoutToken)
+            cancellation.cancel()
+            onResult(fix)
+        }
+        handler.postAtTime(
+            { finish(bestLastKnown()) },
+            timeoutToken,
+            SystemClock.uptimeMillis() + LOCATION_REQUEST_TIMEOUT_MS,
+        )
         runCatching {
-            manager.getCurrentLocation(providers.first(), null, context.mainExecutor) { location ->
-                onResult(accepted(location) ?: bestLastKnown())
+            manager.getCurrentLocation(providers.first(), cancellation, context.mainExecutor) { location ->
+                finish(accepted(location) ?: bestLastKnown())
             }
-        }.onFailure { onResult(bestLastKnown()) }
+        }.onFailure { finish(bestLastKnown()) }
         return
     }
 

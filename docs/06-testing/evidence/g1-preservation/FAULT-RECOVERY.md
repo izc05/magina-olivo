@@ -10,8 +10,10 @@ y requiere sus propios checks antes de READY.
 ## Nuevas pruebas reproducibles
 
 - 9/9 `LocalLinkBackupTest`: se amplía con ENOSPC durante binario y manifiesto.
-  Se escriben dos bytes en la copia temporal y se provoca el errno real del
-  kernel con `/dev/full`. No se llena el volumen ni se altera la configuración
+  Se escriben dos bytes en la copia temporal y se inyecta `ErrnoException(ENOSPC)`.
+  Se intentó `/dev/full`, pero CI confirmó que SELinux lo deniega con EACCES (13),
+  no ENOSPC (28); se registra y corrige esa hipótesis de QA, sin relajar la aserción
+  para aceptar otro errno. No se llena el volumen ni se altera la configuración
   del emulador. El error impide publicación y elimina solamente el staging de
   esa llamada; DB, bytes fuente y una copia previa permanecen idénticos. Retry
   sin fallo completa una sola copia. Esto valida ENOSPC de escritura, no todos

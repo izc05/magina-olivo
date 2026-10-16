@@ -158,8 +158,8 @@ class LocalLinkBackupTest {
                     override fun write(bytes: ByteArray, offset: Int, length: Int) {
                         if (file.name == failAt) {
                             super.write(bytes, offset, minOf(2, length))
-                            // Real kernel ENOSPC without filling the retained emulator's volume.
-                            FileOutputStream("/dev/full").use { it.write(bytes, offset, length) }
+                            // Inject the exact errno: SELinux denies /dev/full in the CI app domain.
+                            throw IOException("injected_full_volume", ErrnoException("write", OsConstants.ENOSPC))
                         }
                         super.write(bytes, offset, length)
                     }

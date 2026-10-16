@@ -89,6 +89,7 @@ import com.isivoltpro.maginaolivo.ui.components.MoSummaryMetric
 import com.isivoltpro.maginaolivo.ui.components.MoTertiaryButton
 import java.time.LocalDate
 import java.util.UUID
+import com.isivoltpro.maginaolivo.feature.notifications.LocalNotificationPermissionAccess
 import com.isivoltpro.maginaolivo.ui.theme.MoSurfaceTokens
 
 @Composable
@@ -120,10 +121,12 @@ fun FarmActivitiesRoute(
         }
     })
     val state by vm.state.collectAsStateWithLifecycle()
+    val notificationAccess = LocalNotificationPermissionAccess.current
     FarmActivitiesSection(
         state = state,
         onActivitySelected = onActivitySelected,
-        onCreate = { draft, asDraft -> vm.create(draft, asDraft, completeImmediately = completeOnSave && !asDraft) },
+        onCreate = { draft, asDraft -> vm.create(draft, asDraft, completeImmediately = completeOnSave && !asDraft,
+            onSaved = { id -> notificationAccess?.savedActivity?.invoke(id) }) },
         startWithEditor = startWithEditor,
         initialDraft = initialDraft,
         editorTitle = editorTitle,
@@ -1105,7 +1108,11 @@ fun ActivityDetailScreen(
         }
     }
     var editor by rememberSaveable { mutableStateOf(false) }
-    OnEachSave(state.saveCount) { editor = false }
+    val notificationAccess = LocalNotificationPermissionAccess.current
+    OnEachSave(state.saveCount) {
+        editor = false
+        state.activity?.id?.let { notificationAccess?.savedActivity?.invoke(it) }
+    }
     Scaffold(Modifier.fillMaxSize().testTag("activity-detail-root"), containerColor = MoSurfaceTokens.appBackground, contentWindowInsets = WindowInsets(0, 0, 0, 0)) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).statusBarsPadding()

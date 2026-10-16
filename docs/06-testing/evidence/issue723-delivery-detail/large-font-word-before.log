@@ -1,0 +1,83 @@
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.DeliveryDetailCardsTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=
+com.isivoltpro.maginaolivo.DeliveryDetailCardsTest:
+INSTRUMENTATION_STATUS: test=darkCardsKeepEachValeAndUnknownValuesTruthful
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.DeliveryDetailCardsTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: Missing values must wrap at spaces, not split a word: No registrado
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.isivoltpro.maginaolivo.DeliveryDetailCardsTest.assertMissingValueIsReadable(DeliveryDetailCardsTest.kt:179)
+	at com.isivoltpro.maginaolivo.DeliveryDetailCardsTest.verify(DeliveryDetailCardsTest.kt:122)
+	at com.isivoltpro.maginaolivo.DeliveryDetailCardsTest.darkCardsKeepEachValeAndUnknownValuesTruthful(DeliveryDetailCardsTest.kt:68)
+
+INSTRUMENTATION_STATUS: stream=
+Error in darkCardsKeepEachValeAndUnknownValuesTruthful(com.isivoltpro.maginaolivo.DeliveryDetailCardsTest):
+java.lang.AssertionError: Missing values must wrap at spaces, not split a word: No registrado
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.isivoltpro.maginaolivo.DeliveryDetailCardsTest.assertMissingValueIsReadable(DeliveryDetailCardsTest.kt:179)
+	at com.isivoltpro.maginaolivo.DeliveryDetailCardsTest.verify(DeliveryDetailCardsTest.kt:122)
+	at com.isivoltpro.maginaolivo.DeliveryDetailCardsTest.darkCardsKeepEachValeAndUnknownValuesTruthful(DeliveryDetailCardsTest.kt:68)
+
+INSTRUMENTATION_STATUS: test=darkCardsKeepEachValeAndUnknownValuesTruthful
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.DeliveryDetailCardsTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=lightCardsKeepEachValeAndUnknownValuesTruthful
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.DeliveryDetailCardsTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: Missing values must wrap at spaces, not split a word: No registrado
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.isivoltpro.maginaolivo.DeliveryDetailCardsTest.assertMissingValueIsReadable(DeliveryDetailCardsTest.kt:179)
+	at com.isivoltpro.maginaolivo.DeliveryDetailCardsTest.verify(DeliveryDetailCardsTest.kt:122)
+	at com.isivoltpro.maginaolivo.DeliveryDetailCardsTest.lightCardsKeepEachValeAndUnknownValuesTruthful(DeliveryDetailCardsTest.kt:67)
+
+INSTRUMENTATION_STATUS: stream=
+Error in lightCardsKeepEachValeAndUnknownValuesTruthful(com.isivoltpro.maginaolivo.DeliveryDetailCardsTest):
+java.lang.AssertionError: Missing values must wrap at spaces, not split a word: No registrado
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.isivoltpro.maginaolivo.DeliveryDetailCardsTest.assertMissingValueIsReadable(DeliveryDetailCardsTest.kt:179)
+	at com.isivoltpro.maginaolivo.DeliveryDetailCardsTest.verify(DeliveryDetailCardsTest.kt:122)
+	at com.isivoltpro.maginaolivo.DeliveryDetailCardsTest.lightCardsKeepEachValeAndUnknownValuesTruthful(DeliveryDetailCardsTest.kt:67)
+
+INSTRUMENTATION_STATUS: test=lightCardsKeepEachValeAndUnknownValuesTruthful
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_RESULT: stream=
+
+Time: 24.985
+There were 2 failures:
+1) darkCardsKeepEachValeAndUnknownValuesTruthful(com.isivoltpro.maginaolivo.DeliveryDetailCardsTest)
+java.lang.AssertionError: Missing values must wrap at spaces, not split a word: No registrado
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.isivoltpro.maginaolivo.DeliveryDetailCardsTest.assertMissingValueIsReadable(DeliveryDetailCardsTest.kt:179)
+	at com.isivoltpro.maginaolivo.DeliveryDetailCardsTest.verify(DeliveryDetailCardsTest.kt:122)
+	at com.isivoltpro.maginaolivo.DeliveryDetailCardsTest.darkCardsKeepEachValeAndUnknownValuesTruthful(DeliveryDetailCardsTest.kt:68)
+2) lightCardsKeepEachValeAndUnknownValuesTruthful(com.isivoltpro.maginaolivo.DeliveryDetailCardsTest)
+java.lang.AssertionError: Missing values must wrap at spaces, not split a word: No registrado
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.isivoltpro.maginaolivo.DeliveryDetailCardsTest.assertMissingValueIsReadable(DeliveryDetailCardsTest.kt:179)
+	at com.isivoltpro.maginaolivo.DeliveryDetailCardsTest.verify(DeliveryDetailCardsTest.kt:122)
+	at com.isivoltpro.maginaolivo.DeliveryDetailCardsTest.lightCardsKeepEachValeAndUnknownValuesTruthful(DeliveryDetailCardsTest.kt:67)
+
+FAILURES!!!
+Tests run: 2,  Failures: 2
+
+
+INSTRUMENTATION_CODE: -1

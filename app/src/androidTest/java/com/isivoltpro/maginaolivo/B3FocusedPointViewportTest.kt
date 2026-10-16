@@ -93,9 +93,9 @@ class B3FocusedPointViewportTest {
             compose.onNodeWithTag("farm-map-layer").performClick()
             compose.onNodeWithTag("farm-map-base-NONE").performClick()
             compose.onNodeWithTag("farm-map-search-toggle").performClick()
-            compose.onNodeWithTag("farm-map-coordinates").performClick().performTextInput("37.636,-3.480")
+            compose.onNodeWithTag("farm-map-coordinates").performScrollTo().performClick().performTextInput("37.636,-3.480")
             compose.waitUntil(15_000) { shell("dumpsys input_method").contains("mInputShown=true") }
-            compose.onNodeWithTag("farm-map-go").performClick()
+            compose.onNodeWithTag("farm-map-go").performScrollTo().performClick()
             compose.waitUntil(10_000) {
                 var focused = false
                 compose.runOnIdle {
@@ -107,7 +107,10 @@ class B3FocusedPointViewportTest {
                 focused
             }
             compose.waitForIdle()
-            val headerBottom = compose.onNodeWithTag("farm-map-polygon").fetchSemanticsNode().boundsInRoot.bottom
+            compose.onNodeWithTag("farm-map-coordinates").assertDoesNotExist()
+            compose.onNodeWithTag("farm-map-polygon").assertDoesNotExist()
+            compose.waitUntil(15_000) { !shell("dumpsys input_method").contains("mInputShown=true") }
+            val headerBottom = compose.onNodeWithTag("farm-map-header").fetchSemanticsNode().boundsInRoot.bottom
             val mapBounds = compose.onNodeWithTag("parcel-map-view").fetchSemanticsNode().boundsInRoot
             val noticeTop = compose.onNodeWithTag("farm-map-my-location-shown").fetchSemanticsNode().boundsInRoot.top
             var nativeY = 0f
@@ -125,7 +128,7 @@ class B3FocusedPointViewportTest {
                 }
                 rendered
             }
-            capture("focused-point-keyboard")
+            capture("focused-point-search-collapsed")
             var previousStyle: org.maplibre.android.maps.Style? = null
             compose.runOnIdle { previousStyle = native.get().style; appearance.value = AppearanceMode.LIGHT }
             compose.waitUntil(10_000) {
@@ -141,7 +144,10 @@ class B3FocusedPointViewportTest {
 
             val laterPan = LatLng(37.648, -3.490)
             compose.runOnIdle { native.get().moveCamera(CameraUpdateFactory.newLatLngZoom(laterPan, 15.25)) }
-            shell("input keyevent 4")
+            compose.onNodeWithTag("farm-map-search-toggle").performClick()
+            compose.onNodeWithTag("farm-map-coordinates").performScrollTo().performClick()
+            compose.waitUntil(15_000) { shell("dumpsys input_method").contains("mInputShown=true") }
+            compose.onNodeWithTag("farm-map-search-toggle").performScrollTo().performClick()
             compose.waitUntil(15_000) { !shell("dumpsys input_method").contains("mInputShown=true") }
             compose.waitForIdle()
             compose.runOnIdle {
@@ -151,7 +157,8 @@ class B3FocusedPointViewportTest {
                 assertEquals("Closing IME must retain user's later zoom", 15.25, camera.zoom, 0.0001)
             }
             compose.runOnIdle { state.value = state.value.copy(parcels = listOf(parcel)) }
-            compose.onNodeWithTag("farm-map-go").performClick()
+            compose.onNodeWithTag("farm-map-search-toggle").performClick()
+            compose.onNodeWithTag("farm-map-go").performScrollTo().performClick()
             compose.waitUntil(10_000) {
                 var focused = false
                 compose.runOnIdle { focused = abs(native.get().cameraPosition.zoom - 16.5) < 0.05 }
@@ -161,13 +168,15 @@ class B3FocusedPointViewportTest {
             var framedTarget: LatLng? = null
             var framedZoom = 0.0
             compose.runOnIdle { framedTarget = native.get().cameraPosition.target; framedZoom = native.get().cameraPosition.zoom }
-            compose.onNodeWithTag("farm-map-search-toggle").performClick()
-            compose.waitForIdle()
-            compose.runOnIdle {
-                val camera = native.get().cameraPosition
-                assertEquals("Closing search must retain later parcel framing", requireNotNull(framedTarget).latitude, requireNotNull(camera.target).latitude, 0.000001)
-                assertEquals(requireNotNull(framedTarget).longitude, requireNotNull(camera.target).longitude, 0.000001)
-                assertEquals(framedZoom, camera.zoom, 0.0001)
+            repeat(2) {
+                compose.onNodeWithTag("farm-map-search-toggle").performScrollTo().performClick()
+                compose.waitForIdle()
+                compose.runOnIdle {
+                    val camera = native.get().cameraPosition
+                    assertEquals("Opening/closing search must retain later parcel framing", requireNotNull(framedTarget).latitude, requireNotNull(camera.target).latitude, 0.000001)
+                    assertEquals(requireNotNull(framedTarget).longitude, requireNotNull(camera.target).longitude, 0.000001)
+                    assertEquals(framedZoom, camera.zoom, 0.0001)
+                }
             }
             capture("focused-point-after-frame")
         } finally {

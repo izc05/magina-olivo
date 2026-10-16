@@ -49,6 +49,8 @@ No cambia UUID/owner/versión/outbox, no añade migración Room ni cambia UI.
    manifiesto, cancelación durante hashes/antes de publicar y carrera de creación
    del directorio. No quedan bloqueantes identificados en el slice G1a.
 6. `git diff --check` y `bash -n .github/scripts/gate3-emulator-evidence.sh`: correctos.
+7. `lintDevDebug testDevDebugUnitTest assembleDevDebug assembleDevDebugAndroidTest`:
+   BUILD SUCCESSFUL (10m45s), 674 JVM / 0 fallos; lint sin errores bloqueantes.
 
 Comando nativo:
 
@@ -63,7 +65,7 @@ solo crean/eliminan su propia base, fotos y UUID de copia.
 
 ## Pendientes y límites
 
-- Lint local y CI de #755 estaban en curso al redactar; comprobar checks del
+- CI de #755 en curso al cerrar la evidencia local; comprobar checks del
   HEAD final antes de aprobar. No extrapolar el CI verde de main a esta PR.
 - No se ha simulado agotamiento físico del disco ni corte eléctrico/muerte de
   proceso en cada checkpoint. Los errores de escritura impiden publicación;

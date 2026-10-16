@@ -1,5 +1,15 @@
 # Cuentas, roles y sincronización — auditoría de integración
 
+> Actualización 16/10/2026: #753 está fusionada en main `b35f5c22d83e407a93f29b01b5ca2eb8dcce036b`.
+> Auth Android DEV real ya está validado; las afirmaciones inferiores sobre su
+> ausencia describen la auditoría histórica del 14/10, no el estado actual.
+> #743 incorpora main y corrige las tres reproducciones y riesgos adicionales
+> con regresiones (50 locales, 45 PostgreSQL/PGlite y 5 simuladas), SHA
+> `585e27d2e7f9c69e8c8488cabd8104e3f69297b9`; Actions finales todavía pendientes.
+> No hay despliegue persistente ni sincronización agrícola activada. #721/Room v26
+> continúa separada y pendiente de integración. Diseño actualizado:
+> [G1/G2: vinculación y sync](G1-G2-ACCOUNT-LINKING-SYNC-2026-10-16.md).
+
 Fecha: 2026-10-14. Encargo del propietario: auditar y preparar la implementación; solicitar autorización antes de la primera PR funcional de cuentas. No se autoriza integrar #743, desplegar producción ni activar sincronización real.
 
 ## Revisiones y límites de la evidencia

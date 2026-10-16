@@ -12,6 +12,7 @@ OFFLINE_ROOM_TESTS="com.isivoltpro.maginaolivo.data.local.OfflineFirstFarmReposi
 
 # Fail closed before any APK install or pm clear; see the non-destructive guard tests.
 bash .github/scripts/assert-gate3-emulator-safe.sh
+export ANDROID_SERIAL="$(adb get-serialno | tr -d '\r')"
 
 APP_APK="$(find app/build/outputs/apk/dev/debug -name '*.apk' | head -n 1)"
 TEST_APK="$(find app/build/outputs/apk/androidTest -name '*.apk' | head -n 1)"
@@ -72,11 +73,13 @@ dump_ui() {
   # Preserve the boundary state before emulator-runner tears the device down.
   # A missing hierarchy alone cannot distinguish an app ANR from a lost AVD.
   {
-    adb get-state || true
-    adb shell pidof -s "$PKG" || true
-    adb shell dumpsys activity activities || true
-    adb shell dumpsys meminfo "$PKG" || true
-    adb logcat -b crash -d -v threadtime || true
+    timeout 10s adb get-state || true
+    timeout 10s adb shell pidof -s "$PKG" || true
+    timeout 10s adb shell dumpsys activity activities || true
+    timeout 10s adb shell dumpsys meminfo "$PKG" || true
+    # adb logcat waits indefinitely when the AVD disappears, even with -d.
+    # Diagnostics must retain the original failure rather than consume the job.
+    timeout 10s adb logcat -b crash -d -v threadtime || true
   } > "${destination%.xml}-failure.txt" 2>&1
   return 1
 }
@@ -84,7 +87,7 @@ dump_ui() {
 dismiss_quickstep_anr() {
   local xml_file="$1"
 
-  if grep -q "Quickstep isn't responding" "$xml_file" && grep -q 'text="Close app"' "$xml_file"; then
+  if grep -Eq "text=\"(Quickstep|Pixel Launcher) isn't responding\"" "$xml_file" && grep -q 'text="Close app"' "$xml_file"; then
     echo "Dismissing emulator launcher ANR overlay" >&2
     tap_text_from_xml "Close app" "$xml_file"
     sleep 0.5
@@ -375,8 +378,12 @@ assert_instrumentation_passed \
   "$INSTRUMENTATION_RC"
 
 # Native GPS/permission/offline states use separate processes and restore device settings.
+bash .github/scripts/wait-gate3-emulator-ready.sh
 bash .github/scripts/verify-map-device.sh evidence/map-device
 bash .github/scripts/verify-context-notifications.sh evidence/context-notifications
+bash .github/scripts/verify-context-notifications.sh evidence/first-reminder 'com.isivoltpro.maginaolivo.FirstReminderPermissionTest#firstSavedReminderRequestsPermissionAndPreservesWork'
+bash .github/scripts/verify-context-notifications.sh evidence/reminder-persistence com.isivoltpro.maginaolivo.MainReminderPersistenceTest later
+bash .github/scripts/verify-context-notifications.sh evidence/reminder-recreation 'com.isivoltpro.maginaolivo.FirstReminderPermissionTest#saveAcrossRecreationStillRequestsPermission' later
 
 adb logcat -c
 : > evidence/startup-runs.txt

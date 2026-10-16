@@ -20,6 +20,12 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.isivoltpro.maginaolivo.data.reminder.ReminderNotifier
+import com.isivoltpro.maginaolivo.app.LocalPersistence
+import com.isivoltpro.maginaolivo.core.time.AppClock
+import com.isivoltpro.maginaolivo.data.local.MaginaOlivoDatabase
+import com.isivoltpro.maginaolivo.data.local.model.ActivityStatus
+import java.util.UUID
+import kotlinx.coroutines.launch
 import com.isivoltpro.maginaolivo.data.reminder.notificationSettingsIntent
 import com.isivoltpro.maginaolivo.data.reminder.notificationsAllowed
 import com.isivoltpro.maginaolivo.ui.components.MoPrimaryButton
@@ -30,6 +36,7 @@ import com.isivoltpro.maginaolivo.ui.theme.MoSurfaceTokens
 internal class NotificationPermissionAccess(
     val allowed: State<Boolean>,
     val request: (NotificationPermissionTrigger) -> Unit,
+    val savedActivity: (UUID) -> Unit,
 )
 
 internal val LocalNotificationPermissionAccess = staticCompositionLocalOf<NotificationPermissionAccess?> { null }
@@ -55,10 +62,13 @@ private fun Context.permissionActivity(): Activity? {
 /** Lifecycle-owned contextual permission launcher for Perfil; never on entry. */
 @Composable
 internal fun NotificationPermissionHost(
+    persistence: LocalPersistence?,
+    clock: AppClock,
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
     val history = remember(context) { NotificationPermissionHistory(context) }
+    val scope = rememberCoroutineScope()
     val allowed = remember(context) { mutableStateOf(notificationsAllowed(context, ReminderNotifier.CHANNEL_ID)) }
     var pendingTrigger by rememberSaveable { mutableStateOf<String?>(null) }
     fun refresh() { allowed.value = notificationsAllowed(context, ReminderNotifier.CHANNEL_ID) }
@@ -88,7 +98,11 @@ internal fun NotificationPermissionHost(
             }
         }
     }
-    val access = NotificationPermissionAccess(allowed, ::request)
+    val access = NotificationPermissionAccess(allowed, ::request) { id ->
+        persistence?.let { local -> scope.launch {
+            if (hasUpcomingReminder(local.database, id, clock)) request(NotificationPermissionTrigger.FIRST_REMINDER)
+        } }
+    }
     CompositionLocalProvider(LocalNotificationPermissionAccess provides access) { content() }
     pendingTrigger?.let { name ->
         val trigger = NotificationPermissionTrigger.valueOf(name)
@@ -115,5 +129,15 @@ internal fun NotificationPermissionHost(
             },
             dismissButton = { MoTertiaryButton("Ahora no", { pendingTrigger = null }, Modifier.testTag("notification-permission-later")) },
         )
+    }
+}
+
+/** Read the committed aggregate; never calculate, rewrite or fire a reminder here. */
+internal suspend fun hasUpcomingReminder(database: MaginaOlivoDatabase, id: UUID, clock: AppClock): Boolean {
+    val activity = database.activityDao().findWithTargets(id)?.activity ?: return false
+    if (activity.status != ActivityStatus.PLANNED || activity.metadata.deletedAt != null) return false
+    if (database.profileSettingsDao().findForWorkspace(activity.workspaceId)?.remindersEnabled == false) return false
+    return database.agendaDao().listForOwner("ACTIVITY", id).any {
+        it.enabled && it.firedAt == null && it.metadata.deletedAt == null && it.triggerAt > clock.nowInstant()
     }
 }

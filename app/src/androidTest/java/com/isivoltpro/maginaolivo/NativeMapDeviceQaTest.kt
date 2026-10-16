@@ -235,6 +235,9 @@ class NativeMapDeviceQaTest {
             }
             else -> error("Unknown device QA mode: " + mode)
         }
+        // Location can reload the style; GeoJSON and rendered tiles become
+        // queryable asynchronously, independently of the Compose success notice.
+        compose.waitUntil(15_000) { savedContourVisible(map) }
         assertTrue("Saved geometry survives location success or rejection", savedContourVisible(map))
         capture("result")
     }

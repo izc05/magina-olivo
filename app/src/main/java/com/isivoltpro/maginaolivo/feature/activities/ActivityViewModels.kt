@@ -118,16 +118,15 @@ class FarmActivitiesViewModel(
     }
 
     /** A planned activity requires at least one Parcel; a resumable draft does not. */
-    fun create(draft: ActivityDraft, asDraft: Boolean = false, completeImmediately: Boolean = false) {
+    fun create(draft: ActivityDraft, asDraft: Boolean = false, completeImmediately: Boolean = false, onSaved: (UUID) -> Unit = {}) {
         val harvestCampaignId = if (draft.type == ActivityType.HARVEST_DAY) {
             draft.campaignId ?: mutableState.value.campaigns.singleOrNull()?.id
         } else {
             draft.campaignId
         }
         if (!validate(draft.copy(campaignId = harvestCampaignId), asDraft, completeImmediately)) return
-        mutate("Trabajo guardado en este dispositivo") {
-            when (
-                val result = repository.create(
+        mutate("Trabajo guardado en este dispositivo", onSaved) {
+                repository.create(
                     NewActivity(
                         farmId = farmId,
                         campaignId = harvestCampaignId,
@@ -146,10 +145,6 @@ class FarmActivitiesViewModel(
                         activityEndDate = draft.activityEndDate,
                     ),
                 )
-            ) {
-                is AppResult.Success -> AppResult.Success(Unit)
-                is AppResult.Failure -> result
-            }
         }
     }
 
@@ -190,9 +185,10 @@ class FarmActivitiesViewModel(
         return campaignError == null && descriptionError == null && dateError == null && parcelsError == null
     }
 
-    private fun mutate(message: String, operation: suspend () -> AppResult<Unit>) = viewModelScope.launch {
+    private fun mutate(message: String, onSaved: (UUID) -> Unit, operation: suspend () -> AppResult<UUID>) = viewModelScope.launch {
         mutableState.value = mutableState.value.copy(isSaving = true, error = null, message = null)
-        mutableState.value = when (val result = operation()) {
+        val result = operation()
+        mutableState.value = when (result) {
             is AppResult.Success -> mutableState.value.copy(
                 isSaving = false,
                 message = message,
@@ -207,6 +203,7 @@ class FarmActivitiesViewModel(
                 ) activitySaveErrorMessage(result.error) else mutableState.value.campaignError,
             )
         }
+        if (result is AppResult.Success) onSaved(result.value)
     }
 }
 

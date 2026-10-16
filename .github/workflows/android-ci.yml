@@ -203,6 +203,15 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Verify SDK image retry guards
+        run: |
+          bash .github/scripts/test-install-gate3-sdk-image.sh
+          bash .github/scripts/test-gate3-launcher-overlay.sh
+          bash .github/scripts/test-wait-gate3-emulator-ready.sh
+
+      - name: Provision Android image with bounded retries
+        run: bash .github/scripts/install-gate3-sdk-image.sh
+
       - name: Run Gate 3 instrumented QA on emulator
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         env:
@@ -210,6 +219,8 @@ jobs:
           GATE3_ALLOW_APP_DATA_RESET: "1"
         with:
           api-level: 35
+          # Match the verified local QA image; the AOSP 35 ZIP download is failing.
+          target: google_apis
           arch: x86_64
           profile: pixel_6
           disable-animations: true

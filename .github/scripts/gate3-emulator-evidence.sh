@@ -10,6 +10,9 @@ RUNNER="androidx.test.runner.AndroidJUnitRunner"
 SCREENSHOT_TEST="com.isivoltpro.maginaolivo.Gate3EvidenceScreenshotTest"
 OFFLINE_ROOM_TESTS="com.isivoltpro.maginaolivo.data.local.OfflineFirstFarmRepositoryTest,com.isivoltpro.maginaolivo.data.local.OfflineFirstCampaignRepositoryTest,com.isivoltpro.maginaolivo.data.local.ActivityEngineContractTest,com.isivoltpro.maginaolivo.data.local.TypedActivityDetailContractTest,com.isivoltpro.maginaolivo.data.local.OfflineFirstFarmCoverRepositoryTest,com.isivoltpro.maginaolivo.data.local.AttachmentContractTest,com.isivoltpro.maginaolivo.data.local.ExpenseLedgerContractTest,com.isivoltpro.maginaolivo.data.local.HarvestContractTest,com.isivoltpro.maginaolivo.data.local.DeliveryContractTest,com.isivoltpro.maginaolivo.data.local.MachineryContractTest,com.isivoltpro.maginaolivo.data.local.AgendaReminderContractTest"
 
+# G1 preservation must run on the disposable CI emulator, not merely compile.
+OFFLINE_ROOM_TESTS="$OFFLINE_ROOM_TESTS,com.isivoltpro.maginaolivo.data.local.LocalLinkBackupTest"
+
 # Fail closed before any APK install or pm clear; see the non-destructive guard tests.
 bash .github/scripts/assert-gate3-emulator-safe.sh
 export ANDROID_SERIAL="$(adb get-serialno | tr -d '\r')"
@@ -99,6 +102,7 @@ dismiss_quickstep_anr() {
 
 wait_for_home() {
   local destination="$1"
+  local skip_retries=0
 
   for _ in {1..20}; do
     dump_ui "$destination"
@@ -107,6 +111,12 @@ wait_for_home() {
     fi
     if grep -q 'Buenos días' "$destination" || grep -q 'text="Inicio"' "$destination"; then
       return 0
+    fi
+    # Density changes can leave the first Skip tap unapplied. Retry only if a fresh
+    # hierarchy still exposes that exact action; never accept onboarding as Home.
+    if [[ "$skip_retries" -lt 3 ]] && grep -q 'text="Saltar"' "$destination"; then
+      tap_text_from_xml "Saltar" "$destination"
+      skip_retries=$((skip_retries + 1))
     fi
     sleep 0.25
   done

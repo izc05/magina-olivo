@@ -1,0 +1,11 @@
+PASS: partial binary checkpoint reached for synthetic fixture 4db7e707-a7e0-4f53-9703-d6b73b818e74
+PASS: Android application process force-stopped without clearing data
+
+com.isivoltpro.maginaolivo.data.local.LocalLinkBackupProcessTest:.
+
+Time: 3.331
+
+OK (1 test)
+
+
+PASS: original DB, original bytes and prior checkpoint intact; same operation recovered exactly once

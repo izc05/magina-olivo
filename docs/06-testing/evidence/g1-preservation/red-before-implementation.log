@@ -1,0 +1,7 @@
+e: file:///C:/Users/ISICIO/.codex/worktrees/g1-local-account-linking/MAGINA%20V20/app/src/androidTest/java/com/isivoltpro/maginaolivo/data/local/LocalLinkBackupTest.kt:6:51 Unresolved reference 'LocalLinkBackup'.
+e: file:///C:/Users/ISICIO/.codex/worktrees/g1-local-account-linking/MAGINA%20V20/app/src/androidTest/java/com/isivoltpro/maginaolivo/data/local/LocalLinkBackupTest.kt:23:29 Unresolved reference 'LocalLinkBackup'.
+> Task :app:compileDevDebugAndroidTestKotlin FAILED
+FAILURE: Build failed with an exception.
+Execution failed for task ':app:compileDevDebugAndroidTestKotlin'.
+         Unresolved reference 'LocalLinkBackup'.
+BUILD FAILED in 46s

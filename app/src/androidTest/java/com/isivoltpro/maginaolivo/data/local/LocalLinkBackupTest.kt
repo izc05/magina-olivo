@@ -5,6 +5,10 @@ import android.database.sqlite.SQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
 import com.isivoltpro.maginaolivo.data.repository.LocalLinkBackup
 import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import android.system.ErrnoException
+import android.system.OsConstants
 import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.async
@@ -141,5 +145,34 @@ class LocalLinkBackupTest {
         try { service().capture(id); fail("Metadata mismatch must stop linking") } catch (_: java.io.IOException) { }
         assertFalse(File(context.noBackupFilesDir, "account-link-backups/$id").exists())
         assertArrayEquals(byteArrayOf(1, 8, 0, 42, -1), photo.readBytes())
+    }
+
+    @Test fun diskFullMidFileAndManifestPreservesSourceAndExistingCheckpoint() = runBlocking {
+        seed()
+        val kept = service().capture(operation())
+        val keptManifest = File(kept.directory, "manifest.json").readBytes()
+        for (failAt in listOf("0", "manifest.json")) {
+            val id = operation()
+            val fullDisk = LocalLinkBackup(context, database) { file ->
+                object : FileOutputStream(file) {
+                    override fun write(bytes: ByteArray, offset: Int, length: Int) {
+                        if (file.name == failAt) {
+                            super.write(bytes, offset, minOf(2, length))
+                            // Real kernel ENOSPC without filling the retained emulator's volume.
+                            FileOutputStream("/dev/full").use { it.write(bytes, offset, length) }
+                        }
+                        super.write(bytes, offset, length)
+                    }
+                    override fun write(bytes: ByteArray) = write(bytes, 0, bytes.size)
+                }
+            }
+            try { fullDisk.capture(id); fail("ENOSPC must not publish a checkpoint") }
+            catch (error: IOException) { assertEquals(OsConstants.ENOSPC, (error.cause as ErrnoException).errno) }
+            assertFalse(File(context.noBackupFilesDir, "account-link-backups/$id").exists())
+            assertFalse(kept.directory.parentFile!!.listFiles()!!.any { it.name.startsWith(".$id-") })
+            assertArrayEquals(keptManifest, File(kept.directory, "manifest.json").readBytes())
+            assertArrayEquals(byteArrayOf(1, 8, 0, 42, -1), photo.readBytes())
+            assertEquals(1, service().capture(id).documentCount)
+        }
     }
 }

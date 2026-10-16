@@ -20,7 +20,12 @@ import org.json.JSONObject
 import kotlin.coroutines.coroutineContext
 
 /** G1 prerequisite only. A receipt grants neither account ownership nor permission to sync. */
-class LocalLinkBackup(context: Context, private val database: MaginaOlivoDatabase) {
+class LocalLinkBackup internal constructor(
+    context: Context,
+    private val database: MaginaOlivoDatabase,
+    private val openOutput: (File) -> FileOutputStream,
+) {
+    constructor(context: Context, database: MaginaOlivoDatabase) : this(context, database, ::FileOutputStream)
     private val root = File(context.noBackupFilesDir, "account-link-backups")
     private val resolver = context.contentResolver
 
@@ -90,7 +95,7 @@ class LocalLinkBackup(context: Context, private val database: MaginaOlivoDatabas
                         val relative = "files/${documents.length()}"
                         val file = File(staging, relative)
                         val input = resolver.openInputStream(uri) ?: throw IOException("backup_unreadable_document")
-                        input.use { stream -> FileOutputStream(file).use { output ->
+                        input.use { stream -> openOutput(file).use { output ->
                             val buffer = ByteArray(64 * 1024)
                             while (true) {
                                 coroutineContext.ensureActive()
@@ -115,7 +120,7 @@ class LocalLinkBackup(context: Context, private val database: MaginaOlivoDatabas
             val manifest = JSONObject().put("format", 1).put("operationId", operationId.toString())
                 .put("schemaVersion", MaginaOlivoDatabase.VERSION).put("tables", JSONObject(counts as Map<*, *>))
                 .put("databaseSha256", sha256(dbFile)).put("documents", documents)
-            FileOutputStream(File(staging, "manifest.json")).use { out ->
+            openOutput(File(staging, "manifest.json")).use { out ->
                 out.write(manifest.toString().toByteArray(Charsets.UTF_8)); out.fd.sync()
             }
             verify(staging, operationId)

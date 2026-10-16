@@ -99,8 +99,14 @@ class NativeMapDeviceQaTest {
         try {
             if (mode != "restore-accuracy") runCatching { capture("end") }
         } finally {
-            updates.removeCallbacksAndMessages(null)
-            provider?.removeTestProvider(LocationManager.GPS_PROVIDER)
+            // The sender runs on the main looper and reposts itself. Removing callbacks
+            // from the instrumentation thread can miss a sender already executing,
+            // which then publishes after the test provider has been removed.
+            instrumentation.runOnMainSync {
+                updates.removeCallbacksAndMessages(null)
+                provider?.removeTestProvider(LocationManager.GPS_PROVIDER)
+                provider = null
+            }
             database.close()
         }
     }

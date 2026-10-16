@@ -1,0 +1,311 @@
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=5
+INSTRUMENTATION_STATUS: stream=
+com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest:
+INSTRUMENTATION_STATUS: test=refreshingACommunityPreservesItsOfflineNotices
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=5
+INSTRUMENTATION_STATUS: stack=java.util.NoSuchElementException: List is empty.
+	at kotlin.collections.CollectionsKt___CollectionsKt.single(_Collections.kt:619)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest$refreshingACommunityPreservesItsOfflineNotices$1.invokeSuspend(TerritorialPersistenceContractTest.kt:80)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:98)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest.refreshingACommunityPreservesItsOfflineNotices(TerritorialPersistenceContractTest.kt:71)
+
+INSTRUMENTATION_STATUS: stream=
+Error in refreshingACommunityPreservesItsOfflineNotices(com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest):
+java.util.NoSuchElementException: List is empty.
+	at kotlin.collections.CollectionsKt___CollectionsKt.single(_Collections.kt:619)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest$refreshingACommunityPreservesItsOfflineNotices$1.invokeSuspend(TerritorialPersistenceContractTest.kt:80)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:98)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest.refreshingACommunityPreservesItsOfflineNotices(TerritorialPersistenceContractTest.kt:71)
+
+INSTRUMENTATION_STATUS: test=refreshingACommunityPreservesItsOfflineNotices
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=5
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=personalPlanCannotReferenceAParcelFromAnotherWorkspace
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=5
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: A private plan must refer to its own workspace's parcel
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest$personalPlanCannotReferenceAParcelFromAnotherWorkspace$1.invokeSuspend(TerritorialPersistenceContractTest.kt:57)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest.personalPlanCannotReferenceAParcelFromAnotherWorkspace(TerritorialPersistenceContractTest.kt:55)
+
+INSTRUMENTATION_STATUS: stream=
+Error in personalPlanCannotReferenceAParcelFromAnotherWorkspace(com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest):
+java.lang.AssertionError: A private plan must refer to its own workspace's parcel
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest$personalPlanCannotReferenceAParcelFromAnotherWorkspace$1.invokeSuspend(TerritorialPersistenceContractTest.kt:57)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest.personalPlanCannotReferenceAParcelFromAnotherWorkspace(TerritorialPersistenceContractTest.kt:55)
+
+INSTRUMENTATION_STATUS: test=personalPlanCannotReferenceAParcelFromAnotherWorkspace
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=5
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=municipalPublicationsDoNotInventOfficialDatedNews
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=5
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertTrue(Assert.java:53)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest$municipalPublicationsDoNotInventOfficialDatedNews$1.invokeSuspend(TerritorialPersistenceContractTest.kt:85)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.internal.ScopeCoroutine.afterResume(Scopes.kt:35)
+	at kotlinx.coroutines.AbstractCoroutine.resumeWith(AbstractCoroutine.kt:101)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:47)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest.municipalPublicationsDoNotInventOfficialDatedNews(TerritorialPersistenceContractTest.kt:83)
+
+INSTRUMENTATION_STATUS: stream=
+Error in municipalPublicationsDoNotInventOfficialDatedNews(com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest):
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertTrue(Assert.java:53)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest$municipalPublicationsDoNotInventOfficialDatedNews$1.invokeSuspend(TerritorialPersistenceContractTest.kt:85)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.internal.ScopeCoroutine.afterResume(Scopes.kt:35)
+	at kotlinx.coroutines.AbstractCoroutine.resumeWith(AbstractCoroutine.kt:101)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:47)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest.municipalPublicationsDoNotInventOfficialDatedNews(TerritorialPersistenceContractTest.kt:83)
+
+INSTRUMENTATION_STATUS: test=municipalPublicationsDoNotInventOfficialDatedNews
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=5
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=personalPlanIdCannotOverwriteAnotherWorkspace
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=5
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: Plan ownership must not move through an upsert
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest$personalPlanIdCannotOverwriteAnotherWorkspace$1.invokeSuspend(TerritorialPersistenceContractTest.kt:50)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest.personalPlanIdCannotOverwriteAnotherWorkspace(TerritorialPersistenceContractTest.kt:46)
+
+INSTRUMENTATION_STATUS: stream=
+Error in personalPlanIdCannotOverwriteAnotherWorkspace(com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest):
+java.lang.AssertionError: Plan ownership must not move through an upsert
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest$personalPlanIdCannotOverwriteAnotherWorkspace$1.invokeSuspend(TerritorialPersistenceContractTest.kt:50)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest.personalPlanIdCannotOverwriteAnotherWorkspace(TerritorialPersistenceContractTest.kt:46)
+
+INSTRUMENTATION_STATUS: test=personalPlanIdCannotOverwriteAnotherWorkspace
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=5
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=personalPlanUpdatePreservesCreatedTimestamp
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=5
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: expected:<100> but was:<900>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:647)
+	at org.junit.Assert.assertEquals(Assert.java:633)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest$personalPlanUpdatePreservesCreatedTimestamp$1.invokeSuspend(TerritorialPersistenceContractTest.kt:67)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:98)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest.personalPlanUpdatePreservesCreatedTimestamp(TerritorialPersistenceContractTest.kt:61)
+
+INSTRUMENTATION_STATUS: stream=
+Error in personalPlanUpdatePreservesCreatedTimestamp(com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest):
+java.lang.AssertionError: expected:<100> but was:<900>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:647)
+	at org.junit.Assert.assertEquals(Assert.java:633)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest$personalPlanUpdatePreservesCreatedTimestamp$1.invokeSuspend(TerritorialPersistenceContractTest.kt:67)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:98)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest.personalPlanUpdatePreservesCreatedTimestamp(TerritorialPersistenceContractTest.kt:61)
+
+INSTRUMENTATION_STATUS: test=personalPlanUpdatePreservesCreatedTimestamp
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_RESULT: stream=
+
+Time: 0.47
+There were 5 failures:
+1) refreshingACommunityPreservesItsOfflineNotices(com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest)
+java.util.NoSuchElementException: List is empty.
+	at kotlin.collections.CollectionsKt___CollectionsKt.single(_Collections.kt:619)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest$refreshingACommunityPreservesItsOfflineNotices$1.invokeSuspend(TerritorialPersistenceContractTest.kt:80)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:98)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest.refreshingACommunityPreservesItsOfflineNotices(TerritorialPersistenceContractTest.kt:71)
+2) personalPlanCannotReferenceAParcelFromAnotherWorkspace(com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest)
+java.lang.AssertionError: A private plan must refer to its own workspace's parcel
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest$personalPlanCannotReferenceAParcelFromAnotherWorkspace$1.invokeSuspend(TerritorialPersistenceContractTest.kt:57)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest.personalPlanCannotReferenceAParcelFromAnotherWorkspace(TerritorialPersistenceContractTest.kt:55)
+3) municipalPublicationsDoNotInventOfficialDatedNews(com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest)
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertTrue(Assert.java:53)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest$municipalPublicationsDoNotInventOfficialDatedNews$1.invokeSuspend(TerritorialPersistenceContractTest.kt:85)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.internal.ScopeCoroutine.afterResume(Scopes.kt:35)
+	at kotlinx.coroutines.AbstractCoroutine.resumeWith(AbstractCoroutine.kt:101)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:47)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest.municipalPublicationsDoNotInventOfficialDatedNews(TerritorialPersistenceContractTest.kt:83)
+4) personalPlanIdCannotOverwriteAnotherWorkspace(com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest)
+java.lang.AssertionError: Plan ownership must not move through an upsert
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest$personalPlanIdCannotOverwriteAnotherWorkspace$1.invokeSuspend(TerritorialPersistenceContractTest.kt:50)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest.personalPlanIdCannotOverwriteAnotherWorkspace(TerritorialPersistenceContractTest.kt:46)
+5) personalPlanUpdatePreservesCreatedTimestamp(com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest)
+java.lang.AssertionError: expected:<100> but was:<900>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:647)
+	at org.junit.Assert.assertEquals(Assert.java:633)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest$personalPlanUpdatePreservesCreatedTimestamp$1.invokeSuspend(TerritorialPersistenceContractTest.kt:67)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:98)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.isivoltpro.maginaolivo.data.local.TerritorialPersistenceContractTest.personalPlanUpdatePreservesCreatedTimestamp(TerritorialPersistenceContractTest.kt:61)
+
+FAILURES!!!
+Tests run: 5,  Failures: 5
+
+
+INSTRUMENTATION_CODE: -1

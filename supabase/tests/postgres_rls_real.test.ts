@@ -862,6 +862,16 @@ test('Audit: delivery cannot link a harvest from another campaign of the same fa
   await assert.rejects(asUser(USER_A,()=>db.query(`UPDATE public.deliveries SET harvest_id='${harvest.rows[0].id}' WHERE id='${deliveryId}'`)),/harvest.*campaign/i);
 });
 
+for (const principal of ['creator','owner']) {
+  test(`Audit: new farm cannot assign another account as ${principal} without consent`, async () => {
+    const ws=await asUser(USER_D,()=>db.query(`INSERT INTO public.workspaces(owner_user_id,name) VALUES('${USER_D}','Principal isolation fixture') RETURNING id`));
+    const creator=principal==='creator'?USER_A:USER_D;
+    const owner=principal==='owner'?USER_A:USER_D;
+    await assert.rejects(asUser(USER_D,()=>db.query(`INSERT INTO public.farms(workspace_id,creator_user_id,owner_id,name)
+      VALUES('${ws.rows[0].id}','${creator}','${owner}','Unconsented principal')`)),/row-level security/i);
+  });
+}
+
 test("Migration: unknown legacy permissive farm policy fails closed instead of remaining OR-authorized", async () => {
   const isolated = new PGlite();
   const root = fileURLToPath(new URL('../../', import.meta.url));

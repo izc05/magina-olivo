@@ -10,7 +10,7 @@ Antes de corregir: el reproductor de #752 confirma buckets agrícolas públicos,
 lectura de contrato por política Storage heredada `USING(true)` y ausencia de
 parcelas para un delegado con `view_farm`. Las cuatro regresiones nuevas fallan
 antes de rellenar la migración y pasan después. `npm test --prefix supabase`:
-51/51 (46 PostgreSQL/PGlite con Auth/Storage de fixture y 5 simulaciones TypeScript).
+53/53 (48 PostgreSQL/PGlite con Auth/Storage de fixture y 5 simulaciones TypeScript).
 No equivalen a pruebas HTTP contra Supabase ni datos reales de agricultores.
 
 La nueva migración forward `20261016041222`:
@@ -61,6 +61,15 @@ verde después; comprobación también añadida al caso HTTP nativo. La campaña
 nula legacy de una cosecha sigue permitida sin atribuirle una campaña inventada.
 La migración forward `20261016041601` impide esos
 casos. Los casos válidos mantienen UUID/importes; no se recalculan pesos o dinero.
+
+Otra revisión focalizada confirmó atribución unilateral al crear una finca:
+`creator_user_id` o `owner_id` ajeno concedían a esa identidad visibilidad y
+capacidades sin invitación. No permitía leer sus fincas preexistentes. Dos
+regresiones SQL y un caso nativo HTTP (workspace propio/NULL) lo cubren. El alta
+ordinaria exige creador propio y propietario propio o vacío. Se conserva el
+propietario vacío sin atribuirlo automáticamente. Transferir/atribuir otra
+identidad necesita un futuro flujo validado de consentimiento; no se reescriben
+fincas legacy existentes ni se certifica su titularidad por esta restricción.
 
 Una reinvitación con grant vencido/futuro debe fallar y revertir la aceptación;
 no extiende permisos indefinidamente ni elimina una caducidad fijada por el

@@ -203,6 +203,21 @@ test('Native RLS permits A/B/C farm access and isolates D and anonymous', async 
   assert.ok(!anonymous.ok || anonymous.data.length === 0);
 });
 
+test('Native farm creation cannot assign foreign creator or owner identities', async () => {
+  const own=await insert('workspaces','D',{owner_user_id:users.D.id,name:'Principal fixture'});
+  for (const principals of [
+    {creator_user_id:users.A.id,owner_id:users.D.id},
+    {creator_user_id:users.D.id,owner_id:users.A.id},
+  ]) {
+    for (const workspace_id of [own.id,null]) {
+      const rejected=await request('/rest/v1/farms',{actor:'D',method:'POST',body:{id:randomUUID(),workspace_id,name:'Unconsented attribution',...principals}});
+      assert.equal(rejected.status,403);
+    }
+  }
+  const legitimate=await insert('farms','D',{id:randomUUID(),workspace_id:own.id,name:'Own unassigned farm',creator_user_id:users.D.id,owner_id:null});
+  assert.deepEqual((await request(`/rest/v1/farms?id=eq.${legitimate.id}&select=id`,{actor:'A'})).data,[]);
+});
+
 test('Native delivery A/B sharing rejects cross-farm campaign references', async () => {
   const row = { id: randomUUID(), workspace_id: workspace.id, farm_id: farm.id, campaign_id: campaign.id,
     delivery_date: '2026-10-02', destination_name: 'Native QA cooperative', net_grams: 1200000, recorded_by_user_id: users.B.id };

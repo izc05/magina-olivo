@@ -1,4 +1,13 @@
 -- #752 additional reproduced integrity defects. No data rewriting or sync activation.
+-- Ordinary creation cannot attribute a farm to another account without consent.
+-- A missing owner stays unassigned; migration/verified transfer is a separate gate.
+DROP POLICY farms_insert_creator ON public.farms;
+CREATE POLICY farms_insert_creator ON public.farms FOR INSERT TO authenticated
+WITH CHECK (
+  creator_user_id=auth.uid() AND (owner_id IS NULL OR owner_id=auth.uid())
+  AND (workspace_id IS NULL OR workspace_id IN (SELECT id FROM public.workspaces WHERE owner_user_id=auth.uid()))
+);
+
 CREATE OR REPLACE FUNCTION public.check_delivery_immutability()
 RETURNS TRIGGER LANGUAGE plpgsql SET search_path = pg_catalog, public AS $$
 BEGIN

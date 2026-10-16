@@ -10,7 +10,7 @@ Antes de corregir: el reproductor de #752 confirma buckets agrícolas públicos,
 lectura de contrato por política Storage heredada `USING(true)` y ausencia de
 parcelas para un delegado con `view_farm`. Las cuatro regresiones nuevas fallan
 antes de rellenar la migración y pasan después. `npm test --prefix supabase`:
-44/44 (39 PostgreSQL/PGlite con Auth/Storage de fixture y 5 simulaciones TypeScript).
+50/50 (45 PostgreSQL/PGlite con Auth/Storage de fixture y 5 simulaciones TypeScript).
 No equivalen a pruebas HTTP contra Supabase ni datos reales de agricultores.
 
 La nueva migración forward `20261016041222`:
@@ -50,11 +50,29 @@ Supabase y prueba identidades nativas. No se vinculan UUID locales ni se envía
 ningún agregado agrícola. No se han leído/modificado bases reales del usuario;
 la conservación probada aquí utiliza fixtures sintéticos.
 
-Los riesgos estáticos adicionales de #752 (reinvitación con grant vencido,
-autor histórico de entregas y referencias polimórficas/de gastos) continúan
-requiriendo regresiones y resolución antes de certificar todo G0. Este bloque
-cierra solamente los tres defectos reproducidos; no habilita compartir fincas
-en Android ni declara paridad de sincronización.
+## Segundo commit: integridad de agregados y reinvitación
+
+Las regresiones también reprodujeron alteración del autor histórico de pesadas,
+gasto referido a pesada de otra finca, documento atribuido a agregado de otro
+workspace, entrega con harvest inexistente y aceptación de invitación sobre grant
+vencido sin acceso efectivo. La migración forward `20261016041601` impide esos
+casos. Los casos válidos mantienen UUID/importes; no se recalculan pesos o dinero.
+
+Una reinvitación con grant vencido/futuro debe fallar y revertir la aceptación;
+no extiende permisos indefinidamente ni elimina una caducidad fijada por el
+propietario. El emisor deberá revisar la vigencia antes de aceptar de nuevo.
+Los documentos se validan contra DELIVERY/FARM/PARCEL/CONTRACT existentes en su
+workspace. ACTIVITY no tiene tabla G0: se rechaza explícitamente hasta definir
+su contrato; la base local Android no se modifica. Referencias preexistentes
+inválidas detienen la migración para revisión, sin borrarlas ni reasignarlas.
+
+Se amplía también la suite nativa HTTP con esos rechazos, rollback de invitación
+y ejemplos positivos. Registrar los nuevos controles del SHA definitivo; los
+verdes del primer commit no validan este segundo cambio. El primer bloque sí
+superó G0 nativo limpio/legacy en Actions run `38849619107` (SHA `23e1ec53`).
+No se habilita compartir fincas en Android ni se declara paridad de sincronización.
+DTO de agregados no soportados, revocación offline y permisos detallados de
+encargado/jornalero/transportista siguen siendo gates de G1/G2.
 
 Fuentes: [buckets públicos y privados](https://supabase.com/docs/guides/storage/buckets/fundamentals)
 y [políticas Storage](https://supabase.com/docs/guides/storage/security/access-control).

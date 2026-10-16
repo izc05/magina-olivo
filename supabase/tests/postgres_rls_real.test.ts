@@ -102,6 +102,7 @@ before(async () => {
   await db.exec(mig2);
   await db.exec(mig3);
   await db.exec(readFileSync(join(rootDir, 'supabase/migrations/20261016041222_g0_legacy_storage_parcel_hardening.sql'), 'utf8'));
+  await db.exec(readFileSync(join(rootDir, 'supabase/migrations/20261016041601_g0_aggregate_identity_guards.sql'), 'utf8'));
 
   // 3. Grant privileges to authenticated role
   await db.exec(`
@@ -813,6 +814,45 @@ test("P0: unbound invitation waits for issuer confirmation even if caller disabl
   assert.equal(confirmed.rows[0].result.success, true);
   const after = await asUser(USER_B, () => db.query(`SELECT id FROM public.farms WHERE id='${farm2Id}';`));
   assert.equal(after.rows.length, 1);
+});
+
+test('Audit: delivery author cannot be rewritten by the workspace owner', async () => {
+  await assert.rejects(asUser(USER_A, () => db.query(`UPDATE public.deliveries SET recorded_by_user_id='${USER_D}' WHERE id='${deliveryId}';`)), /author|recorded_by/i);
+});
+
+test('Audit: expense cannot reference a delivery from another farm in the same workspace', async () => {
+  await assert.rejects(asUser(USER_A, () => db.query(`INSERT INTO public.expenses(workspace_id,farm_id,delivery_id,expense_date,concept,category,amount_minor)
+    VALUES('${workspaceAId}','${farm2Id}','${deliveryId}',CURRENT_DATE,'Cross-farm fixture','OTHER',100);`)), /expense.*delivery|delivery.*farm/i);
+});
+
+test('Audit: document metadata cannot claim another workspace farmer aggregate', async () => {
+  const other = await asUser(USER_D, () => db.query(`INSERT INTO public.workspaces(owner_user_id,name) VALUES('${USER_D}','Intruder own workspace') RETURNING id;`));
+  await assert.rejects(asUser(USER_D, () => db.query(`INSERT INTO public.documents(workspace_id,owner_type,owner_id,type,mime_type,display_name)
+    VALUES('${other.rows[0].id}','DELIVERY','${deliveryId}','PHOTO','image/jpeg','Forged');`)), /document.*owner|aggregate/i);
+});
+
+test('Audit: expired grant reinvitation cannot report acceptance without valid access', async () => {
+  const token='qa-expired-grant-reinvite';
+  await asSuperuser(() => db.exec(`UPDATE public.farm_access_grants SET valid_until=now()-interval '1 day' WHERE farm_id='${farm2Id}' AND user_id='${USER_B}';`));
+  const invitation=await asUser(USER_A, () => db.query(`INSERT INTO public.farm_invitations(farm_id,issued_by_user_id,token_hash,expires_at,requires_issuer_confirmation)
+    VALUES('${farm2Id}','${USER_A}','${hashToken(token)}',now()+interval '1 hour',true) RETURNING id;`));
+  await asUser(USER_B, () => db.query(`SELECT public.claim_farm_invitation('${token}');`));
+  await assert.rejects(asUser(USER_A, () => db.query(`SELECT public.confirm_farm_invitation('${invitation.rows[0].id}');`)), /grant.*valid|inactive grant/i);
+  const state=await asSuperuser(() => db.query(`SELECT state FROM public.farm_invitations WHERE id='${invitation.rows[0].id}'`));
+  assert.equal(state.rows[0].state,'CLAIMED');
+});
+
+test('Audit: delivery cannot reference a missing harvest', async () => {
+  await assert.rejects(asUser(USER_A, () => db.query(`UPDATE public.deliveries SET harvest_id='99999999-0000-0000-0000-000000000999' WHERE id='${deliveryId}'`)), /foreign key|harvest/i);
+});
+
+test('Audit: valid expense and document retain original agricultural values', async () => {
+  const expense=await asUser(USER_A, () => db.query(`INSERT INTO public.expenses(workspace_id,farm_id,campaign_id,delivery_id,expense_date,concept,category,amount_minor)
+    VALUES('${workspaceAId}','${farmId}','${campaignId}','${deliveryId}',CURRENT_DATE,'Valid fixture','OTHER',12345) RETURNING amount_minor;`));
+  assert.equal(Number(expense.rows[0].amount_minor),12345);
+  const doc=await asUser(USER_A, () => db.query(`INSERT INTO public.documents(workspace_id,owner_type,owner_id,type,mime_type,display_name)
+    VALUES('${workspaceAId}','DELIVERY','${deliveryId}','PHOTO','image/jpeg','Valid fixture') RETURNING owner_id;`));
+  assert.equal(doc.rows[0].owner_id,deliveryId);
 });
 
 test("Migration: unknown legacy permissive farm policy fails closed instead of remaining OR-authorized", async () => {

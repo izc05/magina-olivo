@@ -113,6 +113,7 @@ before(async () => {
   // Only remove the known synthetic policy in this disposable fixture, never an unknown real policy.
   sql('DROP POLICY g0_test_legacy_public_read ON storage.objects;');
   sql(`BEGIN; ${hardening} COMMIT; NOTIFY pgrst, 'reload schema';`);
+  sql(`BEGIN; ${readFileSync(new URL('../migrations/20261016041601_g0_aggregate_identity_guards.sql', import.meta.url), 'utf8')} COMMIT;`);
   writeFileSync(`${evidence}/${baseline}-runtime.txt`, sql(`SELECT version(); SELECT 'baseline=${baseline}'; SELECT bucket_id, count(*) FROM storage.objects GROUP BY bucket_id;`));
 
   let ready = false;
@@ -210,6 +211,35 @@ test('Native delivery A/B sharing rejects cross-farm campaign references', async
   assert.deepEqual((await request(`/rest/v1/deliveries?id=eq.${delivery.id}&select=id`, { actor: 'D' })).data, []);
   const mismatch = await request('/rest/v1/deliveries', { actor: 'A', method: 'POST', body: { ...row, id: randomUUID(), farm_id: farm2.id, recorded_by_user_id: users.A.id } });
   assert.equal(mismatch.status, 409);
+});
+
+test('Native historical author and aggregate references cannot be forged', async () => {
+  const delivery = await insert('deliveries','A',{workspace_id:workspace.id,farm_id:farm.id,campaign_id:campaign.id,
+    delivery_date:'2026-10-03',destination_name:'Audit fixture',net_grams:0,recorded_by_user_id:users.A.id});
+  assert.ok(!(await request(`/rest/v1/deliveries?id=eq.${delivery.id}`,{actor:'A',method:'PATCH',body:{recorded_by_user_id:users.D.id}})).ok);
+  assert.ok(!(await request(`/rest/v1/deliveries?id=eq.${delivery.id}`,{actor:'A',method:'PATCH',body:{harvest_id:randomUUID()}})).ok);
+  const expense={workspace_id:workspace.id,farm_id:farm.id,campaign_id:campaign.id,delivery_id:delivery.id,
+    expense_date:'2026-10-03',concept:'Fixture',category:'OTHER',amount_minor:12345};
+  assert.equal((await insert('expenses','A',expense)).amount_minor,12345);
+  assert.ok(!(await request('/rest/v1/expenses',{actor:'A',method:'POST',body:{...expense,farm_id:farm2.id,campaign_id:null}})).ok);
+  const doc={workspace_id:workspace.id,owner_type:'DELIVERY',owner_id:delivery.id,type:'PHOTO',mime_type:'image/jpeg',display_name:'Fixture'};
+  await insert('documents','A',doc);
+  const other=await insert('workspaces','D',{owner_user_id:users.D.id,name:'Document isolation fixture'});
+  assert.ok(!(await request('/rest/v1/documents',{actor:'D',method:'POST',body:{...doc,workspace_id:other.id}})).ok);
+});
+
+test('Native expired reinvitation rolls back instead of accepting an inactive grant', async () => {
+  const isolated=await insert('farms','A',{workspace_id:workspace.id,creator_user_id:users.A.id,owner_id:users.A.id,name:'Reinvitation fixture'});
+  await insert('farm_access_grants','A',{farm_id:isolated.id,user_id:users.B.id,granted_by_user_id:users.A.id,role:'VIEWER',
+    capabilities:['view_farm'],valid_from:new Date(Date.now()-172800000).toISOString(),valid_until:new Date(Date.now()-86400000).toISOString()});
+  const token=randomUUID();
+  const invitation=await insert('farm_invitations','A',{farm_id:isolated.id,issued_by_user_id:users.A.id,
+    token_hash:createHash('sha256').update(token).digest('hex'),expires_at:new Date(Date.now()+3600000).toISOString(),requires_issuer_confirmation:true});
+  assert.equal((await rpc('claim_farm_invitation','B',{token_plaintext:token})).status,'CLAIMED');
+  const rejected=await request('/rest/v1/rpc/confirm_farm_invitation',{actor:'A',method:'POST',body:{p_invitation_id:invitation.id}});
+  assert.ok(!rejected.ok);
+  assert.equal((await request(`/rest/v1/farm_invitations?id=eq.${invitation.id}&select=state`,{actor:'A'})).data[0].state,'CLAIMED');
+  assert.deepEqual((await request(`/rest/v1/farms?id=eq.${isolated.id}&select=id`,{actor:'B'})).data,[]);
 });
 
 test('Native first and second contract consent freeze terms and forbid downgrade', async () => {

@@ -22,14 +22,18 @@ un permiso para subir datos. No se declara G1 completa con esta entrega.
 
 ## Ejecución
 
-- [ ] Validar main: foundation, emulador, G0 limpio/legacy; revisar pruebas Room/Auth.
-- [ ] Añadir pruebas instrumentadas de roundtrip SQLite y bytes no vacíos,
+- [x] Validar main: foundation, emulador, G0 limpio/legacy; revisar pruebas Room/Auth.
+- [x] Añadir pruebas instrumentadas de roundtrip SQLite y bytes no vacíos,
   reintento tras recrear servicio, corrupción, archivo ausente y fallo sin mutación.
-- [ ] Verificar que fallan antes de implementar `LocalLinkBackup`.
-- [ ] Implementar `data/repository/LocalLinkBackup.kt` y pasar esas pruebas.
-- [ ] Revisar cancelación, falta de espacio, URI inválida, concurrencia y copias
+- [x] Verificar que fallan antes de implementar `LocalLinkBackup`.
+- [x] Implementar `data/repository/LocalLinkBackup.kt` y pasar esas pruebas.
+- [x] Revisar cancelación, falta de espacio, URI inválida, concurrencia y copias
   antiguas. Nunca usar una copia antigua como inventario actual de consentimiento.
-- [ ] Registrar resultados, abrir PR independiente y actualizar #744/#727.
+- [x] Registrar resultados, abrir PR independiente y actualizar #744/#727.
+
+Evidencia: `docs/06-testing/evidence/g1-preservation/REPORT.md`, PR #755.
+41 pruebas instrumentadas verdes y 674 JVM; CI de la PR pendiente. La revisión
+de cancelación y ENOSPC no equivale a pruebas físicas de interrupción/espacio.
 
 ## Revisión
 

@@ -101,6 +101,7 @@ before(async () => {
   await db.exec(mig1);
   await db.exec(mig2);
   await db.exec(mig3);
+  await db.exec(readFileSync(join(rootDir, 'supabase/migrations/20261016041222_g0_legacy_storage_parcel_hardening.sql'), 'utf8'));
 
   // 3. Grant privileges to authenticated role
   await db.exec(`

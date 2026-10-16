@@ -19,7 +19,8 @@ const baseline = process.env.G0_NATIVE_BASELINE;
 assert.ok(['clean', 'legacy'].includes(baseline));
 const container = `supabase_db_${project}`;
 const users = {};
-let workspace, farm, farm2, campaign, contract, agreement;
+let workspace, farm, farm2, campaign, contract, agreement, sharedParcel;
+let legacyPolicyBlocked = false;
 const legacyId = randomUUID();
 const pdf = '%PDF-1.4\n% Synthetic native DEV contract evidence\n%%EOF\n';
 const evidence = 'evidence/g0-native';
@@ -87,9 +88,31 @@ before(async () => {
     writeFileSync(`${evidence}/legacy-farms-before.sql`, backup);
   }
 
+  // Reproduce inherited public buckets through the actual Storage API, not SQL objects.
+  if (baseline === 'legacy') {
+    for (const id of ['farm-attachments', 'farm-contracts']) {
+      assert.ok((await request('/storage/v1/bucket', { admin:true, method:'POST', body:{id,name:id,public:true} })).ok);
+    }
+    const uploaded = await fetch(`${api}/storage/v1/object/farm-contracts/legacy-preserved.pdf`, {
+      method:'POST', headers:{apikey:service, Authorization:`Bearer ${service}`, 'Content-Type':'application/pdf'}, body:pdf,
+    });
+    assert.ok(uploaded.ok);
+    assert.equal(await (await fetch(`${api}/storage/v1/object/public/farm-contracts/legacy-preserved.pdf`)).text(), pdf);
+  }
   const migrations = ['20261011120000_g0_auth_workspaces_shared_farms.sql', '20261011120001_g0_agricultural_sync_schema.sql', '20261011120002_g0_contracts_and_storage_rls.sql'];
   const ddl = migrations.map(name => readFileSync(new URL(`../migrations/${name}`, import.meta.url), 'utf8')).join('\n');
   sql(`BEGIN;\n${ddl}\nCOMMIT;\nNOTIFY pgrst, 'reload schema';`);
+  const hardening = readFileSync(new URL('../migrations/20261016041222_g0_legacy_storage_parcel_hardening.sql', import.meta.url), 'utf8');
+  sql('CREATE POLICY g0_test_legacy_public_read ON storage.objects FOR SELECT USING(true);');
+  try {
+    sql(`BEGIN; ${hardening} COMMIT;`);
+  } catch (error) {
+    legacyPolicyBlocked = /Unknown Storage policies require explicit review/.test(String(error.stderr));
+  }
+  assert.ok(legacyPolicyBlocked, 'Unknown permissive Storage policy must fail closed');
+  // Only remove the known synthetic policy in this disposable fixture, never an unknown real policy.
+  sql('DROP POLICY g0_test_legacy_public_read ON storage.objects;');
+  sql(`BEGIN; ${hardening} COMMIT; NOTIFY pgrst, 'reload schema';`);
   writeFileSync(`${evidence}/${baseline}-runtime.txt`, sql(`SELECT version(); SELECT 'baseline=${baseline}'; SELECT bucket_id, count(*) FROM storage.objects GROUP BY bucket_id;`));
 
   let ready = false;
@@ -102,6 +125,10 @@ before(async () => {
   workspace = await insert('workspaces', 'A', { id: randomUUID(), owner_user_id: users.A.id, name: 'Native DEV workspace' });
   farm = await insert('farms', 'A', { id: randomUUID(), workspace_id: workspace.id, creator_user_id: users.A.id, owner_id: users.A.id, name: 'Native shared farm' });
   farm2 = await insert('farms', 'A', { id: randomUUID(), workspace_id: workspace.id, creator_user_id: users.A.id, owner_id: users.A.id, name: 'Native separate farm' });
+  sharedParcel = await insert('parcels', 'A', {workspace_id:workspace.id, display_name:'Native shared parcel'});
+  const privateParcel = await insert('parcels', 'A', {workspace_id:workspace.id, display_name:'Native private parcel'});
+  await insert('farm_parcel_memberships', 'A', {workspace_id:workspace.id, farm_id:farm.id, parcel_id:sharedParcel.id});
+  await insert('farm_parcel_memberships', 'A', {workspace_id:workspace.id, farm_id:farm2.id, parcel_id:privateParcel.id});
   campaign = await insert('campaigns', 'A', { id: randomUUID(), workspace_id: workspace.id, farm_id: farm.id, name: 'Native 2026/27', start_date: '2026-10-01' });
   for (const actor of ['B', 'C']) {
     await insert('farm_access_grants', 'A', { farm_id: farm.id, user_id: users[actor].id, granted_by_user_id: users.A.id,
@@ -113,6 +140,29 @@ before(async () => {
     owner_user_id: users.A.id, exploiter_user_id: users.B.id, terms_notes: 'Original native terms', cost_responsibilities: { fuel: 'exploiter' } });
   agreement = await insert('campaign_harvest_share_agreements', 'A', { farm_id: farm.id, campaign_id: campaign.id,
     contract_id: contract.id, owner_user_id: users.A.id, exploiter_user_id: users.B.id, owner_percentage: 30, exploiter_percentage: 70, version: 1 });
+});
+
+test('Native hardening blocks inherited policies and private buckets deny anonymous downloads', async () => {
+  assert.ok(legacyPolicyBlocked);
+  assert.equal(sql("SELECT count(*) FROM storage.buckets WHERE id IN ('farm-attachments','farm-contracts') AND public=false;").trim(),'2');
+  if (baseline === 'legacy') {
+    const publicRead = await fetch(`${api}/storage/v1/object/public/farm-contracts/legacy-preserved.pdf`);
+    assert.ok(!publicRead.ok);
+    const preserved = await fetch(`${api}/storage/v1/object/farm-contracts/legacy-preserved.pdf`, {headers:{apikey:service,Authorization:`Bearer ${service}`}});
+    assert.equal(await preserved.text(),pdf);
+  }
+});
+
+test('Native delegated parcel read stays within the authorized farm and forbids writes', async () => {
+  for (const actor of ['B','C']) {
+    const visible = await request('/rest/v1/parcels?select=id', {actor});
+    assert.equal(visible.status,200);
+    assert.deepEqual(visible.data,[{id:sharedParcel.id}]);
+    const edited = await request(`/rest/v1/parcels?id=eq.${sharedParcel.id}`, {actor,method:'PATCH',body:{display_name:'Forbidden'},headers:{Prefer:'return=representation'}});
+    assert.equal(edited.status,200);
+    assert.deepEqual(edited.data,[]);
+  }
+  assert.deepEqual((await request('/rest/v1/parcels?select=id',{actor:'D'})).data,[]);
 });
 
 test('Native Auth issues four distinct identities and authenticated sessions', async () => {
@@ -257,6 +307,7 @@ test('Native grant revocation closes RLS, Storage and definer RPC with the same 
   const revoked = await request(`/rest/v1/farm_access_grants?farm_id=eq.${farm.id}&user_id=eq.${users.B.id}`, {
     actor: 'A', method: 'PATCH', body: { status: 'REVOKED' }, headers: { Prefer: 'return=representation' } });
   assert.ok(revoked.ok && revoked.data.length === 1);
+  assert.deepEqual((await request(`/rest/v1/parcels?id=eq.${sharedParcel.id}&select=id`, { actor:'B' })).data, []);
   assert.deepEqual((await request(`/rest/v1/deliveries?farm_id=eq.${farm.id}&select=id`, { actor: 'B' })).data, []);
   assert.ok(!(await storage(`farm-contracts/${farm.id}/${contract.id}/native-proof.pdf`, 'B')).ok);
   assert.equal((await rpc('accept_farm_contract', 'B', { p_contract_id: contract.id })).success, false);

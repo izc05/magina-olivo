@@ -1,0 +1,252 @@
+
+> magina-olivo-supabase-tests@1.0.0 test
+> node --experimental-strip-types --test tests/postgres_rls_real.test.ts
+
+✔ RLS 1: User A (Owner) sees farm; User D (Intruder) sees nothing (1087.1607ms)
+✔ RLS 2: User D cannot insert farm into User A's workspace (3.5831ms)
+✔ RLS 3: Secure QR Invitation Claim & Replay Prevention (P0-2) (25.9161ms)
+✔ RLS 4: Worker C Invitation with Restricted Capabilities (10.163ms)
+✔ RLS 5: Composite FK Prevents Cross-Farm Delivery (P0-7) (3.2104ms)
+✔ RLS 6: Exploiter B records 1.200 kg delivery; Owner A reads it; Intruder D gets nothing (8.5532ms)
+✔ RLS 7: Delivery Immutability & Soft-Delete Enforcement (P0-8) (17.6663ms)
+✔ RLS 8: Bilateral Farm Contract & 70/30 Harvest Share Agreement (P0-4, P0-5) (30.5405ms)
+✔ RLS 9: Direct Tampering of Contract Acceptance Integrity is Blocked by Triggers (32.4068ms)
+✖ P0: accepted contract freezes terms_notes (13.1402ms)
+✖ P0: accepted contract freezes cost_responsibilities (13.117ms)
+✖ P0: accepted contract freezes duration_years (11.1398ms)
+✖ P0: ACCEPTED -> PROPOSED -> changed contract cannot reuse signatures (17.059ms)
+✖ P0: ACCEPTED -> PROPOSED -> 50/50 agreement cannot reuse signatures (15.5104ms)
+✖ P0: first contract signature freezes terms before the second consent (12.6039ms)
+✖ P0: first agreement signature freezes percentages and negotiated version (10.3537ms)
+✖ P1: own contract signature must also use the RPC (7.5914ms)
+✖ P1: own agreement signature must also use the RPC (9.7982ms)
+✖ P1: contract INSERT cannot carry a prefilled own signature (3.8324ms)
+✖ P0: the same identity cannot provide both contract consents (2.7769ms)
+✖ P0: signed rows cannot be hard deleted (19.2905ms)
+✔ RLS 10: Storage RLS verifying Contract Parties (P0-3) (18.4102ms)
+✖ RLS 11: Grant Revocation Instantly Closes Access (11.7423ms)
+✖ P0: agreement cannot link another farm's campaign (3.1964ms)
+✖ P0: agreement cannot link a contract with different parties (3.6315ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 10
+ℹ fail 15
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1579.6067
+
+✖ failing tests:
+
+test at tests\postgres_rls_real.test.ts:571:3
+✖ P0: accepted contract freezes terms_notes (13.1402ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:573:5)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /conditions|signed/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests\postgres_rls_real.test.ts:571:3
+✖ P0: accepted contract freezes cost_responsibilities (13.117ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:573:5)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /conditions|signed/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests\postgres_rls_real.test.ts:571:3
+✖ P0: accepted contract freezes duration_years (11.1398ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:573:5)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /conditions|signed/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests\postgres_rls_real.test.ts:577:1
+✖ P0: ACCEPTED -> PROPOSED -> changed contract cannot reuse signatures (17.059ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:579:3)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /status|signed|downgrade/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests\postgres_rls_real.test.ts:587:1
+✖ P0: ACCEPTED -> PROPOSED -> 50/50 agreement cannot reuse signatures (15.5104ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:589:3)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /status|signed|downgrade/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests\postgres_rls_real.test.ts:598:1
+✖ P0: first contract signature freezes terms before the second consent (12.6039ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:600:3)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /conditions|signed/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests\postgres_rls_real.test.ts:603:1
+✖ P0: first agreement signature freezes percentages and negotiated version (10.3537ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:605:3)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /percentages|signed/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests\postgres_rls_real.test.ts:609:1
+✖ P1: own contract signature must also use the RPC (7.5914ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:611:3)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /RPC/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests\postgres_rls_real.test.ts:614:1
+✖ P1: own agreement signature must also use the RPC (9.7982ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:616:3)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /RPC/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests\postgres_rls_real.test.ts:619:1
+✖ P1: contract INSERT cannot carry a prefilled own signature (3.8324ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:620:3)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /RPC|pre-filled|timestamps/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests\postgres_rls_real.test.ts:625:1
+✖ P0: the same identity cannot provide both contract consents (2.7769ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:626:3)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /distinct|different/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests\postgres_rls_real.test.ts:631:1
+✖ P0: signed rows cannot be hard deleted (19.2905ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:634:3)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /signed|delete/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests\postgres_rls_real.test.ts:677:1
+✖ RLS 11: Grant Revocation Instantly Closes Access (11.7423ms)
+  AssertionError [ERR_ASSERTION]: SECURITY DEFINER must respect revoked contract access
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:708:10)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\postgres_rls_real.test.ts:713:1
+✖ P0: agreement cannot link another farm's campaign (3.1964ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:714:3)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /foreign key|campaign.*farm/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests\postgres_rls_real.test.ts:719:1
+✖ P0: agreement cannot link a contract with different parties (3.6315ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:720:3)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /foreign key|contract.*parties/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }

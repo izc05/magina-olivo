@@ -1,0 +1,43 @@
+
+> magina-olivo-supabase-tests@1.0.0 test
+> node --experimental-strip-types --test tests/postgres_rls_real.test.ts tests/auth_sync_rls_simulation.test.ts
+
+✔ G0 Multi-Tenant: User A owns farm, User D (uninvited) cannot read or write (2.2328ms)
+✔ G0 Invitations: Single-use temporary QR, claim by User B, replay prevention (0.7575ms)
+✔ G0 Offline Delivery & Sync: User B records 1.200 kg offline, User A sees it once after sync (0.2732ms)
+✔ G0 Harvest Share Agreement: 70/30 split (70% Explotador / 30% Propietario) on 10.000 kg netos computes exactly without altering pesadas (0.1347ms)
+✔ G0 Storage RLS & Grant Revocation: Private contracts accessible only to authorized parties (0.2724ms)
+✔ RLS 1: User A (Owner) sees farm; User D (Intruder) sees nothing (1107.197ms)
+✔ RLS 2: User D cannot insert farm into User A's workspace (4.9235ms)
+✔ RLS 3: Secure QR Invitation Claim & Replay Prevention (P0-2) (24.8175ms)
+✔ RLS 4: Worker C Invitation with Restricted Capabilities (9.2201ms)
+✔ RLS 5: Composite FK Prevents Cross-Farm Delivery (P0-7) (3.4166ms)
+✔ RLS 6: Exploiter B records 1.200 kg delivery; Owner A reads it; Intruder D gets nothing (10.0239ms)
+✔ RLS 7: Delivery Immutability & Soft-Delete Enforcement (P0-8) (18.1138ms)
+✔ RLS 8: Bilateral Farm Contract & 70/30 Harvest Share Agreement (P0-4, P0-5) (36.8783ms)
+✔ RLS 9: Direct Tampering of Contract Acceptance Integrity is Blocked by Triggers (35.834ms)
+✔ P0: accepted contract freezes terms_notes (14.1431ms)
+✔ P0: accepted contract freezes cost_responsibilities (13.9891ms)
+✔ P0: accepted contract freezes duration_years (13.7593ms)
+✔ P0: ACCEPTED -> PROPOSED -> changed contract cannot reuse signatures (15.7043ms)
+✔ P0: ACCEPTED -> PROPOSED -> 50/50 agreement cannot reuse signatures (14.8727ms)
+✔ P0: first contract signature freezes terms before the second consent (11.763ms)
+✔ P0: first agreement signature freezes percentages and negotiated version (12.6634ms)
+✔ P1: own contract signature must also use the RPC (7.276ms)
+✔ P1: own agreement signature must also use the RPC (8.1348ms)
+✔ P0: temporary catalog shadow cannot impersonate the trusted acceptance RPC (17.8889ms)
+✔ P1: contract INSERT cannot carry a prefilled own signature (2.2572ms)
+✔ P0: the same identity cannot provide both contract consents (2.1227ms)
+✔ P0: signed rows cannot be hard deleted (26.396ms)
+✔ RLS 10: Storage RLS verifying Contract Parties (P0-3) (17.9701ms)
+✔ RLS 11: Grant Revocation Instantly Closes Access (12.0933ms)
+✔ P0: agreement cannot link another farm's campaign (3.5342ms)
+✔ P0: agreement cannot link a contract with different parties (3.0797ms)
+ℹ tests 31
+ℹ suites 0
+ℹ pass 31
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2065.5906

@@ -1,0 +1,56 @@
+
+> magina-olivo-supabase-tests@1.0.0 test
+> node --experimental-strip-types --test tests/postgres_rls_real.test.ts
+
+✔ RLS 1: User A (Owner) sees farm; User D (Intruder) sees nothing (1105.3191ms)
+✔ RLS 2: User D cannot insert farm into User A's workspace (3.5077ms)
+✔ RLS 3: Secure QR Invitation Claim & Replay Prevention (P0-2) (23.3029ms)
+✔ RLS 4: Worker C Invitation with Restricted Capabilities (10.6247ms)
+✔ RLS 5: Composite FK Prevents Cross-Farm Delivery (P0-7) (3.3759ms)
+✔ RLS 6: Exploiter B records 1.200 kg delivery; Owner A reads it; Intruder D gets nothing (8.9578ms)
+✔ RLS 7: Delivery Immutability & Soft-Delete Enforcement (P0-8) (16.0214ms)
+✔ RLS 8: Bilateral Farm Contract & 70/30 Harvest Share Agreement (P0-4, P0-5) (38.7461ms)
+✔ RLS 9: Direct Tampering of Contract Acceptance Integrity is Blocked by Triggers (32.795ms)
+✔ P0: accepted contract freezes terms_notes (14.4182ms)
+✔ P0: accepted contract freezes cost_responsibilities (12.5668ms)
+✔ P0: accepted contract freezes duration_years (14.8968ms)
+✔ P0: ACCEPTED -> PROPOSED -> changed contract cannot reuse signatures (18.6556ms)
+✔ P0: ACCEPTED -> PROPOSED -> 50/50 agreement cannot reuse signatures (16.2801ms)
+✔ P0: first contract signature freezes terms before the second consent (13.9909ms)
+✔ P0: first agreement signature freezes percentages and negotiated version (14.3358ms)
+✔ P1: own contract signature must also use the RPC (7.9389ms)
+✔ P1: own agreement signature must also use the RPC (7.6967ms)
+✖ P0: temporary catalog shadow cannot impersonate the trusted acceptance RPC (17.7172ms)
+✔ P1: contract INSERT cannot carry a prefilled own signature (2.655ms)
+✔ P0: the same identity cannot provide both contract consents (2.1764ms)
+✔ P0: signed rows cannot be hard deleted (26.0833ms)
+✔ RLS 10: Storage RLS verifying Contract Parties (P0-3) (18.3088ms)
+✔ RLS 11: Grant Revocation Instantly Closes Access (11.8681ms)
+✔ P0: agreement cannot link another farm's campaign (2.8482ms)
+✔ P0: agreement cannot link a contract with different parties (4.5802ms)
+ℹ tests 26
+ℹ suites 0
+ℹ pass 25
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1637.5828
+
+✖ failing tests:
+
+test at tests\postgres_rls_real.test.ts:619:1
+✖ P0: temporary catalog shadow cannot impersonate the trusted acceptance RPC (17.7172ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:628:7
+      at async asUser (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:63:12)
+      at async TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:623:3)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /RPC/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }

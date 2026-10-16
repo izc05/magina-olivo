@@ -18,3 +18,5 @@
 *.keystore
 keystore.properties
 .worktrees/
+scratch/
+node_modules/

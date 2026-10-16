@@ -1,0 +1,173 @@
+
+> magina-olivo-supabase-tests@1.0.0 test
+> node --experimental-strip-types --test tests/postgres_rls_real.test.ts tests/auth_sync_rls_simulation.test.ts
+
+✔ G0 Multi-Tenant: User A owns farm, User D (uninvited) cannot read or write (2.2459ms)
+✔ G0 Invitations: Single-use temporary QR, claim by User B, replay prevention (0.9716ms)
+✔ G0 Offline Delivery & Sync: User B records 1.200 kg offline, User A sees it once after sync (0.4449ms)
+✔ G0 Harvest Share Agreement: 70/30 split (70% Explotador / 30% Propietario) on 10.000 kg netos computes exactly without altering pesadas (0.182ms)
+✔ G0 Storage RLS & Grant Revocation: Private contracts accessible only to authorized parties (0.2828ms)
+✔ RLS 1: User A (Owner) sees farm; User D (Intruder) sees nothing (1070.0928ms)
+✔ RLS 2: User D cannot insert farm into User A's workspace (4.0136ms)
+✔ RLS 3: Secure QR Invitation Claim & Replay Prevention (P0-2) (23.5143ms)
+✔ RLS 4: Worker C Invitation with Restricted Capabilities (10.5183ms)
+✔ RLS 5: Composite FK Prevents Cross-Farm Delivery (P0-7) (3.3361ms)
+✔ RLS 6: Exploiter B records 1.200 kg delivery; Owner A reads it; Intruder D gets nothing (8.5238ms)
+✔ RLS 7: Delivery Immutability & Soft-Delete Enforcement (P0-8) (18.2659ms)
+✔ RLS 8: Bilateral Farm Contract & 70/30 Harvest Share Agreement (P0-4, P0-5) (36.8274ms)
+✔ RLS 9: Direct Tampering of Contract Acceptance Integrity is Blocked by Triggers (34.0985ms)
+✔ P0: accepted contract freezes terms_notes (14.3998ms)
+✔ P0: accepted contract freezes cost_responsibilities (12.8143ms)
+✔ P0: accepted contract freezes duration_years (11.5164ms)
+✔ P0: ACCEPTED -> PROPOSED -> changed contract cannot reuse signatures (15.1403ms)
+✔ P0: ACCEPTED -> PROPOSED -> 50/50 agreement cannot reuse signatures (14.993ms)
+✔ P0: first contract signature freezes terms before the second consent (12.2503ms)
+✔ P0: first agreement signature freezes percentages and negotiated version (13.7924ms)
+✔ P1: own contract signature must also use the RPC (6.9815ms)
+✔ P1: own agreement signature must also use the RPC (7.6319ms)
+✔ P0: temporary catalog shadow cannot impersonate the trusted acceptance RPC (19.1211ms)
+✔ P1: contract INSERT cannot carry a prefilled own signature (2.5683ms)
+✔ P0: the same identity cannot provide both contract consents (2.3228ms)
+✔ P0: signed rows cannot be hard deleted (25.3709ms)
+✔ RLS 10: Storage RLS verifying Contract Parties (P0-3) (17.6069ms)
+✔ RLS 11: Grant Revocation Instantly Closes Access (12.4397ms)
+✔ P0: agreement cannot link another farm's campaign (4.1095ms)
+✔ P0: agreement cannot link a contract with different parties (3.2008ms)
+✖ P0: delivery cannot claim a workspace unrelated to its farm (5.911ms)
+✖ P0: harvest cannot use another farm's campaign (3.1179ms)
+✖ P0: delegated manage_farm cannot promote itself to creator/owner (7.1495ms)
+✖ P0: grants starting in the future cannot expose a farm or capability (6.0449ms)
+✖ P0: email-bound invitation cannot be claimed by a different native identity (7.267ms)
+✖ P0: confirming an expired claimed invitation must not open access (12.4473ms)
+✖ RLS: owner can create a farm through INSERT RETURNING (2.4827ms)
+ℹ tests 38
+ℹ suites 0
+ℹ pass 31
+ℹ fail 7
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1661.544
+
+✖ failing tests:
+
+test at tests\postgres_rls_real.test.ts:742:1
+✖ P0: delivery cannot claim a workspace unrelated to its farm (5.911ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:744:3)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /workspace|foreign key/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests\postgres_rls_real.test.ts:749:1
+✖ P0: harvest cannot use another farm's campaign (3.1179ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:750:3)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /campaign.*farm|foreign key/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests\postgres_rls_real.test.ts:755:1
+✖ P0: delegated manage_farm cannot promote itself to creator/owner (7.1495ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:761:3)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /principal|owner|creator/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests\postgres_rls_real.test.ts:764:1
+✖ P0: grants starting in the future cannot expose a farm or capability (6.0449ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:768:10)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\postgres_rls_real.test.ts:773:1
+✖ P0: email-bound invitation cannot be claimed by a different native identity (7.267ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:781:10)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\postgres_rls_real.test.ts:784:1
+✖ P0: confirming an expired claimed invitation must not open access (12.4473ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/tests/postgres_rls_real.test.ts:792:10)
+      at async Test.run (node:internal/test_runner/test:1110:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:785:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\postgres_rls_real.test.ts:795:1
+✖ RLS: owner can create a farm through INSERT RETURNING (2.4827ms)
+  error: new row violates row-level security policy for table "farms"
+      at ye.Ve (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/node_modules/@electric-sql/pglite/dist/chunk-EADU5A67.js:1:17602)
+      at ye.nt (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/node_modules/@electric-sql/pglite/dist/chunk-EADU5A67.js:1:14988)
+      at ye.parse (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/node_modules/@electric-sql/pglite/dist/chunk-EADU5A67.js:1:13740)
+      at pe.execProtocol (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/node_modules/@electric-sql/pglite/dist/index.js:3:239489)
+      at async pe.l (file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/node_modules/@electric-sql/pglite/dist/chunk-A7RFOIQ7.js:8:1911)
+      at async file:///C:/Users/ISICIO/.codex/worktrees/pr743-security-continuation/MAGINA%20V20/supabase/node_modules/@electric-sql/pglite/dist/chunk-A7RFOIQ7.js:8:2539 {
+    length: 128,
+    severity: 'ERROR',
+    code: '42501',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'execMain.c',
+    line: '2183',
+    routine: 'ExecWithCheckOptions'
+  }

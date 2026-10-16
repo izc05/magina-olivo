@@ -1,0 +1,3 @@
+REPRODUCED: both pre-existing public buckets remain public [{"id":"farm-attachments","public":true},{"id":"farm-contracts","public":true}]
+REPRODUCED: uninvited authenticated identity reads contract object through surviving permissive policy
+REPRODUCED: delegated view_farm sees farm/membership but cannot read linked parcel {"visibleFarm":1,"visibleMembership":1,"visibleParcel":0}

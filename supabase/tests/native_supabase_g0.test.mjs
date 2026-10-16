@@ -218,6 +218,10 @@ test('Native historical author and aggregate references cannot be forged', async
     delivery_date:'2026-10-03',destination_name:'Audit fixture',net_grams:0,recorded_by_user_id:users.A.id});
   assert.ok(!(await request(`/rest/v1/deliveries?id=eq.${delivery.id}`,{actor:'A',method:'PATCH',body:{recorded_by_user_id:users.D.id}})).ok);
   assert.ok(!(await request(`/rest/v1/deliveries?id=eq.${delivery.id}`,{actor:'A',method:'PATCH',body:{harvest_id:randomUUID()}})).ok);
+  const otherSeason=await insert('campaigns','A',{workspace_id:workspace.id,farm_id:farm.id,name:'Other campaign',start_date:'2027-10-01'});
+  const otherHarvest=await insert('harvests','A',{workspace_id:workspace.id,farm_id:farm.id,campaign_id:otherSeason.id,
+    harvest_date:'2027-10-02',weight_grams:1000,recorded_by_user_id:users.A.id});
+  assert.ok(!(await request(`/rest/v1/deliveries?id=eq.${delivery.id}`,{actor:'A',method:'PATCH',body:{harvest_id:otherHarvest.id}})).ok);
   const expense={workspace_id:workspace.id,farm_id:farm.id,campaign_id:campaign.id,delivery_id:delivery.id,
     expense_date:'2026-10-03',concept:'Fixture',category:'OTHER',amount_minor:12345};
   assert.equal((await insert('expenses','A',expense)).amount_minor,12345);

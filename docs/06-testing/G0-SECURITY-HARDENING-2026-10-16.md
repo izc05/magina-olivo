@@ -10,7 +10,7 @@ Antes de corregir: el reproductor de #752 confirma buckets agrícolas públicos,
 lectura de contrato por política Storage heredada `USING(true)` y ausencia de
 parcelas para un delegado con `view_farm`. Las cuatro regresiones nuevas fallan
 antes de rellenar la migración y pasan después. `npm test --prefix supabase`:
-50/50 (45 PostgreSQL/PGlite con Auth/Storage de fixture y 5 simulaciones TypeScript).
+51/51 (46 PostgreSQL/PGlite con Auth/Storage de fixture y 5 simulaciones TypeScript).
 No equivalen a pruebas HTTP contra Supabase ni datos reales de agricultores.
 
 La nueva migración forward `20261016041222`:
@@ -55,7 +55,11 @@ la conservación probada aquí utiliza fixtures sintéticos.
 Las regresiones también reprodujeron alteración del autor histórico de pesadas,
 gasto referido a pesada de otra finca, documento atribuido a agregado de otro
 workspace, entrega con harvest inexistente y aceptación de invitación sobre grant
-vencido sin acceso efectivo. La migración forward `20261016041601` impide esos
+vencido sin acceso efectivo. Una revisión independiente identificó además el
+cruce de cosecha/pesada entre campañas de la misma finca: regresión roja antes,
+verde después; comprobación también añadida al caso HTTP nativo. La campaña
+nula legacy de una cosecha sigue permitida sin atribuirle una campaña inventada.
+La migración forward `20261016041601` impide esos
 casos. Los casos válidos mantienen UUID/importes; no se recalculan pesos o dinero.
 
 Una reinvitación con grant vencido/futuro debe fallar y revertir la aceptación;

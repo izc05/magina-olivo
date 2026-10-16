@@ -855,6 +855,13 @@ test('Audit: valid expense and document retain original agricultural values', as
   assert.equal(doc.rows[0].owner_id,deliveryId);
 });
 
+test('Audit: delivery cannot link a harvest from another campaign of the same farm', async () => {
+  const season=await asUser(USER_A,()=>db.query(`INSERT INTO public.campaigns(workspace_id,farm_id,name,start_date) VALUES('${workspaceAId}','${farmId}','Other season','2027-10-01') RETURNING id;`));
+  const harvest=await asUser(USER_A,()=>db.query(`INSERT INTO public.harvests(workspace_id,farm_id,campaign_id,harvest_date,weight_grams,recorded_by_user_id)
+    VALUES('${workspaceAId}','${farmId}','${season.rows[0].id}',CURRENT_DATE,1000,'${USER_A}') RETURNING id;`));
+  await assert.rejects(asUser(USER_A,()=>db.query(`UPDATE public.deliveries SET harvest_id='${harvest.rows[0].id}' WHERE id='${deliveryId}'`)),/harvest.*campaign/i);
+});
+
 test("Migration: unknown legacy permissive farm policy fails closed instead of remaining OR-authorized", async () => {
   const isolated = new PGlite();
   const root = fileURLToPath(new URL('../../', import.meta.url));

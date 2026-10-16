@@ -71,6 +71,27 @@ ALTER TABLE public.harvests ADD CONSTRAINT uq_harvests_id_farm_workspace UNIQUE(
 ALTER TABLE public.deliveries ADD CONSTRAINT fk_deliveries_harvest_scope
 FOREIGN KEY(harvest_id,farm_id,workspace_id) REFERENCES public.harvests(id,farm_id,workspace_id);
 
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM public.deliveries d JOIN public.harvests h ON h.id=d.harvest_id
+             WHERE h.campaign_id IS NOT NULL AND h.campaign_id IS DISTINCT FROM d.campaign_id) THEN
+    RAISE EXCEPTION 'Existing harvest campaign mismatch requires explicit review';
+  END IF;
+END $$;
+CREATE OR REPLACE FUNCTION magina_private.check_delivery_harvest_campaign()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public AS $$
+BEGIN
+  IF NEW.harvest_id IS NOT NULL AND EXISTS (
+    SELECT 1 FROM public.harvests h WHERE h.id=NEW.harvest_id
+      AND h.campaign_id IS NOT NULL AND h.campaign_id IS DISTINCT FROM NEW.campaign_id
+  ) THEN
+    RAISE EXCEPTION 'Delivery harvest must belong to the same campaign when assigned' USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION magina_private.check_delivery_harvest_campaign() FROM PUBLIC;
+CREATE TRIGGER trg_deliveries_harvest_campaign BEFORE INSERT OR UPDATE ON public.deliveries
+FOR EACH ROW EXECUTE FUNCTION magina_private.check_delivery_harvest_campaign();
+
 -- Reinvitation must not silently renew/extend an expired or future grant.
 -- Defer until commit because claim creates/updates the grant after the invitation.
 -- Failure rolls back both writes and leaves issuer review explicit.

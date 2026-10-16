@@ -37,6 +37,7 @@ import com.isivoltpro.maginaolivo.feature.activities.RegisterActivityRoute
 import com.isivoltpro.maginaolivo.feature.campaigns.CampaignDetailRoute
 import com.isivoltpro.maginaolivo.feature.harvests.HarvestDetailRoute
 import com.isivoltpro.maginaolivo.feature.harvests.TodayHarvestRoute
+import com.isivoltpro.maginaolivo.feature.harvests.QuickLabourRoute
 import com.isivoltpro.maginaolivo.feature.profile.HelpRoute
 import com.isivoltpro.maginaolivo.feature.profile.HelpTopic
 import com.isivoltpro.maginaolivo.feature.deliveries.DeliveriesRoute
@@ -101,6 +102,8 @@ fun AppNavigation(
     /** Planned work to open, from a tapped reminder (Phase 16). */
     openActivityId: UUID? = null,
     onActivityOpened: () -> Unit = {},
+    openAccount: Boolean = false,
+    onAccountOpened: () -> Unit = {},
 ) {
     val onboardingStateStore = compositionRoot.onboardingStateStore
     val startDestination = remember {
@@ -141,6 +144,13 @@ fun AppNavigation(
         }
     }
     // A reminder opens its Activity over the Calendar, so Back returns to the agenda.
+    LaunchedEffect(openAccount, backStackEntry == null) {
+        if(openAccount && backStackEntry!=null && startDestination!=AppDestination.Onboarding && compositionRoot.environment!=AppEnvironment.PRODUCTION) {
+            navController.navigateToRoot(RootDestination.Profile)
+            navController.navigate(AppDestination.Account) { launchSingleTop=true }
+            onAccountOpened()
+        }
+    }
     LaunchedEffect(openActivityId, backStackEntry == null) {
         val id = openActivityId ?: return@LaunchedEffect
         if (backStackEntry == null || startDestination == AppDestination.Onboarding) return@LaunchedEffect
@@ -263,17 +273,9 @@ fun AppNavigation(
                         onActiveFarmChanged = { farmId -> entry.savedStateHandle[NOTEBOOK_FARM_ID_KEY] = farmId?.toString() },
                         onQuickAction = { action, farmId, running ->
                             registerFarmId = farmId.toString()
-                            // CR-011 §8/§14: Jornal opens today's recolección day of this Farm by
-                            // itself (found or created); nobody opens a «jornada» by hand.
-                            // The tap navigates at once; the day screen resolves the day itself.
-                            if (action == NotebookQuickAction.LABOUR && running) {
-                                navController.navigate(AppDestination.todayHarvest(farmId.toString())) { launchSingleTop = true }
-                            } else {
-                                // Only this Cuaderno's Parcel travels with the action; the work form
-                                // reads it from here.
-                                registerParcelId = parcelId
-                                navController.openQuickAction(action, farmId, parcelId)
-                            }
+                            // #512: global Jornal chooses its scope inside the form.
+                            registerParcelId = parcelId
+                            navController.openQuickAction(action, farmId, parcelId)
                         },
                         actionsFor = { farmId -> navController.notebookActions(farmId) },
                         onGoToFields = { navController.navigateToRoot(RootDestination.Olivar) },
@@ -351,6 +353,7 @@ fun AppNavigation(
             }
             composable(RootDestination.Profile.route) {
                 ProfileRoute(
+                    onAccount = if(compositionRoot.environment!=AppEnvironment.PRODUCTION) ({ navController.navigate(AppDestination.Account) }) else null,
                     appearanceStore = compositionRoot.appearanceStore,
                     appVersion = appVersionLabel(
                         com.isivoltpro.maginaolivo.BuildConfig.VERSION_NAME,
@@ -367,6 +370,11 @@ fun AppNavigation(
                         ?.let { com.isivoltpro.maginaolivo.app.DevTools.demoFarm(it) },
                     onHelp = { topic -> navController.navigate(AppDestination.help(topic.route)) },
                 )
+            }
+            composable(AppDestination.Account) {
+                com.isivoltpro.maginaolivo.feature.account.AccountRoute(compositionRoot.accountRepository,
+                    onBack={navController.popBackStack()},
+                    simulationAllowed=com.isivoltpro.maginaolivo.BuildConfig.DEBUG && compositionRoot.environment==AppEnvironment.DEV)
             }
             composable(AppDestination.AgronomicPeople) {
                 val persistence = compositionRoot.localPersistence
@@ -725,15 +733,9 @@ fun AppNavigation(
                 if (persistence == null || farmId == null) {
                     PersistenceUnavailableScreen()
                 } else {
-                    ExpensesRoute(
-                        persistence = persistence,
-                        clock = compositionRoot.clock,
-                        onExpenseSelected = { id -> navController.navigate(AppDestination.expense(id.toString())) },
-                        onDocumentSelected = { id -> navController.navigate(AppDestination.document(id.toString())) },
-                        onOrganizations = { navController.navigate(AppDestination.Organizations) },
-                        presetFarmId = farmId,
-                        presetParcelId = parcelId,
-                        presetLabour = true,
+                    QuickLabourRoute(
+                        farmId = farmId, parcelId = parcelId, persistence = persistence,
+                        clock = compositionRoot.clock, onDone = { navController.popBackStack() },
                     )
                 }
             }
@@ -971,11 +973,7 @@ fun AppNavigation(
                         quickActionOpen = false
                         registerFarmId = farmId.toString()
                         registerParcelId = parcelId?.toString()
-                        if (action == NotebookQuickAction.LABOUR && running) {
-                            navController.navigate(AppDestination.todayHarvest(farmId.toString())) { launchSingleTop = true }
-                        } else {
-                            navController.openQuickAction(action, farmId, parcelId?.toString())
-                        }
+                        navController.openQuickAction(action, farmId, parcelId?.toString())
                     }
                 },
             )

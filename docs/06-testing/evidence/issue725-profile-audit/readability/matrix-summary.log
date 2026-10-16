@@ -1,0 +1,4 @@
+54/54 native executions passed: six profiles, nine tests each.
+The appearance PNG export initially failed under Scoped Storage after all tests had passed.
+The separate binary exporter recovered 18/18 PNGs successfully; all 24 row captures were pulled.
+Original density/font restored. No app data cleared. No tests repeated for the transport repair.

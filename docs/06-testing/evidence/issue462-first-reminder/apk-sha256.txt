@@ -1,0 +1,10 @@
+
+Algorithm : SHA256
+Hash      : B5F018B8F6F4F50B04916DC078D606E784A7A3DE30AAB900B80E5AC6CCC41FCC
+Path      : C:\Users\ISICIO\.codex\worktrees\issue462-first-reminder\MAGINA V20\app\build\outputs\apk\dev\debug\app-dev-debug.apk
+
+Algorithm : SHA256
+Hash      : 12A82C7DD86A9D2A10EF4568911FBA31E71392686C52667E1DB32126AFFBEA01
+Path      : C:\Users\ISICIO\.codex\worktrees\issue462-first-reminder\MAGINA V20\app\build\outputs\apk\androidTest\dev\debug\app-dev-debug-androidTest.apk
+
+

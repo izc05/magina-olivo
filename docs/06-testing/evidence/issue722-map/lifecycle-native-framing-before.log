@@ -1,0 +1,291 @@
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=
+com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest:
+INSTRUMENTATION_STATUS: test=lightFarmChangeAndRealRotationKeepOnlyCurrentContour
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=lightFarmChangeAndRealRotationKeepOnlyCurrentContour
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=darkFarmChangeAndRealRotationKeepOnlyCurrentContour
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeFarmMapLifecycleTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=darkFarmChangeAndRealRotationKeepOnlyCurrentContour
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeMapScaleTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=
+com.isivoltpro.maginaolivo.NativeMapScaleTest:
+INSTRUMENTATION_STATUS: test=darkScaleTracksNativeZoomAndLatitude
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeMapScaleTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=darkScaleTracksNativeZoomAndLatitude
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeMapScaleTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=lightScaleTracksNativeZoomAndLatitude
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeMapScaleTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=lightScaleTracksNativeZoomAndLatitude
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=
+com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest:
+INSTRUMENTATION_STATUS: test=lightParcelPreviewPreservesContourAcrossFallbackAndExpansion
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=lightParcelPreviewPreservesContourAcrossFallbackAndExpansion
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest
+INSTRUMENTATION_STATUS: current=6
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=darkParcelPreviewPreservesContourAcrossFallbackAndExpansion
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.ParcelBoundaryPreviewTest
+INSTRUMENTATION_STATUS: current=6
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=darkParcelPreviewPreservesContourAcrossFallbackAndExpansion
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.B3FocusedPointViewportTest
+INSTRUMENTATION_STATUS: current=7
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=
+com.isivoltpro.maginaolivo.B3FocusedPointViewportTest:
+INSTRUMENTATION_STATUS: test=coordinateFocusClearsPanelsAndViewportChangesPreserveLaterPanAndFrame
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.B3FocusedPointViewportTest
+INSTRUMENTATION_STATUS: current=7
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=coordinateFocusClearsPanelsAndViewportChangesPreserveLaterPanAndFrame
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeMapCameraInsetsTest
+INSTRUMENTATION_STATUS: current=8
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=
+com.isivoltpro.maginaolivo.NativeMapCameraInsetsTest:
+INSTRUMENTATION_STATUS: test=changingOverlayInsetsPreservesManualCameraWithoutAFocusRequest
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeMapCameraInsetsTest
+INSTRUMENTATION_STATUS: current=8
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=changingOverlayInsetsPreservesManualCameraWithoutAFocusRequest
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeMapLayerControlsTest
+INSTRUMENTATION_STATUS: current=9
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=
+com.isivoltpro.maginaolivo.NativeMapLayerControlsTest:
+INSTRUMENTATION_STATUS: test=lightLayersHaveIndependentIntensityAndOfflineControls
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeMapLayerControlsTest
+INSTRUMENTATION_STATUS: current=9
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=lightLayersHaveIndependentIntensityAndOfflineControls
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeMapLayerControlsTest
+INSTRUMENTATION_STATUS: current=10
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=darkLayersHaveIndependentIntensityAndOfflineControls
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeMapLayerControlsTest
+INSTRUMENTATION_STATUS: current=10
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=darkLayersHaveIndependentIntensityAndOfflineControls
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeMapParcelSelectionTest
+INSTRUMENTATION_STATUS: current=11
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=
+com.isivoltpro.maginaolivo.NativeMapParcelSelectionTest:
+INSTRUMENTATION_STATUS: test=overlappingSavedParcelsLeaveTheTapUnselected
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeMapParcelSelectionTest
+INSTRUMENTATION_STATUS: current=11
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=overlappingSavedParcelsLeaveTheTapUnselected
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.MapSearchScreenTest
+INSTRUMENTATION_STATUS: current=12
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=
+com.isivoltpro.maginaolivo.MapSearchScreenTest:
+INSTRUMENTATION_STATUS: test=lightSearchKeepsErrorsAndCollapsesOnlyAfterResolution
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.MapSearchScreenTest
+INSTRUMENTATION_STATUS: current=12
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=lightSearchKeepsErrorsAndCollapsesOnlyAfterResolution
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.MapSearchScreenTest
+INSTRUMENTATION_STATUS: current=13
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=darkSearchKeepsErrorsAndCollapsesOnlyAfterResolution
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.MapSearchScreenTest
+INSTRUMENTATION_STATUS: current=13
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=darkSearchKeepsErrorsAndCollapsesOnlyAfterResolution
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.B3NativeRasterErrorTest
+INSTRUMENTATION_STATUS: current=14
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=
+com.isivoltpro.maginaolivo.B3NativeRasterErrorTest:
+INSTRUMENTATION_STATUS: test=darkRasterFailureLeavesTheSavedParcelUsable
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.B3NativeRasterErrorTest
+INSTRUMENTATION_STATUS: current=14
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stack=androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 15000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:901)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:500)
+	at com.isivoltpro.maginaolivo.B3NativeRasterErrorTest.expectSafeFallback(B3NativeRasterErrorTest.kt:134)
+	at com.isivoltpro.maginaolivo.B3NativeRasterErrorTest.darkRasterFailureLeavesTheSavedParcelUsable(B3NativeRasterErrorTest.kt:84)
+
+INSTRUMENTATION_STATUS: stream=
+Error in darkRasterFailureLeavesTheSavedParcelUsable(com.isivoltpro.maginaolivo.B3NativeRasterErrorTest):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 15000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:901)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:500)
+	at com.isivoltpro.maginaolivo.B3NativeRasterErrorTest.expectSafeFallback(B3NativeRasterErrorTest.kt:134)
+	at com.isivoltpro.maginaolivo.B3NativeRasterErrorTest.darkRasterFailureLeavesTheSavedParcelUsable(B3NativeRasterErrorTest.kt:84)
+
+INSTRUMENTATION_STATUS: test=darkRasterFailureLeavesTheSavedParcelUsable
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.B3NativeRasterErrorTest
+INSTRUMENTATION_STATUS: current=15
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=lightRasterFailureLeavesTheSavedParcelUsable
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.B3NativeRasterErrorTest
+INSTRUMENTATION_STATUS: current=15
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=lightRasterFailureLeavesTheSavedParcelUsable
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.B3MapViewportTest
+INSTRUMENTATION_STATUS: current=16
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=
+com.isivoltpro.maginaolivo.B3MapViewportTest:
+INSTRUMENTATION_STATUS: test=deniedGpsKeepsTheNativeFrameControlOutsideItsPanel
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.B3MapViewportTest
+INSTRUMENTATION_STATUS: current=16
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=deniedGpsKeepsTheNativeFrameControlOutsideItsPanel
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.B3MapViewportTest
+INSTRUMENTATION_STATUS: current=17
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=searchKeepsTheMapMenuAsHighAsTheOtherActions
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.B3MapViewportTest
+INSTRUMENTATION_STATUS: current=17
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=searchKeepsTheMapMenuAsHighAsTheOtherActions
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.B3MapViewportTest
+INSTRUMENTATION_STATUS: current=18
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=sigpacIsAnExplicitReferenceAndDisabledInLocalOnlyMode
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.B3MapViewportTest
+INSTRUMENTATION_STATUS: current=18
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=18
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=sigpacIsAnExplicitReferenceAndDisabledInLocalOnlyMode
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 262.133
+There was 1 failure:
+1) darkRasterFailureLeavesTheSavedParcelUsable(com.isivoltpro.maginaolivo.B3NativeRasterErrorTest)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 15000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:901)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:500)
+	at com.isivoltpro.maginaolivo.B3NativeRasterErrorTest.expectSafeFallback(B3NativeRasterErrorTest.kt:134)
+	at com.isivoltpro.maginaolivo.B3NativeRasterErrorTest.darkRasterFailureLeavesTheSavedParcelUsable(B3NativeRasterErrorTest.kt:84)
+
+FAILURES!!!
+Tests run: 18,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1

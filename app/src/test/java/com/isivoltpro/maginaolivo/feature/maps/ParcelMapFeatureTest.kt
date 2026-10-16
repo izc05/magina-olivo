@@ -7,6 +7,55 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ParcelMapFeatureTest {
+    @Test fun officialBoundaryRastersStartAtIndependentReducedIntensities() {
+        val style = JsonParser.parseString(parcelStyle(MapBase.AERIAL, true, sigpacLines = true)).asJsonObject
+        val layers = style.getAsJsonArray("layers").map { it.asJsonObject }.associateBy { it["id"].asString }
+        assertTrue("Catastro must not obscure the photo at full intensity", layers.getValue("cadastre").has("paint"))
+        assertTrue("SIGPAC intensity is separate", layers.getValue("sigpac").has("paint"))
+        assertEquals(0.65, layers.getValue("cadastre").getAsJsonObject("paint")["raster-opacity"].asDouble, 0.0001)
+        assertEquals(0.5, layers.getValue("sigpac").getAsJsonObject("paint")["raster-opacity"].asDouble, 0.0001)
+    }
+
+    @Test fun selectedParcelUsesOliveOutlineAndLightFill() {
+        val style = JsonParser.parseString(parcelStyle(MapBase.AERIAL, false)).asJsonObject
+        val layers = style.getAsJsonArray("layers").map { it.asJsonObject }.associateBy { it["id"].asString }
+        val fill = layers.getValue("parcels-fill").getAsJsonObject("paint")
+        val line = layers.getValue("parcels-line").getAsJsonObject("paint")
+        assertEquals("#567342", fill.getAsJsonArray("fill-color")[2].asString)
+        assertTrue(fill.getAsJsonArray("fill-opacity")[2].asDouble <= 0.2)
+        assertEquals("#567342", line.getAsJsonArray("line-color")[2].asString)
+        assertTrue(layers.containsKey("parcels-selection-halo"))
+    }
+
+    @Test fun changingOneBoundaryIntensityPreservesOtherLayersAndGeometry() {
+        val before = JsonParser.parseString(parcelStyle(MapBase.AERIAL, true, sigpacLines = true)).asJsonObject
+        val after = JsonParser.parseString(parcelStyle(MapBase.AERIAL, true, sigpacLines = true, cadastreOpacity = 0.85f)).asJsonObject
+        assertEquals(before["sources"], after["sources"])
+        val oldLayers = before.getAsJsonArray("layers").map { it.asJsonObject }.associateBy { it["id"].asString }
+        val newLayers = after.getAsJsonArray("layers").map { it.asJsonObject }.associateBy { it["id"].asString }
+        assertEquals(0.85, newLayers.getValue("cadastre").getAsJsonObject("paint")["raster-opacity"].asDouble, 0.0001)
+        for (id in oldLayers.keys - "cadastre") assertEquals(oldLayers[id], newLayers[id])
+        val local = parcelStyle(MapBase.NONE, true, sigpacLines = true, cadastreOpacity = 0.85f, sigpacOpacity = 0.4f)
+        assertFalse(local.contains("https://"))
+    }
+
+    @Test fun explicitRetryRefreshesOnlyOfficialRasterCacheKeys() {
+        val before = JsonParser.parseString(parcelStyle(MapBase.AERIAL, true, sigpacLines = true)).asJsonObject
+        val after = JsonParser.parseString(parcelStyle(MapBase.AERIAL, true, sigpacLines = true, tileRetryToken = 123L)).asJsonObject
+        val oldSources = before.getAsJsonObject("sources")
+        val newSources = after.getAsJsonObject("sources")
+        assertEquals(oldSources["saved-parcels"], newSources["saved-parcels"])
+        assertEquals(before["layers"], after["layers"])
+        for (id in listOf("base", "cadastre", "sigpac")) {
+            val original = oldSources.getAsJsonObject(id).getAsJsonArray("tiles")[0].asString
+            val refreshed = newSources.getAsJsonObject(id).getAsJsonArray("tiles")[0].asString
+            assertFalse(original.contains("magina_retry="))
+            assertEquals("$original&magina_retry=123", refreshed)
+        }
+        val local = parcelStyle(MapBase.NONE, true, sigpacLines = true, tileRetryToken = 123L)
+        assertFalse(local.contains("https://"))
+    }
+
     @Test fun appearanceChangesTheOfflineCanvasWithoutRecoloringSourceTiles() {
         for (base in MapBase.entries) {
             val light = JsonParser.parseString(parcelStyle(base, cadastreLines = true)).asJsonObject
@@ -44,11 +93,11 @@ class ParcelMapFeatureTest {
 
     @Test fun eachBaseLayerIsLightByDefaultAndCatastroLinesOnlyWhenAsked() {
         fun layers(style: String) = JsonParser.parseString(style).asJsonObject.getAsJsonArray("layers").map { it.asJsonObject.get("id").asString }
-        assertEquals(listOf("background", "base", "parcels-fill", "parcels-line"), layers(parcelStyle(MapBase.MAP, cadastreLines = false)))
-        assertEquals(listOf("background", "base", "cadastre", "parcels-fill", "parcels-line"), layers(parcelStyle(MapBase.AERIAL, cadastreLines = true)))
+        assertEquals(listOf("background", "base", "parcels-fill", "parcels-selection-halo", "parcels-line"), layers(parcelStyle(MapBase.MAP, cadastreLines = false)))
+        assertEquals(listOf("background", "base", "cadastre", "parcels-fill", "parcels-selection-halo", "parcels-line"), layers(parcelStyle(MapBase.AERIAL, cadastreLines = true)))
         // Offline-safe: only the saved boundaries, never a remote source.
         val none = parcelStyle(MapBase.NONE, cadastreLines = true)
-        assertEquals(listOf("background", "parcels-fill", "parcels-line"), layers(none))
+        assertEquals(listOf("background", "parcels-fill", "parcels-selection-halo", "parcels-line"), layers(none))
         assertFalse(none.contains("https://"))
         // #361: IGN/PNOA tiles are 256 px and are drawn at their own size, never stretched.
         assertTrue(parcelStyle(MapBase.AERIAL, cadastreLines = false).contains("\"base\":{\"type\":\"raster\",\"tileSize\":256"))
@@ -59,7 +108,7 @@ class ParcelMapFeatureTest {
         val tiles = "https://tilecache.rainviewer.com/v2/radar/5415fe0e827c/256/{z}/{x}/{y}/2/1_1.png"
         val style = JsonParser.parseString(parcelStyle(MapBase.MAP, cadastreLines = false, overlayTiles = tiles)).asJsonObject
         assertEquals(
-            listOf("background", "base", "overlay", "parcels-fill", "parcels-line"),
+            listOf("background", "base", "overlay", "parcels-fill", "parcels-selection-halo", "parcels-line"),
             style.getAsJsonArray("layers").map { it.asJsonObject.get("id").asString },
         )
         val overlay = style.getAsJsonObject("sources").getAsJsonObject("overlay")
@@ -73,7 +122,7 @@ class ParcelMapFeatureTest {
     @Test fun myLocationIsDrawnAboveEverythingOnlyWhenKnown() {
         val ids = { style: String -> JsonParser.parseString(style).asJsonObject.getAsJsonArray("layers").map { it.asJsonObject.get("id").asString } }
         assertEquals(
-            listOf("background", "base", "parcels-fill", "parcels-line", "my-location-halo", "my-location"),
+            listOf("background", "base", "parcels-fill", "parcels-selection-halo", "parcels-line", "my-location-halo", "my-location"),
             ids(parcelStyle(MapBase.MAP, cadastreLines = false, myLocation = true)),
         )
         assertFalse(parcelStyle(MapBase.MAP, cadastreLines = false).contains("my-location"))

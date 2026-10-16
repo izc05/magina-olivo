@@ -1,0 +1,41 @@
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeMapDeviceQaTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=
+com.isivoltpro.maginaolivo.NativeMapDeviceQaTest:
+INSTRUMENTATION_STATUS: test=realMapForExplicitDeviceState
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.isivoltpro.maginaolivo.NativeMapDeviceQaTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stack=androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 10000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:901)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:500)
+	at com.isivoltpro.maginaolivo.NativeMapDeviceQaTest.realMapForExplicitDeviceState(NativeMapDeviceQaTest.kt:155)
+
+INSTRUMENTATION_STATUS: stream=
+Error in realMapForExplicitDeviceState(com.isivoltpro.maginaolivo.NativeMapDeviceQaTest):
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 10000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:901)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:500)
+	at com.isivoltpro.maginaolivo.NativeMapDeviceQaTest.realMapForExplicitDeviceState(NativeMapDeviceQaTest.kt:155)
+
+INSTRUMENTATION_STATUS: test=realMapForExplicitDeviceState
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_RESULT: stream=
+
+Time: 25.946
+There was 1 failure:
+1) realMapForExplicitDeviceState(com.isivoltpro.maginaolivo.NativeMapDeviceQaTest)
+androidx.compose.ui.test.ComposeTimeoutException: Condition still not satisfied after 10000 ms
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.waitUntil(ComposeUiTest.android.kt:901)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule.waitUntil(AndroidComposeTestRule.android.kt:500)
+	at com.isivoltpro.maginaolivo.NativeMapDeviceQaTest.realMapForExplicitDeviceState(NativeMapDeviceQaTest.kt:155)
+
+FAILURES!!!
+Tests run: 1,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1

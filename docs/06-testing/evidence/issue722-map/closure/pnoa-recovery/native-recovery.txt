@@ -1,0 +1,4 @@
+Official IGN/PNOA; synthetic camera/geometry, no Room writes.
+Native LoadFromCache=20
+Native LoadFromNetwork=10
+Cache after MapView recreation while no network; new retry token loads from network after reconnection.

@@ -229,7 +229,7 @@ test('Native historical author and aggregate references cannot be forged', async
 });
 
 test('Native expired reinvitation rolls back instead of accepting an inactive grant', async () => {
-  const isolated=await insert('farms','A',{workspace_id:workspace.id,creator_user_id:users.A.id,owner_id:users.A.id,name:'Reinvitation fixture'});
+  const isolated=await insert('farms','A',{id:randomUUID(),workspace_id:workspace.id,creator_user_id:users.A.id,owner_id:users.A.id,name:'Reinvitation fixture'});
   await insert('farm_access_grants','A',{farm_id:isolated.id,user_id:users.B.id,granted_by_user_id:users.A.id,role:'VIEWER',
     capabilities:['view_farm'],valid_from:new Date(Date.now()-172800000).toISOString(),valid_until:new Date(Date.now()-86400000).toISOString()});
   const token=randomUUID();

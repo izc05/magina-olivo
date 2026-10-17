@@ -3,15 +3,12 @@ set -euo pipefail
 bash .github/scripts/assert-gate3-emulator-safe.sh
 export ANDROID_SERIAL="$(adb get-serialno | tr -d '\r')"
 PKG=com.isivoltpro.maginaolivo.dev
-RECEIVER="$PKG/com.isivoltpro.maginaolivo.data.reminder.ReminderRescheduleReceiver"
 OUT=evidence/isolated-db-binding
 mkdir -p "$OUT"
 git rev-parse HEAD > "$OUT/checkout-sha.txt"
 adb install -r app/build/outputs/apk/dev/debug/app-dev-debug.apk > "$OUT/install-app.txt"
 adb install -r app/build/outputs/apk/androidTest/dev/debug/app-dev-debug-androidTest.apk > "$OUT/install-test.txt"
-# Suppress only unrelated cold-boot work in this fresh DEV process. Restore it on every exit.
-trap 'adb shell pm enable "$RECEIVER" > "$OUT/receiver-restored.txt" 2>&1 || true' EXIT
-adb shell pm disable "$RECEIVER" > "$OUT/receiver-disabled.txt"
+# The test controls the real singleton monitor; no component-state changes are needed.
 adb shell am force-stop "$PKG"
 adb logcat -c
 set +e

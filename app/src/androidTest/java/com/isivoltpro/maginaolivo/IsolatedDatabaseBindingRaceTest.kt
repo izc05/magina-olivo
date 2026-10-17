@@ -41,9 +41,7 @@ class IsolatedDatabaseBindingRaceTest {
         }
         val fixture = MaginaOlivoDatabase.create(context, fixtureName)
         val singletonField = MaginaOlivoDatabase::class.java.getDeclaredField("instance").apply { isAccessible = true }
-        val originalSingleton = synchronized(MaginaOlivoDatabase.Companion) {
-            singletonField.get(null) as MaginaOlivoDatabase?
-        }
+        val originalSingleton = AtomicReference<MaginaOlivoDatabase?>()
         val initialized = AtomicReference<MaginaOlivoDatabase?>()
         val replaced = AtomicReference<MaginaOlivoDatabase?>()
         val initializerFailure = AtomicReference<Throwable?>()
@@ -53,6 +51,7 @@ class IsolatedDatabaseBindingRaceTest {
                 synchronized(MaginaOlivoDatabase.Companion) {
                     // Atomic null -> real initialization, so another caller cannot win
                     // between the reset and the initializer's inner null check.
+                    originalSingleton.set(singletonField.get(null) as MaginaOlivoDatabase?)
                     IsolatedDatabaseBinding.restore(null)
                     initialized.set(MaginaOlivoDatabase.getInstance(wrapped))
                 }
@@ -95,10 +94,10 @@ class IsolatedDatabaseBindingRaceTest {
             if (initializer.state != Thread.State.NEW) initializer.join(10_000)
             if (binder.state != Thread.State.NEW) binder.join(10_000)
             synchronized(MaginaOlivoDatabase.Companion) {
-                IsolatedDatabaseBinding.restore(originalSingleton)
+                IsolatedDatabaseBinding.restore(originalSingleton.get())
             }
             fixture.close()
-            initialized.get()?.takeIf { it !== fixture && it !== originalSingleton }?.close()
+            initialized.get()?.takeIf { it !== fixture && it !== originalSingleton.get() }?.close()
             context.deleteDatabase(fixtureName)
             context.deleteDatabase(initializerName)
         }

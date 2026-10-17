@@ -50,17 +50,17 @@ class IsolatedAppStateRule : TestRule {
     }
 }
 
-/** Extracted existing unsafe binding for a deterministic RED test; synchronization is not fixed yet. */
+/** Coordinate test binding with the actual production singleton initializer monitor. */
 internal object IsolatedDatabaseBinding {
     private val field = MaginaOlivoDatabase::class.java.getDeclaredField("instance").apply { isAccessible = true }
 
-    fun install(fixture: MaginaOlivoDatabase?): MaginaOlivoDatabase? {
+    fun install(fixture: MaginaOlivoDatabase?): MaginaOlivoDatabase? = synchronized(MaginaOlivoDatabase.Companion) {
         val original = field.get(null) as MaginaOlivoDatabase?
         field.set(null, fixture)
-        return original
+        original
     }
 
-    fun restore(original: MaginaOlivoDatabase?) {
+    fun restore(original: MaginaOlivoDatabase?) = synchronized(MaginaOlivoDatabase.Companion) {
         field.set(null, original)
     }
 }

@@ -20,16 +20,14 @@ class IsolatedAppStateRule : TestRule {
                 if (it.value is Set<*>) (it.value as Set<*>).toSet() else it.value
             } }
             // Test-only binding of the existing singleton; no test API ships in production.
-            val field = MaginaOlivoDatabase::class.java.getDeclaredField("instance").apply { isAccessible = true }
-            val originalDatabase = field.get(null)
             val databaseName = "isolated-main-${UUID.randomUUID()}.db"
             val fixture = MaginaOlivoDatabase.create(context, databaseName)
+            val originalDatabase = IsolatedDatabaseBinding.install(fixture)
             try {
-                field.set(null, fixture)
                 originals.keys.forEach { context.getSharedPreferences(it, Context.MODE_PRIVATE).edit().clear().commit() }
                 base.evaluate()
             } finally {
-                field.set(null, originalDatabase)
+                IsolatedDatabaseBinding.restore(originalDatabase)
                 fixture.close()
                 (names() - originals.keys).forEach { context.deleteSharedPreferences(it) }
                 originals.forEach { (name, values) ->
@@ -49,5 +47,20 @@ class IsolatedAppStateRule : TestRule {
                 context.deleteDatabase(databaseName)
             }
         }
+    }
+}
+
+/** Extracted existing unsafe binding for a deterministic RED test; synchronization is not fixed yet. */
+internal object IsolatedDatabaseBinding {
+    private val field = MaginaOlivoDatabase::class.java.getDeclaredField("instance").apply { isAccessible = true }
+
+    fun install(fixture: MaginaOlivoDatabase?): MaginaOlivoDatabase? {
+        val original = field.get(null) as MaginaOlivoDatabase?
+        field.set(null, fixture)
+        return original
+    }
+
+    fun restore(original: MaginaOlivoDatabase?) {
+        field.set(null, original)
     }
 }

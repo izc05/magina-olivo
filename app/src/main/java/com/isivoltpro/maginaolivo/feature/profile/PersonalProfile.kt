@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -20,10 +21,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.isivoltpro.maginaolivo.feature.account.AccountState
 import com.isivoltpro.maginaolivo.feature.account.AccountStatus
 import com.isivoltpro.maginaolivo.ui.brand.OliveMark
@@ -33,16 +36,18 @@ import com.isivoltpro.maginaolivo.ui.theme.MoColors
 import com.isivoltpro.maginaolivo.ui.theme.MoShape
 import com.isivoltpro.maginaolivo.ui.theme.MoSpacing
 import com.isivoltpro.maginaolivo.ui.theme.MoSurfaceTokens
+import java.io.File
 import java.util.UUID
 
 /**
  * Representa la identidad personal de la cuenta autenticada para la cabecera de perfil.
- * Desacoplado de la configuración territorial de workspace.
+ * Desacoplado de la configuracin territorial de workspace.
  */
 data class PersonalProfile(
     val userId: UUID,
     val email: String,
     val displayName: String? = null,
+    val avatarFile: File? = null,
 ) {
     val initials: String get() = computeInitials(displayName, email)
 
@@ -67,11 +72,11 @@ data class PersonalProfile(
             }
         }
 
-        fun fromAccountState(state: AccountState): PersonalProfile? {
+        fun fromAccountState(state: AccountState, avatarFile: File? = null): PersonalProfile? {
             val uid = state.userId
             val em = state.email
             return if (state.status == AccountStatus.SIGNED_IN && uid != null && !em.isNullOrBlank()) {
-                PersonalProfile(userId = uid, email = em)
+                PersonalProfile(userId = uid, email = em, avatarFile = avatarFile)
             } else {
                 null
             }
@@ -80,14 +85,15 @@ data class PersonalProfile(
 }
 
 /**
- * Cabecera de Perfil Personal con avatar circular de iniciales, nombre/correo e interacción
- * con los ajustes de Cuenta, respetando la paleta verde olivo y tonos crema.
+ * Cabecera de Perfil Personal con avatar circular (foto o iniciales), nombre/correo
+ * y accesos a Cuenta y cambio de fotografa.
  */
 @Composable
 fun PersonalProfileHeader(
     profile: PersonalProfile?,
     onAccount: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    onPickAvatar: (() -> Unit)? = null,
 ) {
     Surface(
         modifier = modifier
@@ -106,22 +112,40 @@ fun PersonalProfileHeader(
         ) {
             // Avatar
             if (profile != null) {
-                Box(
-                    modifier = Modifier
-                        .size(52.dp)
-                        .clip(CircleShape)
-                        .background(MoColors.current.primaryButton)
-                        .border(1.5.dp, MoSurfaceTokens.cardStroke, CircleShape)
-                        .testTag("profile-avatar-initials"),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = profile.initials,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MoColors.current.onPrimaryButton,
-                        modifier = Modifier.testTag("profile-avatar-text"),
+                val avatarModifier = Modifier
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .then(
+                        if (onPickAvatar != null) {
+                            Modifier.clickable(role = Role.Button, onClick = onPickAvatar)
+                        } else Modifier
                     )
+
+                if (profile.avatarFile != null && profile.avatarFile.exists()) {
+                    AsyncImage(
+                        model = profile.avatarFile,
+                        contentDescription = "Foto de perfil",
+                        contentScale = ContentScale.Crop,
+                        modifier = avatarModifier
+                            .border(1.5.dp, MoSurfaceTokens.cardStroke, CircleShape)
+                            .testTag("profile-avatar-image"),
+                    )
+                } else {
+                    Box(
+                        modifier = avatarModifier
+                            .background(MoColors.current.primaryButton)
+                            .border(1.5.dp, MoSurfaceTokens.cardStroke, CircleShape)
+                            .testTag("profile-avatar-initials"),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = profile.initials,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MoColors.current.onPrimaryButton,
+                            modifier = Modifier.testTag("profile-avatar-text"),
+                        )
+                    }
                 }
             } else {
                 OliveMark(
@@ -167,7 +191,7 @@ fun PersonalProfileHeader(
                 }
             }
 
-            // Acción a Cuenta
+            // Accin a Cuenta
             if (onAccount != null) {
                 MoTertiaryButton(
                     text = if (profile != null) "Cuenta" else "Iniciar sesión",
@@ -178,4 +202,3 @@ fun PersonalProfileHeader(
         }
     }
 }
-

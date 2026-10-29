@@ -166,5 +166,44 @@ class PersonalProfileScreenTest {
         composeRule.onNodeWithTag("profile-email").assertTextContains("userB@example.com")
         composeRule.onNodeWithText("userA@example.com").assertDoesNotExist()
     }
+
+    @Test
+    fun profileWithAvatarImageDisplaysImageAndNotInitials() {
+        val user = UUID.randomUUID()
+        val tempImageFile = java.io.File.createTempFile("avatar_test_", ".jpg")
+        try {
+            val bitmap = android.graphics.Bitmap.createBitmap(50, 50, android.graphics.Bitmap.Config.ARGB_8888)
+            java.io.FileOutputStream(tempImageFile).use { out ->
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, out)
+            }
+            bitmap.recycle()
+
+            val profileWithPhoto = PersonalProfile(
+                userId = user,
+                email = "foto.usuario@example.com",
+                displayName = "Foto Usuario",
+                avatarFile = tempImageFile,
+            )
+
+            composeRule.setContent {
+                MaginaOlivoTheme {
+                    ProfileScreen(
+                        appVersion = "1.0.0-TEST",
+                        notificationsOn = true,
+                        onNotifications = {},
+                        onMachinery = {},
+                        onAccount = {},
+                        personalProfile = profileWithPhoto,
+                    )
+                }
+            }
+
+            composeRule.onNodeWithTag("profile-avatar-image").assertIsDisplayed()
+            composeRule.onNodeWithTag("profile-avatar-initials").assertDoesNotExist()
+            composeRule.onNodeWithTag("profile-display-name").assertTextContains("Foto Usuario")
+        } finally {
+            tempImageFile.delete()
+        }
+    }
 }
 

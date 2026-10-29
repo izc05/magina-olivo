@@ -82,10 +82,34 @@ fun ProfileRoute(
     accountRepository: com.isivoltpro.maginaolivo.feature.account.AccountRepository? = null,
 ) {
     val context = LocalContext.current
+    val avatarStore = remember(context) { ProfileAvatarStore.fromContext(context) }
+    var avatarVersion by remember { mutableStateOf(0) }
     val accountState by (accountRepository?.state ?: kotlinx.coroutines.flow.MutableStateFlow(null)).collectAsStateWithLifecycle()
-    val personalProfile = remember(accountState) {
-        accountState?.let { PersonalProfile.fromAccountState(it) }
+    val personalProfile = remember(accountState, avatarVersion) {
+        val uid = accountState?.userId
+        val avatarFile = uid?.let { avatarStore.getAvatarFile(it) }
+        accountState?.let { PersonalProfile.fromAccountState(it, avatarFile) }
     }
+    val photoPicker = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        val uid = accountState?.userId
+        if (uri != null && uid != null) {
+            context.contentResolver.openInputStream(uri)?.use { stream ->
+                val result = avatarStore.saveAvatar(uid, stream)
+                if (result is com.isivoltpro.maginaolivo.core.common.AppResult.Success) {
+                    avatarVersion++
+                }
+            }
+        }
+    }
+    val onPickAvatar = if (personalProfile != null) ({
+        photoPicker.launch(
+            androidx.activity.result.PickVisualMediaRequest(
+                androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly
+            )
+        )
+    }) else null
     val profileRepository = persistence?.profileRepository
     val profileViewModel: MyProfileViewModel? = if (persistence != null && profileRepository != null) {
         viewModel(
@@ -107,6 +131,7 @@ fun ProfileRoute(
     ProfileScreen(
         onAccount = onAccount,
         personalProfile = personalProfile,
+        onPickAvatar = onPickAvatar,
         appVersion = appVersion,
         notificationsOn = notificationsOn,
         onNotifications = openNotifications,
@@ -171,6 +196,7 @@ fun ProfileScreen(
     appearanceSettings: (@Composable () -> Unit)? = null,
     onAccount: (() -> Unit)? = null,
     personalProfile: PersonalProfile? = null,
+    onPickAvatar: (() -> Unit)? = null,
 ) {
     Column(
         Modifier
@@ -188,6 +214,7 @@ fun ProfileScreen(
         PersonalProfileHeader(
             profile = personalProfile,
             onAccount = onAccount,
+            onPickAvatar = onPickAvatar,
         )
         Spacer(Modifier.height(MoSpacing.xs))
         myProfile?.invoke()

@@ -586,29 +586,30 @@ class IrrigationViewModelB5Test {
     }
 
     @Test
-    fun accountLinking_automaticallyRecoversLegacyConfigurations_withoutManualMigration() = runTest {
-        val farm = testFarm(farmId, "Finca Vinculacion Automatica")
-        val parcel = testParcel(id = UUID.randomUUID(), name = "Parcela Legada")
-        val userAlice = UUID.randomUUID()
+    fun accountLogin_doesNotAutomaticallyClaimLocalConfigurations_andPreservesLocalData() = runTest {
+        val farm = testFarm(farmId, "Finca Protegida Sin Reclamo Automatico")
+        val parcel = testParcel(id = UUID.randomUUID(), name = "Parcela Local")
         val userBob = UUID.randomUUID()
+        val userAlice = UUID.randomUUID()
 
         val farmFlow = MutableStateFlow<Farm?>(farm)
         val parcelsFlow = MutableStateFlow(listOf(parcel))
         val activitiesFlow = MutableStateFlow<List<Activity>>(emptyList())
         val irrigationStore = InMemoryFarmerIrrigationStore()
 
-        // 1. Initial state: unlinked local device has a legacy profile in default partition
-        irrigationStore.setScope(InMemoryFarmerIrrigationStore.DEFAULT_SCOPE)
+        // 1. Initial state: unlinked local device has a profile configured in local mode
+        val localScope = AndroidFarmerIrrigationStore.scopeKey(null, farm.workspaceId)
+        irrigationStore.setScope(localScope)
         irrigationStore.saveProfile(
             ParcelIrrigationProfile(
                 parcelId = parcel.id,
-                supply = WaterSupplyDetails(communityName = "Comunidad Pre-Vinculada"),
+                supply = WaterSupplyDetails(communityName = "Comunidad Local Original"),
             )
         )
 
         var currentUser: UUID? = null
 
-        // 2. Open ViewModel in unauthenticated local session
+        // 2. Open ViewModel in unauthenticated local session -> sees local profile
         val vmGuest = IrrigationViewModel(
             farmId = farmId,
             parcelRepository = FakeParcelRepository(parcelsFlow),
@@ -620,26 +621,9 @@ class IrrigationViewModelB5Test {
         )
         advanceUntilIdle()
 
-        // Local unauthenticated session reads the profile
-        assertEquals("Comunidad Pre-Vinculada", vmGuest.state.value.profiles[parcel.id]?.supply?.communityName)
+        assertEquals("Comunidad Local Original", vmGuest.state.value.profiles[parcel.id]?.supply?.communityName)
 
-        // 3. User Alice links her account (transitions from null to userAlice)
-        currentUser = userAlice
-        val vmAlice = IrrigationViewModel(
-            farmId = farmId,
-            parcelRepository = FakeParcelRepository(parcelsFlow),
-            activityRepository = FakeActivityRepository(activitiesFlow),
-            farmRepository = FakeFarmRepository(farmFlow),
-            farmerIrrigationStore = irrigationStore,
-            currentUserIdProvider = { currentUser },
-            today = LocalDate.of(2026, 6, 1),
-        )
-        advanceUntilIdle()
-
-        // Alice automatically recovers the profile without manual migration
-        assertEquals("Comunidad Pre-Vinculada", vmAlice.state.value.profiles[parcel.id]?.supply?.communityName)
-
-        // 4. User Bob logs in on the same device
+        // 3. User Bob signs in FIRST (e.g. unauthorized or different person on shared phone)
         currentUser = userBob
         val vmBob = IrrigationViewModel(
             farmId = farmId,
@@ -652,12 +636,12 @@ class IrrigationViewModelB5Test {
         )
         advanceUntilIdle()
 
-        // Bob must NOT receive Alice's claimed legacy profile
-        assertTrue("Bob's profile map must be empty", vmBob.state.value.profiles.isEmpty())
+        // User Bob must NOT automatically claim, see, or delete local data
+        assertTrue("Bob's profile map must be empty (fail-closed, no auto-claim)", vmBob.state.value.profiles.isEmpty())
 
-        // 5. Alice logs back in (A -> B -> A)
+        // 4. User Alice signs in next: Alice also does NOT automatically steal local data
         currentUser = userAlice
-        val vmAliceReloaded = IrrigationViewModel(
+        val vmAlice = IrrigationViewModel(
             farmId = farmId,
             parcelRepository = FakeParcelRepository(parcelsFlow),
             activityRepository = FakeActivityRepository(activitiesFlow),
@@ -668,6 +652,55 @@ class IrrigationViewModelB5Test {
         )
         advanceUntilIdle()
 
-        assertEquals("Comunidad Pre-Vinculada", vmAliceReloaded.state.value.profiles[parcel.id]?.supply?.communityName)
+        assertTrue("Alice's profile map is initially empty before explicit link", vmAlice.state.value.profiles.isEmpty())
+
+        // 5. Explicit authorized linking: Alice affirmatively links her authorized parcel
+        val linkedCount = irrigationStore.linkLocalProfilesToAccount(
+            targetUserId = userAlice.toString(),
+            targetWorkspaceId = farm.workspaceId,
+            parcelIdsToLink = setOf(parcel.id),
+        )
+        assertEquals(1, linkedCount)
+
+        // Reload Alice's ViewModel: Alice now safely has the linked profile in her partition
+        val vmAliceLinked = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(parcelsFlow),
+            activityRepository = FakeActivityRepository(activitiesFlow),
+            farmRepository = FakeFarmRepository(farmFlow),
+            farmerIrrigationStore = irrigationStore,
+            currentUserIdProvider = { currentUser },
+            today = LocalDate.of(2026, 6, 1),
+        )
+        advanceUntilIdle()
+        assertEquals("Comunidad Local Original", vmAliceLinked.state.value.profiles[parcel.id]?.supply?.communityName)
+
+        // 6. User Bob logs in again: Bob still has 0 profiles (no cross-contamination from Alice's link)
+        currentUser = userBob
+        val vmBobReloaded = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(parcelsFlow),
+            activityRepository = FakeActivityRepository(activitiesFlow),
+            farmRepository = FakeFarmRepository(farmFlow),
+            farmerIrrigationStore = irrigationStore,
+            currentUserIdProvider = { currentUser },
+            today = LocalDate.of(2026, 6, 1),
+        )
+        advanceUntilIdle()
+        assertTrue("Bob still sees no profiles", vmBobReloaded.state.value.profiles.isEmpty())
+
+        // 7. Return to local/unauthenticated mode: local profile remains 100% intact (non-destructive)
+        currentUser = null
+        val vmGuestReturned = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(parcelsFlow),
+            activityRepository = FakeActivityRepository(activitiesFlow),
+            farmRepository = FakeFarmRepository(farmFlow),
+            farmerIrrigationStore = irrigationStore,
+            currentUserIdProvider = { currentUser },
+            today = LocalDate.of(2026, 6, 1),
+        )
+        advanceUntilIdle()
+        assertEquals("Comunidad Local Original", vmGuestReturned.state.value.profiles[parcel.id]?.supply?.communityName)
     }
 }

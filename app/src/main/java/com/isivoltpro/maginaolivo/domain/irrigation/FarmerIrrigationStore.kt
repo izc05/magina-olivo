@@ -41,10 +41,22 @@ interface FarmerIrrigationStore {
     fun getProfilesForScope(scopeKey: String): Map<UUID, ParcelIrrigationProfile>
 
     /**
-     * Safely claims and recovers legacy un-scoped configurations to the designated verified scope.
-     * Prevents subsequent accounts on the same device from erroneously claiming profiles that
-     * belong to a different user.
+     * Explicitly links designated local/legacy parcel configurations to an authenticated user account
+     * and workspace partition upon affirmative user authorization.
+     *
+     * Non-destructive: preserves original local and legacy keys intact.
+     * Idempotent: safe to run multiple times without data corruption or duplicate writes.
+     *
+     * @return count of newly linked parcel profiles.
      */
+    fun linkLocalProfilesToAccount(
+        targetUserId: String,
+        targetWorkspaceId: UUID,
+        parcelIdsToLink: Set<UUID>,
+        sourceWorkspaceId: UUID? = null,
+    ): Int = 0
+
+    @Deprecated("Superseded by explicit authorized linkLocalProfilesToAccount")
     fun claimLegacyProfiles(targetScope: String, claimantUserId: String): Int = 0
 }
 
@@ -57,6 +69,34 @@ class InMemoryFarmerIrrigationStore(initialScope: String = DEFAULT_SCOPE) : Farm
     private var legacyClaimant: String? = null
     private val scopedProfiles = ConcurrentHashMap<String, ConcurrentHashMap<UUID, ParcelIrrigationProfile>>()
 
+    override fun linkLocalProfilesToAccount(
+        targetUserId: String,
+        targetWorkspaceId: UUID,
+        parcelIdsToLink: Set<UUID>,
+        sourceWorkspaceId: UUID?,
+    ): Int {
+        if (parcelIdsToLink.isEmpty()) return 0
+        val targetScope = "${targetUserId}:::${targetWorkspaceId}"
+        val targetMap = scopedProfiles.computeIfAbsent(targetScope) { ConcurrentHashMap() }
+        var count = 0
+
+        val localMaps = scopedProfiles.entries
+            .filter { it.key.startsWith("local:::") || it.key == DEFAULT_SCOPE }
+            .map { it.value }
+
+        for (parcelId in parcelIdsToLink) {
+            if (!targetMap.containsKey(parcelId)) {
+                val sourceProfile = localMaps.firstNotNullOfOrNull { it[parcelId] }
+                if (sourceProfile != null) {
+                    targetMap[parcelId] = sourceProfile
+                    count++
+                }
+            }
+        }
+        return count
+    }
+
+    @Deprecated("Superseded by explicit authorized linkLocalProfilesToAccount")
     override fun claimLegacyProfiles(targetScope: String, claimantUserId: String): Int {
         if (legacyClaimant != null && legacyClaimant != claimantUserId) return 0
         legacyClaimant = claimantUserId
@@ -69,8 +109,6 @@ class InMemoryFarmerIrrigationStore(initialScope: String = DEFAULT_SCOPE) : Farm
                 count++
             }
         }
-        scopedProfiles.remove(DEFAULT_SCOPE)
-        scopedProfiles.entries.filter { it.key.startsWith("local:::") }.forEach { it.value.clear() }
         return count
     }
 
@@ -174,7 +212,10 @@ class AndroidFarmerIrrigationStore(
                     val profile = deserializeProfile(json)
                     memoryCache[profile.parcelId] = profile
                 }
-            } else if ((scope == DEFAULT_SCOPE || scope.startsWith("local:::")) && key.startsWith(KEY_PREFIX_PROFILE) && !key.startsWith("profile_scope_") && !key.startsWith("profile_backup_") && value is String) {
+            } else if ((scope == DEFAULT_SCOPE || scope.startsWith("local:::")) &&
+                (key.startsWith(KEY_PREFIX_PROFILE) && !key.startsWith("profile_scope_") && !key.startsWith("profile_backup_") ||
+                 key.startsWith("profile_scope_default_")) && value is String
+            ) {
                 // Non-destructive fallback: load legacy un-scoped entries under default/local partition
                 runCatching {
                     val json = JSONObject(value)
@@ -217,6 +258,9 @@ class AndroidFarmerIrrigationStore(
         val scopedKey = scopedPrefix(activeScope) + parcelId
         prefs.edit {
             remove(scopedKey)
+            if (activeScope == DEFAULT_SCOPE || activeScope.startsWith("local:::")) {
+                remove(KEY_PREFIX_PROFILE + parcelId)
+            }
         }
     }
 
@@ -250,6 +294,91 @@ class AndroidFarmerIrrigationStore(
         return count
     }
 
+    /**
+     * Explicit, non-destructive linking of local/legacy parcel configurations to an authorized user account
+     * and workspace partition upon affirmative user authorization.
+     *
+     * Non-destructive: preserves original local and legacy keys intact.
+     * Idempotent: safe to run multiple times without data corruption or duplicate writes.
+     *
+     * @return count of newly linked parcel profiles.
+     */
+    override fun linkLocalProfilesToAccount(
+        targetUserId: String,
+        targetWorkspaceId: UUID,
+        parcelIdsToLink: Set<UUID>,
+        sourceWorkspaceId: UUID?,
+    ): Int {
+        if (parcelIdsToLink.isEmpty()) return 0
+        val targetScope = scopeKey(targetUserId, targetWorkspaceId)
+        val targetPrefix = scopedPrefix(targetScope)
+        var count = 0
+
+        val allEntries = prefs.all
+        val localPrefixes = buildList {
+            if (sourceWorkspaceId != null) {
+                add(scopedPrefix(scopeKey(null, sourceWorkspaceId)))
+            }
+            add(scopedPrefix(scopeKey(null, targetWorkspaceId)))
+            add(scopedPrefix(DEFAULT_SCOPE))
+            add("profile_scope_local:::")
+        }
+
+        prefs.edit {
+            for (parcelId in parcelIdsToLink) {
+                val parcelIdStr = parcelId.toString()
+                val targetKey = targetPrefix + parcelIdStr
+
+                var sourceJsonString: String? = null
+
+                // 1. Search in local scopes
+                for (lp in localPrefixes) {
+                    val candidateKey = lp + parcelIdStr
+                    val candidateValue = allEntries[candidateKey]
+                    if (candidateValue is String) {
+                        sourceJsonString = candidateValue
+                        break
+                    }
+                    val matchingEntry = allEntries.entries.firstOrNull { it.key.startsWith(lp) && it.key.endsWith(parcelIdStr) }
+                    if (matchingEntry != null && matchingEntry.value is String) {
+                        sourceJsonString = matchingEntry.value as String
+                        break
+                    }
+                }
+
+                // 2. Search legacy un-scoped key
+                if (sourceJsonString == null) {
+                    val legacyKey = KEY_PREFIX_PROFILE + parcelIdStr
+                    val value = allEntries[legacyKey]
+                    if (value is String) {
+                        sourceJsonString = value
+                    }
+                }
+
+                if (sourceJsonString != null) {
+                    // Non-destructive immutable backup
+                    val backupKey = "profile_backup_link_$parcelIdStr"
+                    if (!prefs.contains(backupKey)) {
+                        putString(backupKey, sourceJsonString)
+                    }
+
+                    // Copy to target partition if not already present
+                    if (!prefs.contains(targetKey)) {
+                        putString(targetKey, sourceJsonString)
+                        count++
+                    }
+                    // Non-destructive: Local and legacy keys are PRESERVED intact.
+                }
+            }
+        }
+
+        if (activeScope == targetScope) {
+            loadScopeFromPrefs(targetScope)
+        }
+        return count
+    }
+
+    @Deprecated("Superseded by explicit authorized linkLocalProfilesToAccount")
     override fun claimLegacyProfiles(targetScope: String, claimantUserId: String): Int {
         val existingClaimant = prefs.getString(KEY_LEGACY_CLAIMANT, null)
         if (existingClaimant != null && existingClaimant != claimantUserId) {
@@ -272,7 +401,7 @@ class AndroidFarmerIrrigationStore(
                         putString(targetScopedKey, value)
                         count++
                     }
-                    remove(key)
+                    // Non-destructive: DO NOT delete legacy key
                 }
             }
         }

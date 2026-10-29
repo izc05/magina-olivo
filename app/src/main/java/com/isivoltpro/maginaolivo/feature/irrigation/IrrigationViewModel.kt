@@ -136,9 +136,6 @@ class IrrigationViewModel(
                         if (currentFarm != null) {
                             val effectiveUserId = (currentUserIdProvider?.invoke() ?: userId)?.toString()
                             val scope = AndroidFarmerIrrigationStore.scopeKey(effectiveUserId, currentFarm.workspaceId)
-                            if (effectiveUserId != null) {
-                                farmerIrrigationStore.claimLegacyProfiles(scope, effectiveUserId)
-                            }
                             farmerIrrigationStore.setScope(scope)
                             mutableState.value = updateProjection(
                                 farm = currentFarm,
@@ -158,9 +155,6 @@ class IrrigationViewModel(
     ): IrrigationUiState {
         val currentUserId = (currentUserIdProvider?.invoke() ?: accountRepository?.state?.value?.userId)?.toString()
         val scope = AndroidFarmerIrrigationStore.scopeKey(currentUserId, farm.workspaceId)
-        if (currentUserId != null) {
-            farmerIrrigationStore.claimLegacyProfiles(scope, currentUserId)
-        }
         farmerIrrigationStore.setScope(scope)
         val allProfiles = farmerIrrigationStore.getAllProfiles()
         val activeParcelIds = parcels.map { it.id }.toSet()

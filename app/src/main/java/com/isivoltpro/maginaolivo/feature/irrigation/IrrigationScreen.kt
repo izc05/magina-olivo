@@ -73,7 +73,7 @@ fun IrrigationRoute(
     farmId: UUID,
     parcelRepository: ParcelRepository,
     activityRepository: ActivityRepository,
-    farmRepository: FarmRepository? = null,
+    farmRepository: FarmRepository,
     onRegisterIrrigation: () -> Unit,
     onActivityClick: (UUID) -> Unit,
     onBack: () -> Unit,

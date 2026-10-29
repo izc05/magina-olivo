@@ -1,6 +1,7 @@
 package com.isivoltpro.maginaolivo.feature.irrigation
 
 import com.isivoltpro.maginaolivo.data.local.model.ActivityStatus
+import com.isivoltpro.maginaolivo.data.local.model.FarmStatus
 import com.isivoltpro.maginaolivo.domain.activity.Activity
 import com.isivoltpro.maginaolivo.domain.activity.ActivityChanges
 import com.isivoltpro.maginaolivo.domain.activity.ActivityDetail
@@ -110,6 +111,25 @@ class IrrigationViewModelTest {
         override suspend fun restore(farmId: UUID): AppResult<Unit> = AppResult.Success(Unit)
     }
 
+    private fun sampleFarm(
+        id: UUID = farmId,
+        name: String = "Finca Huerta del Pozo",
+    ) = Farm(
+        id = id,
+        workspaceId = UUID.randomUUID(),
+        name = name,
+        description = "Finca con sistema de riego localizado",
+        municipality = "Bedmar",
+        province = "Jaén",
+        notes = null,
+        coverDocumentId = null,
+        parcelCount = 1L,
+        totalAreaM2 = 20000.0,
+        activeCampaignName = null,
+        archivedAt = null,
+        version = 1L,
+    )
+
     private fun sampleParcel(
         id: UUID = UUID.randomUUID(),
         name: String,
@@ -174,19 +194,20 @@ class IrrigationViewModelTest {
     )
 
     @Test
-    fun init_loadsParcelsAndActivities_computesSummaryAndPlanCorrectly() = runTest {
+    fun init_withAuthorizedFarm_loadsParcelsAndActivities_computesSummaryAndPlanCorrectly() = runTest {
         val parcelA = sampleParcel(name = "El Cerrajón", system = IrrigationSystem.DRIP, oliveCount = 300)
         val parcelB = sampleParcel(name = "La Loma", system = IrrigationSystem.DRYLAND, oliveCount = 200)
-
         val activity = sampleActivity(volumeM3 = 120.0, durationMinutes = 120, estimatedCostMinor = 3600L)
 
         val parcelsFlow = MutableStateFlow(listOf(parcelA, parcelB))
         val activitiesFlow = MutableStateFlow(listOf(activity))
+        val farmFlow = MutableStateFlow<Farm?>(sampleFarm())
 
         val viewModel = IrrigationViewModel(
             farmId = farmId,
             parcelRepository = FakeParcelRepository(parcelsFlow),
             activityRepository = FakeActivityRepository(activitiesFlow),
+            farmRepository = FakeFarmRepository(farmFlow),
             today = LocalDate.of(2026, 6, 23), // Martes
         )
 
@@ -194,6 +215,8 @@ class IrrigationViewModelTest {
 
         val state = viewModel.state.value
         assertEquals(false, state.isLoading)
+        assertEquals(false, state.farmNotFound)
+        assertEquals("Finca Huerta del Pozo", state.farmName)
         assertEquals(1, state.irrigatedParcels.size)
         assertEquals("El Cerrajón", state.irrigatedParcels[0].displayName)
 
@@ -215,17 +238,160 @@ class IrrigationViewModelTest {
     }
 
     @Test
-    fun emptyInputs_initializesCleanZeroedState() = runTest {
+    fun pendingAuthorization_initialStateIsFailClosedWithLoadingAndNoData() = runTest {
+        // farmFlow does NOT emit an authorized farm yet
+        val farmFlow = MutableStateFlow<Farm?>(null)
+        val parcelsFlow = MutableStateFlow(listOf(sampleParcel(name = "Parcela Confidencial")))
+        val activitiesFlow = MutableStateFlow(listOf(sampleActivity()))
+
+        val viewModel = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(parcelsFlow),
+            activityRepository = FakeActivityRepository(activitiesFlow),
+            farmRepository = FakeFarmRepository(farmFlow),
+        )
+
+        // Prior to running or when pending:
+        val initialState = viewModel.state.value
+        assertEquals(true, initialState.isLoading)
+        assertEquals(false, initialState.farmNotFound)
+        assertNull(initialState.farmName)
+        assertTrue(initialState.irrigatedParcels.isEmpty())
+        assertTrue(initialState.recentActivities.isEmpty())
+        assertEquals(0.0, initialState.summary.realStats.totalVolumeM3, 0.001)
+        assertNull(initialState.calculator.parcelId)
+
+        // Actions attempted while loading are ignored
+        viewModel.selectTab(IrrigationTab.INSTALLATIONS)
+        assertEquals(IrrigationTab.SUMMARY, viewModel.state.value.selectedTab)
+
+        viewModel.updateTrees("200")
+        assertEquals("", viewModel.state.value.calculator.oliveTreeCountText)
+
+        viewModel.loadSimulationExample()
+        assertEquals(false, viewModel.state.value.calculator.isSimulationMode)
+    }
+
+    @Test
+    fun farmInAnotherWorkspaceOrNonExistent_failClosedLocksStateAndPurgesData() = runTest {
+        val farmFlow = MutableStateFlow<Farm?>(null) // Repositorio emite null para finca ajena
+        val parcelsFlow = MutableStateFlow(listOf(sampleParcel(name = "Parcela Ajena")))
+        val activitiesFlow = MutableStateFlow(listOf(sampleActivity(volumeM3 = 500.0)))
+
+        val viewModel = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(parcelsFlow),
+            activityRepository = FakeActivityRepository(activitiesFlow),
+            farmRepository = FakeFarmRepository(farmFlow),
+        )
+
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertEquals(true, state.farmNotFound)
+        assertEquals(false, state.isLoading)
+        assertNull(state.farmName)
+        assertEquals("Finca no disponible o no autorizada", state.errorMessage)
+
+        // Verificación estricta: los datos de parcelas y actividades NUNCA se cargaron ni permanecen en memoria
+        assertTrue("Las parcelas deben estar vacías ante finca no autorizada", state.irrigatedParcels.isEmpty())
+        assertTrue("El historial debe estar vacío ante finca no autorizada", state.recentActivities.isEmpty())
+        assertEquals(0.0, state.summary.realStats.totalVolumeM3, 0.001)
+        assertEquals(0, state.weeklyPlan.totalScheduledTurns)
+        assertNull(state.calculator.parcelId)
+
+        // Operaciones bloqueadas
+        viewModel.selectTab(IrrigationTab.HISTORY)
+        assertEquals(IrrigationTab.SUMMARY, viewModel.state.value.selectedTab)
+        viewModel.loadSimulationExample()
+        assertEquals(false, viewModel.state.value.calculator.isSimulationMode)
+    }
+
+    @Test
+    fun sessionRevocation_clearsProtectedDataImmediately() = runTest {
+        val farmFlow = MutableStateFlow<Farm?>(sampleFarm())
+        val parcel = sampleParcel(name = "Olivo Guadalquivir", system = IrrigationSystem.DRIP)
+        val activity = sampleActivity(volumeM3 = 80.0)
+
+        val viewModel = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(MutableStateFlow(listOf(parcel))),
+            activityRepository = FakeActivityRepository(MutableStateFlow(listOf(activity))),
+            farmRepository = FakeFarmRepository(farmFlow),
+        )
+
+        advanceUntilIdle()
+
+        // 1. Estado autorizado y poblado
+        val authorizedState = viewModel.state.value
+        assertEquals(false, authorizedState.farmNotFound)
+        assertEquals("Finca Huerta del Pozo", authorizedState.farmName)
+        assertEquals(1, authorizedState.irrigatedParcels.size)
+        assertEquals(80.0, authorizedState.summary.realStats.totalVolumeM3, 0.001)
+        assertNotNull(authorizedState.calculator.parcelId)
+
+        // 2. Revocación de acceso en caliente (logout, cambio de workspace o revocación de permisos)
+        farmFlow.value = null
+        advanceUntilIdle()
+
+        // 3. Verificar purga inmediata y completa en memoria
+        val revokedState = viewModel.state.value
+        assertEquals(true, revokedState.farmNotFound)
+        assertEquals(false, revokedState.isLoading)
+        assertNull(revokedState.farmName)
+        assertEquals("Finca no disponible o no autorizada", revokedState.errorMessage)
+        assertTrue("Los datos de parcelas deben ser purgados inmediatamente", revokedState.irrigatedParcels.isEmpty())
+        assertTrue("El historial debe ser purgado inmediatamente", revokedState.recentActivities.isEmpty())
+        assertEquals(0.0, revokedState.summary.realStats.totalVolumeM3, 0.001)
+        assertEquals(0, revokedState.weeklyPlan.totalScheduledTurns)
+        assertNull(revokedState.calculator.parcelId)
+        assertEquals(false, revokedState.calculator.isSimulationMode)
+    }
+
+    @Test
+    fun sessionRecovery_loadsFreshDataWithoutStaleResiduals() = runTest {
+        val farmFlow = MutableStateFlow<Farm?>(null) // Inicia no autorizada
+        val parcel = sampleParcel(name = "Haza Nueva", system = IrrigationSystem.DRIP, oliveCount = 350)
+        val activity = sampleActivity(volumeM3 = 60.0)
+
+        val viewModel = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(MutableStateFlow(listOf(parcel))),
+            activityRepository = FakeActivityRepository(MutableStateFlow(listOf(activity))),
+            farmRepository = FakeFarmRepository(farmFlow),
+        )
+
+        advanceUntilIdle()
+        assertEquals(true, viewModel.state.value.farmNotFound)
+
+        // Ahora el usuario se autentica o recibe acceso a la finca
+        farmFlow.value = sampleFarm(name = "Finca Recuperada")
+        advanceUntilIdle()
+
+        val recoveredState = viewModel.state.value
+        assertEquals(false, recoveredState.farmNotFound)
+        assertEquals(false, recoveredState.isLoading)
+        assertEquals("Finca Recuperada", recoveredState.farmName)
+        assertNull(recoveredState.errorMessage)
+        assertEquals(1, recoveredState.irrigatedParcels.size)
+        assertEquals(60.0, recoveredState.summary.realStats.totalVolumeM3, 0.001)
+        assertEquals(parcel.id, recoveredState.calculator.parcelId)
+    }
+
+    @Test
+    fun emptyParcelsAndActivities_initializesCleanZeroedState() = runTest {
         val viewModel = IrrigationViewModel(
             farmId = farmId,
             parcelRepository = FakeParcelRepository(MutableStateFlow(emptyList())),
             activityRepository = FakeActivityRepository(MutableStateFlow(emptyList())),
+            farmRepository = FakeFarmRepository(MutableStateFlow(sampleFarm())),
         )
 
         advanceUntilIdle()
 
         val state = viewModel.state.value
         assertEquals(false, state.isLoading)
+        assertEquals(false, state.farmNotFound)
         assertTrue(state.irrigatedParcels.isEmpty())
         assertTrue(state.recentActivities.isEmpty())
         assertEquals(0.0, state.summary.realStats.totalVolumeM3, 0.001)
@@ -238,8 +404,10 @@ class IrrigationViewModelTest {
             farmId = farmId,
             parcelRepository = FakeParcelRepository(MutableStateFlow(emptyList())),
             activityRepository = FakeActivityRepository(MutableStateFlow(emptyList())),
+            farmRepository = FakeFarmRepository(MutableStateFlow(sampleFarm())),
         )
 
+        advanceUntilIdle()
         assertEquals(IrrigationTab.SUMMARY, viewModel.state.value.selectedTab)
 
         viewModel.selectTab(IrrigationTab.INSTALLATIONS)
@@ -255,8 +423,10 @@ class IrrigationViewModelTest {
             farmId = farmId,
             parcelRepository = FakeParcelRepository(MutableStateFlow(emptyList())),
             activityRepository = FakeActivityRepository(MutableStateFlow(emptyList())),
+            farmRepository = FakeFarmRepository(MutableStateFlow(sampleFarm())),
         )
 
+        advanceUntilIdle()
         viewModel.selectDay(DayOfWeek.FRIDAY)
         assertEquals(DayOfWeek.FRIDAY, viewModel.state.value.selectedDay)
     }
@@ -269,6 +439,7 @@ class IrrigationViewModelTest {
             farmId = farmId,
             parcelRepository = FakeParcelRepository(MutableStateFlow(listOf(parcel))),
             activityRepository = FakeActivityRepository(MutableStateFlow(emptyList())),
+            farmRepository = FakeFarmRepository(MutableStateFlow(sampleFarm())),
         )
 
         advanceUntilIdle()
@@ -293,6 +464,7 @@ class IrrigationViewModelTest {
             farmId = farmId,
             parcelRepository = FakeParcelRepository(MutableStateFlow(emptyList())),
             activityRepository = FakeActivityRepository(MutableStateFlow(emptyList())),
+            farmRepository = FakeFarmRepository(MutableStateFlow(sampleFarm())),
         )
 
         advanceUntilIdle()
@@ -317,34 +489,15 @@ class IrrigationViewModelTest {
     }
 
     @Test
-    fun unauthorizedOrMissingFarm_setsFarmNotFoundAndBlocksNavigation() = runTest {
-        val farmFlow = MutableStateFlow<Farm?>(null)
-        val viewModel = IrrigationViewModel(
-            farmId = farmId,
-            parcelRepository = FakeParcelRepository(MutableStateFlow(emptyList())),
-            activityRepository = FakeActivityRepository(MutableStateFlow(emptyList())),
-            farmRepository = FakeFarmRepository(farmFlow),
-        )
-
-        advanceUntilIdle()
-
-        val state = viewModel.state.value
-        assertEquals(true, state.farmNotFound)
-        assertEquals(false, state.isLoading)
-        assertNull(state.farmName)
-
-        // Intentar navegar a otra pestaña no debe permitirse en estado de error
-        viewModel.selectTab(IrrigationTab.HISTORY)
-        assertEquals(IrrigationTab.SUMMARY, viewModel.state.value.selectedTab)
-    }
-
-    @Test
     fun calculatorFieldUpdates_recalculatesDoseOrSetsError() = runTest {
         val viewModel = IrrigationViewModel(
             farmId = farmId,
             parcelRepository = FakeParcelRepository(MutableStateFlow(emptyList())),
             activityRepository = FakeActivityRepository(MutableStateFlow(emptyList())),
+            farmRepository = FakeFarmRepository(MutableStateFlow(sampleFarm())),
         )
+
+        advanceUntilIdle()
 
         // 100 olivos, 2 goteros/olivo, 4.0 L/h, 60 min -> 100 * 2 * 4 * 1h = 800 L = 0.8 m³ (8.0 L/olivo)
         viewModel.updateTrees("100")

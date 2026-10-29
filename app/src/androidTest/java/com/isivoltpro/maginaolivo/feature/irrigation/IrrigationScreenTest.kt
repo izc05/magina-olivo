@@ -378,5 +378,39 @@ class IrrigationScreenTest {
         composeRule.onNodeWithTag("clear-simulation-button").performClick()
         assertTrue(clearClicked.get())
     }
+
+    @Test
+    fun pendingAuthorization_displaysLoadingIndicatorWithoutShellOrData() {
+        val state = IrrigationUiState(
+            isLoading = true,
+            farmNotFound = false,
+        )
+
+        composeRule.setContent {
+            MaginaOlivoTheme {
+                IrrigationScreen(
+                    state = state,
+                    onSelectTab = {},
+                    onSelectDay = {},
+                    onSelectParcelForCalculator = {},
+                    onUpdateTrees = {},
+                    onUpdateEmitters = {},
+                    onUpdateFlow = {},
+                    onUpdateDuration = {},
+                    onUpdateEmitterType = {},
+                    onCalculateDose = {},
+                    onRegisterIrrigation = {},
+                    onActivityClick = {},
+                    onBack = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("irrigation-loading").assertIsDisplayed()
+        composeRule.onNodeWithTag("irrigation-screen").assertDoesNotExist()
+        composeRule.onNodeWithTag("irrigation-title").assertDoesNotExist()
+        composeRule.onNodeWithTag("irrigation-register-button").assertDoesNotExist()
+        composeRule.onNodeWithTag("irrigation-unauthorized-root").assertDoesNotExist()
+    }
 }
 

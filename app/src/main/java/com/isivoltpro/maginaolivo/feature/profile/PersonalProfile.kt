@@ -120,6 +120,7 @@ fun PersonalProfileHeader(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MoColors.current.onPrimaryButton,
+                        modifier = Modifier.testTag("profile-avatar-text"),
                     )
                 }
             } else {

@@ -9,6 +9,7 @@ import com.isivoltpro.maginaolivo.domain.activity.ActivityType
 import com.isivoltpro.maginaolivo.domain.farm.Farm
 import com.isivoltpro.maginaolivo.domain.farm.FarmRepository
 import com.isivoltpro.maginaolivo.domain.irrigation.AforoConfig
+import com.isivoltpro.maginaolivo.domain.irrigation.AndroidFarmerIrrigationStore
 import com.isivoltpro.maginaolivo.domain.irrigation.DripInstallation
 import com.isivoltpro.maginaolivo.domain.irrigation.EmitterType
 import com.isivoltpro.maginaolivo.domain.irrigation.FarmerIrrigationStore
@@ -103,6 +104,7 @@ class IrrigationViewModel(
                                 errorMessage = "Finca no disponible o no autorizada",
                                 selectedDay = today.dayOfWeek,
                                 selectedTab = IrrigationTab.SUMMARY,
+                                profiles = emptyMap(),
                             )
                         }
                         is FarmAuthorizationState.Authorized -> {
@@ -125,10 +127,15 @@ class IrrigationViewModel(
         parcels: List<Parcel>,
         activities: List<Activity>,
     ): IrrigationUiState {
-        val profiles = farmerIrrigationStore.getAllProfiles()
+        val scope = AndroidFarmerIrrigationStore.scopeKey(null, farm.workspaceId)
+        farmerIrrigationStore.setScope(scope)
+        val allProfiles = farmerIrrigationStore.getAllProfiles()
+        val activeParcelIds = parcels.map { it.id }.toSet()
+        val relevantProfiles = allProfiles.filterKeys { it in activeParcelIds }
+
         val referenceMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        val weeklyPlan = WeeklyIrrigationCalendar.buildWeeklyPlan(parcels, profiles, referenceMonday)
-        val summary = IrrigationSummarizer.computeSummary(parcels, activities, profiles)
+        val weeklyPlan = WeeklyIrrigationCalendar.buildWeeklyPlan(parcels, relevantProfiles, referenceMonday)
+        val summary = IrrigationSummarizer.computeSummary(parcels, activities, relevantProfiles)
 
         val irrigatedParcels = parcels.filter { parcel ->
             parcel.archivedAt == null &&
@@ -183,7 +190,7 @@ class IrrigationViewModel(
             allParcels = parcels.filter { it.archivedAt == null },
             recentActivities = recentIrrigations,
             calculator = updatedCalc,
-            profiles = profiles,
+            profiles = relevantProfiles,
         )
     }
 

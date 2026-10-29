@@ -14,6 +14,7 @@ import com.isivoltpro.maginaolivo.domain.farm.FarmChanges
 import com.isivoltpro.maginaolivo.domain.farm.FarmRepository
 import com.isivoltpro.maginaolivo.domain.farm.NewFarm
 import com.isivoltpro.maginaolivo.domain.irrigation.AforoConfig
+import com.isivoltpro.maginaolivo.domain.irrigation.AndroidFarmerIrrigationStore
 import com.isivoltpro.maginaolivo.domain.irrigation.FlowMeasurementMode
 import com.isivoltpro.maginaolivo.domain.irrigation.InMemoryFarmerIrrigationStore
 import com.isivoltpro.maginaolivo.domain.irrigation.ParcelIrrigationProfile
@@ -281,5 +282,181 @@ class IrrigationViewModelB5Test {
         assertTrue(turnItem.isCancelled)
         assertEquals(0.0, state.weeklyPlan.totalEstimatedWeeklyVolumeM3, 0.01)
         assertEquals(0L, state.weeklyPlan.totalEstimatedWeeklyCostMinor)
+    }
+
+    @Test
+    fun foreignParcelsAndQuotasAreNotLeakedIntoHoldingSummary() = runTest {
+        val farm = testFarm(farmId, "Finca Activa")
+        val parcelA = testParcel(id = UUID.randomUUID(), name = "Parcela Finca Activa")
+        val foreignParcelId = UUID.randomUUID()
+
+        val farmFlow = MutableStateFlow<Farm?>(farm)
+        val parcelsFlow = MutableStateFlow(listOf(parcelA))
+        val activitiesFlow = MutableStateFlow<List<Activity>>(emptyList())
+        val irrigationStore = InMemoryFarmerIrrigationStore()
+        val scope = AndroidFarmerIrrigationStore.scopeKey(null, farm.workspaceId)
+        irrigationStore.setScope(scope)
+
+        // Persist profile for active parcel
+        irrigationStore.saveProfile(
+            ParcelIrrigationProfile(
+                parcelId = parcelA.id,
+                supply = WaterSupplyDetails(communityName = "Comunidad Activa", sector = "1"),
+                tariff = WaterTariff(annualCommunityQuotaMinor = 12000L), // 120 €
+            )
+        )
+
+        // Persist profile for foreign parcel (e.g. from another farm in same workspace or foreign collection)
+        irrigationStore.saveProfile(
+            ParcelIrrigationProfile(
+                parcelId = foreignParcelId,
+                supply = WaterSupplyDetails(communityName = "Comunidad Ajena", sector = "99"),
+                tariff = WaterTariff(annualCommunityQuotaMinor = 50000L), // 500 €
+            )
+        )
+
+        val viewModel = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(parcelsFlow),
+            activityRepository = FakeActivityRepository(activitiesFlow),
+            farmRepository = FakeFarmRepository(farmFlow),
+            farmerIrrigationStore = irrigationStore,
+            today = LocalDate.of(2026, 6, 1),
+        )
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        // Only parcel A is in profiles
+        assertEquals(1, state.profiles.size)
+        assertTrue(state.profiles.containsKey(parcelA.id))
+        assertFalse(state.profiles.containsKey(foreignParcelId))
+
+        // Quotas: only Comunidad Activa is present, foreign quota is completely excluded
+        assertEquals(1, state.summary.annualCommunityFees.size)
+        assertEquals("Comunidad Activa", state.summary.annualCommunityFees.first().communityName)
+        assertEquals(12000L, state.summary.totalAnnualFixedFeesMinor)
+    }
+
+    @Test
+    fun annualFeesDoNotDuplicateWhenMultipleParcelsShareSameCommunityAndSector() = runTest {
+        val farm = testFarm(farmId, "Finca Dos Parcelas")
+        val parcel1 = testParcel(id = UUID.randomUUID(), name = "Parcela Arriba")
+        val parcel2 = testParcel(id = UUID.randomUUID(), name = "Parcela Abajo")
+
+        val farmFlow = MutableStateFlow<Farm?>(farm)
+        val parcelsFlow = MutableStateFlow(listOf(parcel1, parcel2))
+        val activitiesFlow = MutableStateFlow<List<Activity>>(emptyList())
+        val irrigationStore = InMemoryFarmerIrrigationStore()
+        val scope = AndroidFarmerIrrigationStore.scopeKey(null, farm.workspaceId)
+        irrigationStore.setScope(scope)
+
+        // Both parcels share the SAME Community and Sector
+        val sharedSupply = WaterSupplyDetails(communityName = "Comunidad San Isidro", sector = "Sector 2")
+        val sharedTariff = WaterTariff(annualCommunityQuotaMinor = 15000L) // 150 € per holding/sector quota
+
+        irrigationStore.saveProfile(ParcelIrrigationProfile(parcelId = parcel1.id, supply = sharedSupply, tariff = sharedTariff))
+        irrigationStore.saveProfile(ParcelIrrigationProfile(parcelId = parcel2.id, supply = sharedSupply, tariff = sharedTariff))
+
+        val viewModel = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(parcelsFlow),
+            activityRepository = FakeActivityRepository(activitiesFlow),
+            farmRepository = FakeFarmRepository(farmFlow),
+            farmerIrrigationStore = irrigationStore,
+            today = LocalDate.of(2026, 6, 1),
+        )
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        // Exactly one shared quota, no duplicate 300 € charge
+        assertEquals(1, state.summary.annualCommunityFees.size)
+        assertEquals(15000L, state.summary.totalAnnualFixedFeesMinor)
+        assertEquals("Comunidad San Isidro", state.summary.annualCommunityFees.first().communityName)
+    }
+
+    @Test
+    fun annualFeesPreserveDistinctSectorsAndDistinctCommunities() = runTest {
+        val farm = testFarm(farmId, "Finca Multi Sector")
+        val parcelSector1 = testParcel(id = UUID.randomUUID(), name = "Parcela Sector 1")
+        val parcelSector2 = testParcel(id = UUID.randomUUID(), name = "Parcela Sector 2")
+        val parcelOtherComm = testParcel(id = UUID.randomUUID(), name = "Parcela Cuenca")
+
+        val farmFlow = MutableStateFlow<Farm?>(farm)
+        val parcelsFlow = MutableStateFlow(listOf(parcelSector1, parcelSector2, parcelOtherComm))
+        val activitiesFlow = MutableStateFlow<List<Activity>>(emptyList())
+        val irrigationStore = InMemoryFarmerIrrigationStore()
+        val scope = AndroidFarmerIrrigationStore.scopeKey(null, farm.workspaceId)
+        irrigationStore.setScope(scope)
+
+        // Same community name but DIFFERENT sectors -> legitimate distinct quotas
+        irrigationStore.saveProfile(
+            ParcelIrrigationProfile(
+                parcelId = parcelSector1.id,
+                supply = WaterSupplyDetails(communityName = "Comunidad San Isidro", sector = "1"),
+                tariff = WaterTariff(annualCommunityQuotaMinor = 10000L), // 100 €
+            )
+        )
+        irrigationStore.saveProfile(
+            ParcelIrrigationProfile(
+                parcelId = parcelSector2.id,
+                supply = WaterSupplyDetails(communityName = "Comunidad San Isidro", sector = "2"),
+                tariff = WaterTariff(annualCommunityQuotaMinor = 15000L), // 150 €
+            )
+        )
+        // Different community
+        irrigationStore.saveProfile(
+            ParcelIrrigationProfile(
+                parcelId = parcelOtherComm.id,
+                supply = WaterSupplyDetails(communityName = "Comunidad San Marcos", sector = "A"),
+                tariff = WaterTariff(annualCommunityQuotaMinor = 8000L), // 80 €
+            )
+        )
+
+        val viewModel = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(parcelsFlow),
+            activityRepository = FakeActivityRepository(activitiesFlow),
+            farmRepository = FakeFarmRepository(farmFlow),
+            farmerIrrigationStore = irrigationStore,
+            today = LocalDate.of(2026, 6, 1),
+        )
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        // All 3 distinct quotas preserved: 100 + 150 + 80 = 330 €
+        assertEquals(3, state.summary.annualCommunityFees.size)
+        assertEquals(33000L, state.summary.totalAnnualFixedFeesMinor)
+    }
+
+    @Test
+    fun scopeIsolation_preservesProfilesWhenSwitchingWorkspacesA_to_B_to_A() = runTest {
+        val store = InMemoryFarmerIrrigationStore()
+        val parcelA = UUID.randomUUID()
+        val parcelB = UUID.randomUUID()
+
+        val scopeA = "user1:workspaceA"
+        val scopeB = "user1:workspaceB"
+
+        // 1. Save in Scope A
+        store.setScope(scopeA)
+        store.saveProfile(ParcelIrrigationProfile(parcelId = parcelA, supply = WaterSupplyDetails(communityName = "Comunidad A")))
+        assertEquals(1, store.getAllProfiles().size)
+        assertTrue(store.getAllProfiles().containsKey(parcelA))
+
+        // 2. Switch to Scope B
+        store.setScope(scopeB)
+        // Scope B starts clean, does not see A's profiles
+        assertEquals(0, store.getAllProfiles().size)
+        store.saveProfile(ParcelIrrigationProfile(parcelId = parcelB, supply = WaterSupplyDetails(communityName = "Comunidad B")))
+        assertEquals(1, store.getAllProfiles().size)
+        assertTrue(store.getAllProfiles().containsKey(parcelB))
+        assertFalse(store.getAllProfiles().containsKey(parcelA))
+
+        // 3. Switch back to Scope A: A's profiles are intact and recovered (no data loss)
+        store.setScope(scopeA)
+        assertEquals(1, store.getAllProfiles().size)
+        assertTrue(store.getAllProfiles().containsKey(parcelA))
+        assertFalse(store.getAllProfiles().containsKey(parcelB))
+        assertEquals("Comunidad A", store.getProfile(parcelA)?.supply?.communityName)
     }
 }

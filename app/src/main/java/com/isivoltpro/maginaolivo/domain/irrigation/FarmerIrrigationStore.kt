@@ -24,69 +24,129 @@ interface FarmerIrrigationStore {
     fun updatePunctualTurn(turn: PunctualTurn)
     fun deletePunctualTurn(parcelId: UUID, turnId: UUID)
     fun clear()
+
+    /**
+     * Sets the active identity/workspace scope partition without deleting data from other scopes.
+     */
+    fun setScope(scopeKey: String)
+
+    /**
+     * The currently active scope partition.
+     */
+    fun currentScope(): String
+
+    /**
+     * Retrieves all profiles persisted under a specific scope partition.
+     */
+    fun getProfilesForScope(scopeKey: String): Map<UUID, ParcelIrrigationProfile>
 }
 
 /**
  * In-memory implementation of [FarmerIrrigationStore] for fast unit and UI testing.
+ * Preserves independent partitions across scope switches (A -> B -> A).
  */
-class InMemoryFarmerIrrigationStore : FarmerIrrigationStore {
-    private val profiles = ConcurrentHashMap<UUID, ParcelIrrigationProfile>()
+class InMemoryFarmerIrrigationStore(initialScope: String = DEFAULT_SCOPE) : FarmerIrrigationStore {
+    private var activeScope: String = initialScope
+    private val scopedProfiles = ConcurrentHashMap<String, ConcurrentHashMap<UUID, ParcelIrrigationProfile>>()
 
-    override fun getProfile(parcelId: UUID): ParcelIrrigationProfile? = profiles[parcelId]
+    override fun setScope(scopeKey: String) {
+        activeScope = scopeKey
+    }
 
-    override fun getAllProfiles(): Map<UUID, ParcelIrrigationProfile> = HashMap(profiles)
+    override fun currentScope(): String = activeScope
+
+    private fun currentMap(): ConcurrentHashMap<UUID, ParcelIrrigationProfile> =
+        scopedProfiles.computeIfAbsent(activeScope) { ConcurrentHashMap() }
+
+    override fun getProfile(parcelId: UUID): ParcelIrrigationProfile? = currentMap()[parcelId]
+
+    override fun getAllProfiles(): Map<UUID, ParcelIrrigationProfile> = HashMap(currentMap())
+
+    override fun getProfilesForScope(scopeKey: String): Map<UUID, ParcelIrrigationProfile> =
+        HashMap(scopedProfiles[scopeKey] ?: emptyMap())
 
     override fun saveProfile(profile: ParcelIrrigationProfile) {
-        profiles[profile.parcelId] = profile
+        currentMap()[profile.parcelId] = profile
     }
 
     override fun removeProfile(parcelId: UUID) {
-        profiles.remove(parcelId)
+        currentMap().remove(parcelId)
     }
 
     override fun addPunctualTurn(turn: PunctualTurn) {
-        val current = profiles[turn.parcelId] ?: ParcelIrrigationProfile(parcelId = turn.parcelId)
+        val map = currentMap()
+        val current = map[turn.parcelId] ?: ParcelIrrigationProfile(parcelId = turn.parcelId)
         val updatedList = current.punctualTurns + turn
-        profiles[turn.parcelId] = current.copy(punctualTurns = updatedList)
+        map[turn.parcelId] = current.copy(punctualTurns = updatedList)
     }
 
     override fun updatePunctualTurn(turn: PunctualTurn) {
-        val current = profiles[turn.parcelId] ?: return
+        val map = currentMap()
+        val current = map[turn.parcelId] ?: return
         val updatedList = current.punctualTurns.map { if (it.id == turn.id) turn else it }
-        profiles[turn.parcelId] = current.copy(punctualTurns = updatedList)
+        map[turn.parcelId] = current.copy(punctualTurns = updatedList)
     }
 
     override fun deletePunctualTurn(parcelId: UUID, turnId: UUID) {
-        val current = profiles[parcelId] ?: return
+        val map = currentMap()
+        val current = map[parcelId] ?: return
         val updatedList = current.punctualTurns.filterNot { it.id == turnId }
-        profiles[parcelId] = current.copy(punctualTurns = updatedList)
+        map[parcelId] = current.copy(punctualTurns = updatedList)
     }
 
     override fun clear() {
-        profiles.clear()
+        currentMap().clear()
+    }
+
+    companion object {
+        const val DEFAULT_SCOPE = "default"
     }
 }
 
 /**
  * Android SharedPreferences backed implementation of [FarmerIrrigationStore] for offline persistence.
+ *
+ * Implements non-destructive scope partitioning (CR-004): switching between workspaces
+ * or user accounts never wipes stored data, ensuring seamless recovery when returning (A -> B -> A).
  */
-class AndroidFarmerIrrigationStore(context: Context) : FarmerIrrigationStore {
+class AndroidFarmerIrrigationStore(
+    context: Context,
+    initialScope: String = DEFAULT_SCOPE,
+) : FarmerIrrigationStore {
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private var activeScope: String = initialScope
     private val memoryCache = ConcurrentHashMap<UUID, ParcelIrrigationProfile>()
 
     init {
-        loadAllFromPrefs()
+        loadScopeFromPrefs(initialScope)
     }
 
-    private fun loadAllFromPrefs() {
+    override fun setScope(scopeKey: String) {
+        if (activeScope != scopeKey) {
+            activeScope = scopeKey
+            loadScopeFromPrefs(scopeKey)
+        }
+    }
+
+    override fun currentScope(): String = activeScope
+
+    private fun loadScopeFromPrefs(scope: String) {
         memoryCache.clear()
+        val prefix = scopedPrefix(scope)
         val allEntries = prefs.all
         for ((key, value) in allEntries) {
-            if (key.startsWith(KEY_PREFIX_PROFILE) && value is String) {
+            if (key.startsWith(prefix) && value is String) {
                 runCatching {
                     val json = JSONObject(value)
                     val profile = deserializeProfile(json)
                     memoryCache[profile.parcelId] = profile
+                }
+            } else if (scope == DEFAULT_SCOPE && key.startsWith(KEY_PREFIX_PROFILE) && !key.startsWith("profile_scope_") && value is String) {
+                // Non-destructive fallback: load legacy un-scoped entries under default partition
+                runCatching {
+                    val json = JSONObject(value)
+                    val profile = deserializeProfile(json)
+                    memoryCache.putIfAbsent(profile.parcelId, profile)
                 }
             }
         }
@@ -96,15 +156,36 @@ class AndroidFarmerIrrigationStore(context: Context) : FarmerIrrigationStore {
 
     override fun getAllProfiles(): Map<UUID, ParcelIrrigationProfile> = HashMap(memoryCache)
 
+    override fun getProfilesForScope(scopeKey: String): Map<UUID, ParcelIrrigationProfile> {
+        val prefix = scopedPrefix(scopeKey)
+        val result = mutableMapOf<UUID, ParcelIrrigationProfile>()
+        val allEntries = prefs.all
+        for ((key, value) in allEntries) {
+            if (key.startsWith(prefix) && value is String) {
+                runCatching {
+                    val json = JSONObject(value)
+                    val profile = deserializeProfile(json)
+                    result[profile.parcelId] = profile
+                }
+            }
+        }
+        return result
+    }
+
     override fun saveProfile(profile: ParcelIrrigationProfile) {
         memoryCache[profile.parcelId] = profile
         val serialized = serializeProfile(profile).toString()
-        prefs.edit { putString(KEY_PREFIX_PROFILE + profile.parcelId, serialized) }
+        val scopedKey = scopedPrefix(activeScope) + profile.parcelId
+        prefs.edit { putString(scopedKey, serialized) }
     }
 
     override fun removeProfile(parcelId: UUID) {
         memoryCache.remove(parcelId)
-        prefs.edit { remove(KEY_PREFIX_PROFILE + parcelId) }
+        val scopedKey = scopedPrefix(activeScope) + parcelId
+        prefs.edit {
+            remove(scopedKey)
+            remove(KEY_PREFIX_PROFILE + parcelId)
+        }
     }
 
     override fun addPunctualTurn(turn: PunctualTurn) {
@@ -126,13 +207,27 @@ class AndroidFarmerIrrigationStore(context: Context) : FarmerIrrigationStore {
     }
 
     override fun clear() {
+        // Non-destructive: only clears entries in the currently active scope
+        val prefix = scopedPrefix(activeScope)
+        val keysToRemove = prefs.all.keys.filter { it.startsWith(prefix) }
+        prefs.edit {
+            keysToRemove.forEach { remove(it) }
+        }
         memoryCache.clear()
-        prefs.edit { clear() }
     }
 
     companion object {
+        const val DEFAULT_SCOPE = "default"
         private const val PREFS_NAME = "farmer_irrigation_configs"
         private const val KEY_PREFIX_PROFILE = "profile_"
+
+        private fun scopedPrefix(scope: String): String = "profile_scope_${scope}_"
+
+        /**
+         * Generates a deterministic scope partition key combining user identity and workspace.
+         */
+        fun scopeKey(userId: String?, workspaceId: UUID?): String =
+            "${userId?.trim() ?: "local"}:${workspaceId?.toString() ?: "default"}"
 
         internal fun serializeProfile(profile: ParcelIrrigationProfile): JSONObject {
             val root = JSONObject()

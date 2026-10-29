@@ -40,7 +40,13 @@ data class CommunityWaterTariffFee(
     val waterPricePerM3Minor: Long? = null,
     val currency: String = "EUR",
     val notes: String? = null,
+    val sector: String? = null,
+    val feeIdentifier: String? = null,
 ) {
+    val canonicalKey: String
+        get() = feeIdentifier?.takeIf(String::isNotBlank)
+            ?: "${communityName.trim().lowercase()}:::${sector?.trim()?.lowercase().orEmpty()}"
+
     init {
         require(annualFixedFeeMinor >= 0L) { "annualFixedFeeMinor cannot be negative: $annualFixedFeeMinor" }
         require(waterPricePerM3Minor == null || waterPricePerM3Minor >= 0L) {
@@ -124,26 +130,41 @@ object IrrigationSummarizer {
         // 2. Real stats from completed/planned irrigation activities
         val realStats = computeRealStats(activities)
 
-        // 3. Extract community quotas from profiles
-        val profileFees = mutableListOf<CommunityWaterTariffFee>()
-        val seenCommunities = mutableSetOf<String>()
-        for (profile in profiles.values) {
+        // 3. Extract community quotas strictly from the active farm's parcels (CR-004)
+        val activeParcelIds = activeParcels.map { it.id }.toSet()
+        val relevantProfiles = profiles.filterKeys { it in activeParcelIds }
+
+        val profileFeesByKey = mutableMapOf<String, CommunityWaterTariffFee>()
+        for (profile in relevantProfiles.values) {
             val commName = profile.supply.communityName?.takeIf(String::isNotBlank) ?: continue
             val quota = profile.tariff.annualCommunityQuotaMinor
-            if (quota > 0L && seenCommunities.add(commName)) {
-                profileFees.add(
-                    CommunityWaterTariffFee(
+            if (quota > 0L) {
+                val sector = profile.supply.sector?.takeIf(String::isNotBlank)
+                val key = "${commName.trim().lowercase()}:::${sector?.trim()?.lowercase().orEmpty()}"
+                val existing = profileFeesByKey[key]
+                if (existing == null || quota > existing.annualFixedFeeMinor) {
+                    profileFeesByKey[key] = CommunityWaterTariffFee(
                         communityName = commName,
                         annualFixedFeeMinor = quota,
+                        sector = sector,
                         waterPricePerM3Minor = if (profile.tariff.tariffType == WaterTariffType.PER_M3) profile.tariff.variablePricePerUnitMinor else null,
                         currency = profile.tariff.currency,
-                        notes = "Cuota anual fijada por agricultor",
+                        notes = sector?.let { "Cuota anual (Sector $it)" } ?: "Cuota anual fijada por agricultor",
+                        feeIdentifier = key,
                     )
-                )
+                }
             }
         }
 
-        val combinedFees = (annualCommunityFees + profileFees).distinctBy { it.communityName }
+        val allFeesByKey = LinkedHashMap<String, CommunityWaterTariffFee>()
+        for (fee in annualCommunityFees) {
+            allFeesByKey[fee.canonicalKey] = fee
+        }
+        for ((key, fee) in profileFeesByKey) {
+            allFeesByKey.putIfAbsent(key, fee)
+        }
+
+        val combinedFees = allFeesByKey.values.toList()
 
         return IrrigationSummary(
             realStats = realStats,

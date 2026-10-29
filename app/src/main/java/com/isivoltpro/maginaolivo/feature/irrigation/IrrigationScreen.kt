@@ -494,7 +494,7 @@ private fun IrrigationSummaryTab(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
                                 Text(
-                                    text = fee.communityName,
+                                    text = if (!fee.sector.isNullOrBlank()) "${fee.communityName} · Sector ${fee.sector}" else fee.communityName,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MoSurfaceTokens.secondaryText,
                                 )

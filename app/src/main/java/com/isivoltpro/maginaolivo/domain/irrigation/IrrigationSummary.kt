@@ -102,11 +102,12 @@ object IrrigationSummarizer {
 
     /**
      * Computes the complete irrigation summary by aggregating active parcels, recorded activities,
-     * and optional community annual quotas.
+     * optional farmer profiles with community quotas, and optional manual tariff fees.
      */
     fun computeSummary(
         parcels: List<Parcel>,
         activities: List<Activity>,
+        profiles: Map<UUID, ParcelIrrigationProfile> = emptyMap(),
         annualCommunityFees: List<CommunityWaterTariffFee> = emptyList(),
     ): IrrigationSummary {
         val activeParcels = parcels.filter { it.archivedAt == null }
@@ -123,6 +124,27 @@ object IrrigationSummarizer {
         // 2. Real stats from completed/planned irrigation activities
         val realStats = computeRealStats(activities)
 
+        // 3. Extract community quotas from profiles
+        val profileFees = mutableListOf<CommunityWaterTariffFee>()
+        val seenCommunities = mutableSetOf<String>()
+        for (profile in profiles.values) {
+            val commName = profile.supply.communityName?.takeIf(String::isNotBlank) ?: continue
+            val quota = profile.tariff.annualCommunityQuotaMinor
+            if (quota > 0L && seenCommunities.add(commName)) {
+                profileFees.add(
+                    CommunityWaterTariffFee(
+                        communityName = commName,
+                        annualFixedFeeMinor = quota,
+                        waterPricePerM3Minor = if (profile.tariff.tariffType == WaterTariffType.PER_M3) profile.tariff.variablePricePerUnitMinor else null,
+                        currency = profile.tariff.currency,
+                        notes = "Cuota anual fijada por agricultor",
+                    )
+                )
+            }
+        }
+
+        val combinedFees = (annualCommunityFees + profileFees).distinctBy { it.communityName }
+
         return IrrigationSummary(
             realStats = realStats,
             breakdownByType = breakdown,
@@ -130,9 +152,20 @@ object IrrigationSummarizer {
             irrigatedParcelsCount = irrigatedCount,
             drylandParcelsCount = drylandCount,
             unspecifiedSystemCount = unspecifiedCount,
-            annualCommunityFees = annualCommunityFees,
+            annualCommunityFees = combinedFees,
         )
     }
+
+    fun computeSummary(
+        parcels: List<Parcel>,
+        activities: List<Activity>,
+        annualCommunityFees: List<CommunityWaterTariffFee>,
+    ): IrrigationSummary = computeSummary(
+        parcels = parcels,
+        activities = activities,
+        profiles = emptyMap(),
+        annualCommunityFees = annualCommunityFees,
+    )
 
     private fun computeBreakdown(parcels: List<Parcel>): List<IrrigationTypeBreakdown> {
         val groups = parcels.groupBy { it.agronomy.irrigationSystem }

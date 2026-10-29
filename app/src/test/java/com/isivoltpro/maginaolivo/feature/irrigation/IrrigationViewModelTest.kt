@@ -12,6 +12,10 @@ import com.isivoltpro.maginaolivo.domain.activity.AgendaEntry
 import com.isivoltpro.maginaolivo.domain.activity.IrrigationPrice
 import com.isivoltpro.maginaolivo.domain.activity.IrrigationPricingBasis
 import com.isivoltpro.maginaolivo.domain.activity.NewActivity
+import com.isivoltpro.maginaolivo.domain.farm.Farm
+import com.isivoltpro.maginaolivo.domain.farm.FarmChanges
+import com.isivoltpro.maginaolivo.domain.farm.FarmRepository
+import com.isivoltpro.maginaolivo.domain.farm.NewFarm
 import com.isivoltpro.maginaolivo.domain.machinery.MachineOption
 import com.isivoltpro.maginaolivo.domain.parcel.IrrigationSystem
 import com.isivoltpro.maginaolivo.domain.parcel.NewParcel
@@ -92,6 +96,18 @@ class IrrigationViewModelTest {
         override suspend fun cancel(id: UUID): AppResult<Unit> = AppResult.Success(Unit)
         override suspend fun reopen(id: UUID): AppResult<Unit> = AppResult.Success(Unit)
         override suspend fun archive(id: UUID): AppResult<Unit> = AppResult.Success(Unit)
+    }
+
+    private class FakeFarmRepository(
+        private val farmFlow: MutableStateFlow<Farm?>,
+    ) : FarmRepository {
+        override fun observeActive(workspaceId: UUID): Flow<List<Farm>> = flowOf(emptyList())
+        override fun observeArchived(workspaceId: UUID): Flow<List<Farm>> = flowOf(emptyList())
+        override fun observeById(farmId: UUID): Flow<Farm?> = farmFlow
+        override suspend fun create(command: NewFarm): AppResult<UUID> = AppResult.Success(UUID.randomUUID())
+        override suspend fun update(farmId: UUID, changes: FarmChanges): AppResult<Unit> = AppResult.Success(Unit)
+        override suspend fun archive(farmId: UUID): AppResult<Unit> = AppResult.Success(Unit)
+        override suspend fun restore(farmId: UUID): AppResult<Unit> = AppResult.Success(Unit)
     }
 
     private fun sampleParcel(
@@ -191,11 +207,11 @@ class IrrigationViewModelTest {
         assertEquals(1, state.weeklyPlan.totalScheduledTurns)
         assertEquals(DayOfWeek.TUESDAY, state.selectedDay)
 
-        // Calculator preloaded with first irrigated parcel
+        // Calculator preloaded with first irrigated parcel (clean, no fake defaults)
         assertEquals(parcelA.id, state.calculator.parcelId)
         assertEquals("El Cerrajón", state.calculator.parcelName)
         assertEquals("300", state.calculator.oliveTreeCountText)
-        assertNotNull(state.calculator.calculatedDose)
+        assertNull(state.calculator.calculatedDose)
     }
 
     @Test
@@ -246,7 +262,7 @@ class IrrigationViewModelTest {
     }
 
     @Test
-    fun loadParcelForCalculator_switchesToInstallationsAndSetsFields() = runTest {
+    fun loadParcelForCalculator_switchesToInstallationsAndLeavesInputsEmptyWithoutFakeDefaults() = runTest {
         val parcel = sampleParcel(name = "Olivar Nuevo", oliveCount = 550)
 
         val viewModel = IrrigationViewModel(
@@ -264,7 +280,62 @@ class IrrigationViewModelTest {
         assertEquals(parcel.id, state.calculator.parcelId)
         assertEquals("Olivar Nuevo", state.calculator.parcelName)
         assertEquals("550", state.calculator.oliveTreeCountText)
+        assertEquals("", state.calculator.emittersPerTreeText)
+        assertEquals("", state.calculator.emitterFlowLphText)
+        assertEquals("", state.calculator.durationMinutesText)
+        assertEquals(false, state.calculator.isSimulationMode)
+        assertNull(state.calculator.calculatedDose)
+    }
+
+    @Test
+    fun simulationMode_populatesExampleValuesAndCalculatesDose() = runTest {
+        val viewModel = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(MutableStateFlow(emptyList())),
+            activityRepository = FakeActivityRepository(MutableStateFlow(emptyList())),
+        )
+
+        advanceUntilIdle()
+
+        viewModel.loadSimulationExample()
+
+        val state = viewModel.state.value
+        assertEquals(true, state.calculator.isSimulationMode)
+        assertEquals("2", state.calculator.emittersPerTreeText)
+        assertEquals("4.0", state.calculator.emitterFlowLphText)
+        assertEquals("120", state.calculator.durationMinutesText)
         assertNotNull(state.calculator.calculatedDose)
+
+        // Limpiar simulación restablece el estado
+        viewModel.clearSimulation()
+        val cleared = viewModel.state.value
+        assertEquals(false, cleared.calculator.isSimulationMode)
+        assertEquals("", cleared.calculator.emittersPerTreeText)
+        assertEquals("", cleared.calculator.emitterFlowLphText)
+        assertEquals("", cleared.calculator.durationMinutesText)
+        assertNull(cleared.calculator.calculatedDose)
+    }
+
+    @Test
+    fun unauthorizedOrMissingFarm_setsFarmNotFoundAndBlocksNavigation() = runTest {
+        val farmFlow = MutableStateFlow<Farm?>(null)
+        val viewModel = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(MutableStateFlow(emptyList())),
+            activityRepository = FakeActivityRepository(MutableStateFlow(emptyList())),
+            farmRepository = FakeFarmRepository(farmFlow),
+        )
+
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertEquals(true, state.farmNotFound)
+        assertEquals(false, state.isLoading)
+        assertNull(state.farmName)
+
+        // Intentar navegar a otra pestaña no debe permitirse en estado de error
+        viewModel.selectTab(IrrigationTab.HISTORY)
+        assertEquals(IrrigationTab.SUMMARY, viewModel.state.value.selectedTab)
     }
 
     @Test
@@ -288,10 +359,10 @@ class IrrigationViewModelTest {
         assertEquals(8.0, dose.litersPerTree, 0.001)
         assertNull(state.calculator.error)
 
-        // Input vacío o no válido -> error
-        viewModel.updateTrees("")
+        // Campo inválido (0 olivos)
+        viewModel.updateTrees("0")
         val stateInvalid = viewModel.state.value
         assertNull(stateInvalid.calculator.calculatedDose)
-        assertEquals("Introduce el número de olivos", stateInvalid.calculator.error)
+        assertEquals("Introduce valores mayores que cero", stateInvalid.calculator.error)
     }
 }

@@ -41,12 +41,23 @@ class IrrigationViewModel(
     val state: StateFlow<IrrigationUiState> = mutableState.asStateFlow()
 
     init {
-        // Load farm name if farmRepository is present
+        // Authoritative security check: verify farm access and existence
         if (farmRepository != null) {
             viewModelScope.launch {
                 farmRepository.observeById(farmId).collect { farm ->
-                    if (farm != null) {
-                        mutableState.value = mutableState.value.copy(farmName = farm.name)
+                    if (farm == null) {
+                        mutableState.value = mutableState.value.copy(
+                            isLoading = false,
+                            farmNotFound = true,
+                            farmName = null,
+                            errorMessage = "Finca no disponible o no autorizada",
+                        )
+                    } else {
+                        mutableState.value = mutableState.value.copy(
+                            farmNotFound = false,
+                            farmName = farm.name,
+                            errorMessage = null,
+                        )
                     }
                 }
             }
@@ -60,7 +71,9 @@ class IrrigationViewModel(
             ) { parcels, activities ->
                 updateProjection(parcels, activities)
             }.collect { newState ->
-                mutableState.value = newState
+                if (!mutableState.value.farmNotFound) {
+                    mutableState.value = newState
+                }
             }
         }
     }
@@ -90,7 +103,7 @@ class IrrigationViewModel(
                 parcelId = first.id,
                 parcelName = first.displayName,
                 oliveTreeCountText = trees,
-            ).let { runCalculation(it) }
+            )
         } else {
             currentCalc
         }
@@ -106,11 +119,15 @@ class IrrigationViewModel(
     }
 
     fun selectTab(tab: IrrigationTab) {
-        mutableState.value = mutableState.value.copy(selectedTab = tab)
+        if (!mutableState.value.farmNotFound) {
+            mutableState.value = mutableState.value.copy(selectedTab = tab)
+        }
     }
 
     fun selectDay(day: DayOfWeek) {
-        mutableState.value = mutableState.value.copy(selectedDay = day)
+        if (!mutableState.value.farmNotFound) {
+            mutableState.value = mutableState.value.copy(selectedDay = day)
+        }
     }
 
     fun loadParcelForCalculator(parcel: Parcel) {
@@ -118,75 +135,95 @@ class IrrigationViewModel(
             parcelId = parcel.id,
             parcelName = parcel.displayName,
             oliveTreeCountText = parcel.agronomy.oliveTreeCount?.toString().orEmpty(),
+            isSimulationMode = false,
         )
         mutableState.value = mutableState.value.copy(
-            calculator = runCalculation(calc),
+            calculator = runCalculation(calc, explicit = false),
             selectedTab = IrrigationTab.INSTALLATIONS,
         )
     }
 
     fun updateTrees(text: String) {
         val filtered = text.filter { it.isDigit() }
-        val calc = mutableState.value.calculator.copy(oliveTreeCountText = filtered)
-        mutableState.value = mutableState.value.copy(calculator = runCalculation(calc))
+        val calc = mutableState.value.calculator.copy(oliveTreeCountText = filtered, isSimulationMode = false)
+        mutableState.value = mutableState.value.copy(calculator = runCalculation(calc, explicit = false))
     }
 
     fun updateEmittersPerTree(text: String) {
         val filtered = text.filter { it.isDigit() }
-        val calc = mutableState.value.calculator.copy(emittersPerTreeText = filtered)
-        mutableState.value = mutableState.value.copy(calculator = runCalculation(calc))
+        val calc = mutableState.value.calculator.copy(emittersPerTreeText = filtered, isSimulationMode = false)
+        mutableState.value = mutableState.value.copy(calculator = runCalculation(calc, explicit = false))
     }
 
     fun updateFlowLph(text: String) {
         val sanitized = text.replace(',', '.').filter { it.isDigit() || it == '.' }
-        val calc = mutableState.value.calculator.copy(emitterFlowLphText = sanitized)
-        mutableState.value = mutableState.value.copy(calculator = runCalculation(calc))
+        val calc = mutableState.value.calculator.copy(emitterFlowLphText = sanitized, isSimulationMode = false)
+        mutableState.value = mutableState.value.copy(calculator = runCalculation(calc, explicit = false))
     }
 
     fun updateDuration(text: String) {
         val filtered = text.filter { it.isDigit() }
-        val calc = mutableState.value.calculator.copy(durationMinutesText = filtered)
-        mutableState.value = mutableState.value.copy(calculator = runCalculation(calc))
+        val calc = mutableState.value.calculator.copy(durationMinutesText = filtered, isSimulationMode = false)
+        mutableState.value = mutableState.value.copy(calculator = runCalculation(calc, explicit = false))
     }
 
     fun updateEmitterType(type: EmitterType) {
-        val calc = mutableState.value.calculator.copy(emitterType = type)
-        mutableState.value = mutableState.value.copy(calculator = runCalculation(calc))
+        val calc = mutableState.value.calculator.copy(emitterType = type, isSimulationMode = false)
+        mutableState.value = mutableState.value.copy(calculator = runCalculation(calc, explicit = false))
     }
 
     fun recalculateDose() {
-        val calc = runCalculation(mutableState.value.calculator)
+        val calc = runCalculation(mutableState.value.calculator, explicit = true)
         mutableState.value = mutableState.value.copy(calculator = calc)
     }
 
-    private fun runCalculation(calc: DoseCalculatorState): DoseCalculatorState {
+    fun loadSimulationExample() {
+        val current = mutableState.value.calculator
+        val trees = current.oliveTreeCountText.ifBlank { "450" }
+        val simulated = current.copy(
+            isSimulationMode = true,
+            oliveTreeCountText = trees,
+            emittersPerTreeText = "2",
+            emitterFlowLphText = "4.0",
+            durationMinutesText = "120",
+            emitterType = EmitterType.INTEGRATED,
+        )
+        mutableState.value = mutableState.value.copy(
+            calculator = runCalculation(simulated, explicit = true),
+        )
+    }
+
+    fun clearSimulation() {
+        val current = mutableState.value.calculator
+        val reset = current.copy(
+            isSimulationMode = false,
+            emittersPerTreeText = "",
+            emitterFlowLphText = "",
+            durationMinutesText = "",
+            calculatedDose = null,
+            error = null,
+        )
+        mutableState.value = mutableState.value.copy(calculator = reset)
+    }
+
+    private fun runCalculation(calc: DoseCalculatorState, explicit: Boolean = false): DoseCalculatorState {
         val trees = calc.oliveTreeCountText.toIntOrNull()
         val emitters = calc.emittersPerTreeText.toIntOrNull()
         val flow = calc.emitterFlowLphText.toDoubleOrNull()
         val minutes = calc.durationMinutesText.toIntOrNull()
 
-        if (trees == null || trees <= 0) {
+        val allFilled = trees != null && emitters != null && flow != null && minutes != null
+        if (!allFilled) {
             return calc.copy(
                 calculatedDose = null,
-                error = "Introduce el número de olivos",
+                error = if (explicit) "Completa todos los parámetros para calcular la dotación" else null,
             )
         }
-        if (emitters == null || emitters <= 0) {
+
+        if (trees <= 0 || emitters <= 0 || flow <= 0.0 || minutes <= 0) {
             return calc.copy(
                 calculatedDose = null,
-                error = "Introduce los goteros por olivo",
-            )
-        }
-        if (flow == null || flow <= 0.0) {
-            return calc.copy(
-                calculatedDose = null,
-                error = "Introduce el caudal de cada gotero (L/h)",
-            )
-        }
-        if (minutes == null || minutes <= 0) {
-            return calc.copy(
-                calculatedDose = null,
-                error = "Introduce la duración del riego en minutos",
+                error = "Introduce valores mayores que cero",
             )
         }
 

@@ -412,5 +412,42 @@ class IrrigationScreenTest {
         composeRule.onNodeWithTag("irrigation-register-button").assertDoesNotExist()
         composeRule.onNodeWithTag("irrigation-unauthorized-root").assertDoesNotExist()
     }
+
+    @Test
+    fun archivedFarm_displaysArchivedBadgeAndHidesRegisterButton() {
+        val state = IrrigationUiState(
+            farmName = "Finca Huerta Vieja",
+            isFarmArchived = true,
+            isLoading = false,
+        )
+
+        composeRule.setContent {
+            MaginaOlivoTheme {
+                IrrigationScreen(
+                    state = state,
+                    onSelectTab = {},
+                    onSelectDay = {},
+                    onSelectParcelForCalculator = {},
+                    onUpdateTrees = {},
+                    onUpdateEmitters = {},
+                    onUpdateFlow = {},
+                    onUpdateDuration = {},
+                    onUpdateEmitterType = {},
+                    onCalculateDose = {},
+                    onRegisterIrrigation = {},
+                    onActivityClick = {},
+                    onBack = {},
+                )
+            }
+        }
+
+        // Título con sufijo Archivada y badge presente
+        composeRule.onNodeWithTag("irrigation-title").assertIsDisplayed()
+        composeRule.onNodeWithTag("irrigation-archived-badge").assertIsDisplayed()
+        composeRule.onNodeWithText("Finca Huerta Vieja · Archivada").assertIsDisplayed()
+
+        // El botón para registrar riego NO debe ofrecerse (para no dar acciones engañosas)
+        composeRule.onNodeWithTag("irrigation-register-button").assertDoesNotExist()
+    }
 }
 

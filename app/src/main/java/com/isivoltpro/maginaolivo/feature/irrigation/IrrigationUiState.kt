@@ -42,6 +42,7 @@ data class IrrigationUiState(
     val farmId: UUID? = null,
     val farmName: String? = null,
     val farmNotFound: Boolean = false,
+    val isFarmArchived: Boolean = false,
     val errorMessage: String? = null,
     val selectedTab: IrrigationTab = IrrigationTab.SUMMARY,
     val selectedDay: DayOfWeek = DayOfWeek.MONDAY,

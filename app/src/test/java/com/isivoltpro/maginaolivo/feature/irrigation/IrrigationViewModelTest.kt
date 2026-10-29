@@ -29,6 +29,7 @@ import com.isivoltpro.maginaolivo.domain.parcel.ParcelSource
 import com.isivoltpro.maginaolivo.domain.parcel.RegistryLink
 import com.isivoltpro.maginaolivo.core.common.AppResult
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
@@ -376,6 +377,67 @@ class IrrigationViewModelTest {
         assertEquals(1, recoveredState.irrigatedParcels.size)
         assertEquals(60.0, recoveredState.summary.realStats.totalVolumeM3, 0.001)
         assertEquals(parcel.id, recoveredState.calculator.parcelId)
+    }
+
+    @Test
+    fun workspaceSwitchDuringActiveSession_purgesProtectedDataAndBlocksActions() = runTest {
+        // Escenario: usuario en Workspace A con Finca A visible
+        val farmFlow = MutableStateFlow<Farm?>(sampleFarm(name = "Finca Workspace A"))
+        val parcel = sampleParcel(name = "Parcela Workspace A", system = IrrigationSystem.DRIP)
+        val activity = sampleActivity(volumeM3 = 100.0)
+
+        val viewModel = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(MutableStateFlow(listOf(parcel))),
+            activityRepository = FakeActivityRepository(MutableStateFlow(listOf(activity))),
+            farmRepository = FakeFarmRepository(farmFlow),
+        )
+
+        advanceUntilIdle()
+        assertEquals("Finca Workspace A", viewModel.state.value.farmName)
+        assertEquals(1, viewModel.state.value.irrigatedParcels.size)
+
+        // Cambio de Workspace A -> B durante la sesion activa: el repositorio resuelve el nuevo ambito y emite null
+        farmFlow.value = null
+        advanceUntilIdle()
+
+        val stateAfterSwitch = viewModel.state.value
+        assertEquals(true, stateAfterSwitch.farmNotFound)
+        assertNull(stateAfterSwitch.farmName)
+        assertTrue("Ningun dato del Workspace A debe quedar accesible", stateAfterSwitch.irrigatedParcels.isEmpty())
+        assertTrue("El historial debe estar limpio", stateAfterSwitch.recentActivities.isEmpty())
+        assertEquals(0.0, stateAfterSwitch.summary.realStats.totalVolumeM3, 0.001)
+
+        // Intento de interaccion bloqueado
+        viewModel.selectTab(IrrigationTab.INSTALLATIONS)
+        assertEquals(IrrigationTab.SUMMARY, viewModel.state.value.selectedTab)
+    }
+
+    @Test
+    fun archivedFarm_allowsReadingHistoryAndComputesMetrics_flagsArchived() = runTest {
+        // Contrato: fincas archivadas permiten lectura/historico pero se marcan como archivadas
+        val archivedFarm = sampleFarm(name = "Finca Antigua").copy(
+            archivedAt = Instant.now(),
+        )
+        val parcel = sampleParcel(name = "Parcela Historica", system = IrrigationSystem.DRIP)
+        val activity = sampleActivity(volumeM3 = 150.0, estimatedCostMinor = 4500L)
+
+        val viewModel = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(MutableStateFlow(listOf(parcel))),
+            activityRepository = FakeActivityRepository(MutableStateFlow(listOf(activity))),
+            farmRepository = FakeFarmRepository(MutableStateFlow(archivedFarm)),
+        )
+
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertEquals(false, state.isLoading)
+        assertEquals(false, state.farmNotFound)
+        assertEquals(true, state.isFarmArchived)
+        assertEquals("Finca Antigua", state.farmName)
+        assertEquals(150.0, state.summary.realStats.totalVolumeM3, 0.001)
+        assertEquals(1, state.recentActivities.size)
     }
 
     @Test

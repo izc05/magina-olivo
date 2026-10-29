@@ -179,6 +179,7 @@ fun IrrigationScreen(
     ) {
         IrrigationHeader(
             farmName = state.farmName,
+            isArchived = state.isFarmArchived,
             onBack = onBack,
             onRegister = onRegisterIrrigation,
         )
@@ -209,6 +210,7 @@ fun IrrigationScreen(
             )
             IrrigationTab.HISTORY -> IrrigationHistoryTab(
                 activities = state.recentActivities,
+                isArchived = state.isFarmArchived,
                 onActivityClick = onActivityClick,
                 onRegisterIrrigation = onRegisterIrrigation,
             )
@@ -219,6 +221,7 @@ fun IrrigationScreen(
 @Composable
 private fun IrrigationHeader(
     farmName: String?,
+    isArchived: Boolean = false,
     onBack: () -> Unit,
     onRegister: () -> Unit,
 ) {
@@ -249,15 +252,35 @@ private fun IrrigationHeader(
                     )
                 }
                 Column {
-                    Text(
-                        text = "Riego",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.testTag("irrigation-title"),
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(MoSpacing.xxs),
+                    ) {
+                        Text(
+                            text = "Riego",
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.testTag("irrigation-title"),
+                        )
+                        if (isArchived) {
+                            Surface(
+                                shape = MoShape.pill,
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                border = BorderStroke(1.dp, MoSurfaceTokens.cardStroke),
+                                modifier = Modifier.testTag("irrigation-archived-badge"),
+                            ) {
+                                Text(
+                                    text = "Archivada",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MoSurfaceTokens.secondaryText,
+                                    modifier = Modifier.padding(horizontal = MoSpacing.xs, vertical = 2.dp),
+                                )
+                            }
+                        }
+                    }
                     if (!farmName.isNullOrBlank()) {
                         Text(
-                            text = farmName,
+                            text = if (isArchived) "$farmName · Archivada" else farmName,
                             style = MaterialTheme.typography.bodySmall,
                             color = MoSurfaceTokens.secondaryText,
                         )
@@ -265,11 +288,13 @@ private fun IrrigationHeader(
                 }
             }
 
-            MoPrimaryButton(
-                text = "+ Registrar riego",
-                onClick = onRegister,
-                modifier = Modifier.testTag("irrigation-register-button"),
-            )
+            if (!isArchived) {
+                MoPrimaryButton(
+                    text = "+ Registrar riego",
+                    onClick = onRegister,
+                    modifier = Modifier.testTag("irrigation-register-button"),
+                )
+            }
         }
     }
 }
@@ -907,6 +932,7 @@ private fun DoseCalculatorSection(
 @Composable
 private fun IrrigationHistoryTab(
     activities: List<Activity>,
+    isArchived: Boolean = false,
     onActivityClick: (UUID) -> Unit,
     onRegisterIrrigation: () -> Unit,
 ) {
@@ -920,8 +946,8 @@ private fun IrrigationHistoryTab(
             MoEmptyState(
                 title = "Aún no has registrado ningún riego",
                 body = "Registra un riego desde el botón superior o desde el Cuaderno para ver aquí su volumen, duración y coste acumulado.",
-                actionText = "Registrar riego",
-                onAction = onRegisterIrrigation,
+                actionText = if (isArchived) null else "Registrar riego",
+                onAction = if (isArchived) null else onRegisterIrrigation,
                 icon = MoIcons.History,
             )
         }

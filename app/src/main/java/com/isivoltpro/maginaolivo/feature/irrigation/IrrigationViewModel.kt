@@ -83,6 +83,7 @@ class IrrigationViewModel(
                                 farmId = farmId,
                                 isLoading = false,
                                 farmNotFound = true,
+                                isFarmArchived = false,
                                 farmName = null,
                                 errorMessage = "Finca no disponible o no autorizada",
                                 selectedDay = today.dayOfWeek,
@@ -153,6 +154,7 @@ class IrrigationViewModel(
         return mutableState.value.copy(
             isLoading = false,
             farmNotFound = false,
+            isFarmArchived = farm.archivedAt != null,
             farmName = farm.name,
             errorMessage = null,
             summary = summary,

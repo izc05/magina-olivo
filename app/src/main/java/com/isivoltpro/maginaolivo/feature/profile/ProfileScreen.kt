@@ -79,8 +79,13 @@ fun ProfileRoute(
     onAgronomicPeople: () -> Unit = {},
     appearanceStore: AppearanceStore? = null,
     onAccount: (() -> Unit)? = null,
+    accountRepository: com.isivoltpro.maginaolivo.feature.account.AccountRepository? = null,
 ) {
     val context = LocalContext.current
+    val accountState by (accountRepository?.state ?: kotlinx.coroutines.flow.MutableStateFlow(null)).collectAsStateWithLifecycle()
+    val personalProfile = remember(accountState) {
+        accountState?.let { PersonalProfile.fromAccountState(it) }
+    }
     val profileRepository = persistence?.profileRepository
     val profileViewModel: MyProfileViewModel? = if (persistence != null && profileRepository != null) {
         viewModel(
@@ -101,6 +106,7 @@ fun ProfileRoute(
     }
     ProfileScreen(
         onAccount = onAccount,
+        personalProfile = personalProfile,
         appVersion = appVersion,
         notificationsOn = notificationsOn,
         onNotifications = openNotifications,
@@ -164,6 +170,7 @@ fun ProfileScreen(
     onAgronomicPeople: () -> Unit = {},
     appearanceSettings: (@Composable () -> Unit)? = null,
     onAccount: (() -> Unit)? = null,
+    personalProfile: PersonalProfile? = null,
 ) {
     Column(
         Modifier
@@ -176,13 +183,12 @@ fun ProfileScreen(
         verticalArrangement = Arrangement.spacedBy(MoSpacing.xs),
     ) {
         Spacer(Modifier.height(MoSpacing.sm))
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(MoSpacing.sm)) {
-            OliveMark(Modifier.size(48.dp))
-            Column {
-                Text("Perfil", style = MaterialTheme.typography.headlineLarge, color = MoColors.current.primaryText)
-                Text("Tus datos se guardan primero en este teléfono.", style = MaterialTheme.typography.bodySmall, color = MoSurfaceTokens.secondaryText)
-            }
-        }
+        Text("Perfil", style = MaterialTheme.typography.headlineLarge, color = MoColors.current.primaryText)
+        Spacer(Modifier.height(MoSpacing.xs))
+        PersonalProfileHeader(
+            profile = personalProfile,
+            onAccount = onAccount,
+        )
         Spacer(Modifier.height(MoSpacing.xs))
         myProfile?.invoke()
         MoSectionHeader("Tu olivar")

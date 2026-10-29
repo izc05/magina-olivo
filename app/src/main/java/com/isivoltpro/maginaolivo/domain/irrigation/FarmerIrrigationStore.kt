@@ -141,8 +141,8 @@ class AndroidFarmerIrrigationStore(
                     val profile = deserializeProfile(json)
                     memoryCache[profile.parcelId] = profile
                 }
-            } else if (scope == DEFAULT_SCOPE && key.startsWith(KEY_PREFIX_PROFILE) && !key.startsWith("profile_scope_") && value is String) {
-                // Non-destructive fallback: load legacy un-scoped entries under default partition
+            } else if ((scope == DEFAULT_SCOPE || scope.startsWith("local:::")) && key.startsWith(KEY_PREFIX_PROFILE) && !key.startsWith("profile_scope_") && !key.startsWith("profile_backup_") && value is String) {
+                // Non-destructive fallback: load legacy un-scoped entries under default/local partition
                 runCatching {
                     val json = JSONObject(value)
                     val profile = deserializeProfile(json)
@@ -184,8 +184,37 @@ class AndroidFarmerIrrigationStore(
         val scopedKey = scopedPrefix(activeScope) + parcelId
         prefs.edit {
             remove(scopedKey)
-            remove(KEY_PREFIX_PROFILE + parcelId)
         }
+    }
+
+    /**
+     * Explicit non-destructive migration of legacy un-scoped configurations to a designated verified scope.
+     * Backs up legacy keys to `profile_backup_legacy_<parcelId>` and copies them to the target scope partition.
+     * Original legacy keys are retained to prevent data loss.
+     */
+    fun migrateLegacyProfilesToScope(targetScope: String): Int {
+        var count = 0
+        val allEntries = prefs.all
+        prefs.edit {
+            for ((key, value) in allEntries) {
+                if (key.startsWith(KEY_PREFIX_PROFILE) && !key.startsWith("profile_scope_") && !key.startsWith("profile_backup_") && value is String) {
+                    val parcelIdStr = key.removePrefix(KEY_PREFIX_PROFILE)
+                    val backupKey = "profile_backup_legacy_$parcelIdStr"
+                    val targetScopedKey = scopedPrefix(targetScope) + parcelIdStr
+                    if (!prefs.contains(backupKey)) {
+                        putString(backupKey, value)
+                    }
+                    if (!prefs.contains(targetScopedKey)) {
+                        putString(targetScopedKey, value)
+                        count++
+                    }
+                }
+            }
+        }
+        if (activeScope == targetScope) {
+            loadScopeFromPrefs(targetScope)
+        }
+        return count
     }
 
     override fun addPunctualTurn(turn: PunctualTurn) {
@@ -227,7 +256,7 @@ class AndroidFarmerIrrigationStore(
          * Generates a deterministic scope partition key combining user identity and workspace.
          */
         fun scopeKey(userId: String?, workspaceId: UUID?): String =
-            "${userId?.trim() ?: "local"}:${workspaceId?.toString() ?: "default"}"
+            "${userId?.trim() ?: "local"}:::${workspaceId?.toString() ?: "default"}"
 
         internal fun serializeProfile(profile: ParcelIrrigationProfile): JSONObject {
             val root = JSONObject()
@@ -293,6 +322,9 @@ class AndroidFarmerIrrigationStore(
                 put("variablePricePerUnitMinor", profile.tariff.variablePricePerUnitMinor)
                 put("annualCommunityQuotaMinor", profile.tariff.annualCommunityQuotaMinor)
                 put("currency", profile.tariff.currency)
+                if (profile.tariff.quotaIdentifier != null) {
+                    put("quotaIdentifier", profile.tariff.quotaIdentifier)
+                }
             }
             root.put("tariff", tariffObj)
 
@@ -374,6 +406,7 @@ class AndroidFarmerIrrigationStore(
                     variablePricePerUnitMinor = tariffObj.optLong("variablePricePerUnitMinor", 0L),
                     annualCommunityQuotaMinor = tariffObj.optLong("annualCommunityQuotaMinor", 0L),
                     currency = tariffObj.optString("currency", "EUR"),
+                    quotaIdentifier = tariffObj.optString("quotaIdentifier").takeIf { it.isNotBlank() },
                 )
             } else WaterTariff()
 

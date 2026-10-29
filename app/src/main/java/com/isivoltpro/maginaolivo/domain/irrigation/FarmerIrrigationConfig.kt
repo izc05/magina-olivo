@@ -185,6 +185,7 @@ data class WaterTariff(
     val variablePricePerUnitMinor: Long = 0L,
     val annualCommunityQuotaMinor: Long = 0L,
     val currency: String = "EUR",
+    val quotaIdentifier: String? = null,
 ) {
     init {
         require(variablePricePerUnitMinor >= 0L) { "variablePricePerUnitMinor cannot be negative: $variablePricePerUnitMinor" }

@@ -38,6 +38,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.isivoltpro.maginaolivo.feature.account.AccountRepository
+import com.isivoltpro.maginaolivo.feature.account.AccountState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -99,14 +101,16 @@ fun IrrigationRoute(
     onRegisterIrrigation: () -> Unit,
     onActivityClick: (UUID) -> Unit,
     onBack: () -> Unit,
+    accountRepository: AccountRepository? = null,
     farmerIrrigationStore: FarmerIrrigationStore? = null,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val store = farmerIrrigationStore ?: remember(context) { AndroidFarmerIrrigationStore(context) }
+    val identity by accountRepository?.state?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(AccountState()) }
 
     val viewModel: IrrigationViewModel = viewModel(
-        key = "IrrigationViewModel-$farmId",
+        key = "IrrigationViewModel-$farmId-${identity.userId}",
         factory = viewModelFactory {
             initializer {
                 IrrigationViewModel(
@@ -115,6 +119,7 @@ fun IrrigationRoute(
                     activityRepository = activityRepository,
                     farmRepository = farmRepository,
                     farmerIrrigationStore = store,
+                    accountRepository = accountRepository,
                 )
             }
         },

@@ -434,8 +434,8 @@ class IrrigationViewModelB5Test {
         val parcelA = UUID.randomUUID()
         val parcelB = UUID.randomUUID()
 
-        val scopeA = "user1:workspaceA"
-        val scopeB = "user1:workspaceB"
+        val scopeA = "user1:::workspaceA"
+        val scopeB = "user1:::workspaceB"
 
         // 1. Save in Scope A
         store.setScope(scopeA)
@@ -458,5 +458,130 @@ class IrrigationViewModelB5Test {
         assertTrue(store.getAllProfiles().containsKey(parcelA))
         assertFalse(store.getAllProfiles().containsKey(parcelB))
         assertEquals("Comunidad A", store.getProfile(parcelA)?.supply?.communityName)
+    }
+
+    @Test
+    fun accountIsolation_differentUsersInSameWorkspace_haveCompletelyIndependentPartitions() = runTest {
+        val farm = testFarm(farmId, "Finca Compartida")
+        val parcelA = testParcel(id = UUID.randomUUID(), name = "Parcela Comun")
+        val user1 = UUID.randomUUID()
+        val user2 = UUID.randomUUID()
+
+        val farmFlow = MutableStateFlow<Farm?>(farm)
+        val parcelsFlow = MutableStateFlow(listOf(parcelA))
+        val activitiesFlow = MutableStateFlow<List<Activity>>(emptyList())
+        val irrigationStore = InMemoryFarmerIrrigationStore()
+
+        var currentUser = user1
+
+        // User 1 creates ViewModel and saves a profile for parcelA
+        val vmUser1 = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(parcelsFlow),
+            activityRepository = FakeActivityRepository(activitiesFlow),
+            farmRepository = FakeFarmRepository(farmFlow),
+            farmerIrrigationStore = irrigationStore,
+            currentUserIdProvider = { currentUser },
+            today = LocalDate.of(2026, 6, 1),
+        )
+        advanceUntilIdle()
+
+        vmUser1.saveProfile(
+            ParcelIrrigationProfile(
+                parcelId = parcelA.id,
+                supply = WaterSupplyDetails(communityName = "Comunidad User 1"),
+                tariff = WaterTariff(annualCommunityQuotaMinor = 10000L),
+            )
+        )
+        advanceUntilIdle()
+
+        assertEquals("Comunidad User 1", vmUser1.state.value.profiles[parcelA.id]?.supply?.communityName)
+
+        // Switch to User 2 in the same workspace
+        currentUser = user2
+        val vmUser2 = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(parcelsFlow),
+            activityRepository = FakeActivityRepository(activitiesFlow),
+            farmRepository = FakeFarmRepository(farmFlow),
+            farmerIrrigationStore = irrigationStore,
+            currentUserIdProvider = { currentUser },
+            today = LocalDate.of(2026, 6, 1),
+        )
+        advanceUntilIdle()
+
+        // User 2 has clean initial state for parcelA (does not inherit User 1's profile)
+        assertFalse(vmUser2.state.value.profiles.containsKey(parcelA.id))
+
+        // User 2 saves their own distinct configuration for parcelA
+        vmUser2.saveProfile(
+            ParcelIrrigationProfile(
+                parcelId = parcelA.id,
+                supply = WaterSupplyDetails(communityName = "Comunidad User 2"),
+                tariff = WaterTariff(annualCommunityQuotaMinor = 25000L),
+            )
+        )
+        advanceUntilIdle()
+        assertEquals("Comunidad User 2", vmUser2.state.value.profiles[parcelA.id]?.supply?.communityName)
+
+        // Switch back to User 1: User 1's profile is intact (no data loss, no cross-contamination)
+        currentUser = user1
+        val vmUser1Reloaded = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(parcelsFlow),
+            activityRepository = FakeActivityRepository(activitiesFlow),
+            farmRepository = FakeFarmRepository(farmFlow),
+            farmerIrrigationStore = irrigationStore,
+            currentUserIdProvider = { currentUser },
+            today = LocalDate.of(2026, 6, 1),
+        )
+        advanceUntilIdle()
+
+        assertEquals("Comunidad User 1", vmUser1Reloaded.state.value.profiles[parcelA.id]?.supply?.communityName)
+    }
+
+    @Test
+    fun annualFees_sameSectorWithDifferentQuotas_arePreservedAsDistinctObligations() = runTest {
+        val farm = testFarm(farmId, "Finca Dos Tomas Mismo Sector")
+        val parcelToma1 = testParcel(id = UUID.randomUUID(), name = "Parcela Toma 1")
+        val parcelToma2 = testParcel(id = UUID.randomUUID(), name = "Parcela Toma 2")
+
+        val farmFlow = MutableStateFlow<Farm?>(farm)
+        val parcelsFlow = MutableStateFlow(listOf(parcelToma1, parcelToma2))
+        val activitiesFlow = MutableStateFlow<List<Activity>>(emptyList())
+        val irrigationStore = InMemoryFarmerIrrigationStore()
+        val scope = AndroidFarmerIrrigationStore.scopeKey(null, farm.workspaceId)
+        irrigationStore.setScope(scope)
+
+        // Both in Sector 2, but DIFFERENT quota amounts (e.g. 150 € regular + 80 € well canon)
+        irrigationStore.saveProfile(
+            ParcelIrrigationProfile(
+                parcelId = parcelToma1.id,
+                supply = WaterSupplyDetails(communityName = "Comunidad San Isidro", sector = "Sector 2"),
+                tariff = WaterTariff(annualCommunityQuotaMinor = 15000L), // 150 €
+            )
+        )
+        irrigationStore.saveProfile(
+            ParcelIrrigationProfile(
+                parcelId = parcelToma2.id,
+                supply = WaterSupplyDetails(communityName = "Comunidad San Isidro", sector = "Sector 2"),
+                tariff = WaterTariff(annualCommunityQuotaMinor = 8000L), // 80 €
+            )
+        )
+
+        val viewModel = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(parcelsFlow),
+            activityRepository = FakeActivityRepository(activitiesFlow),
+            farmRepository = FakeFarmRepository(farmFlow),
+            farmerIrrigationStore = irrigationStore,
+            today = LocalDate.of(2026, 6, 1),
+        )
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        // Both distinct obligations must be preserved: 150 € + 80 € = 230 €
+        assertEquals(2, state.summary.annualCommunityFees.size)
+        assertEquals(23000L, state.summary.totalAnnualFixedFeesMinor)
     }
 }

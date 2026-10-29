@@ -42,10 +42,11 @@ data class CommunityWaterTariffFee(
     val notes: String? = null,
     val sector: String? = null,
     val feeIdentifier: String? = null,
+    val assessmentYear: Int? = null,
 ) {
     val canonicalKey: String
         get() = feeIdentifier?.takeIf(String::isNotBlank)
-            ?: "${communityName.trim().lowercase()}:::${sector?.trim()?.lowercase().orEmpty()}"
+            ?: "${communityName.trim().lowercase()}:::${sector?.trim()?.lowercase().orEmpty()}:::${annualFixedFeeMinor}"
 
     init {
         require(annualFixedFeeMinor >= 0L) { "annualFixedFeeMinor cannot be negative: $annualFixedFeeMinor" }
@@ -134,25 +135,25 @@ object IrrigationSummarizer {
         val activeParcelIds = activeParcels.map { it.id }.toSet()
         val relevantProfiles = profiles.filterKeys { it in activeParcelIds }
 
-        val profileFeesByKey = mutableMapOf<String, CommunityWaterTariffFee>()
+        val profileFeesByKey = LinkedHashMap<String, CommunityWaterTariffFee>()
         for (profile in relevantProfiles.values) {
             val commName = profile.supply.communityName?.takeIf(String::isNotBlank) ?: continue
             val quota = profile.tariff.annualCommunityQuotaMinor
             if (quota > 0L) {
                 val sector = profile.supply.sector?.takeIf(String::isNotBlank)
-                val key = "${commName.trim().lowercase()}:::${sector?.trim()?.lowercase().orEmpty()}"
-                val existing = profileFeesByKey[key]
-                if (existing == null || quota > existing.annualFixedFeeMinor) {
-                    profileFeesByKey[key] = CommunityWaterTariffFee(
-                        communityName = commName,
-                        annualFixedFeeMinor = quota,
-                        sector = sector,
-                        waterPricePerM3Minor = if (profile.tariff.tariffType == WaterTariffType.PER_M3) profile.tariff.variablePricePerUnitMinor else null,
-                        currency = profile.tariff.currency,
-                        notes = sector?.let { "Cuota anual (Sector $it)" } ?: "Cuota anual fijada por agricultor",
-                        feeIdentifier = key,
-                    )
-                }
+                val feeId = profile.tariff.quotaIdentifier?.takeIf(String::isNotBlank)
+                val fee = CommunityWaterTariffFee(
+                    communityName = commName,
+                    annualFixedFeeMinor = quota,
+                    sector = sector,
+                    waterPricePerM3Minor = if (profile.tariff.tariffType == WaterTariffType.PER_M3) profile.tariff.variablePricePerUnitMinor else null,
+                    currency = profile.tariff.currency,
+                    notes = sector?.let { "Cuota anual estimada (Sector $it)" } ?: "Cuota anual estimada fijada por agricultor",
+                    feeIdentifier = feeId,
+                )
+                // Shared holding fee across parcels with identical community, sector and amount is counted once.
+                // Distinct quotas (different sectors, different amounts, or distinct explicit identifiers) are preserved.
+                profileFeesByKey.putIfAbsent(fee.canonicalKey, fee)
             }
         }
 

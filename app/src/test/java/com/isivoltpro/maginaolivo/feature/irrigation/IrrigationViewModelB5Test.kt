@@ -584,4 +584,90 @@ class IrrigationViewModelB5Test {
         assertEquals(2, state.summary.annualCommunityFees.size)
         assertEquals(23000L, state.summary.totalAnnualFixedFeesMinor)
     }
+
+    @Test
+    fun accountLinking_automaticallyRecoversLegacyConfigurations_withoutManualMigration() = runTest {
+        val farm = testFarm(farmId, "Finca Vinculacion Automatica")
+        val parcel = testParcel(id = UUID.randomUUID(), name = "Parcela Legada")
+        val userAlice = UUID.randomUUID()
+        val userBob = UUID.randomUUID()
+
+        val farmFlow = MutableStateFlow<Farm?>(farm)
+        val parcelsFlow = MutableStateFlow(listOf(parcel))
+        val activitiesFlow = MutableStateFlow<List<Activity>>(emptyList())
+        val irrigationStore = InMemoryFarmerIrrigationStore()
+
+        // 1. Initial state: unlinked local device has a legacy profile in default partition
+        irrigationStore.setScope(InMemoryFarmerIrrigationStore.DEFAULT_SCOPE)
+        irrigationStore.saveProfile(
+            ParcelIrrigationProfile(
+                parcelId = parcel.id,
+                supply = WaterSupplyDetails(communityName = "Comunidad Pre-Vinculada"),
+            )
+        )
+
+        var currentUser: UUID? = null
+
+        // 2. Open ViewModel in unauthenticated local session
+        val vmGuest = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(parcelsFlow),
+            activityRepository = FakeActivityRepository(activitiesFlow),
+            farmRepository = FakeFarmRepository(farmFlow),
+            farmerIrrigationStore = irrigationStore,
+            currentUserIdProvider = { currentUser },
+            today = LocalDate.of(2026, 6, 1),
+        )
+        advanceUntilIdle()
+
+        // Local unauthenticated session reads the profile
+        assertEquals("Comunidad Pre-Vinculada", vmGuest.state.value.profiles[parcel.id]?.supply?.communityName)
+
+        // 3. User Alice links her account (transitions from null to userAlice)
+        currentUser = userAlice
+        val vmAlice = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(parcelsFlow),
+            activityRepository = FakeActivityRepository(activitiesFlow),
+            farmRepository = FakeFarmRepository(farmFlow),
+            farmerIrrigationStore = irrigationStore,
+            currentUserIdProvider = { currentUser },
+            today = LocalDate.of(2026, 6, 1),
+        )
+        advanceUntilIdle()
+
+        // Alice automatically recovers the profile without manual migration
+        assertEquals("Comunidad Pre-Vinculada", vmAlice.state.value.profiles[parcel.id]?.supply?.communityName)
+
+        // 4. User Bob logs in on the same device
+        currentUser = userBob
+        val vmBob = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(parcelsFlow),
+            activityRepository = FakeActivityRepository(activitiesFlow),
+            farmRepository = FakeFarmRepository(farmFlow),
+            farmerIrrigationStore = irrigationStore,
+            currentUserIdProvider = { currentUser },
+            today = LocalDate.of(2026, 6, 1),
+        )
+        advanceUntilIdle()
+
+        // Bob must NOT receive Alice's claimed legacy profile
+        assertTrue("Bob's profile map must be empty", vmBob.state.value.profiles.isEmpty())
+
+        // 5. Alice logs back in (A -> B -> A)
+        currentUser = userAlice
+        val vmAliceReloaded = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(parcelsFlow),
+            activityRepository = FakeActivityRepository(activitiesFlow),
+            farmRepository = FakeFarmRepository(farmFlow),
+            farmerIrrigationStore = irrigationStore,
+            currentUserIdProvider = { currentUser },
+            today = LocalDate.of(2026, 6, 1),
+        )
+        advanceUntilIdle()
+
+        assertEquals("Comunidad Pre-Vinculada", vmAliceReloaded.state.value.profiles[parcel.id]?.supply?.communityName)
+    }
 }

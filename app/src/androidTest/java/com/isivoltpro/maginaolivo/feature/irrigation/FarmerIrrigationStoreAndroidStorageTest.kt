@@ -14,6 +14,7 @@ import com.isivoltpro.maginaolivo.domain.irrigation.WaterTariffType
 import java.util.UUID
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -190,5 +191,55 @@ class FarmerIrrigationStoreAndroidStorageTest {
         store.setScope(scopeA)
         assertNotNull("User A profile must remain intact after User B removal", store.getProfile(parcelId))
         assertTrue("Legacy backup key must not be removed by scoped deletion", prefs.contains(backupKey))
+    }
+
+    @Test
+    fun accountLinkingFlow_recoversLegacyConfigsForFirstClaimant_andPreventsCopyingToSubsequentUsers() {
+        val parcelId = UUID.randomUUID()
+        val workspaceId = UUID.randomUUID()
+        val legacyKey = "profile_$parcelId"
+        val sampleProfile = ParcelIrrigationProfile(
+            parcelId = parcelId,
+            supply = WaterSupplyDetails(sourceType = WaterSourceType.IRRIGATION_COMMUNITY, communityName = "Comunidad San Isidro"),
+            aforo = AforoConfig(oliveTreeCount = 150, emittersPerTree = 3, emitterFlowLph = 4.0),
+        )
+
+        // 1. Initial state: unlinked local device has a legacy profile
+        prefs.edit(commit = true) {
+            putString(legacyKey, AndroidFarmerIrrigationStore.serializeProfile(sampleProfile).toString())
+        }
+        assertTrue("Legacy un-scoped entry exists", prefs.contains(legacyKey))
+
+        // 2. Unauthenticated local session reads the legacy profile via non-destructive fallback
+        val localScope = AndroidFarmerIrrigationStore.scopeKey(null, workspaceId)
+        val store = AndroidFarmerIrrigationStore(context, initialScope = localScope)
+        assertNotNull("Local guest session reads legacy profile", store.getProfile(parcelId))
+
+        // 3. User Alice links her account (first claimant):
+        val aliceUserId = "user_alice_777"
+        val aliceScope = AndroidFarmerIrrigationStore.scopeKey(aliceUserId, workspaceId)
+        val claimedByAlice = store.claimLegacyProfiles(aliceScope, aliceUserId)
+        assertEquals("Alice successfully claims the 1 legacy profile", 1, claimedByAlice)
+
+        store.setScope(aliceScope)
+        assertNotNull("Alice now has the profile under her scoped partition", store.getProfile(parcelId))
+        assertEquals("Comunidad San Isidro", store.getProfile(parcelId)?.supply?.communityName)
+        assertEquals("user_alice_777", prefs.getString("legacy_profiles_claimed_by", null))
+        assertFalse("Un-scoped legacy key was transitioned out of the unassigned pool", prefs.contains(legacyKey))
+        assertTrue("Immutable backup key exists", prefs.contains("profile_backup_legacy_$parcelId"))
+
+        // 4. User Bob logs in on the same phone:
+        val bobUserId = "user_bob_888"
+        val bobScope = AndroidFarmerIrrigationStore.scopeKey(bobUserId, workspaceId)
+        val claimedByBob = store.claimLegacyProfiles(bobScope, bobUserId)
+        assertEquals("Bob is blocked from claiming Alice's legacy profiles", 0, claimedByBob)
+
+        store.setScope(bobScope)
+        assertNull("Bob's partition must be completely empty; no automatic copy", store.getProfile(parcelId))
+
+        // 5. Alice logs back in (A -> B -> A):
+        store.setScope(aliceScope)
+        assertNotNull("Alice recovers her profile completely intact", store.getProfile(parcelId))
+        assertEquals("Comunidad San Isidro", store.getProfile(parcelId)?.supply?.communityName)
     }
 }

@@ -39,6 +39,13 @@ interface FarmerIrrigationStore {
      * Retrieves all profiles persisted under a specific scope partition.
      */
     fun getProfilesForScope(scopeKey: String): Map<UUID, ParcelIrrigationProfile>
+
+    /**
+     * Safely claims and recovers legacy un-scoped configurations to the designated verified scope.
+     * Prevents subsequent accounts on the same device from erroneously claiming profiles that
+     * belong to a different user.
+     */
+    fun claimLegacyProfiles(targetScope: String, claimantUserId: String): Int = 0
 }
 
 /**
@@ -47,7 +54,25 @@ interface FarmerIrrigationStore {
  */
 class InMemoryFarmerIrrigationStore(initialScope: String = DEFAULT_SCOPE) : FarmerIrrigationStore {
     private var activeScope: String = initialScope
+    private var legacyClaimant: String? = null
     private val scopedProfiles = ConcurrentHashMap<String, ConcurrentHashMap<UUID, ParcelIrrigationProfile>>()
+
+    override fun claimLegacyProfiles(targetScope: String, claimantUserId: String): Int {
+        if (legacyClaimant != null && legacyClaimant != claimantUserId) return 0
+        legacyClaimant = claimantUserId
+        val defaultMap = scopedProfiles[DEFAULT_SCOPE] ?: scopedProfiles["local:::default"] ?: scopedProfiles.entries.firstOrNull { it.key.startsWith("local:::") }?.value ?: return 0
+        val targetMap = scopedProfiles.computeIfAbsent(targetScope) { ConcurrentHashMap() }
+        var count = 0
+        for ((k, v) in defaultMap) {
+            if (!targetMap.containsKey(k)) {
+                targetMap[k] = v
+                count++
+            }
+        }
+        scopedProfiles.remove(DEFAULT_SCOPE)
+        scopedProfiles.entries.filter { it.key.startsWith("local:::") }.forEach { it.value.clear() }
+        return count
+    }
 
     override fun setScope(scopeKey: String) {
         activeScope = scopeKey
@@ -55,8 +80,16 @@ class InMemoryFarmerIrrigationStore(initialScope: String = DEFAULT_SCOPE) : Farm
 
     override fun currentScope(): String = activeScope
 
-    private fun currentMap(): ConcurrentHashMap<UUID, ParcelIrrigationProfile> =
-        scopedProfiles.computeIfAbsent(activeScope) { ConcurrentHashMap() }
+    private fun currentMap(): ConcurrentHashMap<UUID, ParcelIrrigationProfile> {
+        val map = scopedProfiles.computeIfAbsent(activeScope) { ConcurrentHashMap() }
+        if (map.isEmpty() && (activeScope.startsWith("local:::") || activeScope == DEFAULT_SCOPE)) {
+            val fallbackMap = scopedProfiles[DEFAULT_SCOPE] ?: scopedProfiles["local:::default"]
+            if (fallbackMap != null && fallbackMap !== map) {
+                map.putAll(fallbackMap)
+            }
+        }
+        return map
+    }
 
     override fun getProfile(parcelId: UUID): ParcelIrrigationProfile? = currentMap()[parcelId]
 
@@ -217,6 +250,38 @@ class AndroidFarmerIrrigationStore(
         return count
     }
 
+    override fun claimLegacyProfiles(targetScope: String, claimantUserId: String): Int {
+        val existingClaimant = prefs.getString(KEY_LEGACY_CLAIMANT, null)
+        if (existingClaimant != null && existingClaimant != claimantUserId) {
+            // Already claimed by a different user; do not copy to this user
+            return 0
+        }
+        var count = 0
+        val allEntries = prefs.all
+        prefs.edit {
+            putString(KEY_LEGACY_CLAIMANT, claimantUserId)
+            for ((key, value) in allEntries) {
+                if (key.startsWith(KEY_PREFIX_PROFILE) && !key.startsWith("profile_scope_") && !key.startsWith("profile_backup_") && value is String) {
+                    val parcelIdStr = key.removePrefix(KEY_PREFIX_PROFILE)
+                    val backupKey = "profile_backup_legacy_$parcelIdStr"
+                    val targetScopedKey = scopedPrefix(targetScope) + parcelIdStr
+                    if (!prefs.contains(backupKey)) {
+                        putString(backupKey, value)
+                    }
+                    if (!prefs.contains(targetScopedKey)) {
+                        putString(targetScopedKey, value)
+                        count++
+                    }
+                    remove(key)
+                }
+            }
+        }
+        if (activeScope == targetScope) {
+            loadScopeFromPrefs(targetScope)
+        }
+        return count
+    }
+
     override fun addPunctualTurn(turn: PunctualTurn) {
         val current = memoryCache[turn.parcelId] ?: ParcelIrrigationProfile(parcelId = turn.parcelId)
         val updated = current.copy(punctualTurns = current.punctualTurns + turn)
@@ -247,6 +312,7 @@ class AndroidFarmerIrrigationStore(
 
     companion object {
         const val DEFAULT_SCOPE = "default"
+        const val KEY_LEGACY_CLAIMANT = "legacy_profiles_claimed_by"
         private const val PREFS_NAME = "farmer_irrigation_configs"
         private const val KEY_PREFIX_PROFILE = "profile_"
 

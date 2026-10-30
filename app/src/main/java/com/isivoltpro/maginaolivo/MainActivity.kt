@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
                         ) || hasOfflineVerifiedAccess
                     )
                 }
-                account.isConfigured -> {
+                account.isConfigured && !account.state.value.simulated -> {
                     account.state.value.status in setOf(
                         com.isivoltpro.maginaolivo.feature.account.AccountStatus.SIGNED_IN,
                         com.isivoltpro.maginaolivo.feature.account.AccountStatus.OFFLINE

@@ -46,7 +46,7 @@ class AuthGateTest {
             environment == AppEnvironment.PRODUCTION -> {
                 repo.isConfigured && (state.status in setOf(AccountStatus.SIGNED_IN, AccountStatus.OFFLINE) || hasOfflineVerifiedAccess)
             }
-            repo.isConfigured -> {
+            repo.isConfigured && !state.simulated -> {
                 state.status in setOf(AccountStatus.SIGNED_IN, AccountStatus.OFFLINE) || hasOfflineVerifiedAccess
             }
             else -> {

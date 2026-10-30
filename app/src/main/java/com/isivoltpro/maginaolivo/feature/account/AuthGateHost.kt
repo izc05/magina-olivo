@@ -50,11 +50,11 @@ fun AuthGateHost(
                 identity.status in setOf(AccountStatus.SIGNED_IN, AccountStatus.OFFLINE) || hasOfflineVerifiedAccess
             )
         }
-        accountRepository.isConfigured -> {
+        accountRepository.isConfigured && !identity.simulated -> {
             identity.status in setOf(AccountStatus.SIGNED_IN, AccountStatus.OFFLINE) || hasOfflineVerifiedAccess
         }
         else -> {
-            // Unconfigured DEV harness only
+            // Unconfigured DEV harness or simulation QA only
             true
         }
     }

@@ -70,7 +70,7 @@ class AccountAuthGateTest {
     val rules: TestRule = RuleChain.outerRule(guard).around(IsolatedAppStateRule()).around(compose)
 
     private inner class TestAuthApi : AccountAuthApi {
-        override val simulated: Boolean = true
+        override val simulated: Boolean = false
         override val redirectUri: String = "com.isivoltpro.maginaolivo.dev://auth/callback"
 
         private fun makeSession(userId: UUID, email: String, expired: Boolean = false) =
@@ -185,7 +185,9 @@ class AccountAuthGateTest {
         val repo = AccountRepository(TestAuthApi(), store)
         // Resume offline (no network in field)
         repo.resume(online = false)
-        assertEquals(AccountStatus.OFFLINE, repo.state.value.status)
+        assertEquals(AccountStatus.EXPIRED, repo.state.value.status)
+        assertFalse(repo.state.value.online)
+        assertNotNull(repo.state.value.userId)
 
         val root = AppCompositionRoot.createAndroid(context, "DEV")
         renderGate(repo, root, environment = AppEnvironment.PRODUCTION)

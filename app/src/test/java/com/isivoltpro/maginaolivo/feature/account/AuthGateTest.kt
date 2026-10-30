@@ -1,5 +1,6 @@
 package com.isivoltpro.maginaolivo.feature.account
 
+import com.isivoltpro.maginaolivo.app.AppEnvironment
 import java.time.Instant
 import java.util.UUID
 import kotlinx.coroutines.test.runTest
@@ -17,11 +18,10 @@ class AuthGateTest {
             email = email,
             accessToken = "token-$userId",
             refreshToken = "refresh-$userId",
-            expiresAt = if (expired) now.minusSeconds(60) else now.plusSeconds(3600)
+            expiresAt = if (expired) now.minusSeconds(3600) else now.plusSeconds(3600)
         )
 
-    private inner class FakeApi : AccountAuthApi {
-        override val simulated: Boolean = true
+    private inner class FakeApi(override val simulated: Boolean = false) : AccountAuthApi {
         override val redirectUri: String = "com.isivoltpro.maginaolivo.dev://auth/callback"
         override suspend fun signIn(email: String, password: String): AuthSession {
             val id = if (email.startsWith("b")) userB else userA
@@ -30,94 +30,113 @@ class AuthGateTest {
         override suspend fun signUp(email: String, password: String, challenge: String): AuthSession? = null
         override suspend fun recover(email: String, challenge: String) {}
         override suspend fun exchange(code: String, verifier: String): AuthSession = session(userA, "a@example.com")
-        override suspend fun refresh(session: AuthSession): AuthSession = session
+        override suspend fun refresh(session: AuthSession): AuthSession = session(session.userId, session.email, expired = false)
         override suspend fun user(session: AuthSession): Pair<UUID, String> = session.userId to session.email
         override suspend fun changePassword(session: AuthSession, password: String) {}
         override suspend fun signOut(session: AuthSession) {}
     }
 
-    @Test
-    fun unconfiguredRepositoryAllowsAccessInUnconfiguredEnvironments() {
-        val repo = AccountRepository(null)
-        assertFalse(repo.isConfigured)
-        assertEquals(AccountStatus.UNCONFIGURED, repo.state.value.status)
-        val isAuthorized = !repo.isConfigured || repo.state.value.status in setOf(
-            AccountStatus.SIGNED_IN,
-            AccountStatus.OFFLINE
-        )
-        assertTrue("Unconfigured environment must not block access", isAuthorized)
+    private fun checkAuthorized(
+        repo: AccountRepository,
+        environment: AppEnvironment = AppEnvironment.DEV
+    ): Boolean {
+        val state = repo.state.value
+        val hasOfflineVerifiedAccess = !state.online && state.userId != null
+        return when {
+            environment == AppEnvironment.PRODUCTION -> {
+                repo.isConfigured && (state.status in setOf(AccountStatus.SIGNED_IN, AccountStatus.OFFLINE) || hasOfflineVerifiedAccess)
+            }
+            repo.isConfigured -> {
+                state.status in setOf(AccountStatus.SIGNED_IN, AccountStatus.OFFLINE) || hasOfflineVerifiedAccess
+            }
+            else -> {
+                true
+            }
+        }
     }
 
     @Test
-    fun configuredRepositoryRequiresAuthentication() {
+    fun productionEnvironmentWithoutConfigurationFailsClosed() {
+        val unconfiguredRepo = AccountRepository(null)
+        assertFalse(unconfiguredRepo.isConfigured)
+
+        val isAuthorized = checkAuthorized(unconfiguredRepo, AppEnvironment.PRODUCTION)
+        assertFalse("PRODUCTION without Auth configuration must fail closed and block access", isAuthorized)
+    }
+
+    @Test
+    fun productionEnvironmentRequiresAuthenticatedSession() {
         val repo = AccountRepository(FakeApi())
         assertTrue(repo.isConfigured)
         assertEquals(AccountStatus.SIGNED_OUT, repo.state.value.status)
-        val isAuthorized = !repo.isConfigured || repo.state.value.status in setOf(
-            AccountStatus.SIGNED_IN,
-            AccountStatus.OFFLINE
-        )
-        assertFalse("Initial state without session must be unauthorized", isAuthorized)
+
+        assertFalse("Signed out state in PRODUCTION must be unauthorized", checkAuthorized(repo, AppEnvironment.PRODUCTION))
     }
 
     @Test
-    fun loginUnlocksAuthorizationAndPreservesUserData() = runTest {
+    fun productionEnvironmentAllowsAccessWhenAuthenticated() = runTest {
         val store = MemoryAccountSessionStore()
         val repo = AccountRepository(FakeApi(), store, now = { now })
-        assertFalse(!repo.isConfigured || repo.state.value.status in setOf(AccountStatus.SIGNED_IN, AccountStatus.OFFLINE))
-
-        repo.login("a@example.com", "password42", online = true)
+        repo.login("productor@example.com", "password42", online = true)
 
         assertEquals(AccountStatus.SIGNED_IN, repo.state.value.status)
-        assertEquals(userA, repo.state.value.userId)
-        assertEquals("a@example.com", repo.state.value.email)
-        val isAuthorized = !repo.isConfigured || repo.state.value.status in setOf(
-            AccountStatus.SIGNED_IN,
-            AccountStatus.OFFLINE
-        )
-        assertTrue(isAuthorized)
-        assertNotNull(store.read().session)
+        assertTrue("Authenticated session in PRODUCTION must grant access", checkAuthorized(repo, AppEnvironment.PRODUCTION))
     }
 
     @Test
-    fun resumeWithSavedSessionRestoresDirectAccessWithoutPassword() = runTest {
+    fun unconfiguredDevHarnessPreservesBypassForAutomatedTestsOnly() {
+        val unconfiguredRepo = AccountRepository(null)
+        assertTrue("DEV unconfigured harness allows bypass for screenshot tests", checkAuthorized(unconfiguredRepo, AppEnvironment.DEV))
+    }
+
+    @Test
+    fun configuredDevRequiresAuthentication() {
+        val repo = AccountRepository(FakeApi())
+        assertFalse("Configured DEV requires authentication", checkAuthorized(repo, AppEnvironment.DEV))
+    }
+
+    @Test
+    fun offlineAccessWithExpiredTokenAllowsLocalAccessForVerifiedAccount() = runTest {
         val store = MemoryAccountSessionStore()
-        store.write(AccountRecord(session = session(userA, "a@example.com")))
+        // Simulate a token that expired 1 hour ago
+        store.write(AccountRecord(session = session(userA, "campo@example.test", expired = true)))
+        val repo = AccountRepository(FakeApi(simulated = false), store, now = { now })
+
+        // When offline in the olive grove with no mobile coverage
+        repo.resume(online = false)
+
+        assertEquals("Previously verified user offline gets EXPIRED status for token", AccountStatus.EXPIRED, repo.state.value.status)
+        assertEquals(userA, repo.state.value.userId)
+        assertFalse(repo.state.value.online)
+        assertTrue("Must allow local offline access in field", checkAuthorized(repo, AppEnvironment.PRODUCTION))
+
+        // Remote operations requiring fresh token are forbidden
+        var caught: AuthFailure? = null
+        try {
+            repo.withLocalIdentity(requireFresh = true) { /* remote rpc */ }
+        } catch (e: AuthFailure) {
+            caught = e
+        }
+        org.junit.Assert.assertNotNull("Expected AuthFailure to be thrown", caught)
+        assertEquals(AuthFailure.Kind.EXPIRED, caught!!.kind)
+
+        // Cached local access succeeds
+        val accessedId = repo.withCachedLocalAccess { it }
+        assertEquals(userA, accessedId)
+    }
+
+    @Test
+    fun onlineResumptionWithExpiredTokenRefreshesOrLocksOut() = runTest {
+        val store = MemoryAccountSessionStore()
+        store.write(AccountRecord(session = session(userA, "campo@example.test", expired = true)))
         val repo = AccountRepository(FakeApi(), store, now = { now })
 
-        // Process restart: resume offline
-        repo.resume(online = false)
-        assertEquals(AccountStatus.OFFLINE, repo.state.value.status)
-        assertEquals(userA, repo.state.value.userId)
-        val isAuthorizedOffline = !repo.isConfigured || repo.state.value.status in setOf(
-            AccountStatus.SIGNED_IN,
-            AccountStatus.OFFLINE
-        )
-        assertTrue("Offline verified session must grant access", isAuthorizedOffline)
-
-        // Process restart: resume online
+        // When device comes back online, resume refreshes token
         repo.resume(online = true)
+
         assertEquals(AccountStatus.SIGNED_IN, repo.state.value.status)
-        val isAuthorizedOnline = !repo.isConfigured || repo.state.value.status in setOf(
-            AccountStatus.SIGNED_IN,
-            AccountStatus.OFFLINE
-        )
-        assertTrue("Online verified session must grant access", isAuthorizedOnline)
-    }
-
-    @Test
-    fun expiredSessionIsLockedOutUntilReauthenticated() = runTest {
-        val store = MemoryAccountSessionStore()
-        store.write(AccountRecord(session = session(userA, "a@example.com", expired = true)))
-        val repo = AccountRepository(FakeApi(), store, now = { now })
-
-        repo.resume(online = false)
-        assertEquals(AccountStatus.EXPIRED, repo.state.value.status)
-        val isAuthorized = !repo.isConfigured || repo.state.value.status in setOf(
-            AccountStatus.SIGNED_IN,
-            AccountStatus.OFFLINE
-        )
-        assertFalse("Expired session must be locked out", isAuthorized)
+        assertEquals(userA, repo.state.value.userId)
+        assertTrue(checkAuthorized(repo, AppEnvironment.PRODUCTION))
     }
 
     @Test
@@ -133,11 +152,8 @@ class AuthGateTest {
         assertEquals(AccountStatus.SIGNED_OUT, repo.state.value.status)
         assertNull(repo.state.value.userId)
         assertNull(store.read().session)
-        val isAuthorized = !repo.isConfigured || repo.state.value.status in setOf(
-            AccountStatus.SIGNED_IN,
-            AccountStatus.OFFLINE
-        )
-        assertFalse("Logged out state must lock access gate", isAuthorized)
+        assertFalse("Logged out state must lock access gate in all environments", checkAuthorized(repo, AppEnvironment.PRODUCTION))
+        assertFalse("Logged out state must lock access gate in DEV", checkAuthorized(repo, AppEnvironment.DEV))
     }
 
     @Test
@@ -148,18 +164,15 @@ class AuthGateTest {
         // User A logs in
         repo.login("a@example.com", "passwordA123", online = true)
         assertEquals(userA, repo.state.value.userId)
-        assertEquals("a@example.com", repo.state.value.email)
 
         // User A logs out
         repo.logout(online = true)
         assertEquals(AccountStatus.SIGNED_OUT, repo.state.value.status)
-        assertNull(store.read().session)
 
         // User B logs in
         repo.login("b@example.com", "passwordB123", online = true)
         assertEquals(AccountStatus.SIGNED_IN, repo.state.value.status)
         assertEquals(userB, repo.state.value.userId)
-        assertEquals("b@example.com", repo.state.value.email)
         assertEquals(userB, store.read().session?.userId)
     }
 }

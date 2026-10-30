@@ -29,7 +29,12 @@ class LocalFarmLinkRepository(
     fun subject(userId: UUID) = "$issuer|$userId"
     fun accessAllowed(userId: UUID? = account.state.value.userId): Boolean {
         val value=mutable.value
-        return !value.unreadable && (value.ledger == null || (userId != null && value.ledger.subject == subject(userId)))
+        if (value.unreadable) return false
+        if (account.isConfigured && userId == null) return false
+        if (value.ledger != null) {
+            return userId != null && value.ledger.subject == subject(userId)
+        }
+        return true
     }
     private fun reloadAndRequire(userId: UUID): FarmLinkLedger? {
         mutable.value=load()
@@ -63,7 +68,13 @@ class LocalFarmLinkRepository(
 
     private fun readChoices(): List<FarmChoice> {
         val values=mutableListOf<FarmChoice>()
-        database.openHelper.readableDatabase.query("SELECT id,workspace_id,name,version FROM farms WHERE deleted_at IS NULL AND status='ACTIVE' ORDER BY name,id").use { c ->
+        val userId = account.state.value.userId
+        val query = if (userId != null) {
+            "SELECT f.id, f.workspace_id, f.name, f.version FROM farms f INNER JOIN workspaces w ON f.workspace_id = w.id WHERE f.deleted_at IS NULL AND f.status='ACTIVE' AND w.owner_user_id = '${userId}' ORDER BY f.name, f.id"
+        } else {
+            "SELECT id,workspace_id,name,version FROM farms WHERE deleted_at IS NULL AND status='ACTIVE' ORDER BY name,id"
+        }
+        database.openHelper.readableDatabase.query(query).use { c ->
             while(c.moveToNext()) values.add(FarmChoice(UUID.fromString(c.getString(0)),UUID.fromString(c.getString(1)),c.getString(2),c.getLong(3)))
         }
         return values

@@ -29,6 +29,7 @@ fun AppRoot(
                 accountRepository = compositionRoot.accountRepository,
                 farmLinks = compositionRoot.farmLinks,
                 simulationAllowed = com.isivoltpro.maginaolivo.BuildConfig.DEBUG && compositionRoot.environment == AppEnvironment.DEV,
+                environment = compositionRoot.environment,
             ) {
                 val protectedContent: @Composable () -> Unit = {
                     NotificationPermissionHost(compositionRoot.localPersistence, compositionRoot.clock) {

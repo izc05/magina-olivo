@@ -16,4 +16,7 @@ interface WorkspaceDao {
 
     @Query("SELECT * FROM workspaces WHERE deleted_at IS NULL ORDER BY created_at, id LIMIT 1")
     suspend fun findFirstActive(): WorkspaceEntity?
+
+    @Query("SELECT * FROM workspaces WHERE deleted_at IS NULL AND owner_user_id = :ownerUserId ORDER BY created_at, id LIMIT 1")
+    suspend fun findActiveByOwner(ownerUserId: UUID): WorkspaceEntity?
 }

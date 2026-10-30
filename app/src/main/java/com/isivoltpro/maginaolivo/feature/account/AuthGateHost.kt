@@ -2,10 +2,10 @@ package com.isivoltpro.maginaolivo.feature.account
 
 import android.app.NotificationManager
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -14,31 +14,50 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.isivoltpro.maginaolivo.app.AppEnvironment
 import com.isivoltpro.maginaolivo.data.reminder.ReminderNotifier
 import com.isivoltpro.maginaolivo.data.repository.LocalFarmLinkRepository
+import com.isivoltpro.maginaolivo.ui.theme.MoColors
+import com.isivoltpro.maginaolivo.ui.theme.MoSpacing
 import com.isivoltpro.maginaolivo.ui.theme.MoSurfaceTokens
 
 /**
  * Mandatory Access Gate for Mágina Olivo 1.0.
  *
- * Ensures that no agricultural UI, navigation, or data is composed or accessible
- * unless the user identity is authenticated (SIGNED_IN or OFFLINE).
- * In unconfigured test/dev environments without an Auth backend, access is preserved.
+ * Rules:
+ * - In PRODUCTION: Strict fail-closed. No agricultural content is EVER accessible unless the user
+ *   has an authenticated session (SIGNED_IN or OFFLINE). If credentials are missing or unconfigured,
+ *   access is blocked with a clear warning without mounting agricultural navigation.
+ * - In STAGING or configured DEV: Access requires an authenticated session (SIGNED_IN or OFFLINE).
+ * - In unconfigured DEV only: Access is preserved for emulator evidence and smoke test harnesses.
  *
- * Prevents back navigation, deep link leaks, and active notification exposure when unauthenticated.
+ * Prevents back navigation, bottom bar clicks, and deep link leaks when unauthenticated.
  */
 @Composable
 fun AuthGateHost(
     accountRepository: AccountRepository,
     farmLinks: LocalFarmLinkRepository? = null,
     simulationAllowed: Boolean = false,
+    environment: AppEnvironment = AppEnvironment.DEV,
     content: @Composable () -> Unit
 ) {
     val identity by accountRepository.state.collectAsStateWithLifecycle()
-    val isAuthorized = !accountRepository.isConfigured || identity.status in setOf(
-        AccountStatus.SIGNED_IN,
-        AccountStatus.OFFLINE
-    )
+    val hasOfflineVerifiedAccess = !identity.online && identity.userId != null
+    val isAuthorized = when {
+        environment == AppEnvironment.PRODUCTION -> {
+            // Strict fail-closed in production: ALWAYS require authenticated session or verified offline access
+            accountRepository.isConfigured && (
+                identity.status in setOf(AccountStatus.SIGNED_IN, AccountStatus.OFFLINE) || hasOfflineVerifiedAccess
+            )
+        }
+        accountRepository.isConfigured -> {
+            identity.status in setOf(AccountStatus.SIGNED_IN, AccountStatus.OFFLINE) || hasOfflineVerifiedAccess
+        }
+        else -> {
+            // Unconfigured DEV harness only
+            true
+        }
+    }
     val context = LocalContext.current
 
     LaunchedEffect(isAuthorized) {
@@ -68,13 +87,38 @@ fun AuthGateHost(
                 .fillMaxSize()
                 .testTag("auth-gate-root")
         ) {
-            AccountRoute(
-                repository = accountRepository,
-                onBack = {},
-                showBack = false,
-                simulationAllowed = simulationAllowed,
-                farmLinks = farmLinks
-            )
+            if (environment == AppEnvironment.PRODUCTION && !accountRepository.isConfigured) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MoSurfaceTokens.appBackground)
+                        .statusBarsPadding()
+                        .padding(MoSpacing.screen),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Acceso restringido",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MoColors.current.primaryText
+                    )
+                    Spacer(Modifier.height(MoSpacing.md))
+                    Text(
+                        text = "El servicio de autenticación no está disponible o no ha sido configurado en producción. Por seguridad, el acceso a las funciones agrícolas permanece protegido.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MoSurfaceTokens.secondaryText,
+                        modifier = Modifier.testTag("auth-gate-unconfigured-message")
+                    )
+                }
+            } else {
+                AccountRoute(
+                    repository = accountRepository,
+                    onBack = {},
+                    showBack = false,
+                    simulationAllowed = simulationAllowed,
+                    farmLinks = farmLinks
+                )
+            }
         }
     }
 }

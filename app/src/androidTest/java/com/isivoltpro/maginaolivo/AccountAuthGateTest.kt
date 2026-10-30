@@ -19,9 +19,19 @@ import com.isivoltpro.maginaolivo.app.AppearanceMode
 import com.isivoltpro.maginaolivo.core.common.AppResult
 import com.isivoltpro.maginaolivo.data.repository.LocalFarmLinkRepository
 import com.isivoltpro.maginaolivo.domain.farm.NewFarm
+import com.isivoltpro.maginaolivo.domain.parcel.NewParcel
+import com.isivoltpro.maginaolivo.domain.campaign.NewCampaign
+import com.isivoltpro.maginaolivo.feature.farms.FarmSection
+import com.isivoltpro.maginaolivo.feature.farms.FarmSectionRoute
+import com.isivoltpro.maginaolivo.data.local.entity.DocumentEntity
+import com.isivoltpro.maginaolivo.data.local.entity.LocalMetadata
+import com.isivoltpro.maginaolivo.data.local.model.SyncStatus
+import androidx.activity.compose.setContent
 import com.isivoltpro.maginaolivo.feature.account.*
 import com.isivoltpro.maginaolivo.ui.theme.MaginaOlivoTheme
+import java.io.File
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -339,6 +349,154 @@ class AccountAuthGateTest {
         compose.onNodeWithTag("auth-gate-root").assertIsDisplayed()
         compose.onNodeWithTag("auth-gate-unconfigured-message").assertIsDisplayed()
         compose.onNodeWithTag("agricultural-content").assertDoesNotExist()
+    }
+
+    @Test
+    fun directRouteToForeignFarmDoesNotDiscloseParcelsCampaignsOrDocumentsToAnotherUser() = runBlocking {
+        val store = MemoryAccountSessionStore()
+        val repo = AccountRepository(TestAuthApi(), store)
+        val root = AppCompositionRoot.createAndroid(context, "DEV", accountRepository = repo)
+        val local = checkNotNull(root.localPersistence)
+
+        // 1. User A logs in and creates Farm A, a Parcel, a Campaign, and a Document
+        repo.login("a@example.com", "passwordA123", online = true)
+        val workspaceA = (local.workspaceRepository.ensureLocalWorkspace() as AppResult.Success).value
+        val farmA = (local.farmRepository.create(NewFarm(workspaceA, "Finca Privada de A")) as AppResult.Success).value
+
+        val parcelA = (local.parcelRepository.create(
+            NewParcel(
+                farmId = farmA,
+                displayName = "Parcela Secreta A",
+            )
+        ) as AppResult.Success).value
+
+        val campaignA = (local.campaignRepository.create(
+            NewCampaign(
+                farmId = farmA,
+                name = "Campaña Secreta A",
+                startDate = LocalDate.of(2025, 11, 1),
+            )
+        ) as AppResult.Success).value
+
+        val docA = UUID.randomUUID()
+        val now = Instant.now()
+        local.database.documentDao().insert(
+            DocumentEntity(
+                id = docA,
+                workspaceId = workspaceA,
+                ownerType = "FARM",
+                ownerId = farmA,
+                type = "OTHER",
+                mimeType = "application/pdf",
+                displayName = "Escritura Privada A",
+                fileSizeBytes = 2048L,
+                sha256 = "dummy-sha",
+                localUri = "file:///fake/storage/doc.pdf",
+                remotePath = null,
+                uploadStatus = "LOCAL_ONLY",
+                metadata = LocalMetadata(createdAt = now, updatedAt = now, syncStatus = SyncStatus.LOCAL_ONLY),
+            )
+        )
+
+        // 2. User A logs out
+        repo.logout(online = true)
+
+        // 3. User B logs in
+        repo.login("b@example.com", "passwordB123", online = true)
+        val workspaceB = (local.workspaceRepository.ensureLocalWorkspace() as AppResult.Success).value
+        assertNotEquals(workspaceA, workspaceB)
+
+        // 4. Test direct navigation to PARCELS section of Farm A: User B must NOT see Farm A or its parcels
+        compose.activityRule.scenario.onActivity { activity ->
+            activity.setContent {
+                MaginaOlivoTheme {
+                    FarmSectionRoute(
+                        farmId = farmA,
+                        section = FarmSection.PARCELS,
+                        persistence = local,
+                        onParcelSelected = {},
+                        onCampaignSelected = {},
+                        onActivitySelected = {},
+                    )
+                }
+            }
+        }
+        waitFor("farm-section-unauthorized")
+        compose.onNodeWithTag("farm-section-unauthorized").assertIsDisplayed()
+        compose.onNodeWithText("Finca Privada de A").assertDoesNotExist()
+        compose.onNodeWithText("Parcela Secreta A").assertDoesNotExist()
+
+        // 5. Test direct navigation to CAMPAIGNS section of Farm A: User B must NOT see campaigns of Farm A
+        compose.activityRule.scenario.onActivity { activity ->
+            activity.setContent {
+                MaginaOlivoTheme {
+                    FarmSectionRoute(
+                        farmId = farmA,
+                        section = FarmSection.CAMPAIGNS,
+                        persistence = local,
+                        onParcelSelected = {},
+                        onCampaignSelected = {},
+                        onActivitySelected = {},
+                    )
+                }
+            }
+        }
+        waitFor("farm-section-unauthorized")
+        compose.onNodeWithTag("farm-section-unauthorized").assertIsDisplayed()
+        compose.onNodeWithText("Campaña Secreta A").assertDoesNotExist()
+
+        // 6. Test direct navigation to DOCUMENTS section of Farm A: User B must NOT see documents of Farm A
+        compose.activityRule.scenario.onActivity { activity ->
+            activity.setContent {
+                MaginaOlivoTheme {
+                    FarmSectionRoute(
+                        farmId = farmA,
+                        section = FarmSection.DOCUMENTS,
+                        persistence = local,
+                        onParcelSelected = {},
+                        onCampaignSelected = {},
+                        onActivitySelected = {},
+                    )
+                }
+            }
+        }
+        waitFor("farm-section-unauthorized")
+        compose.onNodeWithTag("farm-section-unauthorized").assertIsDisplayed()
+        compose.onNodeWithText("Escritura Privada A").assertDoesNotExist()
+    }
+
+    @Test
+    fun androidPersistedSessionStoreSurvivesOfflineWithExpiredJwt() = runBlocking {
+        val sessionFile = File(context.noBackupFilesDir, "qa-offline-session-${UUID.randomUUID()}.json")
+        val keyAlias = "qa-key-${UUID.randomUUID()}"
+        val scope = "test-scope"
+        try {
+            val store = AndroidAccountSessionStore(sessionFile, keyAlias, scope)
+            val sessionExpired = AuthSession(userA, "persisted-offline@example.test", "access", "refresh", Instant.now().minusSeconds(3600))
+            store.write(AccountRecord(session = sessionExpired))
+
+            // Simulate application process restart: new Store and Repository reading encrypted file from disk
+            val reloadedStore = AndroidAccountSessionStore(sessionFile, keyAlias, scope)
+            val reloadedRepo = AccountRepository(TestAuthApi(), reloadedStore)
+
+            // Resume in offline mode without network
+            reloadedRepo.resume(online = false)
+
+            assertEquals(AccountStatus.EXPIRED, reloadedRepo.state.value.status)
+            assertFalse(reloadedRepo.state.value.online)
+            assertEquals(userA, reloadedRepo.state.value.userId)
+            assertEquals(userA, reloadedStore.read().session?.userId)
+
+            val root = AppCompositionRoot.createAndroid(context, "DEV", accountRepository = reloadedRepo)
+            renderGate(reloadedRepo, root, environment = AppEnvironment.PRODUCTION)
+
+            waitFor("agricultural-content")
+            compose.onNodeWithTag("agricultural-content").assertIsDisplayed()
+            compose.onNodeWithTag("auth-gate-root").assertDoesNotExist()
+        } finally {
+            sessionFile.delete()
+            File(sessionFile.path + ".bak").delete()
+        }
     }
 
     private fun waitFor(tag: String) =

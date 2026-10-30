@@ -36,8 +36,11 @@ class LocalFarmLinkRepository(
         }
         return true
     }
-    private fun reloadAndRequire(userId: UUID): FarmLinkLedger? {
-        mutable.value=load()
+    private suspend fun reloadAndRequire(userId: UUID): FarmLinkLedger? {
+        val loaded = load()
+        withContext(Dispatchers.Main.immediate) {
+            mutable.value = loaded
+        }
         if (!accessAllowed(userId)) throw IOException("Estas fincas están protegidas con otra cuenta o no se pudo comprobar su protección.")
         return mutable.value.ledger
     }
@@ -52,18 +55,30 @@ class LocalFarmLinkRepository(
         val old=reloadAndRequire(userId)
         val pending=selected.filter { it.id !in old?.farmIds.orEmpty() }
         if (pending.isEmpty()) return@withContext checkNotNull(old)
-        database.withTransaction {
+        val entry = database.withTransaction {
             val actual=readChoices().associateBy { it.id }
             if (pending.any { actual[it.id] != it }) throw IOException("Las fincas han cambiado. Revisa de nuevo la selección.")
             // A fresh operation on each uncommitted attempt. Never reuse an old backup as current consent.
             val backupId=UUID.randomUUID()
             val receipt=LocalLinkBackup(context,database).capture(backupId)
             val manifest=File(receipt.directory,"manifest.json").readBytes()
-            val entry=FarmLinkConsent(UUID.randomUUID(),subject(userId),pending.sortedBy { it.id.toString() },backupId,
+            FarmLinkConsent(UUID.randomUUID(),subject(userId),pending.sortedBy { it.id.toString() },backupId,
                 AndroidFarmLinkLedger.hash(manifest),Instant.now())
-            try { store.append(entry).also { mutable.value=FarmLinkLocalState(it) } }
-            catch (error: Exception) { mutable.value=load();throw error }
         }
+        val newState = try {
+            val updated = store.append(entry)
+            FarmLinkLocalState(updated)
+        } catch (error: Exception) {
+            val rolledBack = load()
+            withContext(Dispatchers.Main.immediate) {
+                mutable.value = rolledBack
+            }
+            throw error
+        }
+        withContext(Dispatchers.Main.immediate) {
+            mutable.value = newState
+        }
+        newState.ledger!!
     } }
 
     private fun readChoices(): List<FarmChoice> {

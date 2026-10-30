@@ -40,13 +40,7 @@ import org.junit.Rule
 import org.junit.Test
 
 class FarmLinkScreenTest {
-    // consent() writes its StateFlow inside a Room transaction, so the emission arrives on an
-    // arch_disk_io thread. This rule's default effect context is unconfined, so the composition's
-    // collectors and the recomposer resume on whichever thread emitted, and Compose ends up
-    // applying changes to the view off the main thread. Confining effects to the main dispatcher
-    // is what the application itself does, so the test observes the production threading instead
-    // of the harness's. No scenario, assertion or timeout changes.
-    @get:Rule val compose=createAndroidComposeRule<ComponentActivity>(effectContext=Dispatchers.Main)
+    @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private val context=ApplicationProvider.getApplicationContext<Context>()
     private val fixture=UUID.randomUUID()
     private val name="qa-link-screen-$fixture.db"
@@ -78,17 +72,21 @@ class FarmLinkScreenTest {
         ids.forEachIndexed { i,id -> db.execSQL("INSERT INTO farms (id,workspace_id,name,status,created_at,updated_at,version,sync_status) VALUES (?, ?,?,'ACTIVE',1,1,1,'LOCAL_ONLY')",arrayOf(id.toString(),workspace,"Finca ${i+1}")) }
     }
     private fun content() {
-        compose.runOnUiThread { compose.activity.setContent { MaginaOlivoTheme {
-            FarmLinkAccessHost(repository,account) {
-                val state by account.state.collectAsState()
-                val model:AccountViewModel=viewModel(factory=viewModelFactory { initializer { AccountViewModel(account) } })
-                Column(Modifier.fillMaxSize().background(MoSurfaceTokens.appBackground).statusBarsPadding().verticalScroll(rememberScrollState())) {
-                    Text("Datos agrícolas de prueba",Modifier.testTag("private-agriculture"))
-                    state.userId?.let { FarmLinkPanel(repository,it) }
-                    MoTertiaryButton("Cerrar sesión",{model.logout(true)},Modifier.testTag("test-link-logout"))
+        compose.activityRule.scenario.onActivity { activity ->
+            activity.setContent {
+                MaginaOlivoTheme {
+                    FarmLinkAccessHost(repository, account) {
+                        val state by account.state.collectAsState()
+                        val model: AccountViewModel = viewModel(factory = viewModelFactory { initializer { AccountViewModel(account) } })
+                        Column(Modifier.fillMaxSize().background(MoSurfaceTokens.appBackground).statusBarsPadding().verticalScroll(rememberScrollState())) {
+                            Text("Datos agrícolas de prueba", Modifier.testTag("private-agriculture"))
+                            state.userId?.let { FarmLinkPanel(repository, it) }
+                            MoTertiaryButton("Cerrar sesión", { model.logout(true) }, Modifier.testTag("test-link-logout"))
+                        }
+                    }
                 }
             }
-        } } }
+        }
     }
     private fun waitFor(tag:String) = compose.waitUntil(20_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
     private fun rotate(orientation:Int,configuration:Int) {

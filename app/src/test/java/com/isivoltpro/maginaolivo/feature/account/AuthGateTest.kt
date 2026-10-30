@@ -43,7 +43,7 @@ class AuthGateTest {
         val state = repo.state.value
         val hasOfflineVerifiedAccess = !state.online && state.userId != null
         return when {
-            environment == AppEnvironment.PRODUCTION -> {
+            environment in setOf(AppEnvironment.PRODUCTION, AppEnvironment.STAGING) -> {
                 repo.isConfigured && (state.status in setOf(AccountStatus.SIGNED_IN, AccountStatus.OFFLINE) || hasOfflineVerifiedAccess)
             }
             repo.isConfigured && !state.simulated -> {
@@ -53,6 +53,24 @@ class AuthGateTest {
                 true
             }
         }
+    }
+
+    @Test
+    fun stagingEnvironmentWithoutConfigurationFailsClosed() {
+        val unconfiguredRepo = AccountRepository(null)
+        assertFalse(unconfiguredRepo.isConfigured)
+
+        val isAuthorized = checkAuthorized(unconfiguredRepo, AppEnvironment.STAGING)
+        assertFalse("STAGING without Auth configuration must fail closed and block access", isAuthorized)
+    }
+
+    @Test
+    fun stagingEnvironmentRequiresAuthenticatedSession() {
+        val repo = AccountRepository(FakeApi())
+        assertTrue(repo.isConfigured)
+        assertEquals(AccountStatus.SIGNED_OUT, repo.state.value.status)
+
+        assertFalse("Signed out state in STAGING must be unauthorized", checkAuthorized(repo, AppEnvironment.STAGING))
     }
 
     @Test

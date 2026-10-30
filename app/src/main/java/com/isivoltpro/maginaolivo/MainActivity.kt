@@ -43,7 +43,10 @@ class MainActivity : ComponentActivity() {
             account.resume(false)
             val hasOfflineVerifiedAccess = !account.state.value.online && account.state.value.userId != null
             val isAuthorized = when {
-                compositionRoot.environment == com.isivoltpro.maginaolivo.app.AppEnvironment.PRODUCTION -> {
+                compositionRoot.environment in setOf(
+                    com.isivoltpro.maginaolivo.app.AppEnvironment.PRODUCTION,
+                    com.isivoltpro.maginaolivo.app.AppEnvironment.STAGING
+                ) -> {
                     account.isConfigured && (
                         account.state.value.status in setOf(
                             com.isivoltpro.maginaolivo.feature.account.AccountStatus.SIGNED_IN,

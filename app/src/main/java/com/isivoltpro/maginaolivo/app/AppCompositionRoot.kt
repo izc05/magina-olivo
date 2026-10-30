@@ -75,11 +75,12 @@ data class AppCompositionRoot(
         fun createAndroid(
             context: Context,
             environmentValue: String,
+            accountRepository: com.isivoltpro.maginaolivo.feature.account.AccountRepository? = null,
         ): AppCompositionRoot {
             val applicationContext = context.applicationContext
             val defaults = createDefault(environmentValue)
             val database = MaginaOlivoDatabase.getInstance(applicationContext)
-            val account = com.isivoltpro.maginaolivo.feature.account.AccountRuntime.get(applicationContext)
+            val account = accountRepository ?: com.isivoltpro.maginaolivo.feature.account.AccountRuntime.get(applicationContext)
             val farmLinks = com.isivoltpro.maginaolivo.data.repository.LocalFarmLinkRepository(applicationContext,database,account,BuildConfig.AUTH_PROJECT_URL)
             val workspaceRepository = LocalWorkspaceRepository(
                 database = database,

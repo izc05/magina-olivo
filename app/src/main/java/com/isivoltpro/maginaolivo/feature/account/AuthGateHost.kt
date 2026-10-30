@@ -44,8 +44,8 @@ fun AuthGateHost(
     val identity by accountRepository.state.collectAsStateWithLifecycle()
     val hasOfflineVerifiedAccess = !identity.online && identity.userId != null
     val isAuthorized = when {
-        environment == AppEnvironment.PRODUCTION -> {
-            // Strict fail-closed in production: ALWAYS require authenticated session or verified offline access
+        environment in setOf(AppEnvironment.PRODUCTION, AppEnvironment.STAGING) -> {
+            // Strict fail-closed in production and staging: ALWAYS require authenticated session or verified offline access
             accountRepository.isConfigured && (
                 identity.status in setOf(AccountStatus.SIGNED_IN, AccountStatus.OFFLINE) || hasOfflineVerifiedAccess
             )
@@ -87,7 +87,7 @@ fun AuthGateHost(
                 .fillMaxSize()
                 .testTag("auth-gate-root")
         ) {
-            if (environment == AppEnvironment.PRODUCTION && !accountRepository.isConfigured) {
+            if (environment in setOf(AppEnvironment.PRODUCTION, AppEnvironment.STAGING) && !accountRepository.isConfigured) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -104,7 +104,7 @@ fun AuthGateHost(
                     )
                     Spacer(Modifier.height(MoSpacing.md))
                     Text(
-                        text = "El servicio de autenticación no está disponible o no ha sido configurado en producción. Por seguridad, el acceso a las funciones agrícolas permanece protegido.",
+                        text = "El servicio de autenticación no está disponible o no ha sido configurado. Por seguridad, el acceso a las funciones agrícolas permanece protegido.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MoSurfaceTokens.secondaryText,
                         modifier = Modifier.testTag("auth-gate-unconfigured-message")

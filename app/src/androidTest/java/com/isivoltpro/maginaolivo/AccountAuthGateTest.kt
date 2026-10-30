@@ -233,8 +233,10 @@ class AccountAuthGateTest {
     fun realRoomMultiUserFarmIsolationAToBToA() = runBlocking {
         val store = MemoryAccountSessionStore()
         val repo = AccountRepository(TestAuthApi(), store)
-        val root = AppCompositionRoot.createAndroid(context, "DEV")
+        // Pass repo so that all repositories (workspaceRepository, farmLinks, etc.) share the exact same AccountRepository instance
+        val root = AppCompositionRoot.createAndroid(context, "DEV", accountRepository = repo)
         val local = checkNotNull(root.localPersistence)
+        val linkRepo = checkNotNull(root.farmLinks)
 
         // 1. User A logs in
         repo.login("a@example.com", "passwordA123", online = true)
@@ -247,7 +249,6 @@ class AccountAuthGateTest {
         assertEquals(1, farmsForA.size)
         assertEquals("Finca Olivar de A", farmsForA.first().name)
 
-        val linkRepo = LocalFarmLinkRepository(context, local.database, repo, "test-issuer")
         assertEquals("With ledger == null, User A sees their own farm in link choices", 1, linkRepo.choices().size)
         assertEquals("Finca Olivar de A", linkRepo.choices().first().name)
 
@@ -298,6 +299,46 @@ class AccountAuthGateTest {
         // Verify both farms still exist unharmed in the database
         assertNotNull(local.database.farmDao().findById(farmA))
         assertNotNull(local.database.farmDao().findById(farmB))
+    }
+
+    @Test
+    fun historicalFarmsAreNotVisibleByDefaultToAuthenticatedUser() = runBlocking {
+        val store = MemoryAccountSessionStore()
+        val repo = AccountRepository(TestAuthApi(), store)
+        val root = AppCompositionRoot.createAndroid(context, "DEV", accountRepository = repo)
+        val local = checkNotNull(root.localPersistence)
+        val linkRepo = checkNotNull(root.farmLinks)
+
+        // Seed a historical unlinked farm in SQLite
+        val db = local.database.openHelper.writableDatabase
+        val historicalWorkspaceId = UUID.randomUUID().toString()
+        val historicalFarmId = UUID.randomUUID().toString()
+        db.execSQL("INSERT INTO workspaces (id,name,owner_user_id,country_code,timezone,locale,currency,created_at,updated_at,version,sync_status) VALUES (?,'Antiguo','local-owner','ES','Europe/Madrid','es-ES','EUR',1,1,1,'LOCAL_ONLY')", arrayOf(historicalWorkspaceId))
+        db.execSQL("INSERT INTO farms (id,workspace_id,name,status,created_at,updated_at,version,sync_status) VALUES (?,?,'Finca Antigua Sin Vincular','ACTIVE',1,1,1,'LOCAL_ONLY')", arrayOf(historicalFarmId, historicalWorkspaceId))
+
+        // User A logs in
+        repo.login("a@example.com", "passwordA123", online = true)
+
+        // Historical farm is NOT visible or linked to User A by default
+        val choices = linkRepo.choices()
+        assertFalse("Historical farm must not be visible by default to authenticated user", choices.any { it.name == "Finca Antigua Sin Vincular" })
+        assertEquals(0, choices.size)
+
+        // Data is strictly preserved in SQLite
+        assertNotNull("Historical farm must be preserved in SQLite", local.database.farmDao().findById(UUID.fromString(historicalFarmId)))
+    }
+
+    @Test
+    fun stagingEnvironmentWithoutConfigurationFailsClosed() = runBlocking {
+        val unconfiguredRepo = AccountRepository(null)
+        val root = AppCompositionRoot.createAndroid(context, "STAGING", accountRepository = unconfiguredRepo)
+
+        renderGate(unconfiguredRepo, root, environment = AppEnvironment.STAGING)
+
+        waitFor("auth-gate-root")
+        compose.onNodeWithTag("auth-gate-root").assertIsDisplayed()
+        compose.onNodeWithTag("auth-gate-unconfigured-message").assertIsDisplayed()
+        compose.onNodeWithTag("agricultural-content").assertDoesNotExist()
     }
 
     private fun waitFor(tag: String) =

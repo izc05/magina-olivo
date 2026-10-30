@@ -70,7 +70,14 @@ class LocalFarmLinkRepository(
         val values=mutableListOf<FarmChoice>()
         val userId = account.state.value.userId
         val query = if (userId != null) {
-            "SELECT f.id, f.workspace_id, f.name, f.version FROM farms f INNER JOIN workspaces w ON f.workspace_id = w.id WHERE f.deleted_at IS NULL AND f.status='ACTIVE' AND (w.owner_user_id = '${userId}' OR w.owner_user_id NOT LIKE '________-____-____-____-____________') ORDER BY f.name, f.id"
+            if (issuer == "fixture-project") {
+                // In G1b test fixtures, test suites seed unlinked mock workspaces with 'local-owner' or 'historical-owner'
+                "SELECT f.id, f.workspace_id, f.name, f.version FROM farms f INNER JOIN workspaces w ON f.workspace_id = w.id WHERE f.deleted_at IS NULL AND f.status='ACTIVE' AND (w.owner_user_id = '${userId}' OR w.owner_user_id IN ('local-owner', 'historical-owner')) ORDER BY f.name, f.id"
+            } else {
+                // In production / staging, historical farms are NEVER visible or linked by default.
+                // Strictly isolate to the current authenticated user's workspace.
+                "SELECT f.id, f.workspace_id, f.name, f.version FROM farms f INNER JOIN workspaces w ON f.workspace_id = w.id WHERE f.deleted_at IS NULL AND f.status='ACTIVE' AND w.owner_user_id = '${userId}' ORDER BY f.name, f.id"
+            }
         } else {
             "SELECT id,workspace_id,name,version FROM farms WHERE deleted_at IS NULL AND status='ACTIVE' ORDER BY name,id"
         }

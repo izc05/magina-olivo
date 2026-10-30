@@ -267,8 +267,10 @@ class FarmerIrrigationStoreAndroidStorageTest {
         // Original keys remain intact and immutable backup keys exist
         assertTrue("Original legacy key preserved non-destructively", prefs.contains(legacyKey))
         assertTrue("Original local key preserved non-destructively", prefs.contains(localKey))
-        assertTrue("Immutable link backup exists for legacy parcel", prefs.contains("profile_backup_link_$parcelLegacy"))
-        assertTrue("Immutable link backup exists for local parcel", prefs.contains("profile_backup_link_$parcelLocal"))
+        val expectedBackupLegacy = "profile_backup_link_${aliceUserId}_${workspaceId}_$parcelLegacy"
+        val expectedBackupLocal = "profile_backup_link_${aliceUserId}_${workspaceId}_$parcelLocal"
+        assertTrue("Collision-free link backup exists for legacy parcel", prefs.contains(expectedBackupLegacy))
+        assertTrue("Collision-free link backup exists for local parcel", prefs.contains(expectedBackupLocal))
 
         // 6. Switch back to User Bob (A -> B)
         store.setScope(bobScope)
@@ -290,5 +292,46 @@ class FarmerIrrigationStoreAndroidStorageTest {
         val restartStore = AndroidFarmerIrrigationStore(context, initialScope = aliceScope)
         assertEquals(2, restartStore.getAllProfiles().size)
         assertEquals("Comunidad Tradicional", restartStore.getProfile(parcelLegacy)?.supply?.communityName)
+    }
+
+    @Test
+    fun linkLocalProfilesToAccount_negativeTest_sameParcelInTwoWorkspaces_neverCopiesForeignWorkspaceData() {
+        val sharedParcelId = UUID.randomUUID()
+        val foreignWorkspaceId = UUID.randomUUID()
+        val targetWorkspaceId = UUID.randomUUID()
+        val userId = "user_authorized_owner"
+
+        // Foreign holding configured this parcel locally with foreign parameters
+        val foreignLocalKey = "profile_scope_local:::${foreignWorkspaceId}_$sharedParcelId"
+        val foreignProfile = ParcelIrrigationProfile(
+            parcelId = sharedParcelId,
+            supply = WaterSupplyDetails(sourceType = WaterSourceType.WELL, communityName = "Comunidad Explotacion Ajena"),
+            aforo = AforoConfig(oliveTreeCount = 500, emitterFlowLph = 8.0),
+        )
+
+        prefs.edit(commit = true) {
+            putString(foreignLocalKey, AndroidFarmerIrrigationStore.serializeProfile(foreignProfile).toString())
+        }
+        assertTrue(prefs.contains(foreignLocalKey))
+
+        val store = AndroidFarmerIrrigationStore(context, initialScope = AndroidFarmerIrrigationStore.scopeKey(userId, targetWorkspaceId))
+
+        // Attempt linking for sharedParcelId targeting targetWorkspaceId, with targetWorkspaceId as authorized source
+        // Because foreignWorkspaceId is NOT the authorized source workspace, no foreign data should leak or be copied.
+        val linkedCount = store.linkLocalProfilesToAccount(
+            targetUserId = userId,
+            targetWorkspaceId = targetWorkspaceId,
+            parcelIdsToLink = setOf(sharedParcelId),
+            sourceWorkspaceId = targetWorkspaceId,
+        )
+
+        assertEquals("Zero profiles linked because foreign workspace local data must never leak", 0, linkedCount)
+        assertNull("Target partition must not receive foreign workspace profile", store.getProfile(sharedParcelId))
+        assertTrue("Store partition remains empty (fail-closed)", store.getAllProfiles().isEmpty())
+        assertFalse(
+            "No backup should be created for foreign unlinked parcel",
+            prefs.contains("profile_backup_link_${userId}_${targetWorkspaceId}_$sharedParcelId")
+        )
+        assertTrue("Foreign workspace local key remains intact and untouched", prefs.contains(foreignLocalKey))
     }
 }

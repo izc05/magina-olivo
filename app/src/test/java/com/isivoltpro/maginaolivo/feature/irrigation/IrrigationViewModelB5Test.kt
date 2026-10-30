@@ -52,6 +52,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -702,5 +703,57 @@ class IrrigationViewModelB5Test {
         )
         advanceUntilIdle()
         assertEquals("Comunidad Local Original", vmGuestReturned.state.value.profiles[parcel.id]?.supply?.communityName)
+    }
+
+    @Test
+    fun linkLocalProfilesToAccount_negativeTest_sameParcelInTwoWorkspaces_neverCopiesForeignWorkspaceData() = runTest {
+        val sharedParcel = testParcel(id = UUID.randomUUID(), name = "Parcela Comun Multiexplotacion")
+        val foreignWorkspaceId = UUID.randomUUID()
+        val authorizedFarm = testFarm(farmId, "Finca Explotacion Propia")
+
+        val farmFlow = MutableStateFlow<Farm?>(authorizedFarm)
+        val parcelsFlow = MutableStateFlow(listOf(sharedParcel))
+        val activitiesFlow = MutableStateFlow<List<Activity>>(emptyList())
+        val irrigationStore = InMemoryFarmerIrrigationStore()
+
+        // Configure parcel locally in a foreign exploitation workspace
+        val foreignLocalScope = "local:::$foreignWorkspaceId"
+        irrigationStore.setScope(foreignLocalScope)
+        irrigationStore.saveProfile(
+            ParcelIrrigationProfile(
+                parcelId = sharedParcel.id,
+                supply = WaterSupplyDetails(communityName = "Comunidad Ajena Finca Vecina"),
+            )
+        )
+
+        // Switch to authorized user on own exploitation farm
+        val userOwner = UUID.randomUUID()
+        val vmOwner = IrrigationViewModel(
+            farmId = farmId,
+            parcelRepository = FakeParcelRepository(parcelsFlow),
+            activityRepository = FakeActivityRepository(activitiesFlow),
+            farmRepository = FakeFarmRepository(farmFlow),
+            farmerIrrigationStore = irrigationStore,
+            currentUserIdProvider = { userOwner },
+            today = LocalDate.of(2026, 6, 1),
+        )
+        advanceUntilIdle()
+
+        // Attempt linking for sharedParcel targeting authorizedFarm.workspaceId with authorizedFarm.workspaceId as source
+        val linkedCount = irrigationStore.linkLocalProfilesToAccount(
+            targetUserId = userOwner.toString(),
+            targetWorkspaceId = authorizedFarm.workspaceId,
+            parcelIdsToLink = setOf(sharedParcel.id),
+            sourceWorkspaceId = authorizedFarm.workspaceId,
+        )
+
+        // Zero profiles linked; must never pull local configs from foreignWorkspaceId
+        assertEquals(0, linkedCount)
+        assertTrue("Owner profile map must remain empty (fail-closed, no leak from foreign workspace)", vmOwner.state.value.profiles.isEmpty())
+        assertNull(irrigationStore.getProfile(sharedParcel.id))
+
+        // Foreign workspace local profile remains intact
+        irrigationStore.setScope(foreignLocalScope)
+        assertEquals("Comunidad Ajena Finca Vecina", irrigationStore.getProfile(sharedParcel.id)?.supply?.communityName)
     }
 }

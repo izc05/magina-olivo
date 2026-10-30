@@ -80,9 +80,17 @@ class InMemoryFarmerIrrigationStore(initialScope: String = DEFAULT_SCOPE) : Farm
         val targetMap = scopedProfiles.computeIfAbsent(targetScope) { ConcurrentHashMap() }
         var count = 0
 
-        val localMaps = scopedProfiles.entries
-            .filter { it.key.startsWith("local:::") || it.key == DEFAULT_SCOPE }
-            .map { it.value }
+        // Strict authorization boundary: only look inside the authorized source workspace local partition
+        // (or default local scope if sourceWorkspaceId matches targetWorkspaceId / unassigned).
+        // Never look across arbitrary local:::* partitions from other holdings.
+        val allowedLocalScopes = buildList {
+            val authorizedSourceWorkspace = sourceWorkspaceId ?: targetWorkspaceId
+            add("local:::${authorizedSourceWorkspace}")
+            add(DEFAULT_SCOPE)
+            add("local:::default")
+        }.distinct()
+
+        val localMaps = allowedLocalScopes.mapNotNull { scopedProfiles[it] }
 
         for (parcelId in parcelIdsToLink) {
             if (!targetMap.containsKey(parcelId)) {
@@ -298,8 +306,12 @@ class AndroidFarmerIrrigationStore(
      * Explicit, non-destructive linking of local/legacy parcel configurations to an authorized user account
      * and workspace partition upon affirmative user authorization.
      *
-     * Non-destructive: preserves original local and legacy keys intact.
-     * Idempotent: safe to run multiple times without data corruption or duplicate writes.
+     * Conforms to strict authorization boundaries:
+     * - Only searches within the explicitly authorized source workspace local partition (or target workspace / default legacy).
+     * - Does NOT perform open wild-card searches across all `profile_scope_local:::` partitions to prevent cross-exploitation data leakage.
+     * - Scopes backup keys per target user, target workspace and parcel to eliminate collision risks.
+     * - Non-destructive: preserves original local and legacy keys intact.
+     * - Idempotent: safe to run multiple times without data corruption or duplicate writes.
      *
      * @return count of newly linked parcel profiles.
      */
@@ -315,14 +327,15 @@ class AndroidFarmerIrrigationStore(
         var count = 0
 
         val allEntries = prefs.all
-        val localPrefixes = buildList {
-            if (sourceWorkspaceId != null) {
-                add(scopedPrefix(scopeKey(null, sourceWorkspaceId)))
+        // Strictly bounded local prefixes: only authorized source workspace or fallback default
+        val authorizedSourceWs = sourceWorkspaceId ?: targetWorkspaceId
+        val localCandidateKeys = buildList {
+            add(scopedPrefix(scopeKey(null, authorizedSourceWs)))
+            if (authorizedSourceWs != targetWorkspaceId) {
+                add(scopedPrefix(scopeKey(null, targetWorkspaceId)))
             }
-            add(scopedPrefix(scopeKey(null, targetWorkspaceId)))
             add(scopedPrefix(DEFAULT_SCOPE))
-            add("profile_scope_local:::")
-        }
+        }.distinct()
 
         prefs.edit {
             for (parcelId in parcelIdsToLink) {
@@ -331,22 +344,17 @@ class AndroidFarmerIrrigationStore(
 
                 var sourceJsonString: String? = null
 
-                // 1. Search in local scopes
-                for (lp in localPrefixes) {
-                    val candidateKey = lp + parcelIdStr
+                // 1. Search strictly in authorized source local scope candidates
+                for (candidatePrefix in localCandidateKeys) {
+                    val candidateKey = candidatePrefix + parcelIdStr
                     val candidateValue = allEntries[candidateKey]
                     if (candidateValue is String) {
                         sourceJsonString = candidateValue
                         break
                     }
-                    val matchingEntry = allEntries.entries.firstOrNull { it.key.startsWith(lp) && it.key.endsWith(parcelIdStr) }
-                    if (matchingEntry != null && matchingEntry.value is String) {
-                        sourceJsonString = matchingEntry.value as String
-                        break
-                    }
                 }
 
-                // 2. Search legacy un-scoped key
+                // 2. Fallback to unassigned legacy un-scoped key if not found in authorized local workspace
                 if (sourceJsonString == null) {
                     val legacyKey = KEY_PREFIX_PROFILE + parcelIdStr
                     val value = allEntries[legacyKey]
@@ -356,8 +364,8 @@ class AndroidFarmerIrrigationStore(
                 }
 
                 if (sourceJsonString != null) {
-                    // Non-destructive immutable backup
-                    val backupKey = "profile_backup_link_$parcelIdStr"
+                    // Collision-free backup key namespaced by target user, target workspace and parcel ID
+                    val backupKey = "profile_backup_link_${targetUserId}_${targetWorkspaceId}_$parcelIdStr"
                     if (!prefs.contains(backupKey)) {
                         putString(backupKey, sourceJsonString)
                     }

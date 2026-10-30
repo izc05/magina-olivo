@@ -17,6 +17,7 @@ import com.isivoltpro.maginaolivo.app.AppCompositionRoot
 import com.isivoltpro.maginaolivo.app.AppEnvironment
 import com.isivoltpro.maginaolivo.app.AppearanceMode
 import com.isivoltpro.maginaolivo.core.common.AppResult
+import com.isivoltpro.maginaolivo.data.repository.LocalFarmLinkRepository
 import com.isivoltpro.maginaolivo.domain.farm.NewFarm
 import com.isivoltpro.maginaolivo.feature.account.*
 import com.isivoltpro.maginaolivo.ui.theme.MaginaOlivoTheme
@@ -244,6 +245,10 @@ class AccountAuthGateTest {
         assertEquals(1, farmsForA.size)
         assertEquals("Finca Olivar de A", farmsForA.first().name)
 
+        val linkRepo = LocalFarmLinkRepository(context, local.database, repo, "test-issuer")
+        assertEquals("With ledger == null, User A sees their own farm in link choices", 1, linkRepo.choices().size)
+        assertEquals("Finca Olivar de A", linkRepo.choices().first().name)
+
         // 2. User A logs out
         repo.logout(online = true)
         assertEquals(AccountStatus.SIGNED_OUT, repo.state.value.status)
@@ -259,12 +264,15 @@ class AccountAuthGateTest {
         // Assertion of absence: User B does NOT see User A's farm!
         val farmsForBInitial = local.farmRepository.observeActive(workspaceB).first()
         assertEquals("User B must see 0 active farms initially (A's farm is absent)", 0, farmsForBInitial.size)
+        assertEquals("With ledger == null, User B must see 0 choices (A's farm is isolated)", 0, linkRepo.choices().size)
 
         // User B creates their own farm in Room
         val farmB = (local.farmRepository.create(NewFarm(workspaceB, "Finca Olivar de B")) as AppResult.Success).value
         val farmsForBAfter = local.farmRepository.observeActive(workspaceB).first()
         assertEquals(1, farmsForBAfter.size)
         assertEquals("Finca Olivar de B", farmsForBAfter.first().name)
+        assertEquals("With ledger == null, User B sees only their own farm", 1, linkRepo.choices().size)
+        assertEquals("Finca Olivar de B", linkRepo.choices().first().name)
 
         // 4. User B logs out
         repo.logout(online = true)
@@ -282,6 +290,8 @@ class AccountAuthGateTest {
         assertEquals(1, farmsForARecovered.size)
         assertEquals("Finca Olivar de A", farmsForARecovered.first().name)
         assertFalse(farmsForARecovered.any { it.name == "Finca Olivar de B" })
+        assertEquals("With ledger == null, User A recovers their farm in choices without B's farm", 1, linkRepo.choices().size)
+        assertEquals("Finca Olivar de A", linkRepo.choices().first().name)
 
         // Verify both farms still exist unharmed in the database
         assertNotNull(local.database.farmDao().findById(farmA))

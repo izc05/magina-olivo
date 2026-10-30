@@ -41,7 +41,11 @@ class MainActivity : ComponentActivity() {
         // while holding the Auth mutex. Never block Activity.onCreate waiting for that exchange.
         lifecycleScope.launch(Dispatchers.IO) {
             account.resume(false)
-            if(compositionRoot.farmLinks?.accessAllowed()!=false) {
+            val isAuthorized = !account.isConfigured || account.state.value.status in setOf(
+                com.isivoltpro.maginaolivo.feature.account.AccountStatus.SIGNED_IN,
+                com.isivoltpro.maginaolivo.feature.account.AccountStatus.OFFLINE
+            )
+            if(isAuthorized && compositionRoot.farmLinks?.accessAllowed()!=false) {
                 compositionRoot.localPersistence?.reminders?.let { runCatching { it.reconcile() } }
                 // #475: complete this one-time correction before any agricultural screen exists.
                 compositionRoot.localPersistence?.dayCostRepository?.let { dayCosts ->

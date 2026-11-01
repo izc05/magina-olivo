@@ -414,7 +414,7 @@ class OfflineFirstFarmRepositoryTest {
             assertEquals(AppResult.Success(Unit), restored.restore(parcelId, farmId))
             assertEquals(2, restored.membershipHistory(parcelId).size)
             assertEquals(
-                listOf(OutboxOperation.CREATE, OutboxOperation.DELETE, OutboxOperation.UPDATE),
+                listOf(OutboxOperation.CREATE, OutboxOperation.ARCHIVE, OutboxOperation.RESTORE),
                 database.syncOutboxDao().listForEntity(SyncEntityType.PARCEL, parcelId).map { it.operation },
             )
         } finally {

@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.isivoltpro.maginaolivo.data.local.entity.SyncOutboxEntity
+import com.isivoltpro.maginaolivo.data.local.model.OutboxOperation
 import com.isivoltpro.maginaolivo.data.local.model.SyncEntityType
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
@@ -175,6 +176,87 @@ interface SyncOutboxDao {
     """)
     suspend fun blockParcelCreate(operationId: UUID, accountId: String,
         payloadJson: String, reason: String, nowEpochMillis: Long): Int
+
+    /**
+     * G2.6 PARCEL UPDATE/ARCHIVE/RESTORE (and legacy DELETE): binds an unbound marker once with its
+     * typed envelope and the remote version it expects. A resolved review is the only blocker it accepts.
+     */
+    @Query("""
+        UPDATE sync_outbox SET account_id = :accountId, farm_id = :farmId, payload_json = :payloadJson,
+            base_remote_version = :expectedVersion, last_error_message = NULL,
+            last_error_code = CASE WHEN last_error_code = 'RESOLVED_REVIEW' THEN last_error_code END,
+            updated_at = :nowEpochMillis
+        WHERE id = :operationId AND entity_type = 'PARCEL' AND entity_id = :parcelId
+          AND operation IN ('UPDATE', 'DELETE', 'ARCHIVE', 'RESTORE')
+          AND status = 'PENDING' AND attempt_count = 0 AND payload_json IS NULL AND account_id IS NULL
+    """)
+    suspend fun stageParcelMutation(operationId: UUID, accountId: String, parcelId: UUID, farmId: UUID,
+        expectedVersion: Long, payloadJson: String, nowEpochMillis: Long): Int
+
+    /** R1: an unbound ARCHIVE waits for its dependencies; no attempt is consumed and nothing is bound. */
+    @Query("""
+        UPDATE sync_outbox SET last_error_message = :detail, updated_at = :nowEpochMillis,
+            last_error_code = CASE WHEN last_error_code = 'RESOLVED_REVIEW' THEN last_error_code ELSE :reason END
+        WHERE id = :operationId AND entity_type = 'PARCEL' AND operation IN ('UPDATE', 'DELETE', 'ARCHIVE', 'RESTORE')
+          AND status = 'PENDING' AND attempt_count = 0 AND payload_json IS NULL AND account_id IS NULL
+    """)
+    suspend fun markParcelMutationWaiting(operationId: UUID, reason: String, detail: String?, nowEpochMillis: Long): Int
+
+    /** A legacy marker whose meaning the history cannot prove is held, unbound, for an explicit decision. */
+    @Query("""
+        UPDATE sync_outbox SET status = 'BLOCKED', last_error_code = 'REVIEW_REQUIRED', last_error_message = :detail,
+            updated_at = :nowEpochMillis
+        WHERE id = :operationId AND entity_type = 'PARCEL' AND operation IN ('UPDATE', 'DELETE', 'ARCHIVE', 'RESTORE')
+          AND status = 'PENDING' AND attempt_count = 0 AND payload_json IS NULL AND account_id IS NULL
+    """)
+    suspend fun holdParcelMutationForReview(operationId: UUID, detail: String, nowEpochMillis: Long): Int
+
+    /** The explicit decision: the marker takes the chosen typed operation and goes back to PENDING. */
+    @Query("""
+        UPDATE sync_outbox SET operation = :operation, status = 'PENDING', last_error_code = 'RESOLVED_REVIEW',
+            last_error_message = NULL, updated_at = :nowEpochMillis
+        WHERE id = :operationId AND entity_type = 'PARCEL' AND status = 'BLOCKED'
+          AND last_error_code = 'REVIEW_REQUIRED' AND attempt_count = 0 AND payload_json IS NULL AND account_id IS NULL
+    """)
+    suspend fun resolveParcelMutationReview(operationId: UUID, operation: OutboxOperation, nowEpochMillis: Long): Int
+
+    @Query("""
+        UPDATE sync_outbox SET status = 'FAILED', attempt_count = attempt_count + 1,
+            last_error_code = 'OUTCOME_UNKNOWN', last_error_message = NULL,
+            updated_at = :nowEpochMillis
+        WHERE id = :operationId AND entity_type = 'PARCEL' AND operation IN ('UPDATE', 'DELETE', 'ARCHIVE', 'RESTORE')
+          AND status IN ('PENDING', 'FAILED') AND account_id = :accountId
+          AND payload_json = :payloadJson
+    """)
+    suspend fun markParcelMutationUnknown(operationId: UUID, accountId: String,
+        payloadJson: String, nowEpochMillis: Long): Int
+
+    @Query("""
+        UPDATE sync_outbox SET status = 'BLOCKED', last_error_code = :reason,
+            last_error_message = NULL, updated_at = :nowEpochMillis
+        WHERE id = :operationId AND entity_type = 'PARCEL' AND operation IN ('UPDATE', 'DELETE', 'ARCHIVE', 'RESTORE')
+          AND status IN ('PENDING', 'FAILED') AND account_id = :accountId
+          AND payload_json = :payloadJson
+    """)
+    suspend fun blockParcelMutation(operationId: UUID, accountId: String,
+        payloadJson: String, reason: String, nowEpochMillis: Long): Int
+
+    /**
+     * R1: every unconfirmed operation, of any age, whose record references the parcel through a
+     * campaign snapshot, a Pesada, a harvest, an expense or an activity. Once the server archives
+     * the parcel those contracts refuse it, so an ARCHIVE never overtakes them.
+     */
+    @Query("""
+        SELECT * FROM sync_outbox
+        WHERE status != 'CONFIRMED' AND (
+            (entity_type = 'CAMPAIGN' AND entity_id IN (SELECT campaign_id FROM campaign_parcels WHERE parcel_id = :parcelId))
+         OR (entity_type = 'DELIVERY' AND entity_id IN (SELECT delivery_id FROM delivery_parcels WHERE parcel_id = :parcelId))
+         OR (entity_type = 'HARVEST' AND entity_id IN (SELECT harvest_id FROM harvest_parcels WHERE parcel_id = :parcelId))
+         OR (entity_type = 'EXPENSE' AND entity_id IN (SELECT id FROM expenses WHERE parcel_id = :parcelId))
+         OR (entity_type = 'ACTIVITY' AND entity_id IN (SELECT activity_id FROM activity_parcels WHERE parcel_id = :parcelId)))
+        ORDER BY created_at, id
+    """)
+    suspend fun listParcelDependents(parcelId: UUID): List<SyncOutboxEntity>
 
     /** Keeps the old intent blocked and auditable; only an explicit decision can retire its blocker. */
     @Query("""

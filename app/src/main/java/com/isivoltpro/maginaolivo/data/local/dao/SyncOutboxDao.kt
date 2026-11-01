@@ -242,18 +242,19 @@ interface SyncOutboxDao {
         payloadJson: String, reason: String, nowEpochMillis: Long): Int
 
     /**
-     * R1: every unconfirmed operation, of any age, whose record references the parcel through a
-     * campaign snapshot, a Pesada, a harvest, an expense or an activity. Once the server archives
-     * the parcel those contracts refuse it, so an ARCHIVE never overtakes them.
+     * R1: every unconfirmed operation, of any age, that references the parcel through a campaign
+     * snapshot (CREATE and UPDATE), a Pesada or an expense. An ARCHIVE never overtakes them.
+     * - CAMPAIGN UPDATE follows causal order: the ARCHIVE waits, and CampaignCasCoordinator accepts
+     *   the CAS while that ARCHIVE is still unsent, so a pending close is confirmed before the archive.
+     * - HARVEST and ACTIVITY have no server writer in G2.6. Their markers stay PENDING and do not
+     *   hold the ARCHIVE. They are not synchronized.
      */
     @Query("""
         SELECT * FROM sync_outbox
         WHERE status != 'CONFIRMED' AND (
             (entity_type = 'CAMPAIGN' AND entity_id IN (SELECT campaign_id FROM campaign_parcels WHERE parcel_id = :parcelId))
          OR (entity_type = 'DELIVERY' AND entity_id IN (SELECT delivery_id FROM delivery_parcels WHERE parcel_id = :parcelId))
-         OR (entity_type = 'HARVEST' AND entity_id IN (SELECT harvest_id FROM harvest_parcels WHERE parcel_id = :parcelId))
-         OR (entity_type = 'EXPENSE' AND entity_id IN (SELECT id FROM expenses WHERE parcel_id = :parcelId))
-         OR (entity_type = 'ACTIVITY' AND entity_id IN (SELECT activity_id FROM activity_parcels WHERE parcel_id = :parcelId)))
+         OR (entity_type = 'EXPENSE' AND entity_id IN (SELECT id FROM expenses WHERE parcel_id = :parcelId)))
         ORDER BY created_at, id
     """)
     suspend fun listParcelDependents(parcelId: UUID): List<SyncOutboxEntity>

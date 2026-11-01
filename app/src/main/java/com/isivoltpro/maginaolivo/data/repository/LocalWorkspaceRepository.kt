@@ -47,20 +47,7 @@ class LocalWorkspaceRepository(
     override fun currentOwnerId(): UUID? = account?.state?.value?.userId
 
     override fun observeLocalWorkspace(): Flow<UUID?> =
-        if (account == null) {
-            database.workspaceSelectionDao().observeAll().map { (activeWorkspace() as? AppResult.Success)?.value }
-        } else {
-            account.state
-                .map { it.userId }
-                .distinctUntilChanged()
-                .flatMapLatest { userId ->
-                    if (account.isConfigured && userId == null) {
-                        flowOf(null)
-                    } else {
-                        observeActiveWorkspace().map { (it as? AppResult.Success)?.value }
-                    }
-                }
-        }
+        observeActiveWorkspace().map { (it as? AppResult.Success)?.value }
 
     private suspend fun refreshIfDue() {
         if (account?.state?.value?.online != true || authorizationRemote == null) return
@@ -72,7 +59,10 @@ class LocalWorkspaceRepository(
     }
 
     override fun observeActiveWorkspace(): Flow<AppResult<UUID>> =
-        if (account == null) database.workspaceSelectionDao().observeAll().map {
+        if (account == null) combine(
+            database.workspaceSelectionDao().observeAll(),
+            database.workspaceDao().observeFirstActive(),
+        ) { _, _ -> Unit }.map {
             val active = activeWorkspace()
             if (active is AppResult.Success) active else ensureLocalWorkspace()
         }
@@ -80,7 +70,8 @@ class LocalWorkspaceRepository(
             account.state,
             database.workspaceSelectionDao().observeAll(),
             database.workspaceAuthorizationCacheDao().observeAll(),
-        ) { state, _, _ -> state.online }
+            database.workspaceDao().observeFirstActive(),
+        ) { state, _, _, _ -> state.online }
             .map { online ->
                 if (!online) lastRefreshAttemptNanos.set(0L)
                 val active = activeWorkspace()
@@ -171,29 +162,38 @@ class LocalWorkspaceRepository(
         return when (val session = account?.workspaceSession() ?: WorkspaceSession.SignedOut) {
             is WorkspaceSession.Authenticated -> {
                 val accountId = session.accountId
+                refreshIfDue()
                 val selected = database.workspaceSelectionDao().find(issuer, accountId.toString())?.workspaceId
                 if (selected != null) {
-                    refreshIfDue()
                     val auth = authorized(accountId)
                     val isOwned = database.workspaceDao().findActiveByOwner(accountId)?.id == selected
                     if (auth.any { it.id == selected } || isOwned) {
                         return AppResult.Success(selected)
                     }
+                    return denied()
                 }
 
-                // If not yet selected in workspaceSelectionDao, check existing owner workspace in Room
+                // If not yet selected in workspaceSelectionDao:
+                val auth = authorized(accountId)
+                val owned = database.workspaceDao().findActiveByOwner(accountId)
+                val totalAvailable = auth.map { it.id }.toSet() + listOfNotNull(owned?.id)
+
+                if (totalAvailable.size > 1) {
+                    return AppResult.Failure(AppError.Validation("workspaceId", "selection_required"))
+                }
+                if (totalAvailable.size == 1) {
+                    val singleId = totalAvailable.first()
+                    database.workspaceSelectionDao().upsert(
+                        WorkspaceSelectionEntity(issuer, accountId.toString(), singleId),
+                    )
+                    return AppResult.Success(singleId)
+                }
+
+                if (!createLocal) {
+                    return AppResult.Failure(AppError.Validation("workspaceId", "selection_required"))
+                }
+
                 database.withTransaction {
-                    database.workspaceDao().findActiveByOwner(accountId)?.let { existing ->
-                        database.workspaceSelectionDao().upsert(
-                            WorkspaceSelectionEntity(issuer, accountId.toString(), existing.id),
-                        )
-                        return@withTransaction AppResult.Success(existing.id)
-                    }
-
-                    if (!createLocal) {
-                        return@withTransaction AppResult.Failure(AppError.Validation("workspaceId", "selection_required"))
-                    }
-
                     val workspaceId = idGenerator.newId()
                     val operationId = idGenerator.newId()
                     val now = clock.nowInstant()
@@ -236,11 +236,11 @@ class LocalWorkspaceRepository(
                     AppResult.Failure(AppError.Permission("No hay sesión activa"))
                 } else if (currentUserId != null) {
                     // Simulated or fallback account with current userId
+                    database.workspaceDao().findActiveByOwner(currentUserId)?.let { existing ->
+                        return AppResult.Success(existing.id)
+                    }
+                    if (!createLocal) return AppResult.Failure(AppError.NotFound("workspace"))
                     database.withTransaction {
-                        database.workspaceDao().findActiveByOwner(currentUserId)?.let { existing ->
-                            return@withTransaction AppResult.Success(existing.id)
-                        }
-                        if (!createLocal) return@withTransaction AppResult.Failure(AppError.NotFound("workspace"))
                         val workspaceId = idGenerator.newId()
                         val operationId = idGenerator.newId()
                         val now = clock.nowInstant()
@@ -280,50 +280,52 @@ class LocalWorkspaceRepository(
         }
     }
 
-    private suspend fun resolveLocal(createLocal: Boolean): AppResult<UUID> = database.withTransaction {
+    private suspend fun resolveLocal(createLocal: Boolean): AppResult<UUID> {
         if (account?.isConfigured == true) {
-            return@withTransaction AppResult.Failure(AppError.Permission("No hay sesión activa"))
+            return AppResult.Failure(AppError.Permission("No hay sesión activa"))
         }
         val local = database.workspaceDao().listUnboundLocal()
         val selected = database.workspaceSelectionDao().find("", "")?.workspaceId
         if (selected != null) {
-            return@withTransaction local.find { it.id == selected }?.let { AppResult.Success(it.id) } ?: denied()
+            return local.find { it.id == selected }?.let { AppResult.Success(it.id) } ?: denied()
         }
-        if (local.size == 1) return@withTransaction AppResult.Success(local.single().id)
-        if (local.size > 1) return@withTransaction AppResult.Failure(AppError.Validation("workspaceId", "selection_required"))
-        if (!createLocal) return@withTransaction AppResult.Failure(AppError.NotFound("workspace"))
-        val workspaceId = idGenerator.newId()
-        val ownerId = idGenerator.newId()
-        val operationId = idGenerator.newId()
-        val now = clock.nowInstant()
-        database.workspaceDao().upsert(
-            WorkspaceEntity(
-                id = workspaceId,
-                name = "Mi olivar",
-                ownerUserId = ownerId,
-                countryCode = regionalContext.countryCode,
-                timezone = regionalContext.zoneId.id,
-                locale = regionalContext.locale.toLanguageTag(),
-                currency = regionalContext.currency.currencyCode,
-                metadata = LocalMetadata(
+        if (local.size == 1) return AppResult.Success(local.single().id)
+        if (local.size > 1) return AppResult.Failure(AppError.Validation("workspaceId", "selection_required"))
+        if (!createLocal) return AppResult.Failure(AppError.NotFound("workspace"))
+        return database.withTransaction {
+            val workspaceId = idGenerator.newId()
+            val ownerId = idGenerator.newId()
+            val operationId = idGenerator.newId()
+            val now = clock.nowInstant()
+            database.workspaceDao().upsert(
+                WorkspaceEntity(
+                    id = workspaceId,
+                    name = "Mi olivar",
+                    ownerUserId = ownerId,
+                    countryCode = regionalContext.countryCode,
+                    timezone = regionalContext.zoneId.id,
+                    locale = regionalContext.locale.toLanguageTag(),
+                    currency = regionalContext.currency.currencyCode,
+                    metadata = LocalMetadata(
+                        createdAt = now,
+                        updatedAt = now,
+                        syncStatus = SyncStatus.PENDING,
+                    ),
+                ),
+            )
+            database.syncOutboxDao().insert(
+                SyncOutboxEntity(
+                    id = operationId,
+                    entityType = SyncEntityType.WORKSPACE,
+                    entityId = workspaceId,
+                    operation = OutboxOperation.CREATE,
+                    payloadVersion = 1,
                     createdAt = now,
                     updatedAt = now,
-                    syncStatus = SyncStatus.PENDING,
                 ),
-            ),
-        )
-        database.syncOutboxDao().insert(
-            SyncOutboxEntity(
-                id = operationId,
-                entityType = SyncEntityType.WORKSPACE,
-                entityId = workspaceId,
-                operation = OutboxOperation.CREATE,
-                payloadVersion = 1,
-                createdAt = now,
-                updatedAt = now,
-            ),
-        )
-        AppResult.Success(workspaceId)
+            )
+            AppResult.Success(workspaceId)
+        }
     }
 
     private suspend fun authorized(accountId: UUID): List<WorkspaceEntity> {

@@ -74,6 +74,7 @@ class LocalWorkspaceRepository(
         ) { state, _, _, _ -> state.online }
             .map { online ->
                 if (!online) lastRefreshAttemptNanos.set(0L)
+                else refreshIfDue()
                 val active = activeWorkspace()
                 if (active is AppResult.Success) active
                 else if (account.state.value.userId != null || !account.isConfigured) {
@@ -107,7 +108,10 @@ class LocalWorkspaceRepository(
     }
 
     override suspend fun ensureLocalWorkspace(): AppResult<UUID> = withContext(dispatchers.io) {
-        safe("ensure_local_workspace") { resolve(true) }
+        safe("ensure_local_workspace") {
+            if (account?.state?.value?.online == true) refreshAuthorizations()
+            resolve(true)
+        }
     }
 
     override suspend fun availableWorkspaces(): AppResult<List<WorkspaceChoice>> = withContext(dispatchers.io) {
@@ -163,7 +167,6 @@ class LocalWorkspaceRepository(
         return when (val session = account?.workspaceSession() ?: WorkspaceSession.SignedOut) {
             is WorkspaceSession.Authenticated -> {
                 val accountId = session.accountId
-                refreshIfDue()
                 val selected = database.workspaceSelectionDao().find(issuer, accountId.toString())?.workspaceId
                 if (selected != null) {
                     val auth = authorized(accountId)

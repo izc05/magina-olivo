@@ -37,6 +37,9 @@ import com.isivoltpro.maginaolivo.data.repository.prepareDeliveryDispatch
 import com.isivoltpro.maginaolivo.data.repository.settleAbandonedPreparedDispatches
 import com.isivoltpro.maginaolivo.data.local.entity.DeliveryDispatchPrepareEntity
 import com.isivoltpro.maginaolivo.data.repository.HeldReconciliationOutcome
+import com.isivoltpro.maginaolivo.core.regional.RegionalContext
+import com.isivoltpro.maginaolivo.data.repository.LocalWorkspaceRepository
+import com.isivoltpro.maginaolivo.data.repository.WorkspaceAuthorizationRemote
 import com.isivoltpro.maginaolivo.data.repository.RecoveredDeliveryReceipt
 import com.isivoltpro.maginaolivo.data.repository.RemoteDeliveryState
 import com.isivoltpro.maginaolivo.data.local.entity.DeliveryHeldReceiptEntity
@@ -3142,5 +3145,245 @@ class DeliveryContractTest {
         assertTrue("Record yield during concurrent workspace switch must fail: $yieldResult", yieldResult is AppResult.Failure)
         assertNull("Yield analysis must not be saved", db.deliveryDao().findLiveAnalysis(id))
         assertEquals(outboxBefore, count("sync_outbox"))
+    }
+
+    @Test
+    fun realRepositoriesConcurrentLogoutOnlineAndOfflineFailClosedWithoutDeadlockOrOutbox() = runBlocking {
+        val delegate = SimulatedAccountAuthApi()
+        val api = object : AccountAuthApi by delegate {
+            override val simulated = false
+            override suspend fun signIn(email: String, password: String) =
+                delegate.signIn(email, password).let {
+                    com.isivoltpro.maginaolivo.feature.account.AuthSession(
+                        it.userId, it.email, it.accessToken, it.refreshToken, now.plusSeconds(3600),
+                    )
+                }
+        }
+        val account = AccountRepository(api, MemoryAccountSessionStore(), { now })
+        account.login("real@example.test", "password42", online = true)
+        val userId = account.state.value.userId!!
+
+        db.openHelper.writableDatabase.execSQL(
+            "UPDATE workspaces SET owner_user_id = ? WHERE id = ?",
+            arrayOf(userId.toString(), workspaceId.toString()),
+        )
+        val file = File(context.noBackupFilesDir, "real-logout-${UUID.randomUUID()}.json")
+        val store = AndroidFarmLinkLedger(file)
+        val links = LocalFarmLinkRepository(context, db, account, "fixture-project", store)
+        linkedFixtureCleanup.add {
+            store.read()?.consents?.forEach {
+                File(context.noBackupFilesDir, "account-link-backups/${it.backupId}").deleteRecursively()
+            }
+            listOf(file, File(file.path + ".bak"), File(file.path + ".new")).forEach { it.delete() }
+        }
+        links.consent(userId, links.choices().filter { it.id == farmId }, true)
+
+        val remote = WorkspaceAuthorizationRemote { session ->
+            """{"contract_version":1,"issuer":"fixture-project/auth/v1","subject":"${session.userId}","verified_at":"$now","token_expires_at":"${now.plusSeconds(3600)}","workspaces":[{"id":"$workspaceId","name":"Olivo 1","role":"OWNER","permissions":["read","write","manage_members"],"grant_version":1,"authorization_expires_at":"${now.plusSeconds(900)}"}]}"""
+        }
+
+        val workspaceRepo = LocalWorkspaceRepository(
+            db, FixedClock(now), RandomIds, TestDispatchers, RegionalContext.spainDefault(),
+            account, "fixture-project", remote,
+        )
+        assertTrue(workspaceRepo.selectWorkspace(workspaceId) is AppResult.Success)
+
+        val repo = OfflineFirstDeliveryRepository(
+            db, FixedClock(now), RandomIds, TestDispatchers,
+            workspaceRepository = workspaceRepo,
+            writeScope = links,
+            zoneId = { ZoneOffset.UTC },
+        )
+
+        val validId = ok(repo.create(draft(1_000_000, north to null)))
+        val outboxBefore = count("sync_outbox")
+
+        // Concurrent writes while offline logout executes
+        val writeJobs = (1..5).map { idx ->
+            async(Dispatchers.Default) {
+                repo.update(validId, draft(1_000_000L + idx * 100_000L, north to null))
+            }
+        }
+        val logoutJob = async(Dispatchers.Default) {
+            account.logout(online = false)
+        }
+
+        val results = writeJobs.awaitAll()
+        logoutJob.await()
+
+        // After logout, subsequent writes MUST fail closed
+        val postLogoutUpdate = repo.update(validId, draft(3_000_000, north to null))
+        assertTrue("Write after logout must fail closed: $postLogoutUpdate", postLogoutUpdate is AppResult.Failure)
+        val postLogoutDelete = repo.delete(validId)
+        assertTrue("Delete after logout must fail closed: $postLogoutDelete", postLogoutDelete is AppResult.Failure)
+        val postLogoutYield = repo.recordYield(validId, YieldDraft(day, 2_000, null))
+        assertTrue("Yield after logout must fail closed: $postLogoutYield", postLogoutYield is AppResult.Failure)
+
+        // Zero additional outbox operations created by failed/post-logout calls
+        val finalRow = db.deliveryDao().findById(validId)!!
+        assertNull("Delivery must not be deleted", finalRow.metadata.deletedAt)
+        assertNotEquals("Net grams must not be updated to post-logout value", 3_000_000L, finalRow.netGrams)
+    }
+
+    @Test
+    fun realRepositoriesConcurrentWorkspaceSelectionFailsClosedWithoutCrossContamination() = runBlocking {
+        val delegate = SimulatedAccountAuthApi()
+        val api = object : AccountAuthApi by delegate {
+            override val simulated = false
+            override suspend fun signIn(email: String, password: String) =
+                delegate.signIn(email, password).let {
+                    com.isivoltpro.maginaolivo.feature.account.AuthSession(
+                        it.userId, it.email, it.accessToken, it.refreshToken, now.plusSeconds(3600),
+                    )
+                }
+        }
+        val account = AccountRepository(api, MemoryAccountSessionStore(), { now })
+        account.login("workspaces@example.test", "password42", online = true)
+        val userId = account.state.value.userId!!
+
+        // Set owner of workspace 1
+        db.openHelper.writableDatabase.execSQL(
+            "UPDATE workspaces SET owner_user_id = ? WHERE id = ?",
+            arrayOf(userId.toString(), workspaceId.toString()),
+        )
+        // Create workspace 2 and its own farm
+        val workspace2Id = UUID.fromString("10000000-0000-0000-0000-0000000000d2")
+        db.openHelper.writableDatabase.execSQL(
+            "INSERT INTO workspaces (id,name,owner_user_id,country_code,timezone,locale,currency,created_at,updated_at,version,sync_status) VALUES (?, 'Segundo olivar', ?, 'ES', 'Europe/Madrid', 'es-ES', 'EUR', 1000, 1000, 1, 'PENDING')",
+            arrayOf(workspace2Id.toString(), userId.toString()),
+        )
+        val farm2Id = UUID.fromString("20000000-0000-0000-0000-0000000000d2")
+        db.openHelper.writableDatabase.execSQL(
+            "INSERT INTO farms (id,workspace_id,name,status,created_at,updated_at,version,sync_status) VALUES (?, ?, 'Finca 2', 'ACTIVE', 1000, 1000, 1, 'PENDING')",
+            arrayOf(farm2Id.toString(), workspace2Id.toString()),
+        )
+
+        val file = File(context.noBackupFilesDir, "real-selection-${UUID.randomUUID()}.json")
+        val store = AndroidFarmLinkLedger(file)
+        val links = LocalFarmLinkRepository(context, db, account, "fixture-project", store)
+        linkedFixtureCleanup.add {
+            store.read()?.consents?.forEach {
+                File(context.noBackupFilesDir, "account-link-backups/${it.backupId}").deleteRecursively()
+            }
+            listOf(file, File(file.path + ".bak"), File(file.path + ".new")).forEach { it.delete() }
+        }
+        links.consent(userId, links.choices().filter { it.id in setOf(farmId, farm2Id) }, true)
+
+        val remoteSelection = WorkspaceAuthorizationRemote { session ->
+            """{"contract_version":1,"issuer":"fixture-project/auth/v1","subject":"${session.userId}","verified_at":"$now","token_expires_at":"${now.plusSeconds(3600)}","workspaces":[{"id":"$workspaceId","name":"Olivo 1","role":"OWNER","permissions":["read","write","manage_members"],"grant_version":1,"authorization_expires_at":"${now.plusSeconds(900)}"},{"id":"$workspace2Id","name":"Olivo 2","role":"OWNER","permissions":["read","write","manage_members"],"grant_version":1,"authorization_expires_at":"${now.plusSeconds(900)}"}]}"""
+        }
+
+        val workspaceRepo = LocalWorkspaceRepository(
+            db, FixedClock(now), RandomIds, TestDispatchers, RegionalContext.spainDefault(),
+            account, "fixture-project", remoteSelection,
+        )
+        assertTrue(workspaceRepo.selectWorkspace(workspaceId) is AppResult.Success)
+
+        val repo = OfflineFirstDeliveryRepository(
+            db, FixedClock(now), RandomIds, TestDispatchers,
+            workspaceRepository = workspaceRepo,
+            writeScope = links,
+            zoneId = { ZoneOffset.UTC },
+        )
+
+        val deliveryW1 = ok(repo.create(draft(1_000_000, north to null)))
+
+        // Concurrently run updates on deliveryW1 while switching workspace selection to workspace2Id
+        val updateJobs = (1..5).map { idx ->
+            async(Dispatchers.Default) {
+                repo.update(deliveryW1, draft(1_000_000L + idx * 50_000L, north to null))
+            }
+        }
+        val selectJob = async(Dispatchers.Default) {
+            workspaceRepo.selectWorkspace(workspace2Id)
+        }
+
+        updateJobs.awaitAll()
+        selectJob.await()
+
+        // Once workspace 2 is selected, operations on workspace 1 delivery MUST fail closed with context mismatch
+        val resultAfterSwitch = repo.update(deliveryW1, draft(2_500_000, north to null))
+        assertTrue("Update after switching to workspace 2 must fail closed: $resultAfterSwitch", resultAfterSwitch is AppResult.Failure)
+        val deleteAfterSwitch = repo.delete(deliveryW1)
+        assertTrue("Delete after switching to workspace 2 must fail closed: $deleteAfterSwitch", deleteAfterSwitch is AppResult.Failure)
+
+        // Deliveries in workspace 1 must not be modified after selection switch
+        val currentW1 = db.deliveryDao().findById(deliveryW1)!!
+        assertNull("Delivery must not be deleted", currentW1.metadata.deletedAt)
+        assertNotEquals("Net grams must not be updated after workspace switch", 2_500_000L, currentW1.netGrams)
+        assertEquals("Workspace ID must remain workspace 1", workspaceId, currentW1.workspaceId)
+    }
+
+    @Test
+    fun realRepositoriesConcurrentAuthorizationRenewalDoesNotDeadlockOrInvertLocks() = runBlocking {
+        val delegate = SimulatedAccountAuthApi()
+        val api = object : AccountAuthApi by delegate {
+            override val simulated = false
+            override suspend fun signIn(email: String, password: String) =
+                delegate.signIn(email, password).let {
+                    com.isivoltpro.maginaolivo.feature.account.AuthSession(
+                        it.userId, it.email, it.accessToken, it.refreshToken, now.plusSeconds(3600),
+                    )
+                }
+        }
+        val account = AccountRepository(api, MemoryAccountSessionStore(), { now })
+        account.login("auth-renewal@example.test", "password42", online = true)
+        val userId = account.state.value.userId!!
+
+        db.openHelper.writableDatabase.execSQL(
+            "UPDATE workspaces SET owner_user_id = ? WHERE id = ?",
+            arrayOf(userId.toString(), workspaceId.toString()),
+        )
+        val file = File(context.noBackupFilesDir, "real-renewal-${UUID.randomUUID()}.json")
+        val store = AndroidFarmLinkLedger(file)
+        val links = LocalFarmLinkRepository(context, db, account, "fixture-project", store)
+        linkedFixtureCleanup.add {
+            store.read()?.consents?.forEach {
+                File(context.noBackupFilesDir, "account-link-backups/${it.backupId}").deleteRecursively()
+            }
+            listOf(file, File(file.path + ".bak"), File(file.path + ".new")).forEach { it.delete() }
+        }
+        links.consent(userId, links.choices().filter { it.id == farmId }, true)
+
+        val remote = WorkspaceAuthorizationRemote { session ->
+            kotlinx.coroutines.delay(20)
+            """{"contract_version":1,"issuer":"fixture-project/auth/v1","subject":"${session.userId}","verified_at":"$now","token_expires_at":"${now.plusSeconds(3600)}","workspaces":[{"id":"$workspaceId","name":"Mi Olivar","role":"OWNER","permissions":["read","write","manage_members"],"grant_version":1,"authorization_expires_at":"${now.plusSeconds(900)}"}]}"""
+        }
+
+        val workspaceRepo = LocalWorkspaceRepository(
+            db, FixedClock(now), RandomIds, TestDispatchers, RegionalContext.spainDefault(),
+            account, "fixture-project", remote,
+        )
+        workspaceRepo.selectWorkspace(workspaceId)
+
+        val repo = OfflineFirstDeliveryRepository(
+            db, FixedClock(now), RandomIds, TestDispatchers,
+            workspaceRepository = workspaceRepo,
+            writeScope = links,
+            zoneId = { ZoneOffset.UTC },
+        )
+
+        val id = ok(repo.create(draft(1_000_000, north to null)))
+
+        // Concurrently run refreshAuthorizations (acquires network -> local) and multiple delivery writes (acquires local -> Room)
+        val refreshJob = async(Dispatchers.Default) {
+            workspaceRepo.refreshAuthorizations()
+        }
+        val writeJobs = (1..6).map { idx ->
+            async(Dispatchers.Default) {
+                repo.update(id, draft(1_000_000L + idx * 10_000L, north to null))
+            }
+        }
+
+        val refreshResult = refreshJob.await()
+        val writeResults = writeJobs.awaitAll()
+
+        // Verification: ZERO deadlocks! Both completed!
+        assertTrue("Authorization refresh must succeed: $refreshResult", refreshResult is AppResult.Success)
+        assertTrue("At least one write must succeed cleanly: $writeResults", writeResults.any { it is AppResult.Success })
+
+        // No corruption or unexpected state
+        val current = db.deliveryDao().findById(id)!!
+        assertTrue(current.netGrams > 1_000_000L)
     }
 }

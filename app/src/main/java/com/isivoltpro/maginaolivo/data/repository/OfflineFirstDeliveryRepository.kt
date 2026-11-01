@@ -27,6 +27,7 @@ import com.isivoltpro.maginaolivo.domain.harvest.HarvestAllocation
 import com.isivoltpro.maginaolivo.domain.harvest.HarvestContext
 import com.isivoltpro.maginaolivo.domain.harvest.HarvestParcelOption
 import com.isivoltpro.maginaolivo.domain.workspace.WorkspaceRepository
+import com.isivoltpro.maginaolivo.feature.account.AuthFailure
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
@@ -121,12 +122,12 @@ class OfflineFirstDeliveryRepository(
             )
         }.flowOn(dispatchers.io)
 
-    override suspend fun create(draft: DeliveryDraft): AppResult<UUID> =
+    override suspend fun create(draft: DeliveryDraft): AppResult<UUID> = safeWrite {
+        val active = when (val result = workspaceScope.resolve()) {
+            is AppResult.Failure -> return@safeWrite result
+            is AppResult.Success -> result.value
+        }
         writeScope.withAccount(draft.farmId) { accountId ->
-            val active = when (val result = workspaceScope.resolve()) {
-                is AppResult.Failure -> return@withAccount result
-                is AppResult.Success -> result.value
-            }
             inTransaction("create_delivery") {
                 val farm = database.farmDao().findById(draft.farmId)
                     ?: return@inTransaction AppResult.Failure(AppError.NotFound("farm"))
@@ -137,13 +138,14 @@ class OfflineFirstDeliveryRepository(
                 )
             }
         }
+    }
 
-    override suspend fun update(id: UUID, draft: DeliveryDraft): AppResult<Unit> =
+    override suspend fun update(id: UUID, draft: DeliveryDraft): AppResult<Unit> = safeWrite {
+        val active = when (val result = workspaceScope.resolve()) {
+            is AppResult.Failure -> return@safeWrite result
+            is AppResult.Success -> result.value
+        }
         writeScope.withAccount(draft.farmId) { accountId ->
-            val active = when (val result = workspaceScope.resolve()) {
-                is AppResult.Failure -> return@withAccount result
-                is AppResult.Success -> result.value
-            }
             inTransaction("update_delivery") {
                 val fresh = database.deliveryDao().findById(id)?.takeIf { it.metadata.deletedAt == null }
                     ?: return@inTransaction AppResult.Failure(AppError.NotFound("delivery"))
@@ -153,16 +155,17 @@ class OfflineFirstDeliveryRepository(
                 AppResult.Success(Unit)
             }
         }
+    }
 
-    override suspend fun delete(id: UUID): AppResult<Unit> {
+    override suspend fun delete(id: UUID): AppResult<Unit> = safeWrite {
+        val active = when (val result = workspaceScope.resolve()) {
+            is AppResult.Failure -> return@safeWrite result
+            is AppResult.Success -> result.value
+        }
         val current = withContext(dispatchers.io) {
             database.deliveryDao().findById(id)
-        } ?: return AppResult.Failure(AppError.NotFound("delivery"))
-        return writeScope.withAccount(current.farmId) { _ ->
-            val active = when (val result = workspaceScope.resolve()) {
-                is AppResult.Failure -> return@withAccount result
-                is AppResult.Success -> result.value
-            }
+        } ?: return@safeWrite AppResult.Failure(AppError.NotFound("delivery"))
+        writeScope.withAccount(current.farmId) { _ ->
             inTransaction("delete_delivery") {
                 val fresh = database.deliveryDao().findById(id) ?: return@inTransaction AppResult.Success(Unit)
                 if (fresh.metadata.deletedAt != null) return@inTransaction AppResult.Success(Unit)
@@ -183,20 +186,20 @@ class OfflineFirstDeliveryRepository(
         }
     }
 
-    override suspend fun recordYield(deliveryId: UUID, draft: YieldDraft): AppResult<UUID> {
+    override suspend fun recordYield(deliveryId: UUID, draft: YieldDraft): AppResult<UUID> = safeWrite {
+        val active = when (val result = workspaceScope.resolve()) {
+            is AppResult.Failure -> return@safeWrite result
+            is AppResult.Success -> result.value
+        }
         val delivery = withContext(dispatchers.io) {
             database.deliveryDao().findById(deliveryId)?.takeIf { it.metadata.deletedAt == null }
-        } ?: return AppResult.Failure(AppError.NotFound("delivery"))
+        } ?: return@safeWrite AppResult.Failure(AppError.NotFound("delivery"))
         YieldRules.validate(draft, today(delivery.workspaceId))
-            ?.let { return AppResult.Failure(AppError.Validation(it.field, it.code)) }
+            ?.let { return@safeWrite AppResult.Failure(AppError.Validation(it.field, it.code)) }
         if (draft.analysisDate?.isBefore(delivery.deliveryDate) == true) {
-            return AppResult.Failure(AppError.Validation("analysisDate", "before_delivery"))
+            return@safeWrite AppResult.Failure(AppError.Validation("analysisDate", "before_delivery"))
         }
-        return writeScope.withAccount(delivery.farmId) { _ ->
-            val active = when (val result = workspaceScope.resolve()) {
-                is AppResult.Failure -> return@withAccount result
-                is AppResult.Success -> result.value
-            }
+        writeScope.withAccount(delivery.farmId) { _ ->
             inTransaction("record_yield") {
                 val freshDelivery = database.deliveryDao().findById(deliveryId)?.takeIf { it.metadata.deletedAt == null }
                     ?: return@inTransaction AppResult.Failure(AppError.NotFound("delivery"))
@@ -238,15 +241,15 @@ class OfflineFirstDeliveryRepository(
         }
     }
 
-    override suspend fun removeYield(deliveryId: UUID): AppResult<Unit> {
+    override suspend fun removeYield(deliveryId: UUID): AppResult<Unit> = safeWrite {
+        val active = when (val result = workspaceScope.resolve()) {
+            is AppResult.Failure -> return@safeWrite result
+            is AppResult.Success -> result.value
+        }
         val delivery = withContext(dispatchers.io) {
             database.deliveryDao().findById(deliveryId)?.takeIf { it.metadata.deletedAt == null }
-        } ?: return AppResult.Failure(AppError.NotFound("delivery"))
-        return writeScope.withAccount(delivery.farmId) { _ ->
-            val active = when (val result = workspaceScope.resolve()) {
-                is AppResult.Failure -> return@withAccount result
-                is AppResult.Success -> result.value
-            }
+        } ?: return@safeWrite AppResult.Failure(AppError.NotFound("delivery"))
+        writeScope.withAccount(delivery.farmId) { _ ->
             inTransaction("remove_yield") {
                 val freshDelivery = database.deliveryDao().findById(deliveryId)?.takeIf { it.metadata.deletedAt == null }
                     ?: return@inTransaction AppResult.Failure(AppError.NotFound("delivery"))
@@ -263,6 +266,13 @@ class OfflineFirstDeliveryRepository(
             }
         }
     }
+
+    private suspend fun <T> safeWrite(block: suspend () -> AppResult<T>): AppResult<T> =
+        try {
+            block()
+        } catch (e: AuthFailure) {
+            AppResult.Failure(AppError.Permission("No hay sesión activa"))
+        }
 
     private suspend fun tombstone(analysis: DeliveryYieldAnalysisEntity, now: Instant) {
         database.deliveryDao().upsertAnalysis(analysis.copy(metadata = analysis.metadata.next(now).copy(deletedAt = now)))

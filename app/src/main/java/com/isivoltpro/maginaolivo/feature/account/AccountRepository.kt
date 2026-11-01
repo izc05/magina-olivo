@@ -15,9 +15,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.coroutineContext
 
 /** No agricultural repository, database, file store or outbox is a dependency. */
 class AccountRepository(private val api: AccountAuthApi?, private val store: AccountSessionStore = MemoryAccountSessionStore(),
@@ -34,45 +31,36 @@ class AccountRepository(private val api: AccountAuthApi?, private val store: Acc
     private val network = Mutex()
     private val local = Mutex()
 
-    private class LocalLockContext : CoroutineContext.Element {
-        companion object Key : CoroutineContext.Key<LocalLockContext>
-        override val key: CoroutineContext.Key<*> = Key
-    }
-
-    private suspend fun <T> withLocalLock(block: suspend () -> T): T {
-        if (coroutineContext[LocalLockContext] != null) {
-            return block()
-        }
-        return local.withLock {
-            withContext(LocalLockContext()) {
-                block()
-            }
-        }
-    }
-
     @Volatile private var record: AccountRecord? = null
     private var generation = 0L
     private val inFlight = java.util.concurrent.atomic.AtomicInteger()
     // This repository is the process Auth owner; a recreated Activity must not cancel exchange.
     private val callbackScope=CoroutineScope(SupervisorJob()+Dispatchers.IO)
+
+    init {
+        record = try { store.read() } catch (_: Exception) { AccountRecord() }
+        publish()
+    }
+
     fun receiveLink(url:String,online:Boolean) = callbackScope.launch { completeLink(url,online) }
     fun requestLogout(online:Boolean) = callbackScope.launch { logout(online) }
     /** Cached identity from the Auth owner. Offline use is valid only before token expiry. */
-    suspend fun workspaceSession(): WorkspaceSession = withLocalLock {
-        val current = current()
-        if (api == null || current.recovery != null || api.simulated) return@withLocalLock WorkspaceSession.SignedOut
-        val session = current.session ?: return@withLocalLock WorkspaceSession.SignedOut
+    fun workspaceSession(): WorkspaceSession {
+        if (api == null || api.simulated) return WorkspaceSession.SignedOut
+        val current = record ?: return WorkspaceSession.SignedOut
+        if (current.recovery != null) return WorkspaceSession.SignedOut
+        val session = current.session ?: return WorkspaceSession.SignedOut
         val isExpired = !session.expiresAt.isAfter(now())
-        if (isExpired && mutable.value.online) WorkspaceSession.Expired
+        return if (isExpired && mutable.value.online) WorkspaceSession.Expired
         else WorkspaceSession.Authenticated(session.userId)
     }
-    internal suspend fun <T> withCachedLocalAccess(action: suspend (java.util.UUID?) -> T): T = withLocalLock {
+    internal suspend fun <T> withCachedLocalAccess(action: suspend (java.util.UUID?) -> T): T = local.withLock {
         action(if(api?.simulated==true) null else current().session?.userId)
     }
 
     /** Local attribution only, not fresh Auth or permission to send. Do not retry the action.
      * Never waits for Auth HTTP: only logout/account replacement and other local writes exclude it. */
-    internal suspend fun <T> withLocalWriteIdentity(action: suspend (java.util.UUID?) -> T): T = withLocalLock {
+    internal suspend fun <T> withLocalWriteIdentity(action: suspend (java.util.UUID?) -> T): T = local.withLock {
         val id = try { if (api == null || api.simulated) null else current().session?.userId }
         catch (e: CancellationException) { throw e }
         catch (_: Exception) { null }
@@ -82,7 +70,7 @@ class AccountRepository(private val api: AccountAuthApi?, private val store: Acc
     suspend fun resume(online: Boolean) {
         if(api==null) { mutable.value=mutable.value.copy(online=online);return }
         operation(online,false) { start ->
-        val current = withLocalLock { current().session } ?: return@operation
+        val current = local.withLock { current().session } ?: return@operation
         if (!online) return@operation
         var expected = start
         try {
@@ -101,7 +89,7 @@ class AccountRepository(private val api: AccountAuthApi?, private val store: Acc
     }
     fun clearNotice() { mutable.value=mutable.value.copy(error=null,message=null) }
     /** Serializes local consent with logout/account replacement; recovery tokens are excluded. */
-    internal suspend fun <T> withLocalIdentity(requireFresh: Boolean = true, action: suspend (java.util.UUID) -> T): T = withLocalLock {
+    internal suspend fun <T> withLocalIdentity(requireFresh: Boolean = true, action: suspend (java.util.UUID) -> T): T = local.withLock {
         if (requireApi().simulated) throw AuthFailure(AuthFailure.Kind.PROTOCOL)
         val identity = current().session ?: throw AuthFailure(AuthFailure.Kind.CREDENTIALS)
         if (requireFresh && !identity.expiresAt.isAfter(now())) throw AuthFailure(AuthFailure.Kind.EXPIRED)
@@ -119,13 +107,13 @@ class AccountRepository(private val api: AccountAuthApi?, private val store: Acc
     ): T = network.withLock {
         val api = requireApi()
         if (api.simulated) throw AuthFailure(AuthFailure.Kind.PROTOCOL)
-        val (start, session) = withLocalLock { generation to current().session }
+        val (start, session) = local.withLock { generation to current().session }
         if (session == null) throw AuthFailure(AuthFailure.Kind.CREDENTIALS)
         if (!session.expiresAt.isAfter(now())) throw AuthFailure(AuthFailure.Kind.EXPIRED)
         val (id, _) = api.user(session)
         if (id != session.userId) throw AuthFailure(AuthFailure.Kind.PROTOCOL)
         val prepared = remote(session)
-        withLocalLock {
+        local.withLock {
             if (generation != start) throw AuthFailure(AuthFailure.Kind.CREDENTIALS)
             commit(id, prepared)
         }
@@ -140,7 +128,7 @@ class AccountRepository(private val api: AccountAuthApi?, private val store: Acc
         notice("Sesión iniciada. Las fincas de este teléfono no se han vinculado a la cuenta.")
     }
     suspend fun register(email: String, password: String, online: Boolean) = operation(online,true) { start ->
-        val normalized = checkedEmail(email);checkedPassword(password);withLocalLock { requireSignedOut() }
+        val normalized = checkedEmail(email);checkedPassword(password);local.withLock { requireSignedOut() }
         val pending = newLink(normalized,LinkPurpose.SIGNUP)
         val expected = commitOrSuperseded(start,AccountRecord(pending=pending)) // Crash-safe before the email can be sent.
         val session = requireApi().signUp(normalized,password,challenge(pending.verifier))
@@ -148,14 +136,14 @@ class AccountRepository(private val api: AccountAuthApi?, private val store: Acc
         else notice(if(requireApi().simulated) "Simulación: confirmación preparada; no se envía correo." else "Revisa tu correo y abre el enlace en este dispositivo para confirmar el registro.")
     }
     suspend fun requestRecovery(email: String, online: Boolean) = operation(online,true) { start ->
-        val normalized = checkedEmail(email);withLocalLock { requireSignedOut() }
+        val normalized = checkedEmail(email);local.withLock { requireSignedOut() }
         val pending = newLink(normalized,LinkPurpose.RECOVERY)
         commitOrSuperseded(start,AccountRecord(pending=pending))
         requireApi().recover(normalized,challenge(pending.verifier))
         notice(if(requireApi().simulated) "Simulación: recuperación preparada; no se envía correo." else "Si existe esa cuenta, recibirás un enlace. Ábrelo en este dispositivo para elegir una nueva contraseña.")
     }
     suspend fun completeLink(url: String, online: Boolean) = operation(online,true) { start ->
-        val snapshot = withLocalLock { current() }
+        val snapshot = local.withLock { current() }
         val pending = snapshot.pending ?: throw AuthFailure(AuthFailure.Kind.EXPIRED)
         if (pending.createdAt.isAfter(now()) || !pending.createdAt.plusSeconds(3600).isAfter(now())) throw AuthFailure(AuthFailure.Kind.EXPIRED)
         val code = callbackCode(url)
@@ -169,7 +157,7 @@ class AccountRepository(private val api: AccountAuthApi?, private val store: Acc
     }
     suspend fun updatePassword(password: String, online: Boolean) = operation(online,true) { start ->
         checkedPassword(password)
-        val recovery = withLocalLock { current().recovery } ?: throw AuthFailure(AuthFailure.Kind.EXPIRED)
+        val recovery = local.withLock { current().recovery } ?: throw AuthFailure(AuthFailure.Kind.EXPIRED)
         if (!recovery.expiresAt.isAfter(now())) throw AuthFailure(AuthFailure.Kind.EXPIRED)
         requireApi().changePassword(recovery,password)
         val revoked = revoke(recovery)
@@ -180,7 +168,7 @@ class AccountRepository(private val api: AccountAuthApi?, private val store: Acc
      * late result is discarded by the generation check. Remote revocation happens afterwards. */
     suspend fun logout(online: Boolean) = busy(online) {
         try {
-            val previous = withLocalLock {
+            val previous = local.withLock {
                 val previous = runCatching { current().session ?: current().recovery }.getOrNull()
                 persist(null);publish()
                 previous
@@ -199,7 +187,7 @@ class AccountRepository(private val api: AccountAuthApi?, private val store: Acc
         busy(online) {
             try {
                 requireApi()
-                val start = withLocalLock { current();generation }
+                val start = local.withLock { current();generation }
                 if(network && !online) throw AuthFailure(AuthFailure.Kind.NETWORK)
                 block(start)
             } catch(e: CancellationException) { throw e }
@@ -214,14 +202,14 @@ class AccountRepository(private val api: AccountAuthApi?, private val store: Acc
         try { return block() }
         finally {
             val remaining = inFlight.decrementAndGet()
-            withLocalLock { publish() }
+            local.withLock { publish() }
             mutable.value=mutable.value.copy(busy=remaining>0)
         }
     }
     /** An Auth result that started from an identity generation that is no longer current. */
     private class SupersededAuthResult : Exception()
     /** Persists [value] (null clears) only if no identity change happened since [expected]. */
-    private suspend fun commitOrSuperseded(expected: Long, value: AccountRecord?): Long = withLocalLock {
+    private suspend fun commitOrSuperseded(expected: Long, value: AccountRecord?): Long = local.withLock {
         if (generation != expected) throw SupersededAuthResult()
         persist(value) // Published when the operation completes: intermediate states are not navigation signals.
         generation

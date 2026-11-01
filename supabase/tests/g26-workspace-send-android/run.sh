@@ -8,7 +8,10 @@ command -v openssl >/dev/null
 command -v adb >/dev/null
 docker info >/dev/null
 work="$(mktemp -d)"
-project="magina-g26-ws-send-https-$(date +%s)-$$"
+# Supabase CLI truncates project IDs to 40 characters when naming containers; a longer ID breaks
+# every `docker exec supabase_db_$project` (a 5-digit PID made the #797 fixture fail after #798's run).
+project="mg26-ws-https-$(date +%s)-$$"
+if (( ${#project} > 40 )); then echo "Project ID longer than 40 characters: ${#project}" >&2; exit 1; fi
 server_pid=''
 cleanup() {
   local status=$?

@@ -132,4 +132,35 @@ class AccountRepositoryTest {
         val repo=AccountRepository(api,store,{time});repo.resume(true)
         assertEquals(AccountStatus.SIGNED_IN,repo.state.value.status);assertEquals("nuevo@example.com",store.read().session!!.email)
     }
+    @Test fun workspaceSessionReadsAreLockFreeAndConsistentDuringConcurrentLoginLogoutAndTokenRefresh() = kotlinx.coroutines.runBlocking {
+        val api=Api();val store=MemoryAccountSessionStore();val repo=AccountRepository(api,store,{time})
+        val stopSignal = java.util.concurrent.atomic.AtomicBoolean(false)
+        val readCount = java.util.concurrent.atomic.AtomicInteger(0)
+        kotlinx.coroutines.coroutineScope {
+            val readers = (1..6).map {
+                launch(kotlinx.coroutines.Dispatchers.Default) {
+                    while (!stopSignal.get()) {
+                        val s = repo.workspaceSession()
+                        assertTrue(s is WorkspaceSession.Authenticated || s is WorkspaceSession.SignedOut || s is WorkspaceSession.Expired)
+                        readCount.incrementAndGet()
+                    }
+                }
+            }
+            val writer = launch(kotlinx.coroutines.Dispatchers.Default) {
+                repeat(3) {
+                    repo.login("qa@example.com", "password42", true)
+                    repo.logout(false)
+                    repo.login("qa@example.com", "password42", true)
+                    repo.resume(true)
+                    repo.logout(true)
+                }
+                stopSignal.set(true)
+            }
+            writer.join()
+            readers.forEach { it.join() }
+        }
+        assertTrue(readCount.get() >= 100)
+        assertEquals(AccountStatus.SIGNED_OUT, repo.state.value.status)
+        assertTrue(repo.workspaceSession() is WorkspaceSession.SignedOut)
+    }
 }

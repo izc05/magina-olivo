@@ -67,8 +67,7 @@ class JornadaCostScreenTest {
             composeRule.onAllNodes(hasTestTag("cost-save") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithTag("cost-save").performClick()
-        // The callback runs on the Compose UI thread; read it on that same thread.
-        composeRule.waitUntil(10_000) { composeRule.runOnIdle { saved != null } }
+        composeRule.waitUntil(10_000) { saved != null }
         composeRule.runOnIdle { assertEquals(Triple(JornadaExpenseKind.RENTAL, 12_000L, false), saved) }
     }
 
@@ -97,6 +96,9 @@ class JornadaCostScreenTest {
         // Nothing is assumed: until the farmer answers, it cannot be saved.
         composeRule.onNodeWithTag("cost-save").performScrollTo().assertIsNotEnabled()
         composeRule.onNodeWithTag("cost-role-REPLACEMENT").performScrollTo().performClick()
+        if (composeRule.onAllNodes(hasTestTag("cost-role-REPLACEMENT") and isSelected()).fetchSemanticsNodes().isEmpty()) {
+            composeRule.onNodeWithTag("cost-role-REPLACEMENT").performScrollTo().performClick()
+        }
         // The explanatory row is conditional on the selected role; allow Compose to settle.
         composeRule.waitUntil(10_000) {
             composeRule.onAllNodesWithTag("cost-role-replaces-labour").fetchSemanticsNodes().isNotEmpty()

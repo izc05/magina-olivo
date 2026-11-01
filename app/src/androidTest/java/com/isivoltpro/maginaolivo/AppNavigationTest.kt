@@ -1386,7 +1386,12 @@ class AppNavigationTest {
      * no scrollable ancestor, and plenty of these nodes do not.
      */
     private fun clickByTag(tag: String) {
-        waitForNodeOrDump("clickable node <$tag>") { composeRule.onAllNodesWithTag(tag) }
+        waitForNodeOrDump("clickable node <$tag>") {
+            if (composeRule.onAllNodesWithTag(tag).fetchSemanticsNodes().isEmpty()) {
+                revealInFarmList(tag)
+            }
+            composeRule.onAllNodesWithTag(tag)
+        }
         // A control can be composed before the screen behind it finishes loading, and
         // stays disabled until it does. Wait for that, bounded; the assertion below still
         // fails loudly if it never becomes enabled.

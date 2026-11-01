@@ -165,8 +165,13 @@ BEGIN
         IF saved.entity_type<>entity OR saved.entity_id<>p_parcel_id OR saved.payload_hash<>payload_hash THEN
             RAISE EXCEPTION 'parcel conflict: RECEIPT_CONFLICT' USING ERRCODE='23505';
         END IF;
-        -- A replay re-checks today's authority over the farm the payload names.
-        IF p_kind='ARCHIVE' THEN
+        -- A replay re-checks today's authority over the farm involved: the one the payload names, or for
+        -- UPDATE the farm of the current membership (the most recent one if the parcel was archived since).
+        IF p_kind='UPDATE' THEN
+            SELECT * INTO membership FROM public.farm_parcel_memberships WHERE parcel_id=p_parcel_id AND deleted_at IS NULL
+                ORDER BY (valid_until IS NULL) DESC,magina_g2_private.moment_key(valid_from,valid_from_exact) DESC,id LIMIT 1;
+            PERFORM magina_g2_private.lock_owned_farm(membership.farm_id,workspace,actor);
+        ELSIF p_kind='ARCHIVE' THEN
             SELECT * INTO membership FROM public.farm_parcel_memberships WHERE id=open_id AND parcel_id=p_parcel_id;
             PERFORM magina_g2_private.lock_owned_farm(membership.farm_id,workspace,actor);
             touched:=jsonb_build_array(jsonb_build_object('id',membership.id,'version',membership.version));

@@ -315,14 +315,19 @@ test('a deleted target or current farm, or a deleted workspace, refuses the muta
   const ws=await workspace(actors.A), home=await farm(actors.A,ws), gone=await farm(actors.A,ws,'Finca vendida');
   const p=await parcel(actors.A,ws,home), q2=await parcel(actors.A,ws,gone);
   const op=randomUUID(), body={archivedAt:'2026-03-01T00:00:00Z',closeMembershipId:p.membership};
+  const edit=randomUUID(), edited=fields({displayName:'Antes de vender'});
   assert.equal((await archive(actors.A,op,p.id,1,body)).status,200);
+  assert.equal((await update(actors.A,edit,q2.id,1,edited)).status,200);
+  assert.equal((await update(actors.A,edit,q2.id,1,edited)).data.idempotent,true);
   sql(`UPDATE public.farms SET deleted_at=now() WHERE id=${q(gone)}::uuid;`);
-  assert.equal((await update(actors.A,randomUUID(),q2.id,1,fields())).status,403);
+  assert.equal((await update(actors.A,randomUUID(),q2.id,2,fields())).status,403);
+  // UPDATE replays re-check the current farm too, like ARCHIVE and RESTORE.
+  assert.equal((await update(actors.A,edit,q2.id,1,edited)).status,403);
   assert.equal((await restore(actors.A,randomUUID(),p.id,2,restoreBody(gone,'2026-04-01T00:00:00Z'))).status,403);
   sql(`UPDATE public.farms SET deleted_at=now() WHERE id=${q(home)}::uuid;`);
   assert.equal((await archive(actors.A,op,p.id,1,body)).status,403);
   sql(`UPDATE public.workspaces SET deleted_at=now() WHERE id=${q(ws)}::uuid;`);
-  assert.equal((await update(actors.A,randomUUID(),q2.id,1,fields())).status,403);
+  assert.equal((await update(actors.A,randomUUID(),q2.id,2,fields())).status,403);
   assert.equal((await receipt(actors.A,op)).data.confirmed_receipts.length,1);
 });
 

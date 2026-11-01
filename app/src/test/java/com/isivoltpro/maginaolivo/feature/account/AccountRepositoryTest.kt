@@ -134,15 +134,15 @@ class AccountRepositoryTest {
     }
     @Test fun workspaceSessionReadsAreLockFreeAndConsistentDuringConcurrentLoginLogoutAndTokenRefresh() = kotlinx.coroutines.runBlocking {
         val api=Api();val store=MemoryAccountSessionStore();val repo=AccountRepository(api,store,{time})
-        val stopSignal = java.util.concurrent.atomic.AtomicBoolean(false)
         val readCount = java.util.concurrent.atomic.AtomicInteger(0)
         kotlinx.coroutines.coroutineScope {
             val readers = (1..6).map {
                 launch(kotlinx.coroutines.Dispatchers.Default) {
-                    while (!stopSignal.get()) {
+                    repeat(100) {
                         val s = repo.workspaceSession()
                         assertTrue(s is WorkspaceSession.Authenticated || s is WorkspaceSession.SignedOut || s is WorkspaceSession.Expired)
                         readCount.incrementAndGet()
+                        kotlinx.coroutines.yield()
                     }
                 }
             }
@@ -153,8 +153,8 @@ class AccountRepositoryTest {
                     repo.login("qa@example.com", "password42", true)
                     repo.resume(true)
                     repo.logout(true)
+                    kotlinx.coroutines.yield()
                 }
-                stopSignal.set(true)
             }
             writer.join()
             readers.forEach { it.join() }

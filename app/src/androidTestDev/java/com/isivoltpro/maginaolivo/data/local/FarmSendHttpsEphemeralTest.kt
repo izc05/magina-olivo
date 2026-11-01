@@ -203,19 +203,21 @@ class FarmSendHttpsEphemeralTest {
         } finally { a.close() }
 
         // Device B: empty Room, same account; receives the same farm UUIDs and the staged content.
+        // Device B has its own session for the same account; A's repository was logged out above.
+        val (deviceB, _) = account(session)
         val b = MaginaOlivoDatabase.create(context, names[1])
         try {
             b.workspaceAuthorizationCacheDao().upsert(WorkspaceAuthorizationCacheEntity(issuer, actor.toString(), authorizations.list(session)))
-            val received = ParentReceiveCoordinator(b, account, issuer, parents).receive(workspace)
+            val received = ParentReceiveCoordinator(b, deviceB, issuer, parents).receive(workspace)
             assertEquals(ParentReceiveOutcome.IMPORTED, received.outcome)
             assertEquals(3, received.inserted)
             assertEquals("Finca Norte", b.farmDao().findById(farm)?.name)
             assertEquals("Finca Sur", b.farmDao().findById(edited)?.name)
             assertEquals(SyncStatus.SYNCED, b.farmDao().findById(farm)?.metadata?.syncStatus)
             assertEquals(listOf(1, 2, 0), counts(b))
-            assertTrue(selector(b, account).selectWorkspace(workspace) is AppResult.Success)
+            assertTrue(selector(b, deviceB).selectWorkspace(workspace) is AppResult.Success)
             assertEquals(ParentReceiveOutcome.ALREADY_CURRENT,
-                ParentReceiveCoordinator(b, account, issuer, parents).receive(workspace).outcome)
+                ParentReceiveCoordinator(b, deviceB, issuer, parents).receive(workspace).outcome)
         } finally { b.close() }
 
         // C: cannot receive A's farms, cannot create one in A's workspace, cannot take A's farm UUID.

@@ -271,6 +271,8 @@ class ParcelArchiveCausalOrderRoomTest {
             SyncOutboxEntity(id = UUID.randomUUID(), entityType = type, entityId = id, operation = OutboxOperation.CREATE,
                 payloadVersion = 1, createdAt = now, updatedAt = now).also { db.syncOutboxDao().insert(it) }
         }
+        // Read back: Room stores instants with millisecond precision.
+        val stored = markers.map { db.syncOutboxDao().findById(it.id) }
         assertEquals(AppResult.Success(Unit), parcels().archive(parcel))
         val archive = openParcel(parcel).single()
 
@@ -278,7 +280,8 @@ class ParcelArchiveCausalOrderRoomTest {
         assertEquals(ParcelMutationOutcome.STAGED, sender().stage(archive.id))
         assertEquals(ParcelMutationOutcome.SYNCED, sender().send(archive.id, lease))
         // Not synchronized in G2.6: neither discarded nor confirmed, byte for byte as they were.
-        assertEquals(markers, markers.map { db.syncOutboxDao().findById(it.id) })
+        assertEquals(stored, markers.map { db.syncOutboxDao().findById(it.id) })
+        assertTrue(stored.all { it?.status == OutboxStatus.PENDING && it.accountId == null && it.payloadJson == null })
         assertEquals(parcel, db.harvestDao().listParcels(harvest).single().parcelId)
     }
 

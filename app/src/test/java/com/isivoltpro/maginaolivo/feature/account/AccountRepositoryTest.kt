@@ -163,4 +163,23 @@ class AccountRepositoryTest {
         assertEquals(AccountStatus.SIGNED_OUT, repo.state.value.status)
         assertTrue(repo.workspaceSession() is WorkspaceSession.SignedOut)
     }
+
+    @Test fun brokenStorageOnInitFailsClosedAndThrowsAuthFailureOnAccess() = runTest {
+        val broken = object : AccountSessionStore {
+            override fun read(): AccountRecord = throw AuthFailure(AuthFailure.Kind.STORAGE)
+            override fun write(record: AccountRecord) = Unit
+            override fun clear() = Unit
+        }
+        val api = object : AccountAuthApi by Api() {
+            override val simulated = false
+        }
+        val repo = AccountRepository(api, broken, { time })
+        assertEquals(WorkspaceSession.SignedOut, repo.workspaceSession())
+        try {
+            repo.withCachedLocalAccess { it }
+            fail("Expected AuthFailure")
+        } catch (e: AuthFailure) {
+            assertEquals(AuthFailure.Kind.STORAGE, e.kind)
+        }
+    }
 }

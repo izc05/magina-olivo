@@ -38,8 +38,12 @@ class AccountRepository(private val api: AccountAuthApi?, private val store: Acc
     private val callbackScope=CoroutineScope(SupervisorJob()+Dispatchers.IO)
 
     init {
-        record = try { store.read() } catch (_: Exception) { AccountRecord() }
-        publish()
+        try {
+            record = store.read()
+            publish()
+        } catch (_: Exception) {
+            record = null
+        }
     }
 
     fun receiveLink(url:String,online:Boolean) = callbackScope.launch { completeLink(url,online) }

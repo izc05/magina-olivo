@@ -2882,4 +2882,97 @@ class DeliveryContractTest {
         assertHeadBlocksTheAck("headnet", { _ -> throw java.io.IOException("sin red al leer la HEAD") },
             DispatchOutcome.OUTCOME_UNKNOWN)
     }
+
+    @Test
+    fun concurrentDeletionRevalidatesInsideTransactionAndRejectsStaleUpdate() = runBlocking {
+        val id = ok(deliveries.create(draft(1_500_000, north to null)))
+        val current = db.deliveryDao().findById(id)!!
+
+        // Concurrently mark deleted in database
+        val deletedNow = now.plusSeconds(10)
+        db.deliveryDao().upsert(current.copy(metadata = current.metadata.copy(deletedAt = deletedNow)))
+
+        // 1. Update must re-read fresh delivery inside transaction and return NotFound instead of overwriting
+        val updateResult = deliveries.update(id, draft(1_800_000, north to null))
+        assertTrue("Update on concurrently deleted delivery must fail with NotFound: $updateResult", updateResult is AppResult.Failure)
+        assertEquals(AppError.NotFound("delivery"), (updateResult as AppResult.Failure).error)
+
+        // 2. Record yield must also revalidate and return NotFound
+        val yieldResult = deliveries.recordYield(id, YieldDraft(day, 2_000, null))
+        assertTrue("Record yield on concurrently deleted delivery must fail with NotFound: $yieldResult", yieldResult is AppResult.Failure)
+        assertEquals(AppError.NotFound("delivery"), (yieldResult as AppResult.Failure).error)
+
+        // 3. Delete must be safely idempotent
+        val deleteResult = deliveries.delete(id)
+        assertTrue("Delete on already deleted delivery must succeed idempotently: $deleteResult", deleteResult is AppResult.Success)
+    }
+
+    @Test
+    fun dynamicWorkspaceSwitchRevalidatesActiveScopeAcrossAllOperations() = runBlocking {
+        var activeScope = workspaceId
+        val dynamicWorkspaces = object : WorkspaceRepository {
+            override suspend fun activeWorkspace(): AppResult<UUID> = AppResult.Success(activeScope)
+            override suspend fun ensureLocalWorkspace(): AppResult<UUID> = AppResult.Success(activeScope)
+        }
+        val scopedRepo = OfflineFirstDeliveryRepository(
+            db, FixedClock(now), RandomIds, TestDispatchers,
+            workspaceRepository = dynamicWorkspaces,
+            zoneId = { ZoneOffset.UTC },
+        )
+
+        val id = ok(scopedRepo.create(draft(1_200_000, north to null)))
+        assertEquals(1_200_000L, scopedRepo.observe(id).first()?.netGrams)
+
+        // Switch to a foreign workspace
+        val foreignWorkspace = UUID.randomUUID()
+        activeScope = foreignWorkspace
+
+        // All operations on the delivery from the previous workspace must be rejected
+        assertValidation("workspaceId", scopedRepo.update(id, draft(1_400_000, north to null)))
+        assertValidation("workspaceId", scopedRepo.delete(id))
+        assertValidation("workspaceId", scopedRepo.recordYield(id, YieldDraft(day, 2_100, null)))
+        assertValidation("workspaceId", scopedRepo.removeYield(id))
+        assertNull("Delivery must not be observable in foreign workspace", scopedRepo.observe(id).first())
+
+        // Switch back to original workspace
+        activeScope = workspaceId
+        assertEquals(1_200_000L, scopedRepo.observe(id).first()?.netGrams)
+        assertTrue(scopedRepo.update(id, draft(1_600_000, north to null)) is AppResult.Success)
+        assertEquals(1_600_000L, scopedRepo.observe(id).first()?.netGrams)
+    }
+
+    @Test
+    fun loggedOutOrRevokedSessionFailsClosedWithoutCreatingOutbox() = runBlocking {
+        var signedIn = false
+        val gatedWorkspaces = object : WorkspaceRepository {
+            override suspend fun activeWorkspace(): AppResult<UUID> =
+                if (signedIn) AppResult.Success(workspaceId) else AppResult.Failure(AppError.Permission("No hay sesión activa"))
+            override suspend fun ensureLocalWorkspace(): AppResult<UUID> =
+                if (signedIn) AppResult.Success(workspaceId) else AppResult.Failure(AppError.Permission("No hay sesión activa"))
+        }
+        val gatedRepo = OfflineFirstDeliveryRepository(
+            db, FixedClock(now), RandomIds, TestDispatchers,
+            workspaceRepository = gatedWorkspaces,
+            zoneId = { ZoneOffset.UTC },
+        )
+
+        val outboxBefore = count("sync_outbox")
+        val createResult = gatedRepo.create(draft(1_000_000, north to null))
+        assertTrue("Create while logged out must fail closed: $createResult", createResult is AppResult.Failure)
+        assertEquals(outboxBefore, count("sync_outbox"))
+
+        signedIn = true
+        val validId = ok(gatedRepo.create(draft(1_000_000, north to null)))
+        val outboxAfterCreate = count("sync_outbox")
+        assertTrue(outboxAfterCreate > outboxBefore)
+
+        signedIn = false
+        val updateResult = gatedRepo.update(validId, draft(1_500_000, north to null))
+        assertTrue("Update while logged out must fail closed: $updateResult", updateResult is AppResult.Failure)
+        val deleteResult = gatedRepo.delete(validId)
+        assertTrue("Delete while logged out must fail closed: $deleteResult", deleteResult is AppResult.Failure)
+        val yieldResult = gatedRepo.recordYield(validId, YieldDraft(day, 2_000, null))
+        assertTrue("Yield while logged out must fail closed: $yieldResult", yieldResult is AppResult.Failure)
+        assertEquals(outboxAfterCreate, count("sync_outbox"))
+    }
 }

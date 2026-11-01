@@ -145,7 +145,10 @@ class OfflineFirstDeliveryRepository(
         workspaceScope.mismatch(current.workspaceId)?.let { return it }
         return writeScope.withAccount(draft.farmId) { accountId ->
             inTransaction("update_delivery") {
-                writer.rewrite(current, draft, today(current.workspaceId), clock.nowInstant(), accountId)
+                val fresh = database.deliveryDao().findById(id)?.takeIf { it.metadata.deletedAt == null }
+                    ?: return@inTransaction AppResult.Failure(AppError.NotFound("delivery"))
+                if (fresh.workspaceId != current.workspaceId) return@inTransaction contextMismatch()
+                writer.rewrite(fresh, draft, today(fresh.workspaceId), clock.nowInstant(), accountId)
                 AppResult.Success(Unit)
             }
         }
@@ -157,15 +160,17 @@ class OfflineFirstDeliveryRepository(
         } ?: return AppResult.Failure(AppError.NotFound("delivery"))
         workspaceScope.mismatch(current.workspaceId)?.let { return it }
         return inTransaction("delete_delivery") {
-            if (current.metadata.deletedAt != null) return@inTransaction AppResult.Success(Unit)
-            writer.runningCampaign(current)
+            val fresh = database.deliveryDao().findById(id) ?: return@inTransaction AppResult.Success(Unit)
+            if (fresh.metadata.deletedAt != null) return@inTransaction AppResult.Success(Unit)
+            if (fresh.workspaceId != current.workspaceId) return@inTransaction contextMismatch()
+            writer.runningCampaign(fresh)
             val now = clock.nowInstant()
-            database.deliveryDao().upsert(current.copy(metadata = current.metadata.next(now).copy(deletedAt = now)))
+            database.deliveryDao().upsert(fresh.copy(metadata = fresh.metadata.next(now).copy(deletedAt = now)))
             database.enqueueCollapsed(
                 idGenerator, SyncEntityType.DELIVERY, id, OutboxOperation.DELETE, now,
-                farmId = current.farmId,
+                farmId = fresh.farmId,
             )
-            writer.afterDelete(current, now)
+            writer.afterDelete(fresh, now)
             // Its analysis only describes this Delivery: it goes with it.
             database.deliveryDao().findLiveAnalysis(id)?.let { analysis -> tombstone(analysis, now) }
             AppResult.Success(Unit)
@@ -180,18 +185,21 @@ class OfflineFirstDeliveryRepository(
         val campaign = withContext(dispatchers.io) {
             database.campaignDao().findById(delivery.campaignId)
         } ?: return AppResult.Failure(AppError.NotFound("campaign"))
-        val existing = withContext(dispatchers.io) {
-            database.deliveryDao().findLiveAnalysis(deliveryId)
-        }
-        if (campaign.status == CampaignStatus.CLOSED && existing != null) {
-            return AppResult.Failure(AppError.Conflict("closed_campaign_yield_confirmed"))
-        }
         YieldRules.validate(draft, today(delivery.workspaceId))
             ?.let { return AppResult.Failure(AppError.Validation(it.field, it.code)) }
         if (draft.analysisDate?.isBefore(delivery.deliveryDate) == true) {
             return AppResult.Failure(AppError.Validation("analysisDate", "before_delivery"))
         }
         return inTransaction("record_yield") {
+            val freshDelivery = database.deliveryDao().findById(deliveryId)?.takeIf { it.metadata.deletedAt == null }
+                ?: return@inTransaction AppResult.Failure(AppError.NotFound("delivery"))
+            if (freshDelivery.workspaceId != delivery.workspaceId) return@inTransaction contextMismatch()
+            val freshCampaign = database.campaignDao().findById(freshDelivery.campaignId)
+                ?: return@inTransaction AppResult.Failure(AppError.NotFound("campaign"))
+            val existing = database.deliveryDao().findLiveAnalysis(deliveryId)
+            if (freshCampaign.status == CampaignStatus.CLOSED && existing != null) {
+                return@inTransaction AppResult.Failure(AppError.Conflict("closed_campaign_yield_confirmed"))
+            }
             val now = clock.nowInstant()
             val row = existing?.copy(
                 analysisDate = draft.analysisDate,
@@ -201,7 +209,7 @@ class OfflineFirstDeliveryRepository(
                 metadata = existing.metadata.next(now),
             ) ?: DeliveryYieldAnalysisEntity(
                 id = idGenerator.newId(),
-                workspaceId = delivery.workspaceId,
+                workspaceId = freshDelivery.workspaceId,
                 deliveryId = deliveryId,
                 analysisDate = draft.analysisDate,
                 fatYieldHundredths = draft.fatYieldHundredths,
@@ -233,6 +241,14 @@ class OfflineFirstDeliveryRepository(
             return AppResult.Failure(AppError.Conflict("closed_campaign_yield_confirmed"))
         }
         return inTransaction("remove_yield") {
+            val freshDelivery = database.deliveryDao().findById(deliveryId)?.takeIf { it.metadata.deletedAt == null }
+                ?: return@inTransaction AppResult.Failure(AppError.NotFound("delivery"))
+            if (freshDelivery.workspaceId != delivery.workspaceId) return@inTransaction contextMismatch()
+            val freshCampaign = database.campaignDao().findById(freshDelivery.campaignId)
+                ?: return@inTransaction AppResult.Failure(AppError.NotFound("campaign"))
+            if (freshCampaign.status == CampaignStatus.CLOSED) {
+                return@inTransaction AppResult.Failure(AppError.Conflict("closed_campaign_yield_confirmed"))
+            }
             val analysis = database.deliveryDao().findLiveAnalysis(deliveryId) ?: return@inTransaction AppResult.Success(Unit)
             tombstone(analysis, clock.nowInstant())
             AppResult.Success(Unit)

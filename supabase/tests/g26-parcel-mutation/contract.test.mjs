@@ -118,7 +118,8 @@ before(async()=>{
 test('baseline before the proposal: the owner can rewrite a parcel directly, skipping CAS and receipts',async()=>{
   const patched=await http(`/rest/v1/parcels?id=eq.${f.baseline.id}`,{token:token(actors.A),method:'PATCH',body:{display_name:'Sin CAS'}});
   assert.equal(patched.status,204,JSON.stringify(patched.data));
-  assert.equal(row(f.baseline.id),'ACTIVE|1|false|-|Sin CAS');
+  // deleted_at_exact does not exist yet: read only the legacy columns.
+  assert.equal(sql(`SELECT status||'|'||version||'|'||display_name FROM public.parcels WHERE id=${q(f.baseline.id)}::uuid;`),'ACTIVE|1|Sin CAS');
   assert.equal(receipts(f.baseline.id),'1');
 });
 
@@ -349,14 +350,14 @@ test('no direct client write remains on parcels or memberships; legitimate reads
 
 test('inventory: the only writers of parcels and memberships are the two private cores, neither callable by clients',()=>{
   const writers=table=>sql(`SELECT string_agg(n.nspname||'.'||p.proname||':'||
-      (has_function_privilege('authenticated',p.oid,'EXECUTE') OR has_function_privilege('anon',p.oid,'EXECUTE'))::text, ',' ORDER BY 1)
+      (has_function_privilege('authenticated',p.oid,'EXECUTE') OR has_function_privilege('anon',p.oid,'EXECUTE'))::text, ',' ORDER BY n.nspname,p.proname)
     FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
     WHERE n.nspname NOT IN ('pg_catalog','information_schema')
       AND p.prosrc ~* '(insert[[:space:]]+into|update|delete[[:space:]]+from)[[:space:]]+public[.]${table}([^_a-z]|$)';`);
   assert.equal(writers('farm_parcel_memberships'),'magina_g2_private.create_parcel:false,magina_g2_private.mutate_parcel:false');
   assert.equal(writers('parcels'),'magina_g2_private.create_parcel:false,magina_g2_private.mutate_parcel:false');
   assert.equal(sql(`SELECT string_agg(p.proname||':'||has_function_privilege('authenticated',p.oid,'EXECUTE')::text||':'||
-      has_function_privilege('anon',p.oid,'EXECUTE')::text||':'||p.prosecdef::text, ',' ORDER BY 1)
+      has_function_privilege('anon',p.oid,'EXECUTE')::text||':'||p.prosecdef::text, ',' ORDER BY p.proname)
     FROM pg_proc p WHERE p.pronamespace='public'::regnamespace AND p.proname LIKE '%\\_own\\_parcel\\_v1';`),
     'archive_own_parcel_v1:true:false:true,restore_own_parcel_v1:true:false:true,update_own_parcel_v1:true:false:true');
 });

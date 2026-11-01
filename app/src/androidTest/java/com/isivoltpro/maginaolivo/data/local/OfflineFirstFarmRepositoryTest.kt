@@ -530,7 +530,7 @@ class OfflineFirstFarmRepositoryTest {
         try {
             seedSelectedWorkspace(database, workspaceId, TEST_INSTANT)
             val random = object : IdGenerator { override fun newId(): UUID = UUID.randomUUID() }
-            val farms = OfflineFirstFarmRepository(database, FixedClock(TEST_INSTANT), random, TestDispatchers)
+            val farms = repository(database, TEST_INSTANT, random)
             val farmId = (farms.create(NewFarm(workspaceId, "Cortijo")) as AppResult.Success).value
             val parcels = OfflineFirstParcelRepository(database, FixedClock(TEST_INSTANT.plusSeconds(1)), random, TestDispatchers)
             val geometry = """{"type":"Polygon","coordinates":[[[-3.48,37.63],[-3.47,37.63],[-3.47,37.64],[-3.48,37.63]]]}"""
@@ -602,7 +602,7 @@ class OfflineFirstFarmRepositoryTest {
         try {
             seedSelectedWorkspace(database, workspaceId, TEST_INSTANT)
             val random = object : IdGenerator { override fun newId(): UUID = UUID.randomUUID() }
-            val farms = OfflineFirstFarmRepository(database, FixedClock(TEST_INSTANT), random, TestDispatchers)
+            val farms = repository(database, TEST_INSTANT, random)
             val farmA = (farms.create(NewFarm(workspaceId, "Cortijo")) as AppResult.Success).value
             val farmB = (farms.create(NewFarm(workspaceId, "La Loma")) as AppResult.Success).value
             val parcels = OfflineFirstParcelRepository(database, FixedClock(TEST_INSTANT.plusSeconds(1)), random, TestDispatchers)
@@ -753,7 +753,7 @@ class OfflineFirstFarmRepositoryTest {
         try {
             seedSelectedWorkspace(database, workspaceId, TEST_INSTANT)
             val random = object : IdGenerator { override fun newId(): UUID = UUID.randomUUID() }
-            val farms = OfflineFirstFarmRepository(database, FixedClock(TEST_INSTANT), random, TestDispatchers)
+            val farms = repository(database, TEST_INSTANT, random)
             val createdFarm = (farms.create(NewFarm(workspaceId, "Cortijo")) as AppResult.Success).value
             val parcels = OfflineFirstParcelRepository(database, FixedClock(TEST_INSTANT.plusSeconds(1)), random, TestDispatchers)
             val createdParcel = (parcels.create(NewParcel(createdFarm, "Parcela Norte")) as AppResult.Success).value
@@ -855,10 +855,16 @@ class OfflineFirstFarmRepositoryTest {
         database: MaginaOlivoDatabase,
         now: Instant,
         ids: List<UUID>,
+    ) = repository(database, now, QueuedIdGenerator(ids))
+
+    private fun repository(
+        database: MaginaOlivoDatabase,
+        now: Instant,
+        idGenerator: IdGenerator,
     ) = OfflineFirstFarmRepository(
         database = database,
         clock = FixedClock(now),
-        idGenerator = QueuedIdGenerator(ids),
+        idGenerator = idGenerator,
         dispatchers = TestDispatchers,
         // #615/958953be: farm writes resolve the active workspace through the real fail-closed
         // repository; with no session it only accepts the explicitly persisted local selection.

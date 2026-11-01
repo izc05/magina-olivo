@@ -42,6 +42,7 @@ import com.isivoltpro.maginaolivo.data.repository.RemoteDeliveryState
 import com.isivoltpro.maginaolivo.data.local.entity.DeliveryHeldReceiptEntity
 import com.isivoltpro.maginaolivo.data.repository.AndroidFarmLinkLedger
 import com.isivoltpro.maginaolivo.data.repository.LocalFarmLinkRepository
+import com.isivoltpro.maginaolivo.data.repository.DeliveryWriteScope
 import com.isivoltpro.maginaolivo.feature.account.AccountAuthApi
 import com.isivoltpro.maginaolivo.feature.account.AccountRepository
 import com.isivoltpro.maginaolivo.feature.account.MemoryAccountSessionStore
@@ -2974,5 +2975,172 @@ class DeliveryContractTest {
         val yieldResult = gatedRepo.recordYield(validId, YieldDraft(day, 2_000, null))
         assertTrue("Yield while logged out must fail closed: $yieldResult", yieldResult is AppResult.Failure)
         assertEquals(outboxAfterCreate, count("sync_outbox"))
+    }
+
+    @Test
+    fun concurrentWorkspaceOrSessionChangeMidOperationIsRevalidatedAndLeavesOutboxClean() = runBlocking {
+        var activeScope = workspaceId
+        val gateEnter = kotlinx.coroutines.sync.Mutex(locked = true)
+        val gateProceed = kotlinx.coroutines.sync.Mutex(locked = true)
+
+        val gatingWriteScope = object : DeliveryWriteScope {
+            override suspend fun <T> withAccount(farmId: UUID, action: suspend (String?) -> T): T {
+                gateEnter.unlock()
+                gateProceed.lock()
+                return action(defaultOwnerId.toString())
+            }
+        }
+
+        val dynamicWorkspaces = object : WorkspaceRepository {
+            override suspend fun activeWorkspace(): AppResult<UUID> = AppResult.Success(activeScope)
+            override suspend fun ensureLocalWorkspace(): AppResult<UUID> = AppResult.Success(activeScope)
+        }
+
+        val repo = OfflineFirstDeliveryRepository(
+            db, FixedClock(now), RandomIds, TestDispatchers,
+            workspaceRepository = dynamicWorkspaces,
+            writeScope = gatingWriteScope,
+            zoneId = { ZoneOffset.UTC },
+        )
+
+        val id = ok(deliveries.create(draft(1_000_000, north to null)))
+        val outboxBefore = count("sync_outbox")
+        val initialRow = db.deliveryDao().findById(id)!!
+
+        val updateJob = async(Dispatchers.Default) {
+            repo.update(id, draft(2_000_000, north to null))
+        }
+
+        gateEnter.lock()
+        val foreignWorkspace = UUID.randomUUID()
+        activeScope = foreignWorkspace
+        gateProceed.unlock()
+
+        val result = updateJob.await()
+        assertTrue("Update during concurrent workspace switch must fail: $result", result is AppResult.Failure)
+
+        val currentRow = db.deliveryDao().findById(id)!!
+        assertEquals(initialRow.netGrams, currentRow.netGrams)
+        assertEquals(initialRow.metadata.updatedAt, currentRow.metadata.updatedAt)
+        assertEquals(outboxBefore, count("sync_outbox"))
+    }
+
+    @Test
+    fun concurrentLogoutMidOperationRevalidatesInsideTransactionAndLeavesOutboxClean() = runBlocking {
+        var signedIn = true
+        val gateEnter = kotlinx.coroutines.sync.Mutex(locked = true)
+        val gateProceed = kotlinx.coroutines.sync.Mutex(locked = true)
+
+        val gatingWriteScope = object : DeliveryWriteScope {
+            override suspend fun <T> withAccount(farmId: UUID, action: suspend (String?) -> T): T {
+                gateEnter.unlock()
+                gateProceed.lock()
+                return action(if (signedIn) defaultOwnerId.toString() else null)
+            }
+        }
+
+        val dynamicWorkspaces = object : WorkspaceRepository {
+            override suspend fun activeWorkspace(): AppResult<UUID> =
+                if (signedIn) AppResult.Success(workspaceId) else AppResult.Failure(AppError.Permission("No hay sesión activa"))
+            override suspend fun ensureLocalWorkspace(): AppResult<UUID> =
+                if (signedIn) AppResult.Success(workspaceId) else AppResult.Failure(AppError.Permission("No hay sesión activa"))
+        }
+
+        val repo = OfflineFirstDeliveryRepository(
+            db, FixedClock(now), RandomIds, TestDispatchers,
+            workspaceRepository = dynamicWorkspaces,
+            writeScope = gatingWriteScope,
+            zoneId = { ZoneOffset.UTC },
+        )
+
+        val id = ok(deliveries.create(draft(1_000_000, north to null)))
+        val outboxBefore = count("sync_outbox")
+        val initialRow = db.deliveryDao().findById(id)!!
+
+        val updateJob = async(Dispatchers.Default) {
+            repo.update(id, draft(2_000_000, north to null))
+        }
+
+        gateEnter.lock()
+        signedIn = false
+        gateProceed.unlock()
+
+        val result = updateJob.await()
+        assertTrue("Update during concurrent logout must fail: $result", result is AppResult.Failure)
+
+        val currentRow = db.deliveryDao().findById(id)!!
+        assertEquals(initialRow.netGrams, currentRow.netGrams)
+        assertEquals(outboxBefore, count("sync_outbox"))
+    }
+
+    @Test
+    fun concurrentWorkspaceChangeMidDeleteAndRecordYieldFailsClosedWithoutOutbox() = runBlocking {
+        var activeScope = workspaceId
+        val gateEnter = kotlinx.coroutines.sync.Mutex(locked = true)
+        val gateProceed = kotlinx.coroutines.sync.Mutex(locked = true)
+
+        val gatingWriteScope = object : DeliveryWriteScope {
+            override suspend fun <T> withAccount(farmId: UUID, action: suspend (String?) -> T): T {
+                if (gateEnter.isLocked) gateEnter.unlock()
+                gateProceed.lock()
+                return action(defaultOwnerId.toString())
+            }
+        }
+
+        val dynamicWorkspaces = object : WorkspaceRepository {
+            override suspend fun activeWorkspace(): AppResult<UUID> = AppResult.Success(activeScope)
+            override suspend fun ensureLocalWorkspace(): AppResult<UUID> = AppResult.Success(activeScope)
+        }
+
+        val repo = OfflineFirstDeliveryRepository(
+            db, FixedClock(now), RandomIds, TestDispatchers,
+            workspaceRepository = dynamicWorkspaces,
+            writeScope = gatingWriteScope,
+            zoneId = { ZoneOffset.UTC },
+        )
+
+        val id = ok(deliveries.create(draft(1_000_000, north to null)))
+        val outboxBefore = count("sync_outbox")
+
+        val deleteJob = async(Dispatchers.Default) {
+            repo.delete(id)
+        }
+        gateEnter.lock()
+        activeScope = UUID.randomUUID()
+        gateProceed.unlock()
+
+        val deleteResult = deleteJob.await()
+        assertTrue("Delete during concurrent workspace switch must fail: $deleteResult", deleteResult is AppResult.Failure)
+        assertNull("Row must not be deleted", db.deliveryDao().findById(id)!!.metadata.deletedAt)
+        assertEquals(outboxBefore, count("sync_outbox"))
+
+        activeScope = workspaceId
+        val gateEnterYield = kotlinx.coroutines.sync.Mutex(locked = true)
+        val gateProceedYield = kotlinx.coroutines.sync.Mutex(locked = true)
+        val gatingWriteScopeYield = object : DeliveryWriteScope {
+            override suspend fun <T> withAccount(farmId: UUID, action: suspend (String?) -> T): T {
+                gateEnterYield.unlock()
+                gateProceedYield.lock()
+                return action(defaultOwnerId.toString())
+            }
+        }
+        val repoYield = OfflineFirstDeliveryRepository(
+            db, FixedClock(now), RandomIds, TestDispatchers,
+            workspaceRepository = dynamicWorkspaces,
+            writeScope = gatingWriteScopeYield,
+            zoneId = { ZoneOffset.UTC },
+        )
+
+        val yieldJob = async(Dispatchers.Default) {
+            repoYield.recordYield(id, YieldDraft(day, 2_000, null))
+        }
+        gateEnterYield.lock()
+        activeScope = UUID.randomUUID()
+        gateProceedYield.unlock()
+
+        val yieldResult = yieldJob.await()
+        assertTrue("Record yield during concurrent workspace switch must fail: $yieldResult", yieldResult is AppResult.Failure)
+        assertNull("Yield analysis must not be saved", db.deliveryDao().findLiveAnalysis(id))
+        assertEquals(outboxBefore, count("sync_outbox"))
     }
 }

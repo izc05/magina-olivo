@@ -136,8 +136,9 @@ class LocalWorkspaceRepository(
     override suspend fun selectWorkspace(id: UUID): AppResult<Unit> = withContext(dispatchers.io) {
         safe("select_workspace") {
             if (account?.state?.value?.online == true) refreshAuthorizations()
+            val session = account?.workspaceSession() ?: WorkspaceSession.SignedOut
             database.withTransaction {
-                val scope = when (val session = account?.workspaceSession() ?: WorkspaceSession.SignedOut) {
+                val scope = when (session) {
                     is WorkspaceSession.Authenticated -> {
                         val auth = authorized(session.accountId)
                         val isOwned = database.workspaceDao().findActiveByOwner(session.accountId)?.id == id

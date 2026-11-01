@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { randomUUID, createHash } from 'node:crypto';
+import { extraProposals } from './lib/extra-proposals.mjs';
 
 const project = process.env.G0_NATIVE_PROJECT_ID;
 assert.match(project ?? '', /^magina-g0-native-[a-z0-9-]+$/);
@@ -114,6 +115,7 @@ before(async () => {
   sql('DROP POLICY g0_test_legacy_public_read ON storage.objects;');
   sql(`BEGIN; ${hardening} COMMIT; NOTIFY pgrst, 'reload schema';`);
   sql(`BEGIN; ${readFileSync(new URL('../migrations/20261016041601_g0_aggregate_identity_guards.sql', import.meta.url), 'utf8')} COMMIT;`);
+  if (extraProposals()) sql(`BEGIN; ${extraProposals()} COMMIT; NOTIFY pgrst, 'reload schema';`);
   writeFileSync(`${evidence}/${baseline}-runtime.txt`, sql(`SELECT version(); SELECT 'baseline=${baseline}'; SELECT bucket_id, count(*) FROM storage.objects GROUP BY bucket_id;`));
 
   let ready = false;

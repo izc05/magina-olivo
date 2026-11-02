@@ -1146,6 +1146,44 @@ class AppNavigationTest {
         composeRule.onNodeWithTag("component-catalogue-root").assertIsDisplayed()
     }
 
+    /** Verifies physical KEYCODE_BACK handling for inter-screen navigation, bottom sheet dismissal, and keyboard states. */
+    @Test
+    fun physicalBackDismissesKeyboardBottomSheetAndNavigatesBetweenScreens() {
+        enterMainShell()
+        // 1. Inter-screen navigation: go to Perfil, physical back returns to Inicio
+        composeRule.onNodeWithTag("bottom-Perfil").performClick()
+        waitForTag("profile-root")
+        composeRule.waitForIdle()
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+        composeRule.waitForIdle()
+        waitForTag("home-reference-root")
+        composeRule.onNodeWithTag("bottom-Inicio").assertIsSelected()
+
+        // 2. Bottom sheet dismissal: open bottom-add-record, physical back dismisses sheet without screen navigation
+        composeRule.onNodeWithTag("bottom-add-record").performClick()
+        waitForTag("quick-register-sheet")
+        composeRule.waitForIdle()
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("quick-register-sheet").assertDoesNotExist()
+        composeRule.onNodeWithTag("home-reference-root").assertIsDisplayed()
+
+        // 3. Bottom sheet with editor: open add-farm, physical back dismisses sheet and returns to Olivar root
+        navigateToOlivar()
+        openSheet("add-farm", "farm-name")
+        composeRule.onNodeWithTag("farm-name").performClick()
+        composeRule.waitForIdle()
+        // First physical back dismisses keyboard if active; second dismisses bottom sheet
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+        composeRule.waitForIdle()
+        if (composeRule.onAllNodesWithTag("farm-name").fetchSemanticsNodes().isNotEmpty()) {
+            InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+            composeRule.waitForIdle()
+        }
+        waitForTag("farms-root")
+        composeRule.onNodeWithTag("farms-root").assertIsDisplayed()
+    }
+
     private fun enterMainShell() {
         waitForText("Saltar")
         composeRule.onNodeWithText("Saltar").performClick()
@@ -1500,22 +1538,9 @@ class AppNavigationTest {
     }
 
     private fun pressBack() {
+        safeCloseSoftKeyboard()
         composeRule.waitForIdle()
-        val handled = runCatching {
-            var pressed = false
-            composeRule.activityRule.scenario.onActivity { activity ->
-                activity.onBackPressedDispatcher.onBackPressed()
-                pressed = true
-            }
-            pressed
-        }.getOrDefault(false)
-        if (!handled) {
-            runCatching {
-                InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
-            }.onFailure {
-                androidx.test.espresso.Espresso.pressBack()
-            }
-        }
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
         composeRule.waitForIdle()
     }
 
@@ -1613,6 +1638,8 @@ class AppNavigationTest {
     }
 
     private fun backToFarmHub() {
+        safeCloseSoftKeyboard()
+        composeRule.waitForIdle()
         // From the work list Back first returns to the Cuaderno, then to the hub.
         repeat(4) {
             if (composeRule.onAllNodesWithTag("farm-detail-root").fetchSemanticsNodes().isNotEmpty()) return

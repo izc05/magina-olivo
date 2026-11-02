@@ -44,6 +44,7 @@ import java.io.File
 import java.io.FileOutputStream
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -1044,7 +1045,11 @@ class AppNavigationTest {
         val database = MaginaOlivoDatabase.getInstance(ApplicationProvider.getApplicationContext<Context>())
         runBlocking {
             val workspace = database.workspaceDao().findFirstActive()!!.id
-            val costs = database.expenseDao().observeForWorkspace(workspace).first()
+            val costs = withTimeout(UI_TIMEOUT_MS) {
+                database.expenseDao().observeForWorkspace(workspace).first { list ->
+                    list.any { it.concept == "Reparación jornal E2E" }
+                }
+            }
             val general = costs.single { it.concept == "Reparación jornal E2E" }
             assertEquals(null, general.campaignId)
             assertEquals(null, general.harvestId)

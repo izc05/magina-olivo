@@ -207,7 +207,8 @@ class ParcelConvergenceRoomTest {
         assertEquals(AppResult.Success(Unit), parcels(dbB).archive(p))
         assertEquals(listOf(ParcelMutationOutcome.SYNCED), push(dbA, accountA, p))
         assertEquals(listOf(ParcelMutationOutcome.NEEDS_REBASE), push(dbB, accountB, p))
-        assertEquals(listOf(ParentConflict(ParentKind.PARCEL, p, "remote_ahead")), receive(dbB, accountB).conflicts)
+        // After NEEDS_REBASE the sender marks B's parcel CONFLICT, which the receiver reports first.
+        assertEquals(listOf(ParentConflict(ParentKind.PARCEL, p, "local_conflict")), receive(dbB, accountB).conflicts)
         assertEquals(1, server.applied.count { it.second == p && it.first == ParcelMutationKind.ARCHIVE })
         log("C6", p, "BLOCKED_EXPECTED explicit resolution required (concurrent ARCHIVE)")
     }
@@ -397,17 +398,19 @@ class ParcelConvergenceRoomTest {
     private suspend fun canonical(db: MaginaOlivoDatabase, p: UUID): String {
         val row = db.parcelDao().findById(p) ?: return "absent"
         val periods = db.parcelDao().listMemberships(p).filter { it.metadata.deletedAt == null }.sortedBy { it.id.toString() }
-        return listOf(parcelFieldsPayload(row, periods.ifEmpty { listOf(placeholder(p)) }).toString(), row.status.name,
+        return listOf(sortedJson(parcelFieldsPayload(row, periods.ifEmpty { listOf(placeholder(p)) })), row.status.name,
             row.metadata.deletedAt?.toEpochMilli(), row.metadata.remoteVersion,
             periods.joinToString(";") { "${it.id}|${it.farmId}|${it.validFrom.toEpochMilli()}|${it.validUntil?.toEpochMilli()}|${it.metadata.remoteVersion}" },
         ).joinToString("#")
     }
+    /** Field content independent of key order: the producer and the fake may list keys differently. */
+    private fun sortedJson(fields: JsonObject) = JsonObject(fields.toSortedMap()).toString()
     private fun placeholder(p: UUID) = com.isivoltpro.maginaolivo.data.local.entity.FarmParcelMembershipEntity(
         UUID(0, 0), workspace, north, p, Instant.EPOCH, null, LocalMetadata(Instant.EPOCH, Instant.EPOCH))
     private fun serverCanonical(p: UUID): String {
         val s = server.parcels.getValue(p)
         val periods = server.memberships.values.filter { it.parcel == p }.sortedBy { it.id.toString() }
-        return listOf(s.fields.toString(), s.status, floor(s.archivedAt), s.version,
+        return listOf(sortedJson(s.fields), s.status, floor(s.archivedAt), s.version,
             periods.joinToString(";") { "${it.id}|${it.farm}|${floor(it.from)}|${floor(it.until)}|${it.version}" },
         ).joinToString("#")
     }

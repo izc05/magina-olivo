@@ -155,7 +155,7 @@ class HarvestSendRoomTest {
     }
 
     /** In-memory #823 server, shared by phones of one account. The client-side hash functions mirror the server's. */
-    class FakeServer : DeliveryRpcTransport {
+    internal class FakeServer : DeliveryRpcTransport {
         data class Day(val id: UUID, val key: String?, var version: Long, var deleted: Boolean = false)
         data class Receipt(val entity: UUID, val hash: String, val version: Long)
         val days = mutableMapOf<UUID, Day>()

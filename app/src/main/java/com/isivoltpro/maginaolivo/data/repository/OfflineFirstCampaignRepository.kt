@@ -262,6 +262,12 @@ class OfflineFirstCampaignRepository(
         // A staged or attempted CAS operation has immutable bytes and UUID. A later local edit
         // must leave it available for receipt recovery, even when the HTTP response was lost.
         database.syncOutboxDao().deleteUnstagedCampaignMarkers(id)
+        // One aggregate, one pending CREATE: a never-prepared CREATE already covers later local edits
+        // (regression of 8f025c7fd, which stopped replacing it). A prepared or attempted CREATE is kept
+        // as it is and the edit is queued after it, as before.
+        if (operation == OutboxOperation.CREATE && existing.any { it.operation == OutboxOperation.CREATE &&
+                it.status == OutboxStatus.PENDING && it.attemptCount == 0 && it.payloadJson == null && it.accountId == null }
+        ) return
         database.syncOutboxDao().insert(SyncOutboxEntity(idGenerator.newId(), SyncEntityType.CAMPAIGN, id, operation, 1, createdAt = now, updatedAt = now))
     }
 

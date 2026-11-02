@@ -38,6 +38,7 @@ import com.isivoltpro.maginaolivo.data.repository.sync.HttpsDeliveryRpcTransport
 import com.isivoltpro.maginaolivo.domain.delivery.DeliveryDraft
 import com.isivoltpro.maginaolivo.domain.delivery.DeliveryShareInput
 import com.isivoltpro.maginaolivo.domain.delivery.PesadaOrigin
+import com.isivoltpro.maginaolivo.domain.workspace.WorkspaceRepository
 import com.isivoltpro.maginaolivo.feature.account.AccountRecord
 import com.isivoltpro.maginaolivo.feature.account.AccountRepository
 import com.isivoltpro.maginaolivo.feature.account.AuthConfiguration
@@ -150,7 +151,8 @@ class DeliveryV3HttpsEphemeralTest {
             CampaignParcelSnapshotEntity(graph.activeSnapshot, graph.workspace, graph.campaign, graph.active, graph.farm, "La Solana", "Sur", metadata = meta)))
     }
 
-    private class Device(val db: MaginaOlivoDatabase, val account: AccountRepository, val links: LocalFarmLinkRepository)
+    private class Device(val db: MaginaOlivoDatabase, val account: AccountRepository, val links: LocalFarmLinkRepository,
+        val workspace: WorkspaceRepository)
 
     private suspend fun device(name: String, actorKey: String, tokenKey: String, graph: Graph, server: Boolean): Device {
         val db = MaginaOlivoDatabase.create(context, name).also { opened += it }
@@ -162,11 +164,15 @@ class DeliveryV3HttpsEphemeralTest {
         val links = LocalFarmLinkRepository(context, db, account, issuer, AndroidFarmLinkLedger(ledger),
             ServerWorkspaceOwnerVerifier(authorizations, issuer))
         links.consent(actor, links.choices().filter { it.id == graph.farm }, accepted = true)
-        return Device(db, account, links)
+        val workspace = object : WorkspaceRepository {
+            override suspend fun ensureLocalWorkspace(): AppResult<UUID> = AppResult.Success(graph.workspace)
+        }
+        return Device(db, account, links, workspace)
     }
 
     private fun repository(device: Device, at: Instant, route: DeliveryPayloadRoute) = OfflineFirstDeliveryRepository(
-        device.db, FixedClock(at), RandomIds, TestDispatchers, writeScope = device.links, payloadRoute = route) { zone }
+        device.db, FixedClock(at), RandomIds, TestDispatchers, workspaceRepository = device.workspace,
+        writeScope = device.links, payloadRoute = route) { zone }
 
     private suspend fun create(device: Device, graph: Graph, at: Instant, parcel: UUID, day: LocalDate, net: Long,
         route: DeliveryPayloadRoute = HistoricalDeliveryRoute { _, _ -> true }, time: LocalTime? = null): SyncOutboxEntity {
@@ -190,7 +196,7 @@ class DeliveryV3HttpsEphemeralTest {
     private fun worker(device: Device) = DeliveryDispatchWorker(device.db, device.links, DeliveryRpcAdapter(transport))
     private fun remote(id: UUID) = JSONObject(fetch("/__g26_admin/delivery?id=$id", "GET"))
 
-    @Test fun ownerSendsHistoricalPesadasOverHttpsAndNothingIsConfirmedWithoutAV3Head() = runBlocking {
+    @Test fun ownerSendsHistoricalPesadasOverHttpsAndNothingIsConfirmedWithoutAV3Head() = runBlocking<Unit> {
         val graph = Graph()
         val owner = device(names[0], "actor", "token", graph, server = true)
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
@@ -257,7 +263,7 @@ class DeliveryV3HttpsEphemeralTest {
         Log.i("G808", "G808-SUMMARY historical=AWAITING_HEAD late=REVIEW dst=REVIEW lost=AWAITING_HEAD legacy=SYNCED")
     }
 
-    @Test fun aMemberWithWritePermissionNeverPreparesV3AndIsNotRedirected() = runBlocking {
+    @Test fun aMemberWithWritePermissionNeverPreparesV3AndIsNotRedirected() = runBlocking<Unit> {
         val graph = Graph()
         // The owner's graph exists on the server; the member's device holds the same rows.
         val member = device(names[1], "member", "memberToken", graph, server = true)

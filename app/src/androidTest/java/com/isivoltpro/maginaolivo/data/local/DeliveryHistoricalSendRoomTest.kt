@@ -45,6 +45,7 @@ import com.isivoltpro.maginaolivo.data.repository.sync.DispatchOutcome
 import com.isivoltpro.maginaolivo.domain.delivery.DeliveryDraft
 import com.isivoltpro.maginaolivo.domain.delivery.DeliveryShareInput
 import com.isivoltpro.maginaolivo.domain.delivery.PesadaOrigin
+import com.isivoltpro.maginaolivo.domain.workspace.WorkspaceRepository
 import com.isivoltpro.maginaolivo.feature.account.AccountAuthApi
 import com.isivoltpro.maginaolivo.feature.account.AccountRepository
 import com.isivoltpro.maginaolivo.feature.account.MemoryAccountSessionStore
@@ -89,7 +90,7 @@ class DeliveryHistoricalSendRoomTest {
     private val cleanup = mutableListOf<() -> Unit>()
     private lateinit var db: MaginaOlivoDatabase
 
-    @Before fun before() = runBlocking { db = open("delivery-v3-a") }
+    @Before fun before() = runBlocking<Unit> { db = open("delivery-v3-a") }
 
     @After fun after() {
         cleanup.forEach { it() }
@@ -138,7 +139,7 @@ class DeliveryHistoricalSendRoomTest {
         }
         links.consent(account.state.value.userId!!, links.choices().filter { it.id == farmId }, true)
         val deliveries = OfflineFirstDeliveryRepository(database, FixedClock(now), RandomIds, TestDispatchers,
-            writeScope = links, payloadRoute = route) { ZoneOffset.UTC }
+            workspaceRepository = activeWorkspace, writeScope = links, payloadRoute = route) { ZoneOffset.UTC }
         return Device(database, account, links, deliveries, file)
     }
 
@@ -198,7 +199,7 @@ class DeliveryHistoricalSendRoomTest {
     private fun keys(payload: String) = (Json.parseToJsonElement(payload) as JsonObject).keys
 
     @Test
-    fun theLegacyRouteKeepsEveryNewPesadaOnV2ExactlyAsBefore() = runBlocking {
+    fun theLegacyRouteKeepsEveryNewPesadaOnV2ExactlyAsBefore() = runBlocking<Unit> {
         val legacy = device(route = LegacyDeliveryRoute)
         val op = create(legacy)
         assertEquals(2, op.payloadVersion)
@@ -211,7 +212,7 @@ class DeliveryHistoricalSendRoomTest {
     }
 
     @Test
-    fun theHistoricalRouteFreezesV3WithEveryKeyAndTheLocalCreationInstantAcrossEdits() = runBlocking {
+    fun theHistoricalRouteFreezesV3WithEveryKeyAndTheLocalCreationInstantAcrossEdits() = runBlocking<Unit> {
         val owner = device()
         val op = create(owner)
         assertEquals(3, op.payloadVersion)
@@ -225,7 +226,7 @@ class DeliveryHistoricalSendRoomTest {
         // An edit before the CREATE is confirmed: a new operation, still v3, still the SAME origin,
         // even through a writer whose route is now legacy (the version follows the operation).
         val legacyEditor = OfflineFirstDeliveryRepository(owner.db, FixedClock(now.plusSeconds(3600)), RandomIds,
-            TestDispatchers, writeScope = owner.links) { ZoneOffset.UTC }
+            TestDispatchers, workspaceRepository = activeWorkspace, writeScope = owner.links) { ZoneOffset.UTC }
         assertTrue(legacyEditor.update(op.entityId, draft(net = 2_900_000)) is AppResult.Success)
         val edited = owner.db.syncOutboxDao().listForEntity(SyncEntityType.DELIVERY, op.entityId).single()
         assertEquals(3, edited.payloadVersion)
@@ -235,12 +236,12 @@ class DeliveryHistoricalSendRoomTest {
     }
 
     @Test
-    fun aV2OperationKeepsItsBytesUuidVersionAndRpcAfterTheRouteChanges() = runBlocking {
+    fun aV2OperationKeepsItsBytesUuidVersionAndRpcAfterTheRouteChanges() = runBlocking<Unit> {
         val legacy = device(route = LegacyDeliveryRoute)
         val op = create(legacy)
         // The route is switched afterwards: only a NEW Pesada takes v3; the queued v2 intent is untouched.
         val switched = OfflineFirstDeliveryRepository(legacy.db, FixedClock(now), RandomIds, TestDispatchers,
-            writeScope = legacy.links, payloadRoute = HistoricalDeliveryRoute { _, _ -> true }) { ZoneOffset.UTC }
+            workspaceRepository = activeWorkspace, writeScope = legacy.links, payloadRoute = HistoricalDeliveryRoute { _, _ -> true }) { ZoneOffset.UTC }
         val newer = create(legacy.copy(deliveries = switched), draft(net = 1_500_000))
         assertEquals(3, newer.payloadVersion)
         val before = legacy.db.syncOutboxDao().findById(op.id)!!
@@ -258,7 +259,7 @@ class DeliveryHistoricalSendRoomTest {
     }
 
     @Test
-    fun onlyAServerConfirmedOwnerPreparesV3AndANonOwnerIsNeverRedirected() = runBlocking {
+    fun onlyAServerConfirmedOwnerPreparesV3AndANonOwnerIsNeverRedirected() = runBlocking<Unit> {
         val verifiers = listOf<WorkspaceOwnerVerifier?>(null, WorkspaceOwnerVerifier { _, _ -> false },
             WorkspaceOwnerVerifier { _, ws -> ws != workspaceId })
         verifiers.forEachIndexed { index, verifier ->
@@ -277,7 +278,7 @@ class DeliveryHistoricalSendRoomTest {
     }
 
     @Test
-    fun prepareRefusesAV3UpdateOrAnOriginThatIsNotTheLocalCreation() = runBlocking {
+    fun prepareRefusesAV3UpdateOrAnOriginThatIsNotTheLocalCreation() = runBlocking<Unit> {
         val owner = device()
         val op = create(owner)
         val userId = owner.account.state.value.userId!!
@@ -303,7 +304,7 @@ class DeliveryHistoricalSendRoomTest {
     }
 
     @Test
-    fun aMatchingV3ReceiptIsHeldAwaitingHeadAndNeverConfirmed() = runBlocking {
+    fun aMatchingV3ReceiptIsHeldAwaitingHeadAndNeverConfirmed() = runBlocking<Unit> {
         val owner = device()
         val op = create(owner)
         val rpc = Rpc(onV3 = { written(op) }, onCheck = { receipt(op) })
@@ -325,7 +326,7 @@ class DeliveryHistoricalSendRoomTest {
     }
 
     @Test
-    fun aReceiptThatIsNotExactlyThisOperationIsAConflictAndConfirmsNothing() = runBlocking {
+    fun aReceiptThatIsNotExactlyThisOperationIsAConflictAndConfirmsNothing() = runBlocking<Unit> {
         val owner = device()
         lease().use { lease ->
             val variants: List<(SyncOutboxEntity) -> DeliveryRpcResponse> = listOf(
@@ -347,7 +348,7 @@ class DeliveryHistoricalSendRoomTest {
     }
 
     @Test
-    fun reviewRejectionsAreHeldWithTheirCauseAndTheBytesUntouched() = runBlocking {
+    fun reviewRejectionsAreHeldWithTheirCauseAndTheBytesUntouched() = runBlocking<Unit> {
         val owner = device()
         val causes = listOf("22023" to "FUTURE_DATE", "22023" to "CAMPAIGN_PERIOD", "22023" to "DELIVERY_TIME_AMBIGUOUS",
             "22023" to "DELIVERY_TIME_NONEXISTENT", "22023" to "ORIGIN_IN_FUTURE", "42501" to "AFTER_ARCHIVE",
@@ -378,7 +379,7 @@ class DeliveryHistoricalSendRoomTest {
     }
 
     @Test
-    fun aLostV3ResponseIsRecoveredByTheSameUuidAndIsStillNotConfirmed() = runBlocking {
+    fun aLostV3ResponseIsRecoveredByTheSameUuidAndIsStillNotConfirmed() = runBlocking<Unit> {
         val owner = device()
         val op = create(owner)
         val directory = File(context.noBackupFilesDir, "g808-lost-${UUID.randomUUID()}")
@@ -401,7 +402,7 @@ class DeliveryHistoricalSendRoomTest {
     }
 
     @Test
-    fun aRestartKeepsHeldOperationsBlockedUnsentAndNotReopened() = runBlocking {
+    fun aRestartKeepsHeldOperationsBlockedUnsentAndNotReopened() = runBlocking<Unit> {
         val owner = device()
         val op = create(owner)
         lease().use { lease -> assertEquals(DispatchOutcome.V3_ACK_AWAITING_HEAD,
@@ -430,7 +431,7 @@ class DeliveryHistoricalSendRoomTest {
     }
 
     @Test
-    fun aRevocationDuringTheRequestKeepsTheV3EvidenceBlockedAndUnconfirmed() = runBlocking {
+    fun aRevocationDuringTheRequestKeepsTheV3EvidenceBlockedAndUnconfirmed() = runBlocking<Unit> {
         val owner = device()
         val op = create(owner)
         val rpc = Rpc(onV3 = { written(op) }, onCheck = {
@@ -445,7 +446,7 @@ class DeliveryHistoricalSendRoomTest {
     }
 
     @Test
-    fun twoDevicesOnlyTheServerConfirmedOwnerPreparesV3() = runBlocking {
+    fun twoDevicesOnlyTheServerConfirmedOwnerPreparesV3() = runBlocking<Unit> {
         val base = "https://fixture.test"
         fun contract(subject: UUID, role: String) = """{"contract_version":1,"issuer":"$base/auth/v1","subject":"$subject",
             "verified_at":"${Instant.now()}","token_expires_at":"${Instant.now().plusSeconds(3600)}","workspaces":[{"id":"$workspaceId",
@@ -469,6 +470,10 @@ class DeliveryHistoricalSendRoomTest {
         assertEquals(OutboxStatus.PENDING, keptB.status)
         assertEquals(3, keptB.payloadVersion)
         assertEquals(opB.payloadJson, keptB.payloadJson)
+    }
+
+    private val activeWorkspace = object : WorkspaceRepository {
+        override suspend fun ensureLocalWorkspace(): AppResult<UUID> = AppResult.Success(workspaceId)
     }
 
     private data class FixedClock(val value: Instant) : AppClock {

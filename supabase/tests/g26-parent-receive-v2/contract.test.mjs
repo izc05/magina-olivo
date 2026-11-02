@@ -151,7 +151,7 @@ before(async()=>{
 test('privileges, definer settings and v1 unchanged (archived parcels stay hidden there)',async()=>{
   assert.equal(sql(`SELECT has_function_privilege('anon','public.get_own_workspace_parents_v2(uuid)','EXECUTE'),
     has_function_privilege('authenticated','public.get_own_workspace_parents_v2(uuid)','EXECUTE');`),'f|t');
-  assert.equal(sql(`SELECT prosecdef::text||'|'||provolatile||'|'||array_to_string(proconfig,',') FROM pg_proc
+  assert.equal(sql(`SELECT prosecdef::text||'|'||provolatile::text||'|'||array_to_string(proconfig,',') FROM pg_proc
     WHERE proname='get_own_workspace_parents_v2';`),'true|s|search_path=""');
   const old=await v1(actors.A,f.ws);
   assert.equal(old.status,200,old.raw.slice(0,300));
@@ -168,6 +168,7 @@ test('owner receives ACTIVE and ARCHIVED parcels with exact archivedAt and the f
   assert.equal(d.contract_version,2); assert.equal(d.issuer,ISSUER); assert.equal(d.subject,actors.A.id);
   assert.equal(d.workspace.id,f.ws);
   assert.deepEqual(d.farms.map(x=>x.id),sorted([f.north,f.south]));
+  assert.ok(d.farms.every(x=>x.status==='ACTIVE'&&x.archivedAt===null));
   assert.deepEqual(d.parcels.map(x=>x.id),sorted([f.p1.id,f.p2.id,f.p3.id,f.p4]));
   for(const p of d.parcels) assert.deepEqual(Object.keys(p).sort(),[...V1_PARCEL_KEYS,'archivedAt'].sort());
   const byId=Object.fromEntries(d.parcels.map(p=>[p.id,p]));
@@ -272,18 +273,103 @@ test('incomplete or invariant-breaking graphs are rejected whole, never clipped'
       VALUES (gen_random_uuid(),${q(w)},${q(gone)},${q(y)},'2025-01-01T00:00:00Z','2025-06-01T00:00:00Z');
     UPDATE public.parcels SET status='ARCHIVED',deleted_at='2025-06-01T00:00:00Z' WHERE id=${q(y)};`);
   assert.equal((await v2(a,w)).status,200,'a closed history over a live farm is valid');
+  // A deletion (deleted_at with status ACTIVE) is not an archive: the history would have a hole.
   sql(`UPDATE public.farms SET deleted_at=now() WHERE id=${q(gone)};`);
   rejected(await v2(a,w),/membership farm/);
   sql(`UPDATE public.farms SET deleted_at=NULL WHERE id=${q(gone)};`);
-  // An archived farm (status ARCHIVED, not deleted) keeps the history readable.
+  // ARCHIVED without its instant is incoherent: B could not tell it from a live farm.
   sql(`UPDATE public.farms SET status='ARCHIVED' WHERE id=${q(gone)};`);
+  rejected(await v2(a,w),/farm invariant/);
+  // A real archive (status and deleted_at, as Android writes it) keeps the history readable.
+  sql(`UPDATE public.farms SET deleted_at='2026-05-01T12:00:00.123456Z' WHERE id=${q(gone)};`);
   const archivedFarm=await v2(a,w);
   assert.equal(archivedFarm.status,200,archivedFarm.raw.slice(0,300));
-  assert.equal(archivedFarm.data.farms.find(x=>x.id===gone).status,'ARCHIVED');
+  const archivedRow=archivedFarm.data.farms.find(x=>x.id===gone);
+  assert.deepEqual([archivedRow.status,archivedRow.archivedAt],['ARCHIVED','2026-05-01T12:00:00.123456+00:00']);
   sql(`UPDATE public.farms SET status='PENDING_REVIEW' WHERE id=${q(farmLive)};`);
   rejected(await v2(a,w),/unsupported status/);
   sql(`UPDATE public.farms SET status='ACTIVE' WHERE id=${q(farmLive)};`);
   assert.equal((await v2(a,w)).status,200);
+});
+
+/**
+ * #812 audit: a farm archived for real (status ARCHIVED and deleted_at, exactly what
+ * OfflineFirstFarmRepository.archive writes; no server farm-archive RPC exists yet) over a history
+ * produced by the real #799/#800/#805 RPCs: archive + restore of a parcel, and a parcel left open in it.
+ */
+test('a really archived farm keeps the history: exact graph, v1 comparison, isolation, restore and rejections',async()=>{
+  const a=actors.A, c=actors.C;
+  const ws=await workspace(a), oldFarm=await farm(a,ws,'Finca vieja'), newFarm=await farm(a,ws,'Finca nueva');
+  const moved=await parcel(a,ws,oldFarm,'Trasladada'), stays=await parcel(a,ws,oldFarm,'Se queda');
+  const ARCH='2026-04-10T07:15:00.250000001Z', BACK='2026-04-20T18:45:00.75Z', FARM_ARCH='2026-05-01T12:00:00.123456Z';
+  await archive(a,moved,1,ARCH);
+  const reopened=randomUUID();
+  await restore(a,moved,2,newFarm,BACK,reopened);
+  sql(`UPDATE public.farms SET status='ARCHIVED',deleted_at=${q(FARM_ARCH)},version=version+1,updated_at=now() WHERE id=${q(oldFarm)};`);
+
+  const r=await v2(a,ws);
+  assert.equal(r.status,200,r.raw.slice(0,300));
+  const farms=Object.fromEntries(r.data.farms.map(x=>[x.id,x]));
+  assert.deepEqual(Object.keys(farms).sort(),sorted([oldFarm,newFarm]));
+  for(const x of r.data.farms) assert.deepEqual(Object.keys(x).sort(),['archivedAt','createdAt','description','id','municipality',
+    'name','notes','province','status','updatedAt','version','workspaceId']);
+  assert.deepEqual([farms[oldFarm].status,farms[oldFarm].archivedAt,farms[oldFarm].version],
+    ['ARCHIVED','2026-05-01T12:00:00.123456+00:00',2]);
+  assert.deepEqual([farms[newFarm].status,farms[newFarm].archivedAt,farms[newFarm].version],['ACTIVE',null,1]);
+  const parcels=Object.fromEntries(r.data.parcels.map(p=>[p.id,p]));
+  assert.deepEqual([parcels[moved.id].status,parcels[moved.id].archivedAt,parcels[moved.id].version],['ACTIVE',null,3]);
+  assert.deepEqual([parcels[stays.id].status,parcels[stays.id].version],['ACTIVE',1]);
+  const rows=r.data.memberships.map(m=>JSON.stringify([m.id,m.farmId,m.parcelId,m.validFrom,m.validUntil,m.version])).sort();
+  assert.deepEqual(rows,[
+    JSON.stringify([moved.membership,oldFarm,moved.id,START,ARCH,2]),
+    JSON.stringify([reopened,newFarm,moved.id,BACK,null,1]),
+    // Archive is not a cascade: the period of a parcel left in the archived farm stays open.
+    JSON.stringify([stays.membership,oldFarm,stays.id,START,null,1]),
+  ].sort());
+
+  // v1 (unchanged) hides the archived farm and silently drops its periods: the gap v2 closes.
+  const old=await v1(a,ws);
+  assert.equal(old.status,200);
+  assert.deepEqual(old.data.farms.map(x=>x.id),[newFarm]);
+  assert.ok(old.data.memberships.every(m=>m.farmId!==oldFarm));
+  assert.ok(!old.data.memberships.some(m=>m.parcelId===stays.id));
+
+  const before=fingerprint();
+  assert.equal((await v2(a,ws)).raw,r.raw,'repeated read is byte-identical');
+  assert.equal(fingerprint(),before,'the read never writes');
+
+  assert.equal((await v2(c,ws)).status,403);
+  const direct=await http(`/rest/v1/farms?id=eq.${oldFarm}`,{token:token(c),method:'GET'});
+  assert.ok(direct.status!==200||(Array.isArray(direct.data)&&direct.data.length===0),direct.raw.slice(0,200));
+  assert.ok(!(await v2(c,f.foreignWs)).raw.includes(oldFarm));
+
+  // Rejected whole: an archive without its instant, then a deletion that is not an archive.
+  sql(`UPDATE public.farms SET deleted_at=NULL WHERE id=${q(oldFarm)};`);
+  rejected(await v2(a,ws),/farm invariant/);
+  sql(`UPDATE public.farms SET status='ACTIVE',deleted_at=now() WHERE id=${q(oldFarm)};`);
+  rejected(await v2(a,ws),/membership farm/);
+  // A period pointing to another account's farm is never accepted.
+  const stray=randomUUID();
+  let inserted=true;
+  try {
+    sql(`BEGIN;
+      INSERT INTO public.parcels(id,workspace_id,display_name) VALUES (${q(stray)},${q(ws)},'Ajena');
+      INSERT INTO public.farm_parcel_memberships(id,workspace_id,farm_id,parcel_id,valid_from,valid_until)
+        VALUES (gen_random_uuid(),${q(ws)},${q(f.foreignFarm)},${q(stray)},'2025-01-01T00:00:00Z','2025-02-01T00:00:00Z');
+      UPDATE public.parcels SET status='ARCHIVED',deleted_at='2025-02-01T00:00:00Z' WHERE id=${q(stray)};
+      COMMIT;`);
+  } catch { inserted=false; }
+  // Restore the farm (Android restore: ACTIVE, no deleted_at) so only the stray row can fail.
+  sql(`UPDATE public.farms SET status='ACTIVE',deleted_at=NULL,version=version+1 WHERE id=${q(oldFarm)};`);
+  if(inserted) {
+    rejected(await v2(a,ws),/membership farm/);
+    sql(`DELETE FROM public.farm_parcel_memberships WHERE parcel_id=${q(stray)}; DELETE FROM public.parcels WHERE id=${q(stray)};`);
+  } else console.log('G26-PAR2-NOTE the schema itself refuses a period over a foreign farm');
+  const restored=await v2(a,ws);
+  assert.equal(restored.status,200,restored.raw.slice(0,300));
+  const back=restored.data.farms.find(x=>x.id===oldFarm);
+  assert.deepEqual([back.status,back.archivedAt,back.version],['ACTIVE',null,3]);
+  assert.equal(restored.data.memberships.length,3);
 });
 
 test('row limits reject whole: 101 farms, 1001 parcels, 5001 memberships',async()=>{
@@ -293,6 +379,19 @@ test('row limits reject whole: 101 farms, 1001 parcels, 5001 memberships',async(
   sql(`INSERT INTO public.farms(id,workspace_id,creator_user_id,owner_id,name)
     SELECT gen_random_uuid(),${q(farms)},${q(a.id)},${q(a.id)},'F'||g FROM generate_series(1,101) g;`);
   rejected(await v2(a,farms),/too large for contract v2: rows/);
+  // Real archives count towards the 100 farms; a deletion (not an archive) neither counts nor travels.
+  const archivedCount=fresh('100 + 1 archivada'), deletedCount=fresh('100 + 1 borrada');
+  for(const [ws,extra] of [[archivedCount,`'ARCHIVED',now()`],[deletedCount,`'ACTIVE',now()`]]) {
+    sql(`INSERT INTO public.farms(id,workspace_id,creator_user_id,owner_id,name)
+      SELECT gen_random_uuid(),${q(ws)},${q(a.id)},${q(a.id)},'F'||g FROM generate_series(1,100) g;
+      INSERT INTO public.farms(id,workspace_id,creator_user_id,owner_id,name,status,deleted_at)
+      VALUES (gen_random_uuid(),${q(ws)},${q(a.id)},${q(a.id)},'Extra',${extra});`);
+  }
+  rejected(await v2(a,archivedCount),/too large for contract v2: rows/);
+  const withDeleted=await v2(a,deletedCount);
+  assert.equal(withDeleted.status,200,withDeleted.raw.slice(0,300));
+  assert.equal(withDeleted.data.farms.length,100);
+  assert.ok(withDeleted.data.farms.every(x=>x.name!=='Extra'));
   const parcels=fresh('1001 parcelas');
   sql(`INSERT INTO public.parcels(id,workspace_id,display_name) SELECT gen_random_uuid(),${q(parcels)},'P'||g FROM generate_series(1,1001) g;`);
   rejected(await v2(a,parcels),/too large for contract v2: rows/);

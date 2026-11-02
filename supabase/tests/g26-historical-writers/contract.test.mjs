@@ -34,11 +34,11 @@ async function http(path, {token,admin=false,body,method='POST'}={}) {
   return {status:response.status,data,raw,ms:Date.now()-started};
 }
 const ISSUER='https://zubpicdibqbmewxeurhm.supabase.co/auth/v1';
-function token(actor, {issuer=ISSUER, expired=false, extra={}}={}) {
+function token(actor, {issuer=ISSUER, expired=false, expiredBy=1, extra={}}={}) {
   const claims=JSON.parse(Buffer.from(actor.token.split('.')[1],'base64url'));
   const part=value=>Buffer.from(JSON.stringify(value)).toString('base64url');
   const body=`${part({alg:'HS256',typ:'JWT'})}.${part({...claims,iss:issuer,
-    exp:expired?Math.floor(Date.now()/1000)-1:claims.exp,...extra})}`;
+    exp:expired?Math.floor(Date.now()/1000)-expiredBy:claims.exp,...extra})}`;
   return `${body}.${createHmac('sha256',status.JWT_SECRET).update(body).digest('base64url')}`;
 }
 const rpc=(name,actor,body,authToken=token(actor))=>http(`/rest/v1/rpc/${name}`,{token:authToken,body});
@@ -215,9 +215,9 @@ function viaTls(path,authToken,body,{ca=tls.cert}={}){
     const req=httpsRequest({host:'127.0.0.1',port:tlsPort,path,method:'POST',...(ca?{ca}:{}),
       headers:{apikey:status.ANON_KEY,Authorization:`Bearer ${authToken}`,'Content-Type':'application/json',
         'Content-Length':Buffer.byteLength(payload)}},res=>{
-      let raw=''; res.setEncoding('utf8'); res.on('data',c=>raw+=c);
+      const protocol=res.socket?.getProtocol?.(); let raw=''; res.setEncoding('utf8'); res.on('data',c=>raw+=c);
       res.on('end',()=>{ let data; try{data=JSON.parse(raw);}catch{data=raw;}
-        resolve({status:res.statusCode,data,raw,protocol:res.socket.getProtocol?.()}); });
+        resolve({status:res.statusCode,data,raw,protocol}); });
     });
     req.on('error',reject); req.end(payload);
   });
@@ -463,7 +463,8 @@ test('T7/T8 midnight DST in America/Santiago: the skipped midnight starts the da
   const hours=d=>Number(sql(`SELECT (magina_g2_private.local_day_key(${q(d)}::date+1,${tz})-magina_g2_private.local_day_key(${q(d)}::date,${tz}))/3600000000000;`));
   assert.equal(hours('2026-09-06'),23); assert.equal(hours('2026-04-04'),25); assert.equal(hours('2026-09-05'),24);
   assert.equal(sql(`SELECT to_char(to_timestamp(magina_g2_private.local_day_key('2026-09-06',${tz})/1000000000) AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI');`),'2026-09-06T04:00');
-  const a=actors.A, base={farmId:f.cl.id,campaignId:f.ccl.id,parcels:[share(f.pcl)]};
+  const a=actors.A, base={farmId:f.cl.id,campaignId:f.ccl.id};
+  Object.defineProperty(base,'parcels',{enumerable:true,get:()=>[share(f.pcl)]});
   // A = 04:00Z, the first instant of local 6 Sep: nothing of 6 Sep is before it; all of 5 Sep is.
   await rejected(()=>v3(a,dv({...base,deliveryDate:'2026-09-06',originCreatedAt:'2026-09-05T20:00:00Z'})),'42501','sync review: AFTER_ARCHIVE');
   ok(await v3(a,dv({...base,deliveryDate:'2026-09-05',originCreatedAt:'2026-09-05T20:00:00Z'})));
@@ -561,9 +562,13 @@ test('A1-A4 authority: owner of the workspace only, fail-closed identity, dead s
     await rejected(()=>v3(A,dv(),randomUUID(),authToken),'42501','sync denied: IDENTITY');
     await rejected(()=>e2(A,ex(),randomUUID(),authToken),'42501','sync denied: IDENTITY');
   }
-  // An expired token never reaches the function: the gateway refuses it, and nothing is written.
+  // Expired 1 s ago: inside the gateway's clock-skew tolerance, so the function itself must refuse it.
+  await rejected(()=>v3(A,dv(),randomUUID(),token(A,{expired:true})),'42501','sync denied: IDENTITY');
+  await rejected(()=>e2(A,ex(),randomUUID(),token(A,{expired:true})),'42501','sync denied: IDENTITY');
+  // Expired 1 h ago: the gateway refuses it before any SQL runs, and nothing is written.
   const before=fingerprint();
-  for(const call of [()=>v3(A,dv(),randomUUID(),token(A,{expired:true})),()=>e2(A,ex(),randomUUID(),token(A,{expired:true}))]) {
+  for(const call of [()=>v3(A,dv(),randomUUID(),token(A,{expired:true,expiredBy:3600})),
+    ()=>e2(A,ex(),randomUUID(),token(A,{expired:true,expiredBy:3600}))]) {
     const r=await call();
     assert.equal(r.status,401,r.raw);
   }

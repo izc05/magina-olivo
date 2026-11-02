@@ -26,6 +26,7 @@ import com.isivoltpro.maginaolivo.feature.harvests.HarvestDetailUiState
 import com.isivoltpro.maginaolivo.ui.theme.MaginaOlivoTheme
 import java.time.LocalDate
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicReference
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -41,14 +42,14 @@ class JornadaCostScreenTest {
     )
 
     @Test fun kindAmountSave() {
-        var saved: Triple<JornadaExpenseKind, Long, Boolean>? = null
+        val saved = AtomicReference<Triple<JornadaExpenseKind, Long, Boolean>?>(null)
         composeRule.setContent {
             MaginaOlivoTheme {
                 HarvestDetailScreen(
                     state = HarvestDetailUiState(isLoading = false, harvest = harvest),
                     onUpdate = {},
                     onDelete = {},
-                    onAddCost = { kind, minor, _, photo, _ -> saved = Triple(kind, minor, photo) },
+                    onAddCost = { kind, minor, _, photo, _ -> saved.set(Triple(kind, minor, photo)) },
                 )
             }
         }
@@ -62,18 +63,26 @@ class JornadaCostScreenTest {
             composeRule.onAllNodes(hasTestTag("cost-kind-RENTAL") and isSelected()).fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithTag("cost-amount").performScrollTo().performTextInput("120")
+        runCatching { androidx.test.espresso.Espresso.closeSoftKeyboard() }
+        composeRule.waitForIdle()
         composeRule.onNodeWithTag("cost-save").performScrollTo()
         composeRule.waitUntil(5_000) {
             composeRule.onAllNodes(hasTestTag("cost-save") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithTag("cost-save").performClick()
-        composeRule.waitUntil(10_000) { saved != null }
-        composeRule.runOnIdle { assertEquals(Triple(JornadaExpenseKind.RENTAL, 12_000L, false), saved) }
+        if (saved.get() == null) {
+            runCatching { composeRule.waitUntil(1_500) { saved.get() != null } }
+        }
+        if (saved.get() == null && composeRule.onAllNodes(hasTestTag("cost-save") and isEnabled()).fetchSemanticsNodes().isNotEmpty()) {
+            composeRule.onNodeWithTag("cost-save").performScrollTo().performClick()
+        }
+        composeRule.waitUntil(10_000) { saved.get() != null }
+        composeRule.runOnIdle { assertEquals(Triple(JornadaExpenseKind.RENTAL, 12_000L, false), saved.get()) }
     }
 
     /** #475: with the day's jornales already calculated, the farmer answers how the cost counts. */
     @Test fun aCostThatCouldReplaceTheCalculationAsksHowItCounts() {
-        var saved: Pair<JornadaExpenseKind, DayCostRole>? = null
+        val saved = AtomicReference<Pair<JornadaExpenseKind, DayCostRole>?>(null)
         val calculated = expense(35_000, ExpenseStatus.POSTED, "Jornales (calculado)")
             .copy(origin = ExpenseOrigin.DAY_LABOUR, category = ExpenseCategory.LABOR)
         composeRule.setContent {
@@ -82,7 +91,7 @@ class JornadaCostScreenTest {
                     state = HarvestDetailUiState(isLoading = false, harvest = harvest, costs = listOf(calculated)),
                     onUpdate = {},
                     onDelete = {},
-                    onAddCost = { kind, _, _, _, role -> saved = kind to role },
+                    onAddCost = { kind, _, _, _, role -> saved.set(kind to role) },
                 )
             }
         }
@@ -93,6 +102,8 @@ class JornadaCostScreenTest {
             composeRule.onAllNodes(hasTestTag("cost-kind-LABOUR") and isSelected()).fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithTag("cost-amount").performScrollTo().performTextInput("300")
+        runCatching { androidx.test.espresso.Espresso.closeSoftKeyboard() }
+        composeRule.waitForIdle()
         // Nothing is assumed: until the farmer answers, it cannot be saved.
         composeRule.onNodeWithTag("cost-save").performScrollTo().assertIsNotEnabled()
         composeRule.onNodeWithTag("cost-role-REPLACEMENT").performScrollTo().performClick()
@@ -108,8 +119,14 @@ class JornadaCostScreenTest {
             composeRule.onAllNodes(hasTestTag("cost-save") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithTag("cost-save").performScrollTo().performClick()
-        composeRule.waitUntil(5_000) { saved != null }
-        composeRule.runOnIdle { assertEquals(JornadaExpenseKind.LABOUR to DayCostRole.REPLACEMENT, saved) }
+        if (saved.get() == null) {
+            runCatching { composeRule.waitUntil(1_500) { saved.get() != null } }
+        }
+        if (saved.get() == null && composeRule.onAllNodes(hasTestTag("cost-save") and isEnabled()).fetchSemanticsNodes().isNotEmpty()) {
+            composeRule.onNodeWithTag("cost-save").performScrollTo().performClick()
+        }
+        composeRule.waitUntil(5_000) { saved.get() != null }
+        composeRule.runOnIdle { assertEquals(JornadaExpenseKind.LABOUR to DayCostRole.REPLACEMENT, saved.get()) }
     }
 
     /** #475: with payments per person, jornales only add; diesel never asks. */

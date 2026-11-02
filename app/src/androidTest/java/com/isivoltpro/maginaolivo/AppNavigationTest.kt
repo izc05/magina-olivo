@@ -36,7 +36,6 @@ import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.printToString
 import androidx.test.espresso.Espresso.closeSoftKeyboard
-import androidx.test.espresso.Espresso.pressBack
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.isivoltpro.maginaolivo.feature.deliveries.PESADA_NO_RUNNING_CAMPAIGN
@@ -97,7 +96,7 @@ class AppNavigationTest {
     @Test
     fun globalAddOffersTheSixExistingActionsOnTheChosenFarm() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Mi Campo").performClick()
+        navigateToOlivar()
         openSheet("add-farm", "farm-name")
         composeRule.onNodeWithTag("farm-name").performTextInput("Finca CR014")
         saveEditor("save-farm", "farm-name")
@@ -120,7 +119,7 @@ class AppNavigationTest {
     @Test
     fun globalAddKeepsTheVisibleNotebookFarmAfterCancellingAnotherFarm() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Mi Campo").performClick()
+        navigateToOlivar()
         for (name in listOf("Finca Contexto A", "Finca Contexto B")) {
             openSheet("add-farm", "farm-name")
             composeRule.onNodeWithTag("farm-name").performTextInput(name)
@@ -277,8 +276,7 @@ class AppNavigationTest {
     @Test
     fun cuadernoWorkActionOpensTheFlowDirectly() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Mi Campo").performClick()
-        waitForTag("add-farm")
+        navigateToOlivar()
         openSheet("add-farm", "farm-name")
         composeRule.onNodeWithTag("farm-name").performTextInput("Finca Acciones E2E")
         saveEditor("save-farm", "farm-name")
@@ -300,8 +298,7 @@ class AppNavigationTest {
     @Test
     fun cuadernoPesadaAndGastoOpenTheirScreensOnThatFarm() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Mi Campo").performClick()
-        waitForTag("add-farm")
+        navigateToOlivar()
         openSheet("add-farm", "farm-name")
         composeRule.onNodeWithTag("farm-name").performTextInput("Finca Pesada E2E")
         saveEditor("save-farm", "farm-name")
@@ -329,7 +326,7 @@ class AppNavigationTest {
     @Test
     fun reselectingTheActiveRootKeepsItsScreenAsItIs() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Mi Campo").performClick()
+        navigateToOlivar()
         listOf("Finca Reselección A", "Finca Reselección B").forEach { name ->
             waitForTag("add-farm")
             openSheet("add-farm", "farm-name")
@@ -371,8 +368,7 @@ class AppNavigationTest {
     @Test
     fun aFarmsCuadernoIsTheOneCuadernoOnThatFarm() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Mi Campo").performClick()
-        waitForTag("add-farm")
+        navigateToOlivar()
         openSheet("add-farm", "farm-name")
         composeRule.onNodeWithTag("farm-name").performTextInput("Finca Única E2E")
         saveEditor("save-farm", "farm-name")
@@ -399,7 +395,7 @@ class AppNavigationTest {
     @Test
     fun theCuadernoTabChangesFarmWhileAFarmsCuadernoKeepsIt() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Mi Campo").performClick()
+        navigateToOlivar()
         listOf("Finca Contexto A", "Finca Contexto B").forEach { name ->
             waitForTag("add-farm")
             openSheet("add-farm", "farm-name")
@@ -428,8 +424,7 @@ class AppNavigationTest {
     @Test
     fun aParcelsCuadernoKeepsItsParcelOnlyThere() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Mi Campo").performClick()
-        waitForTag("add-farm")
+        navigateToOlivar()
         openSheet("add-farm", "farm-name")
         composeRule.onNodeWithTag("farm-name").performTextInput("Finca Parcela Contexto")
         saveEditor("save-farm", "farm-name")
@@ -461,8 +456,7 @@ class AppNavigationTest {
     @Test
     fun registerFromAFarmOpensCuadernoWithThatFarm() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Mi Campo").performClick()
-        waitForTag("add-farm")
+        navigateToOlivar()
         openSheet("add-farm", "farm-name")
         composeRule.onNodeWithTag("farm-name").performTextInput("El Cerro")
         saveEditor("save-farm", "farm-name")
@@ -491,8 +485,7 @@ class AppNavigationTest {
     @Test
     fun nestedFarmRouteReturnsToOlivar() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Mi Campo").performClick()
-        waitForTagOrDumpScreen("add-farm")
+        navigateToOlivar()
         openSheet("add-farm", "farm-name")
         composeRule.onNodeWithTag("farm-name").performTextInput("La Solana")
         saveEditor("save-farm", "farm-name")
@@ -514,8 +507,7 @@ class AppNavigationTest {
     @Test
     fun parcelCanBeCreatedAndOpenedFromItsFarm() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Mi Campo").performClick()
-        waitForTag("add-farm")
+        navigateToOlivar()
         openSheet("add-farm", "farm-name")
         composeRule.onNodeWithTag("farm-name").performTextInput("Los Llanos")
         saveEditor("save-farm", "farm-name")
@@ -653,8 +645,7 @@ class AppNavigationTest {
     @Test
     fun oneActivityTargetsTwoParcelsAsASingleCanonicalRecord() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Mi Campo").performClick()
-        waitForTag("add-farm")
+        navigateToOlivar()
 
         openSheet("add-farm", "farm-name")
         composeRule.onNodeWithTag("farm-name").performTextInput("Finca Actuación E2E")
@@ -730,8 +721,7 @@ class AppNavigationTest {
     @Test
     fun registrarPlusCreatesARealActivityOnTheSelectedFarm() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Mi Campo").performClick()
-        waitForTagOrDumpScreen("add-farm")
+        navigateToOlivar()
 
         openSheet("add-farm", "farm-name")
         composeRule.onNodeWithTag("farm-name").performTextInput("Finca Registrar E2E")
@@ -806,8 +796,7 @@ class AppNavigationTest {
     @Test
     fun registerTodayShowsInTheDiaryAndSurvivesARestart() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Mi Campo").performClick()
-        waitForTag("add-farm")
+        navigateToOlivar()
         openSheet("add-farm", "farm-name")
         composeRule.onNodeWithTag("farm-name").performTextInput("Finca Diario E2E")
         waitForTag("save-farm")
@@ -879,8 +868,7 @@ class AppNavigationTest {
     @Test
     fun theActivityEditorShowsOnlyTheTypedBlockOfTheChosenType() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Mi Campo").performClick()
-        waitForTag("add-farm")
+        navigateToOlivar()
 
         openSheet("add-farm", "farm-name")
         composeRule.onNodeWithTag("farm-name").performTextInput("Finca Tipada E2E")
@@ -945,8 +933,7 @@ class AppNavigationTest {
     @Test
     fun cuadernoJornalKeepsGeneralAndCampaignCostsSeparate() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Mi Campo").performClick()
-        waitForTag("add-farm")
+        navigateToOlivar()
         openSheet("add-farm", "farm-name")
         composeRule.onNodeWithTag("farm-name").performTextInput("Finca Jornal E2E")
         saveEditor("save-farm", "farm-name")
@@ -1090,8 +1077,7 @@ class AppNavigationTest {
     @Test
     fun cuadernoJornalWithoutCampaignOpensTheFarmsLabour() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Mi Campo").performClick()
-        waitForTag("add-farm")
+        navigateToOlivar()
         openSheet("add-farm", "farm-name")
         composeRule.onNodeWithTag("farm-name").performTextInput("Finca Sin Campaña E2E")
         saveEditor("save-farm", "farm-name")
@@ -1207,34 +1193,34 @@ class AppNavigationTest {
      */
     /** Like [waitForTag], but a timeout reports what is on screen, so CI shows where it stopped. */
     private fun waitForTagOrDumpScreen(tag: String) {
-        try {
-            waitForTag(tag)
-        } catch (timeout: ComposeTimeoutException) {
-            val screen = runCatching { composeRule.onAllNodes(isRoot(), useUnmergedTree = true).printToString(maxDepth = Int.MAX_VALUE) }
-                .getOrElse { "(screen not readable: $it)" }
-            val screenshotPath = runCatching {
-                val bitmap = composeRule.onRoot().captureToImage().asAndroidBitmap()
-                val dir = File("/sdcard/evidence").apply { mkdirs() }
-                val file = File(dir, "nav-timeout-$tag.png")
-                FileOutputStream(file).use { out ->
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-                }
-                file.absolutePath
-            }.getOrElse { "capture failed: ${it.message}" }
-            val logcat = runCatching {
-                val process = Runtime.getRuntime().exec(arrayOf("logcat", "-d", "-t", "50"))
-                process.inputStream.bufferedReader().use { it.readText() }
-            }.getOrElse { "logcat failed: ${it.message}" }
-            throw AssertionError(
-                "«$tag» not shown after $UI_TIMEOUT_MS ms.\n" +
-                    "Screenshot: $screenshotPath\n" +
-                    "Database: ${probeDatabase()}\n" +
-                    "Threads:\n${busyThreads()}\n" +
-                    "On screen:\n$screen\n" +
-                    "Recent logcat:\n$logcat",
-                timeout,
-            )
-        }
+        waitForTag(tag)
+    }
+
+    private fun dumpScreenAndFail(tag: String, timeoutMillis: Long, timeout: ComposeTimeoutException): Nothing {
+        val screen = runCatching { composeRule.onAllNodes(isRoot(), useUnmergedTree = true).printToString(maxDepth = Int.MAX_VALUE) }
+            .getOrElse { "(screen not readable: $it)" }
+        val screenshotPath = runCatching {
+            val bitmap = composeRule.onRoot().captureToImage().asAndroidBitmap()
+            val dir = File("/sdcard/evidence").apply { mkdirs() }
+            val file = File(dir, "nav-timeout-$tag.png")
+            FileOutputStream(file).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+            file.absolutePath
+        }.getOrElse { "capture failed: ${it.message}" }
+        val logcat = runCatching {
+            val process = Runtime.getRuntime().exec(arrayOf("logcat", "-d", "-t", "50"))
+            process.inputStream.bufferedReader().use { it.readText() }
+        }.getOrElse { "logcat failed: ${it.message}" }
+        throw AssertionError(
+            "«$tag» not shown after $timeoutMillis ms.\n" +
+                "Screenshot: $screenshotPath\n" +
+                "Database: ${probeDatabase()}\n" +
+                "Threads:\n${busyThreads()}\n" +
+                "On screen:\n$screen\n" +
+                "Recent logcat:\n$logcat",
+            timeout,
+        )
     }
 
     /** Whether a fresh one-shot read and fresh observations of the app's database answer now. */
@@ -1266,11 +1252,30 @@ class AppNavigationTest {
             "${thread.name} ${thread.state}: " + frames.take(8).joinToString(" <- ") { "${it.className.substringAfterLast('.')}.${it.methodName}:${it.lineNumber}" }
         }
 
+    /** Navigates to the Olivar root (Mi Campo) and settles until `add-farm` is ready. */
+    private fun navigateToOlivar() {
+        composeRule.waitForIdle()
+        if (composeRule.onAllNodesWithTag("farms-root").fetchSemanticsNodes().isEmpty()) {
+            composeRule.onNodeWithTag("bottom-Mi Campo").performClick()
+        }
+        composeRule.waitUntil(UI_TIMEOUT_MS) {
+            if (composeRule.onAllNodesWithTag("farms-root").fetchSemanticsNodes().isEmpty()) {
+                runCatching { composeRule.onNodeWithTag("bottom-Mi Campo").performClick() }
+            }
+            composeRule.onAllNodesWithTag("farms-root").fetchSemanticsNodes().isNotEmpty()
+        }
+        waitForTag("add-farm")
+    }
+
     private var lastRevealAttemptMs = 0L
 
     private fun waitForTag(tag: String, timeoutMillis: Long = UI_TIMEOUT_MS) {
-        composeRule.waitUntil(timeoutMillis) {
-            composeRule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() || revealInFarmList(tag)
+        try {
+            composeRule.waitUntil(timeoutMillis) {
+                composeRule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() || revealInFarmList(tag)
+            }
+        } catch (timeout: ComposeTimeoutException) {
+            dumpScreenAndFail(tag, timeoutMillis, timeout)
         }
     }
 
@@ -1369,7 +1374,9 @@ class AppNavigationTest {
 
     private fun awaitTag(tag: String, timeoutMillis: Long): Boolean =
         try {
-            waitForTag(tag, timeoutMillis)
+            composeRule.waitUntil(timeoutMillis) {
+                composeRule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() || revealInFarmList(tag)
+            }
             true
         } catch (timeout: ComposeTimeoutException) {
             false
@@ -1490,6 +1497,26 @@ class AppNavigationTest {
 
     private fun safeCloseSoftKeyboard() {
         runCatching { closeSoftKeyboard() }
+    }
+
+    private fun pressBack() {
+        composeRule.waitForIdle()
+        val handled = runCatching {
+            var pressed = false
+            composeRule.activityRule.scenario.onActivity { activity ->
+                activity.onBackPressedDispatcher.onBackPressed()
+                pressed = true
+            }
+            pressed
+        }.getOrDefault(false)
+        if (!handled) {
+            runCatching {
+                InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+            }.onFailure {
+                androidx.test.espresso.Espresso.pressBack()
+            }
+        }
+        composeRule.waitForIdle()
     }
 
     private fun pickDate(fieldTag: String, iso: String) {

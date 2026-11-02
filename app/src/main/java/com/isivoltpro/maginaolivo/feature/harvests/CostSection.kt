@@ -254,9 +254,14 @@ internal fun CostSheet(
         else -> role
     }
     val valid = minor != null && minor > 0 && chosen != null
-    val save = { openAfter: Boolean ->
-        val text = concept.trim().ifEmpty { null }
-        onSaveWithRole?.invoke(kind, minor!!, text, openAfter, chosen!!) ?: onSave(kind, minor!!, text, openAfter)
+    var savingLocally by remember { mutableStateOf(false) }
+    val isBusy = isSaving || savingLocally
+    val save: (Boolean) -> Unit = { openAfter ->
+        if (valid && !isBusy) {
+            savingLocally = true
+            val text = concept.trim().ifEmpty { null }
+            onSaveWithRole?.invoke(kind, minor!!, text, openAfter, chosen!!) ?: onSave(kind, minor!!, text, openAfter)
+        }
     }
 
     Column(
@@ -327,13 +332,13 @@ internal fun CostSheet(
             "Guardar gasto",
             { save(false) },
             Modifier.fillMaxWidth().testTag("cost-save"),
-            enabled = valid && !isSaving,
+            enabled = valid && !isBusy,
         )
         MoSecondaryButton(
             "Guardar y añadir foto del tique",
             { save(true) },
             Modifier.fillMaxWidth().testTag("cost-save-photo"),
-            enabled = valid && !isSaving,
+            enabled = valid && !isBusy,
         )
         MoTertiaryButton("Cancelar", onCancel, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(MoSpacing.lg))

@@ -241,6 +241,9 @@ class LocalWorkspaceRepository(
                 } else if (currentUserId != null) {
                     // Simulated or fallback account with current userId
                     database.workspaceDao().findActiveByOwner(currentUserId)?.let { existing ->
+                        database.workspaceSelectionDao().upsert(
+                            WorkspaceSelectionEntity(issuer, currentUserId.toString(), existing.id),
+                        )
                         return AppResult.Success(existing.id)
                     }
                     if (!createLocal) return AppResult.Failure(AppError.NotFound("workspace"))
@@ -275,6 +278,9 @@ class LocalWorkspaceRepository(
                                 updatedAt = now,
                             ),
                         )
+                        database.workspaceSelectionDao().upsert(
+                            WorkspaceSelectionEntity(issuer, currentUserId.toString(), workspaceId),
+                        )
                         AppResult.Success(workspaceId)
                     }
                 } else {
@@ -293,7 +299,11 @@ class LocalWorkspaceRepository(
         if (selected != null) {
             return local.find { it.id == selected }?.let { AppResult.Success(it.id) } ?: denied()
         }
-        if (local.size == 1) return AppResult.Success(local.single().id)
+        if (local.size == 1) {
+            val singleId = local.single().id
+            database.workspaceSelectionDao().upsert(WorkspaceSelectionEntity("", "", singleId))
+            return AppResult.Success(singleId)
+        }
         if (local.size > 1) return AppResult.Failure(AppError.Validation("workspaceId", "selection_required"))
         if (!createLocal) return AppResult.Failure(AppError.NotFound("workspace"))
         return database.withTransaction {
@@ -327,6 +337,9 @@ class LocalWorkspaceRepository(
                     createdAt = now,
                     updatedAt = now,
                 ),
+            )
+            database.workspaceSelectionDao().upsert(
+                WorkspaceSelectionEntity("", "", workspaceId),
             )
             AppResult.Success(workspaceId)
         }

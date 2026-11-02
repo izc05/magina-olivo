@@ -26,6 +26,7 @@ import com.isivoltpro.maginaolivo.feature.harvests.HarvestDetailUiState
 import com.isivoltpro.maginaolivo.ui.theme.MaginaOlivoTheme
 import java.time.LocalDate
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -43,13 +44,17 @@ class JornadaCostScreenTest {
 
     @Test fun kindAmountSave() {
         val saved = AtomicReference<Triple<JornadaExpenseKind, Long, Boolean>?>(null)
+        val callCount = AtomicInteger(0)
         composeRule.setContent {
             MaginaOlivoTheme {
                 HarvestDetailScreen(
                     state = HarvestDetailUiState(isLoading = false, harvest = harvest),
                     onUpdate = {},
                     onDelete = {},
-                    onAddCost = { kind, minor, _, photo, _ -> saved.set(Triple(kind, minor, photo)) },
+                    onAddCost = { kind, minor, _, photo, _ ->
+                        callCount.incrementAndGet()
+                        saved.set(Triple(kind, minor, photo))
+                    },
                 )
             }
         }
@@ -70,14 +75,13 @@ class JornadaCostScreenTest {
             composeRule.onAllNodes(hasTestTag("cost-save") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithTag("cost-save").performClick()
-        if (saved.get() == null) {
-            runCatching { composeRule.waitUntil(1_500) { saved.get() != null } }
-        }
-        if (saved.get() == null && composeRule.onAllNodes(hasTestTag("cost-save") and isEnabled()).fetchSemanticsNodes().isNotEmpty()) {
-            composeRule.onNodeWithTag("cost-save").performScrollTo().performClick()
-        }
+        // Ensure that a second click does not invoke onAddCost again or duplicate records
+        runCatching { composeRule.onNodeWithTag("cost-save").performClick() }
         composeRule.waitUntil(10_000) { saved.get() != null }
-        composeRule.runOnIdle { assertEquals(Triple(JornadaExpenseKind.RENTAL, 12_000L, false), saved.get()) }
+        composeRule.runOnIdle {
+            assertEquals(Triple(JornadaExpenseKind.RENTAL, 12_000L, false), saved.get())
+            assertEquals(1, callCount.get())
+        }
     }
 
     /** #475: with the day's jornales already calculated, the farmer answers how the cost counts. */

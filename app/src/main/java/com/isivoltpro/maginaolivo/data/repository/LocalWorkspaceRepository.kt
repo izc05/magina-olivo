@@ -240,6 +240,11 @@ class LocalWorkspaceRepository(
                     AppResult.Failure(AppError.Permission("No hay sesión activa"))
                 } else if (currentUserId != null) {
                     // Simulated or fallback account with current userId
+                    val selected = database.workspaceSelectionDao().find(issuer, currentUserId.toString())?.workspaceId
+                    if (selected != null) {
+                        return database.workspaceDao().findActiveByOwner(currentUserId)?.takeIf { it.id == selected }
+                            ?.let { AppResult.Success(it.id) } ?: denied()
+                    }
                     database.workspaceDao().findActiveByOwner(currentUserId)?.let { existing ->
                         database.workspaceSelectionDao().upsert(
                             WorkspaceSelectionEntity(issuer, currentUserId.toString(), existing.id),

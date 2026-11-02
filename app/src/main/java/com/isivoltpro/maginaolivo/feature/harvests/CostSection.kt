@@ -16,6 +16,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
@@ -255,6 +256,11 @@ internal fun CostSheet(
     }
     val valid = minor != null && minor > 0 && chosen != null
     var savingLocally by remember { mutableStateOf(false) }
+    LaunchedEffect(isSaving, error) {
+        if (!isSaving || error != null) {
+            savingLocally = false
+        }
+    }
     val isBusy = isSaving || savingLocally
     val save: (Boolean) -> Unit = { openAfter ->
         if (valid && !isBusy) {
@@ -271,17 +277,39 @@ internal fun CostSheet(
         Text("Gasto del día", style = MaterialTheme.typography.headlineSmall, color = MoColors.current.primaryText)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(MoSpacing.xs)) {
             JornadaExpenseKind.entries.forEach { option ->
-                FilterChip(kind == option, { kind = option; role = null }, { Text(option.label) }, Modifier.testTag("cost-kind-${option.name}"))
+                FilterChip(
+                    kind == option,
+                    {
+                        kind = option
+                        role = null
+                        savingLocally = false
+                    },
+                    { Text(option.label) },
+                    Modifier.testTag("cost-kind-${option.name}"),
+                )
             }
         }
         MoTextField(
-            amount, { amount = it }, currency?.let { "Importe ($it)" } ?: "Moneda sin confirmar",
+            amount,
+            {
+                amount = it
+                savingLocally = false
+            },
+            currency?.let { "Importe ($it)" } ?: "Moneda sin confirmar",
             enabled = currency != null,
             isError = amount.isNotBlank() && !valid,
             supportingText = if (amount.isNotBlank() && !valid) "Escribe un importe como 65 o 65,50" else null,
             modifier = Modifier.fillMaxWidth().testTag("cost-amount"),
         )
-        MoTextField(concept, { concept = it }, "Concepto (opcional)", modifier = Modifier.fillMaxWidth().testTag("cost-concept"))
+        MoTextField(
+            concept,
+            {
+                concept = it
+                savingLocally = false
+            },
+            "Concepto (opcional)",
+            modifier = Modifier.fillMaxWidth().testTag("cost-concept"),
+        )
         question?.let { asked ->
             val what = if (asked.calculated == DayCostKind.LABOUR) "jornales" else "maquinaria"
             Text("¿Cómo cuenta este gasto?", style = MaterialTheme.typography.titleSmall, color = MoColors.current.primaryText)
@@ -291,11 +319,25 @@ internal fun CostSheet(
                 color = MoColors.current.secondaryText,
             )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(MoSpacing.xs)) {
-                FilterChip(chosen == DayCostRole.ADDITIVE, { role = DayCostRole.ADDITIVE },
-                    { Text("Se añade al cálculo") }, Modifier.testTag("cost-role-ADDITIVE"))
+                FilterChip(
+                    chosen == DayCostRole.ADDITIVE,
+                    {
+                        role = DayCostRole.ADDITIVE
+                        savingLocally = false
+                    },
+                    { Text("Se añade al cálculo") },
+                    Modifier.testTag("cost-role-ADDITIVE"),
+                )
                 if (asked.canReplace) {
-                    FilterChip(chosen == DayCostRole.REPLACEMENT, { role = DayCostRole.REPLACEMENT },
-                        { Text("Sustituye el cálculo") }, Modifier.testTag("cost-role-REPLACEMENT"))
+                    FilterChip(
+                        chosen == DayCostRole.REPLACEMENT,
+                        {
+                            role = DayCostRole.REPLACEMENT
+                            savingLocally = false
+                        },
+                        { Text("Sustituye el cálculo") },
+                        Modifier.testTag("cost-role-REPLACEMENT"),
+                    )
                 }
             }
             if (!asked.canReplace) {
@@ -327,7 +369,7 @@ internal fun CostSheet(
             modifier = Modifier.testTag("cost-sheet-ledger-note"),
         )
         currencyError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("day-expense-currency-error")) }
-        error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("cost-sheet-error")) }
         MoPrimaryButton(
             "Guardar gasto",
             { save(false) },

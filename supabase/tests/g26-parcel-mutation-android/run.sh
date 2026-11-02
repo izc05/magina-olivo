@@ -14,8 +14,8 @@ adb install -r app/build/outputs/apk/androidTest/dev/debug/app-dev-debug-android
 adb shell pm clear com.isivoltpro.maginaolivo.dev >/dev/null
 base=com.isivoltpro.maginaolivo.data.local
 adb shell am instrument -w -e class \
-  $base.ParcelMutationSendRoomTest,$base.ParcelArchiveCausalOrderRoomTest,$base.CampaignCasRoomTest,$base.ParcelSendRoomTest,$base.FarmSendRoomTest,$base.WorkspaceSendRoomTest,$base.ParentReceiveRoomTest,$base.OfflineFirstFarmRepositoryTest,$base.CoreWorkspaceBoundaryContractTest \
+  $base.ParcelMutationSendRoomTest,$base.ParcelArchiveCausalOrderRoomTest,$base.CampaignCasRoomTest,$base.ParcelSendRoomTest,$base.FarmSendRoomTest,$base.WorkspaceSendRoomTest,$base.ParentReceiveRoomTest,$base.OfflineFirstFarmRepositoryTest,$base.CoreWorkspaceBoundaryContractTest,$base.CampaignLifecycleContractTest,$base.OfflineFirstCampaignRepositoryTest \
   com.isivoltpro.maginaolivo.dev.test/androidx.test.runner.AndroidJUnitRunner \
   > "$work/instrument.out"
 cat "$work/instrument.out"
-grep -q 'OK (74 tests)' "$work/instrument.out"
+grep -q 'OK (96 tests)' "$work/instrument.out"

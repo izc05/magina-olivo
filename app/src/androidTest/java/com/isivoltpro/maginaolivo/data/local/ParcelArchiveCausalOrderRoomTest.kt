@@ -191,6 +191,53 @@ class ParcelArchiveCausalOrderRoomTest {
         assertTrue(server.refusals.isEmpty())
     }
 
+    /**
+     * A staged ARCHIVE meets a campaign that is ACTIVE on the server (e.g. reopened on another device
+     * after staging): the refusal is kept, nothing is lost and nothing is retried. It needs an explicit
+     * resolution; until then the campaign CAS over this parcel stays refused too.
+     */
+    @Test fun stagedArchiveRefusedByARemotelyActiveCampaignStaysBlockedWithoutRetries() = runBlocking {
+        val parcel = confirmedParcel("Parcela 1")
+        val campaign = confirmedCampaign(CampaignStatus.CLOSED, parcel)
+        assertEquals(AppResult.Success(Unit), parcels().archive(parcel))
+        val archive = openParcel(parcel).single()
+        assertEquals(ParcelMutationOutcome.STAGED, sender().stage(archive.id))
+        val staged = db.syncOutboxDao().findById(archive.id)!!
+        server.campaigns.getValue(campaign).status = CampaignStatus.ACTIVE.name
+
+        assertEquals(ParcelMutationOutcome.CONFLICT, sender().send(archive.id, lease))
+        val blocked = db.syncOutboxDao().findById(archive.id)!!
+        assertEquals(OutboxStatus.BLOCKED, blocked.status)
+        assertEquals("ARCHIVE_BLOCKED_CAMPAIGN", blocked.lastErrorCode)
+        assertEquals(staged.payloadJson, blocked.payloadJson)
+        assertEquals(staged.accountId, blocked.accountId)
+        assertEquals(staged.baseRemoteVersion, blocked.baseRemoteVersion)
+        assertEquals(0, blocked.attemptCount)
+        assertEquals(listOf("ARCHIVE_BLOCKED_CAMPAIGN"), server.refusals)
+        assertEquals(RecordStatus.ACTIVE, server.parcels.getValue(parcel).status)
+        // The local archive is kept and marked in conflict, never silently undone.
+        assertEquals(RecordStatus.ARCHIVED, db.parcelDao().findById(parcel)?.status)
+        assertEquals(SyncStatus.CONFLICT, db.parcelDao().findById(parcel)?.metadata?.syncStatus)
+
+        // No automatic retry: neither send nor stage reaches the server again.
+        val calls = server.calls.size
+        repeat(3) {
+            assertEquals(ParcelMutationOutcome.REJECTED, sender().send(archive.id, lease))
+            assertEquals(ParcelMutationOutcome.REJECTED, sender().stage(archive.id))
+        }
+        assertEquals(calls, server.calls.size)
+        assertEquals(blocked, db.syncOutboxDao().findById(archive.id))
+        assertEquals(listOf(archive.id), openParcel(parcel).map { it.id })
+
+        // A later campaign edit is not staged over the refused ARCHIVE: explicit resolution required.
+        assertEquals(AppResult.Success(Unit), campaigns().reopen(campaign))
+        assertEquals(AppResult.Success(Unit), campaigns().close(campaign, LocalDate.parse("2026-07-15")))
+        val update = openCampaign(campaign).single()
+        assertEquals(CampaignCasOutcome.REJECTED, cas().stage(update.id))
+        assertNull(db.syncOutboxDao().findById(update.id)?.payloadJson)
+        assertEquals(calls, server.calls.size)
+    }
+
     @Test fun pendingDeliveryHoldsTheArchiveUntilItIsConfirmed() = runBlocking {
         val parcel = confirmedParcel("Parcela con Pesada")
         val campaign = confirmedCampaign(CampaignStatus.CLOSED, parcel)

@@ -71,9 +71,11 @@ const day=(o={})=>({id:randomUUID(),farmId:f.north.id,campaignId:f.cn,harvestDat
   destination:null,notes:null,collectionMethod:null,workerCount:null,machineryText:null,baseVersion:null,...o});
 const share=(p,w=1000,mode='EXACT')=>({id:randomUUID(),parcelId:p.id,campaignParcelId:null,parcelNameAtDelivery:p.name,
   weightGrams:mode==='EXACT'?w:null,allocationMode:mode});
+// The parcel share follows netGrams unless the caller gives its own lot, so every Pesada reconciles.
 const dv=(harvestId,o={})=>({id:randomUUID(),farmId:f.north.id,campaignId:f.cn,deliveryDate:'2026-10-14',destinationName:'Cooperativa QA',
   destinationOrganizationId:null,netGrams:1000,grossGrams:null,tareGrams:null,deliveryNumber:null,ticketNumber:null,source:'MANUAL',
-  notes:null,harvestId,deliveryTime:null,harvestOrigin:null,baseVersion:null,parcels:[share(f.act)],originCreatedAt:'2026-10-14T18:00:00Z',...o});
+  notes:null,harvestId,deliveryTime:null,harvestOrigin:null,baseVersion:null,parcels:[share(f.act,o.netGrams??1000)],
+  originCreatedAt:'2026-10-14T18:00:00Z',...o});
 const legacy=d=>{const {originCreatedAt,...rest}=d; return rest;};
 const ok=(r,label)=>{ assert.equal(r.status,200,`${label}: ${r.raw.slice(0,400)}`); return r.data; };
 const refused=(r,code,message,httpStatus)=>{
@@ -119,8 +121,8 @@ const surface=()=>sql(`SELECT concat_ws(E'\\n',
    FROM information_schema.role_table_grants WHERE grantee IN ('anon','authenticated','PUBLIC')),
   (SELECT string_agg(table_name||'.'||column_name||':'||data_type||':'||is_nullable,';' ORDER BY table_name,ordinal_position)
    FROM information_schema.columns WHERE table_schema='public'));`);
-const triggers=()=>sql(`SELECT string_agg(tgrelid::regclass::text||'.'||tgname,';' ORDER BY tgrelid::regclass::text,tgname) FROM pg_trigger
-  WHERE NOT tgisinternal AND tgrelid::regclass::text LIKE 'public.%';`);
+const triggers=()=>sql(`SELECT string_agg('public.'||c.relname||'.'||t.tgname,';' ORDER BY c.relname,t.tgname) FROM pg_trigger t
+  JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE NOT t.tgisinternal AND n.nspname='public';`);
 
 before(async()=>{
   for(const label of ['A','C']) {
@@ -169,7 +171,8 @@ test('privileges: three endpoints authenticated-only, private core and triggers 
   assert.equal(sql(`SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='magina_g2_private'
     AND p.proname IN ('sync_harvest','delete_harvest','derive_auto_day','deliveries_derive_harvest','delivery_parcels_derive_harvest')
     AND (has_function_privilege('anon',p.oid,'EXECUTE') OR has_function_privilege('authenticated',p.oid,'EXECUTE'));`),'0');
-  assert.equal(sql(`SELECT has_table_privilege('authenticated','public.harvest_parcels','SELECT') OR has_table_privilege('authenticated','public.harvests','UPDATE');`),'f');
+  // harvest_parcels stays closed; the G0 grants on harvests are unchanged (asserted by the surface test).
+  assert.equal(sql(`SELECT has_table_privilege('authenticated','public.harvest_parcels','SELECT') OR has_table_privilege('anon','public.harvest_parcels','SELECT');`),'f');
   const anon=await http('/rest/v1/rpc/sync_own_harvest_v1',{body:{p_operation_id:randomUUID(),p_harvest:day()}});
   assert.ok([401,403].includes(anon.status),anon.raw);
 });

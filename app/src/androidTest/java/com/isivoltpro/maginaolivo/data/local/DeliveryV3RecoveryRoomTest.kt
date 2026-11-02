@@ -180,12 +180,16 @@ class DeliveryV3RecoveryRoomTest {
         }
         val op = db.syncOutboxDao().listForEntity(SyncEntityType.DELIVERY, id).single()
         assertEquals(3, op.payloadVersion)
-        val silent = Rpc(onCheck = { fail("Sin Jornada confirmada no se lee ni se envia"); error("") })
-        assertEquals(DispatchOutcome.PARENT_NOT_SYNCED, worker(device, silent).dispatch(op.id, lease))
-        assertTrue(silent.names.isEmpty())
-        assertNull(db.deliveryDispatchPrepareDao().findByOperation(op.id))
         val jornada = db.harvestDao().findById(db.deliveryDao().findById(id)!!.harvestId!!)!!
-        db.harvestDao().upsert(jornada.copy(metadata = jornada.metadata.copy(remoteVersion = jornada.metadata.remoteVersion ?: 1L)))
+        // The causal gate holds only while the Jornada has no remote version; a later Pesada of an
+        // already confirmed day goes straight on (no wait cycle).
+        if (jornada.metadata.remoteVersion == null) {
+            val silent = Rpc(onCheck = { fail("Sin Jornada confirmada no se lee ni se envia"); error("") })
+            assertEquals(DispatchOutcome.PARENT_NOT_SYNCED, worker(device, silent).dispatch(op.id, lease))
+            assertTrue(silent.names.isEmpty())
+            assertNull(db.deliveryDispatchPrepareDao().findByOperation(op.id))
+            db.harvestDao().upsert(jornada.copy(metadata = jornada.metadata.copy(remoteVersion = 1L)))
+        }
         assertEquals(DispatchOutcome.V3_ACK_AWAITING_HEAD,
             worker(device, Rpc(onV3 = { written(op) }, onCheck = { receipt(op) })).dispatch(op.id, lease))
         return op

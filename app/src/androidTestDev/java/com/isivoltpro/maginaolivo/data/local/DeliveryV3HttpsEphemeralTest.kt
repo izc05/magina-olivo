@@ -160,6 +160,9 @@ class DeliveryV3HttpsEphemeralTest {
         val actor = UUID.fromString(fixture.getString(actorKey))
         val store = MemoryAccountSessionStore().apply { write(AccountRecord(session = session(actor, tokenKey))) }
         val account = AccountRepository(SupabaseAuthApi(config, HttpsAuthTransport(config)), store)
+        // Publishes the stored session after /auth/v1/user validates it, so field writes are attributed.
+        account.resume(true)
+        assertEquals(actor, account.state.value.userId)
         val ledger = File(context.noBackupFilesDir, "g808-v3-ledger-${UUID.randomUUID()}.json").also { ledgers += it }
         val links = LocalFarmLinkRepository(context, db, account, issuer, AndroidFarmLinkLedger(ledger),
             ServerWorkspaceOwnerVerifier(authorizations, issuer))

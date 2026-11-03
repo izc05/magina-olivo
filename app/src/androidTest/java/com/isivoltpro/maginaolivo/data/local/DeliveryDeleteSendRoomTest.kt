@@ -272,7 +272,8 @@ class DeliveryDeleteSendRoomTest {
         assertNull(marker.accountId); assertNull(marker.payloadJson)
         val recomputed = phone.db.harvestDao().findById(jornada.id)!!
         assertEquals(1_400_000L, recomputed.weightGrams)
-        assertEquals(listOf(1_400_000L), phone.db.harvestDao().listParcels(jornada.id).map { it.weightGrams })
+        // A local AUTO_DAY split records its origin Parcels without kilos (UNALLOCATED); the server derives its own.
+        assertEquals(listOf(north), phone.db.harvestDao().listParcels(jornada.id).map { it.parcelId })
 
         assertEquals(DeliveryDeleteOutcome.STAGED, phone.sender(server).stage(marker.id))
         val staged = phone.db.syncOutboxDao().findById(marker.id)!!
@@ -517,16 +518,23 @@ class DeliveryDeleteSendRoomTest {
             assertEquals(DeliveryDeleteOutcome.SYNCED, phone.sender(server).send(marker.id, lease))
             assertEquals(marker.id, phone.deleteMarker(op.entityId).id)
             assertEquals(1, server.deletes)
-            // A staged delete whose farm consent is then revoked: refused before any request, kept as it is.
+            // A staged delete whose farm consent is then revoked: the revocation BLOCKS the farm's pending operations,
+            // so it is refused before any request, with its UUID and frozen bytes kept, and the tombstone untouched.
             val next = phone.confirmed(server, 100_000)
             val nextMarker = phone.delete(next)
             assertEquals(DeliveryDeleteOutcome.STAGED, phone.sender(server).stage(nextMarker.id))
-            val staged = phone.snapshot(next)
+            val staged = phone.db.syncOutboxDao().findById(nextMarker.id)!!
+            val tombstone = phone.db.deliveryDao().findById(next.entityId)
             server.names.clear()
             phone.links.revokeConsentForFarm(farmId)
-            assertEquals(DeliveryDeleteOutcome.CONSENT_REQUIRED, phone.sender(server).send(nextMarker.id, lease))
+            assertEquals(DeliveryDeleteOutcome.REJECTED, phone.sender(server).send(nextMarker.id, lease))
             assertTrue(server.names.isEmpty())
-            assertEquals(staged, phone.snapshot(next))
+            val revoked = phone.db.syncOutboxDao().findById(nextMarker.id)!!
+            assertEquals(OutboxStatus.BLOCKED, revoked.status)
+            assertEquals(staged.id, revoked.id); assertEquals(staged.payloadJson, revoked.payloadJson)
+            assertEquals(staged.accountId, revoked.accountId)
+            assertEquals(tombstone, phone.db.deliveryDao().findById(next.entityId))
+            assertTrue(server.deliveries.getValue(next.entityId).deleted.not())
         }
     }
 

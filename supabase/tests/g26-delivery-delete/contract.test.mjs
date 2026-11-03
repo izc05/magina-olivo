@@ -83,8 +83,10 @@ const refused=(r,code,message,httpStatus)=>{
   assert.equal(r.data.code,code,r.raw); assert.equal(r.data.message,message,r.raw);
   return r.data;
 };
+// boolean::text inside || is 'true'/'false' (not psql's t/f display): parse strictly, never guess.
+const pgBool=t=>{ if(t==='true') return true; if(t==='false') return false; throw new Error(`unexpected boolean text: ${JSON.stringify(t)}`); };
 const harvestRow=id=>{ const [w,v,o,del]=sql(`SELECT weight_grams||'|'||version||'|'||coalesce(day_origin,'-')||'|'||(deleted_at IS NOT NULL)
-  FROM public.harvests WHERE id=${q(id)};`).split('|'); return {weight:Number(w),version:Number(v),origin:o,deleted:del==='t'}; };
+  FROM public.harvests WHERE id=${q(id)};`).split('|'); return {weight:Number(w),version:Number(v),origin:o,deleted:pgBool(del)}; };
 const parcelsOf=id=>sql(`SELECT coalesce(string_agg(parcel_id||':'||allocation_mode||':'||coalesce(weight_grams::text,'null'),',' ORDER BY parcel_id),'')
   FROM public.harvest_parcels WHERE harvest_id=${q(id)};`);
 const expectParcels=(id,rows)=>assert.equal(parcelsOf(id),rows.map(([p,m,w])=>`${p.id}:${m}:${w}`).sort().join(','));
@@ -129,7 +131,7 @@ const snapshot=(deliveryId,harvestId)=>sql(`SELECT concat_ws(E'\\n',
   (SELECT count(*)::text FROM magina_g2_private.fact_origins WHERE entity_id=${q(deliveryId)}));`);
 const receipts=id=>Number(sql(`SELECT count(*) FROM magina_g2_private.sync_operations WHERE entity_id=${q(id)};`));
 const deliveryRow=id=>{ const [v,del]=sql(`SELECT version||'|'||(deleted_at IS NOT NULL) FROM public.deliveries WHERE id=${q(id)};`).split('|');
-  return {version:Number(v),deleted:del==='t'}; };
+  return {version:Number(v),deleted:pgBool(del)}; };
 
 const WRITERS=['public.sync_own_delivery(uuid,jsonb)','public.sync_own_delivery_v2(uuid,jsonb)','public.sync_own_delivery_v3(uuid,jsonb)',
   'public.get_own_delivery_v2(uuid)','public.get_own_delivery_head_v3(uuid)','public.get_own_delivery_receive_v1(uuid)',
@@ -299,6 +301,7 @@ test('MANUAL: deleting its Pesadas never touches the typed kilos',async()=>{
 test('identity and scope: other account, wrong issuer, expired session, revoked and restored owner; refusals change nothing',async()=>{
   const a=actors.A, c=actors.C, h=day({harvestDate:'2026-10-25'}); ok(await hv(a,h),'day');
   const p=dv(h.id,{deliveryDate:'2026-10-25',netGrams:400}); ok(await v3(a,p),'p');
+  const other=dv(h.id,{deliveryDate:'2026-10-25',netGrams:600}); ok(await v3(a,other),'other');
   const before=snapshot(p.id,h.id);
   // Another account never learns whether the Pesada exists.
   const foreign=refused(await ddel(c,p.id,1),'42501','sync denied: SCOPE');
@@ -333,8 +336,26 @@ test('identity and scope: other account, wrong issuer, expired session, revoked 
   // D5, as in sync_own_delivery_v3: an APPLIED operation replays its receipt even after a later revocation.
   sql(`UPDATE public.workspaces SET deleted_at=now() WHERE id=${q(f.ws)};`);
   try {
-    assert.equal(ok(await ddel(a,p.id,1,op),'replay after revocation').idempotent,true);
+    const replay=ok(await ddel(a,p.id,1,op),'replay after revocation');
+    assert.deepEqual([replay.idempotent,replay.entity_id,replay.remote_version,replay.payload_version],[true,p.id,done.remote_version,3]);
+    const afterRevocation=snapshot(other.id,h.id), receiptsBefore=receipts(p.id)+receipts(other.id);
+    // The replay is a read of that exact receipt only: the same UUID with other data is RECEIPT_CONFLICT.
+    refused(await ddel(a,other.id,1,op),'23505','sync conflict: RECEIPT_CONFLICT');
+    refused(await ddel(a,p.id,2,op),'23505','sync conflict: RECEIPT_CONFLICT');
+    // No new mutation after revocation: a new delete is SCOPE and nothing moves.
+    refused(await ddel(a,other.id,1),'42501','sync denied: SCOPE');
     refused(await ddel(a,p.id,2),'42501','sync denied: SCOPE');
+    // The replay needs a valid JWT of the SAME account: another account with that UUID, another issuer or an
+    // expired session never see the receipt (receipts are keyed by account; identity is checked first).
+    const stolen=refused(await ddel(c,p.id,1,op),'42501','sync denied: SCOPE');
+    assert.ok(!JSON.stringify(stolen).includes(op) && !JSON.stringify(stolen).includes(String(h.id)));
+    refused(await ddel(a,p.id,1,op,token(a,{iss:'https://otro-proyecto.supabase.co/auth/v1'})),'42501','sync denied: IDENTITY');
+    const expiredReplay=await ddel(a,p.id,1,op,token(a,{exp:Math.floor(Date.now()/1000)-3600}));
+    assert.ok([401,403].includes(expiredReplay.status),expiredReplay.raw);
+    assert.ok(!expiredReplay.raw.includes(op));
+    assert.equal(snapshot(other.id,h.id),afterRevocation);
+    assert.equal(receipts(p.id)+receipts(other.id),receiptsBefore);
+    assert.deepEqual(deliveryRow(other.id),{version:1,deleted:false});
   } finally {
     sql(`UPDATE public.workspaces SET deleted_at=NULL WHERE id=${q(f.ws)};`);
   }

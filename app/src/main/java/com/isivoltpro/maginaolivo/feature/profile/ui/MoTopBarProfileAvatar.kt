@@ -51,49 +51,82 @@ fun ProfileAvatarIconButton(
     isConnected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    syncState: AccountSyncState = if (isConnected) AccountSyncState.SIGNED_IN_SYNCED else AccountSyncState.LOCAL_ONLY,
     hasUnreadAlerts: Boolean = false,
 ) {
-    Surface(
+    // Zona táctil mínima accesible de 48dp x 48dp conforme a WCAG y directrices Android
+    Box(
         modifier = modifier
-            .size(42.dp)
+            .size(48.dp)
             .clip(CircleShape)
-            .semantics { contentDescription = "Mi perfil, cuenta y explotaciones" }
             .clickable(role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = "Mi perfil, cuenta y explotaciones" }
             .testTag("topbar-profile-avatar"),
-        shape = CircleShape,
-        color = if (isConnected) MoOlivePrimary else MoSurfaceTokens.cardElevated,
-        border = BorderStroke(
-            1.5.dp,
-            if (isConnected) MoSurfaceTokens.cardStroke else MoSurfaceTokens.cardStroke,
-        ),
-        shadowElevation = 1.dp,
+        contentAlignment = Alignment.Center,
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            if (isConnected && !initials.isNullOrBlank()) {
-                Text(
-                    text = initials.take(2).uppercase(),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    modifier = Modifier.testTag("topbar-avatar-initials"),
-                )
-            } else {
-                OliveMark(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .testTag("topbar-avatar-local"),
-                )
-            }
+        Surface(
+            modifier = Modifier.size(42.dp),
+            shape = CircleShape,
+            color = if (isConnected) MoOlivePrimary else MoSurfaceTokens.cardElevated,
+            border = BorderStroke(1.5.dp, MoSurfaceTokens.cardStroke),
+            shadowElevation = 1.dp,
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                if (isConnected && !initials.isNullOrBlank()) {
+                    Text(
+                        text = initials.take(2).uppercase(),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.testTag("topbar-avatar-initials"),
+                    )
+                } else {
+                    OliveMark(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .testTag("topbar-avatar-local"),
+                    )
+                }
 
-            // Indicador de estado local/sin conexión si no está conectado
-            if (!isConnected) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .align(Alignment.BottomEnd)
-                        .background(MoColors.current.warningText, CircleShape)
-                        .border(1.dp, Color.White, CircleShape),
-                )
+                // Indicador visual de estado de sincronización / conexión
+                when (syncState) {
+                    AccountSyncState.SIGNED_IN_OFFLINE -> {
+                        Box(
+                            modifier = Modifier
+                                .size(9.dp)
+                                .align(Alignment.BottomEnd)
+                                .background(MoColors.current.warningText, CircleShape)
+                                .border(1.5.dp, Color.White, CircleShape),
+                        )
+                    }
+                    AccountSyncState.LOCAL_ONLY -> {
+                        Box(
+                            modifier = Modifier
+                                .size(9.dp)
+                                .align(Alignment.BottomEnd)
+                                .background(MoColors.current.warningText, CircleShape)
+                                .border(1.5.dp, Color.White, CircleShape),
+                        )
+                    }
+                    AccountSyncState.SIGNED_IN_SYNCED -> {
+                        Box(
+                            modifier = Modifier
+                                .size(9.dp)
+                                .align(Alignment.BottomEnd)
+                                .background(Color(0xFF4E7A45), CircleShape)
+                                .border(1.5.dp, Color.White, CircleShape),
+                        )
+                    }
+                    AccountSyncState.SIGNED_IN_SYNCING -> {
+                        Box(
+                            modifier = Modifier
+                                .size(9.dp)
+                                .align(Alignment.BottomEnd)
+                                .background(Color(0xFF4C6876), CircleShape)
+                                .border(1.5.dp, Color.White, CircleShape),
+                        )
+                    }
+                }
             }
         }
     }
@@ -206,6 +239,7 @@ fun MoTopAppBarWithProfile(
                 ProfileAvatarIconButton(
                     initials = userProfile?.initials ?: "PL",
                     isConnected = userProfile?.isConnected ?: false,
+                    syncState = userProfile?.syncState ?: AccountSyncState.LOCAL_ONLY,
                     onClick = onProfileClick,
                 )
             }

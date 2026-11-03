@@ -9,10 +9,27 @@
 
 ---
 
-## 1. Muestra Visual Interactiva (HTML en repositorio)
+## 1. Muestra Visual Interactiva y Comparativa Lado a Lado
 
-Para revisar interactivamente los prototipos simulando un dispositivo móvil real con conmutador de **Modo Claro** y **Modo Oscuro**, consulte el archivo:
+Para revisar interactivamente la comparativa estricta entre las **capturas reales de la APK actual** y la **propuesta evolucionada** (conservando el 100% de los componentes, colores, tipografía y el botón central «+» de `MoBottomBar`), consulte:
 - [docs/08-ux-previews/profile_redesign_visual_preview.html](profile_redesign_visual_preview.html)
+- Capturas reales de referencia del emulador Pixel API 35 archivadas en: `docs/08-ux-previews/captures/`
+  * `actual_inicio_home.png` (Pantalla de Inicio con `MoBottomBar` y botón central «+»)
+  * `actual_perfil_screen.png` (Pantalla actual de `ProfileScreen.kt`)
+  * `actual_mi_olivar.png` (Pantalla actual de `Mi Campo`)
+  * `actual_cuaderno.png` (Pantalla actual de `Cuaderno`)
+
+---
+
+## 1.1. Matriz de Cambios: Qué permanece idéntico y qué evoluciona
+
+| Pantalla / Componente | Elementos que Permanecen 100% Intactos | Elementos que Evolucionan |
+| :--- | :--- | :--- |
+| **Inicio (`HomeScreen.kt`)** | Cabecera de fecha/hora, `MoStatStrip` (kilos, labores, avisos), tarjeta del tiempo (AEMET Sierra Mágina), precios de mercado (Pool Red), tarjeta de campaña y labores recientes. | Se añade el avatar circular (42dp) en la esquina superior derecha, inmediatamente junto a la campana de avisos. |
+| **Barra Inferior (`MoBottomBar.kt`)** | Pestaña 1 (Inicio), Pestaña 2 (Mi Campo), **Botón central «+» (52dp circular elevado con `MoIcons.Plus` para añadir registro rápido)** y Pestaña 3 (Cuaderno). | La Pestaña 4 (antiguo Perfil) pasa a denominarse «Mágina IA» con icono de chispa/olivo, en estado de pantalla informativa de reserva para v1.1. |
+| **Perfil / Cuenta (`ProfileScreen.kt` → `ProfileAccountPanel.kt`)** | El 100% de las funciones: Municipio, Cooperativa, Mis máquinas (#211), Aplicadores y asesores CUE (#671), Notificaciones, Recordatorios, Modo sin conexión («Siempre»), Ayuda y privacidad, y versión/Catastro INSPIRE. | Pasa de ser una pantalla fija inferior a un panel modular desplegable (`ModalBottomSheet`) accesible desde el avatar superior desde cualquier pantalla, integrando tarjeta de cuenta en cabecera y selector de fincas delegadas. |
+| **Roles de Colaboración** | No interfieren con las operaciones actuales ni alteran la persistencia en Room. | Prototipos visuales de los tres roles permitidos (Titular en verde olivo, Gestor en ámbar, Recolectora en azul) y tarjeta de invitación recibida. |
+| **Reserva Mágina IA** | Sin chats simulados, sin respuestas ficticias y sin recomendaciones no contrastadas. | Pantalla informativa de reserva serena, explicando las capacidades planificadas para la v1.1 y el compromiso de rigor agronómico y privacidad. |
 
 ---
 

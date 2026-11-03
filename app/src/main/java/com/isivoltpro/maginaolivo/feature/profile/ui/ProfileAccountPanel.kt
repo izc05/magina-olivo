@@ -193,7 +193,7 @@ fun ProfileAccountPanel(
                     )
                     MoStatusChip(
                         text = userProfile.accountStatusLabel,
-                        tone = if (userProfile.isConnected) MoStatusTone.Success else MoStatusTone.Neutral,
+                        tone = userProfile.syncState.tone,
                     )
                 }
             }
@@ -403,7 +403,7 @@ fun ProfileAccountPanel(
 // PREVIEWS
 // ======================================================================================
 
-@Preview(name = "Panel Perfil y Cuenta - Conectado - Claro", showBackground = true)
+@Preview(name = "Panel Perfil y Cuenta - Conectado Sincronizado - Claro", showBackground = true)
 @Composable
 fun ProfileAccountPanelPreview_SignedIn() {
     MaginaOlivoTheme(mode = AppearanceMode.LIGHT) {
@@ -416,7 +416,20 @@ fun ProfileAccountPanelPreview_SignedIn() {
     }
 }
 
-@Preview(name = "Panel Perfil y Cuenta - Local - Claro", showBackground = true)
+@Preview(name = "Panel Perfil y Cuenta - Sesión Offline - Claro", showBackground = true)
+@Composable
+fun ProfileAccountPanelPreview_Offline() {
+    MaginaOlivoTheme(mode = AppearanceMode.LIGHT) {
+        ProfileAccountPanel(
+            userProfile = ProfilePreviewMocks.signedInOfflineUser,
+            farmMemberships = ProfilePreviewMocks.farmMemberships,
+            receivedInvitationsCount = 1,
+            notificationsEnabled = true,
+        )
+    }
+}
+
+@Preview(name = "Panel Perfil y Cuenta - Local Sin Sesión - Claro", showBackground = true)
 @Composable
 fun ProfileAccountPanelPreview_Guest() {
     MaginaOlivoTheme(mode = AppearanceMode.LIGHT) {
@@ -429,7 +442,7 @@ fun ProfileAccountPanelPreview_Guest() {
     }
 }
 
-@Preview(name = "Panel Perfil y Cuenta - Conectado - Oscuro", showBackground = true)
+@Preview(name = "Panel Perfil y Cuenta - Conectado Sincronizado - Oscuro", showBackground = true)
 @Composable
 fun ProfileAccountPanelPreview_Dark() {
     MaginaOlivoTheme(mode = AppearanceMode.DARK) {
@@ -438,6 +451,19 @@ fun ProfileAccountPanelPreview_Dark() {
             farmMemberships = ProfilePreviewMocks.farmMemberships,
             receivedInvitationsCount = 1,
             notificationsEnabled = true,
+        )
+    }
+}
+
+@Preview(name = "Panel Perfil y Cuenta - Local Sin Sesión - Oscuro", showBackground = true)
+@Composable
+fun ProfileAccountPanelPreview_Guest_Dark() {
+    MaginaOlivoTheme(mode = AppearanceMode.DARK) {
+        ProfileAccountPanel(
+            userProfile = ProfilePreviewMocks.localGuestUser,
+            farmMemberships = listOf(ProfilePreviewMocks.farmMemberships.first()),
+            receivedInvitationsCount = 0,
+            notificationsEnabled = false,
         )
     }
 }

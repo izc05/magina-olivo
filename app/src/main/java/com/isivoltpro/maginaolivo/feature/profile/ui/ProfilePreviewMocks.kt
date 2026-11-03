@@ -3,6 +3,20 @@ package com.isivoltpro.maginaolivo.feature.profile.ui
 import java.util.UUID
 
 /**
+ * Estado de sincronización de la cuenta (CR-G2.6 / CR-UX-PERFIL-01).
+ * Diferencia con rigor técnico entre sesión iniciada con red, sesión sin conexión y modo local.
+ */
+enum class AccountSyncState(
+    val label: String,
+    val tone: com.isivoltpro.maginaolivo.ui.components.MoStatusTone,
+) {
+    LOCAL_ONLY("Modo local · Solo en este teléfono", com.isivoltpro.maginaolivo.ui.components.MoStatusTone.Neutral),
+    SIGNED_IN_OFFLINE("Sesión iniciada · Sin conexión (Cambios locales)", com.isivoltpro.maginaolivo.ui.components.MoStatusTone.Warning),
+    SIGNED_IN_SYNCED("Sesión iniciada · Sincronizado", com.isivoltpro.maginaolivo.ui.components.MoStatusTone.Success),
+    SIGNED_IN_SYNCING("Sesión iniciada · Sincronizando...", com.isivoltpro.maginaolivo.ui.components.MoStatusTone.Info),
+}
+
+/**
  * Roles de colaboración en Mágina Olivo (CR-COLLAB-01 / CR-COLLAB-02).
  * NOTA: Este enum define exclusivamente la representación visual de prototipo.
  * No constituye concesión real de permisos ni autorización en backend.
@@ -122,8 +136,19 @@ object ProfilePreviewMocks {
         displayName = "Agricultor Demo",
         email = "usuario.demo@example.test",
         initials = "AD",
-        isConnected = true,
-        accountStatusLabel = "Sesión iniciada · Sincronizado (Demo)",
+        syncState = AccountSyncState.SIGNED_IN_SYNCED,
+        preferredMunicipality = "Municipio Ficticio",
+        preferredProvince = "Provincia Demo",
+        preferredCooperative = "S.C.A. Olivarera Demo",
+        activeWorkspace = "Explotación Principal (Demo)",
+    )
+
+    val signedInOfflineUser = MockUserProfile(
+        userId = UUID.fromString("00000000-0000-0000-0000-000000000001"),
+        displayName = "Agricultor Demo",
+        email = "usuario.demo@example.test",
+        initials = "AD",
+        syncState = AccountSyncState.SIGNED_IN_OFFLINE,
         preferredMunicipality = "Municipio Ficticio",
         preferredProvince = "Provincia Demo",
         preferredCooperative = "S.C.A. Olivarera Demo",
@@ -135,8 +160,7 @@ object ProfilePreviewMocks {
         displayName = "Perfil Local (Demostración)",
         email = "sin-cuenta@example.test",
         initials = "PL",
-        isConnected = false,
-        accountStatusLabel = "Modo local · Guardado en este teléfono",
+        syncState = AccountSyncState.LOCAL_ONLY,
         preferredMunicipality = "Municipio Muestra",
         preferredProvince = "Provincia Demo",
         preferredCooperative = "S.C.A. San Isidro (Ficticia)",
@@ -219,10 +243,12 @@ data class MockUserProfile(
     val displayName: String,
     val email: String,
     val initials: String,
-    val isConnected: Boolean,
-    val accountStatusLabel: String,
+    val syncState: AccountSyncState = if (userId != null) AccountSyncState.SIGNED_IN_SYNCED else AccountSyncState.LOCAL_ONLY,
     val preferredMunicipality: String,
     val preferredProvince: String,
     val preferredCooperative: String?,
     val activeWorkspace: String,
-)
+) {
+    val isConnected: Boolean get() = userId != null
+    val accountStatusLabel: String get() = syncState.label
+}

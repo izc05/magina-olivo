@@ -4,7 +4,8 @@ import java.util.UUID
 
 /**
  * Roles de colaboración en Mágina Olivo (CR-COLLAB-01 / CR-COLLAB-02).
- * Cada rol define de forma determinista y transparente las capacidades visuales.
+ * NOTA: Este enum define exclusivamente la representación visual de prototipo.
+ * No constituye concesión real de permisos ni autorización en backend.
  */
 enum class CollaboratorRole(
     val title: String,
@@ -15,7 +16,7 @@ enum class CollaboratorRole(
 ) {
     PROPIETARIO(
         title = "Titular / Propietario",
-        subtitle = "Control total y legitimación de la explotación",
+        subtitle = "Control total y legitimación de la explotación (Diseño)",
         description = "Administra parcelas, fincas, contratos de cooperativa, invita colaboradores y visualiza la contabilidad completa.",
         allowedActions = listOf(
             "Administración de parcelas y catastro",
@@ -28,7 +29,7 @@ enum class CollaboratorRole(
     ),
     GESTOR(
         title = "Gestor / Arrendatario",
-        subtitle = "Gestión agronómica y operativa del cuaderno",
+        subtitle = "Gestión agronómica y operativa del cuaderno (Diseño)",
         description = "Lleva el día a día de la campaña: planifica labores, tratamientos fitosanitarios, jornales y pesadas en las fincas autorizadas.",
         allowedActions = listOf(
             "Registro de labores agrícolas y tratamientos CUE",
@@ -44,7 +45,7 @@ enum class CollaboratorRole(
     ),
     RECOLECTOR(
         title = "Empresa Recolectora",
-        subtitle = "Encargo acotado de cosecha y entregas",
+        subtitle = "Encargo acotado de cosecha y entregas (Diseño)",
         description = "Encargada de recolectar parcelas específicas durante la campaña vigente. Sube partes de cuadrilla, tickets y fotos de pesadas.",
         allowedActions = listOf(
             "Registro de días de recolección en parcelas asignadas",
@@ -60,7 +61,7 @@ enum class CollaboratorRole(
 }
 
 /**
- * Estado de una invitación de colaboración.
+ * Estado de una invitación de colaboración (Prototipo UX).
  */
 enum class InvitationStatus(val label: String) {
     PENDIENTE("Pendiente de confirmación"),
@@ -71,7 +72,7 @@ enum class InvitationStatus(val label: String) {
 }
 
 /**
- * Vía de envío de la invitación.
+ * Vía de envío de la invitación (Prototipo UX).
  */
 enum class InvitationChannel(val title: String, val iconDescription: String) {
     WHATSAPP("WhatsApp", "Compartir por mensaje de WhatsApp"),
@@ -104,7 +105,7 @@ data class MockInvitation(
     val inviterEmail: String,
     val recipientEmail: String? = null,
     val role: CollaboratorRole,
-    val scope: String, // ej: "Toda la finca · Campaña 2026/2027"
+    val scope: String,
     val channel: InvitationChannel,
     val status: InvitationStatus,
     val dateLabel: String,
@@ -112,55 +113,56 @@ data class MockInvitation(
 )
 
 /**
- * Datos simulados listos para Compose Previews y pruebas visuales.
+ * Datos simulados 100% ficticios para Compose Previews y pruebas visuales.
+ * No contienen datos personales reales de ningún usuario ni entidades operativas.
  */
 object ProfilePreviewMocks {
     val signedInUser = MockUserProfile(
         userId = UUID.fromString("00000000-0000-0000-0000-000000000001"),
-        displayName = "Isicio Zafra Cantos",
-        email = "isicio.zafra@olivar.es",
-        initials = "IZ",
+        displayName = "Agricultor Demo",
+        email = "usuario.demo@example.test",
+        initials = "AD",
         isConnected = true,
-        accountStatusLabel = "Sesión iniciada · Sincronizado",
-        preferredMunicipality = "Bedmar y Garcíez",
-        preferredProvince = "Jaén",
-        preferredCooperative = "S.C.A. San Isidro Labrador",
-        activeWorkspace = "Explotación Principal Mágina",
+        accountStatusLabel = "Sesión iniciada · Sincronizado (Demo)",
+        preferredMunicipality = "Municipio Ficticio",
+        preferredProvince = "Provincia Demo",
+        preferredCooperative = "S.C.A. Olivarera Demo",
+        activeWorkspace = "Explotación Principal (Demo)",
     )
 
     val localGuestUser = MockUserProfile(
         userId = null,
-        displayName = "Perfil Local",
-        email = "Sin cuenta vinculada",
-        initials = "MO",
+        displayName = "Perfil Local (Demostración)",
+        email = "sin-cuenta@example.test",
+        initials = "PL",
         isConnected = false,
         accountStatusLabel = "Modo local · Guardado en este teléfono",
-        preferredMunicipality = "Jódar",
-        preferredProvince = "Jaén",
-        preferredCooperative = "S.C.A. Santísimo Cristo de la Misericordia",
-        activeWorkspace = "Mi Olivar Local",
+        preferredMunicipality = "Municipio Muestra",
+        preferredProvince = "Provincia Demo",
+        preferredCooperative = "S.C.A. San Isidro (Ficticia)",
+        activeWorkspace = "Mi Olivar Local (Muestra)",
     )
 
     val farmMemberships = listOf(
         MockFarmMembership(
-            farmName = "El Encinar y Majuelos",
-            municipality = "Bedmar y Garcíez",
+            farmName = "Finca La Esperanza (Demo)",
+            municipality = "Valle Ficticio",
             parcelCount = 4,
             areaHectares = 14.8,
             role = CollaboratorRole.PROPIETARIO,
             isPrimary = true,
         ),
         MockFarmMembership(
-            farmName = "Los Olivos Altos",
-            municipality = "Jódar",
+            farmName = "Olivar Los Cerros (Muestra)",
+            municipality = "Sierra Demo",
             parcelCount = 2,
             areaHectares = 6.4,
             role = CollaboratorRole.GESTOR,
             isPrimary = false,
         ),
         MockFarmMembership(
-            farmName = "Pago de la Cañada",
-            municipality = "Jimena",
+            farmName = "Pago El Romeral (Ficticio)",
+            municipality = "Campiña Demo",
             parcelCount = 1,
             areaHectares = 3.2,
             role = CollaboratorRole.RECOLECTOR,
@@ -170,44 +172,44 @@ object ProfilePreviewMocks {
 
     val receivedInvitations = listOf(
         MockInvitation(
-            farmName = "Haza del Moro",
-            municipality = "Bélmez de la Moraleda",
-            inviterName = "Antonio Morales López",
-            inviterEmail = "antonio.morales@campojaen.es",
+            farmName = "Finca El Manantial (Demo)",
+            municipality = "Valle Demo",
+            inviterName = "Colaborador Demo",
+            inviterEmail = "colaborador.demo@example.test",
             role = CollaboratorRole.GESTOR,
-            scope = "Toda la finca · Campaña 2026/2027",
+            scope = "Toda la finca · Campaña 2026/2027 (Prototipo)",
             channel = InvitationChannel.WHATSAPP,
             status = InvitationStatus.PENDIENTE,
-            dateLabel = "Recibida hoy, 10:30",
+            dateLabel = "Recibida hoy, 10:30 (Muestra)",
         ),
     )
 
     val sentInvitations = listOf(
         MockInvitation(
-            farmName = "El Encinar y Majuelos",
-            municipality = "Bedmar y Garcíez",
-            inviterName = "Isicio Zafra Cantos",
-            inviterEmail = "isicio.zafra@olivar.es",
-            recipientEmail = "cuadrilla.recoleccion.sur@gmail.com",
+            farmName = "Finca La Esperanza (Demo)",
+            municipality = "Valle Ficticio",
+            inviterName = "Agricultor Demo",
+            inviterEmail = "usuario.demo@example.test",
+            recipientEmail = "cuadrilla.demo@example.test",
             role = CollaboratorRole.RECOLECTOR,
-            scope = "Parcelas 1, 2 y 4 · Campaña 2026/2027",
+            scope = "Parcelas 1 y 2 · Campaña 2026/2027 (Prototipo)",
             channel = InvitationChannel.QR_CODE,
             status = InvitationStatus.ACEPTADA,
-            dateLabel = "Aceptada el 28 oct 2026",
-            oneTimeCode = "648-921",
+            dateLabel = "Aceptada hace 3 días (Muestra)",
+            oneTimeCode = "000-000",
         ),
         MockInvitation(
-            farmName = "El Encinar y Majuelos",
-            municipality = "Bedmar y Garcíez",
-            inviterName = "Isicio Zafra Cantos",
-            inviterEmail = "isicio.zafra@olivar.es",
-            recipientEmail = "manuel.gestor@agricola.es",
+            farmName = "Finca La Esperanza (Demo)",
+            municipality = "Valle Ficticio",
+            inviterName = "Agricultor Demo",
+            inviterEmail = "usuario.demo@example.test",
+            recipientEmail = "gestor.demo@example.test",
             role = CollaboratorRole.GESTOR,
-            scope = "Toda la finca · Sin caducidad",
+            scope = "Toda la finca · Sin caducidad (Prototipo)",
             channel = InvitationChannel.WHATSAPP,
             status = InvitationStatus.PENDIENTE,
-            dateLabel = "Enviada ayer, 18:40",
-            oneTimeCode = "312-704",
+            dateLabel = "Enviada ayer (Muestra)",
+            oneTimeCode = "111-222",
         ),
     )
 }

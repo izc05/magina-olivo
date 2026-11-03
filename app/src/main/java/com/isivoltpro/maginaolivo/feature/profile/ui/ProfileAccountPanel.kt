@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -37,6 +36,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.isivoltpro.maginaolivo.app.AppearanceMode
 import com.isivoltpro.maginaolivo.ui.brand.OliveMark
 import com.isivoltpro.maginaolivo.ui.components.MoCompactListItem
 import com.isivoltpro.maginaolivo.ui.components.MoDestructiveButton
@@ -59,7 +59,9 @@ import com.isivoltpro.maginaolivo.ui.theme.MoWarningText
 
 /**
  * Panel completo de Perfil, Cuenta y Explotaciones (CR-UX-PERFIL-01 §2).
- * Se abre de forma accesible al pulsar el avatar superior.
+ * NOTA: Prototipo visual para revisión UX y pruebas de Compose Preview.
+ * No altera la navegación real de AppNavigation ni la base de datos Room.
+ *
  * Reúne de forma organizada y sin duplicar:
  * 1. Cabecera personal (iniciales/foto, nombre, correo, estado de conexión).
  * 2. Mis explotaciones y roles (fincas asignadas, invitaciones recibidas).
@@ -75,7 +77,7 @@ fun ProfileAccountPanel(
     farmMemberships: List<MockFarmMembership>,
     receivedInvitationsCount: Int = 1,
     notificationsEnabled: Boolean = true,
-    appVersion: String = "1.0.0",
+    appVersion: String = "1.0.0 (Prototipo)",
     onDismiss: () -> Unit = {},
     onEditLocation: () -> Unit = {},
     onChooseCooperative: () -> Unit = {},
@@ -190,7 +192,7 @@ fun ProfileAccountPanel(
                         color = MoSurfaceTokens.secondaryText,
                     )
                     MoStatusChip(
-                        status = userProfile.accountStatusLabel,
+                        text = userProfile.accountStatusLabel,
                         tone = if (userProfile.isConnected) MoStatusTone.Success else MoStatusTone.Neutral,
                     )
                 }
@@ -200,7 +202,7 @@ fun ProfileAccountPanel(
         // ======================================================================================
         // 2. MIS EXPLOTACIONES Y COLABORACIÓN
         // ======================================================================================
-        MoSectionHeader("Mis explotaciones y roles")
+        MoSectionHeader("Mis explotaciones y roles (Prototipo)")
 
         farmMemberships.forEach { membership ->
             FarmMembershipCard(membership = membership)
@@ -245,7 +247,7 @@ fun ProfileAccountPanel(
 
         MoCompactListItem(
             title = "Municipio preferido",
-            subtitle = "${userProfile.preferredMunicipality} (${userProfile.preferredProvince}) · Previsión AEMET y Catastro",
+            subtitle = "${userProfile.preferredMunicipality} (${userProfile.preferredProvince}) · Previsión y Catastro",
             icon = MoIcons.Map,
             onClick = onEditLocation,
             modifier = Modifier.testTag("profile-municipality-item"),
@@ -325,7 +327,7 @@ fun ProfileAccountPanel(
             modifier = Modifier.testTag("profile-notifications-item"),
             trailing = {
                 MoStatusChip(
-                    status = if (notificationsEnabled) "Activas" else "Inactivas",
+                    text = if (notificationsEnabled) "Activas" else "Inactivas",
                     tone = if (notificationsEnabled) MoStatusTone.Success else MoStatusTone.Warning,
                 )
             },
@@ -347,7 +349,7 @@ fun ProfileAccountPanel(
             subtitle = "Tus registros se guardan siempre en este teléfono.",
             icon = MoIcons.Checklist,
             trailing = {
-                MoStatusChip(status = "Siempre", tone = MoStatusTone.Success)
+                MoStatusChip(text = "Siempre", tone = MoStatusTone.Success)
             },
         )
 
@@ -404,7 +406,7 @@ fun ProfileAccountPanel(
 @Preview(name = "Panel Perfil y Cuenta - Conectado - Claro", showBackground = true)
 @Composable
 fun ProfileAccountPanelPreview_SignedIn() {
-    MaginaOlivoTheme(darkTheme = false) {
+    MaginaOlivoTheme(mode = AppearanceMode.LIGHT) {
         ProfileAccountPanel(
             userProfile = ProfilePreviewMocks.signedInUser,
             farmMemberships = ProfilePreviewMocks.farmMemberships,
@@ -417,7 +419,7 @@ fun ProfileAccountPanelPreview_SignedIn() {
 @Preview(name = "Panel Perfil y Cuenta - Local - Claro", showBackground = true)
 @Composable
 fun ProfileAccountPanelPreview_Guest() {
-    MaginaOlivoTheme(darkTheme = false) {
+    MaginaOlivoTheme(mode = AppearanceMode.LIGHT) {
         ProfileAccountPanel(
             userProfile = ProfilePreviewMocks.localGuestUser,
             farmMemberships = listOf(ProfilePreviewMocks.farmMemberships.first()),
@@ -430,7 +432,7 @@ fun ProfileAccountPanelPreview_Guest() {
 @Preview(name = "Panel Perfil y Cuenta - Conectado - Oscuro", showBackground = true)
 @Composable
 fun ProfileAccountPanelPreview_Dark() {
-    MaginaOlivoTheme(darkTheme = true) {
+    MaginaOlivoTheme(mode = AppearanceMode.DARK) {
         ProfileAccountPanel(
             userProfile = ProfilePreviewMocks.signedInUser,
             farmMemberships = ProfilePreviewMocks.farmMemberships,

@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.isivoltpro.maginaolivo.app.AppearanceMode
 import com.isivoltpro.maginaolivo.ui.brand.OliveMark
 import com.isivoltpro.maginaolivo.ui.components.MoIcons
 import com.isivoltpro.maginaolivo.ui.components.MoSectionHeader
@@ -265,7 +266,7 @@ private fun AiCapabilityItem(
 @Preview(name = "Asistente IA - Reserva v1.1 - Claro", showBackground = true)
 @Composable
 fun AiAssistantPlaceholderPreview_Light() {
-    MaginaOlivoTheme(darkTheme = false) {
+    MaginaOlivoTheme(mode = AppearanceMode.LIGHT) {
         AiAssistantPlaceholderScreen()
     }
 }
@@ -273,7 +274,7 @@ fun AiAssistantPlaceholderPreview_Light() {
 @Preview(name = "Asistente IA - Reserva v1.1 - Oscuro", showBackground = true)
 @Composable
 fun AiAssistantPlaceholderPreview_Dark() {
-    MaginaOlivoTheme(darkTheme = true) {
+    MaginaOlivoTheme(mode = AppearanceMode.DARK) {
         AiAssistantPlaceholderScreen()
     }
 }

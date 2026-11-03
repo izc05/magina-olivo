@@ -29,6 +29,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.isivoltpro.maginaolivo.app.AppearanceMode
 import com.isivoltpro.maginaolivo.ui.brand.OliveMark
 import com.isivoltpro.maginaolivo.ui.components.MoIconButton
 import com.isivoltpro.maginaolivo.ui.components.MoIcons
@@ -40,6 +41,7 @@ import com.isivoltpro.maginaolivo.ui.theme.MoSurfaceTokens
 
 /**
  * Botón de Avatar para la barra superior (CR-UX-PERFIL-01).
+ * NOTA: Componente de prototipo visual.
  * Se sitúa en la parte superior derecha, junto a la campana de Avisos.
  * Da acceso directo al panel de Perfil, Cuenta y Explotaciones.
  */
@@ -99,7 +101,7 @@ fun ProfileAvatarIconButton(
 
 /**
  * Barra superior unificada de Mágina Olivo 1.0 con acceso a Avisos y Avatar de Perfil.
- * Reemplaza la necesidad de tener Perfil en la barra inferior.
+ * Prototipo visual para revisión; no altera AppNavigation ni MoBottomBar reales.
  */
 @Composable
 fun MoTopAppBarWithProfile(
@@ -202,7 +204,7 @@ fun MoTopAppBarWithProfile(
 
                 // Avatar de Perfil y Cuenta
                 ProfileAvatarIconButton(
-                    initials = userProfile?.initials ?: "MO",
+                    initials = userProfile?.initials ?: "PL",
                     isConnected = userProfile?.isConnected ?: false,
                     onClick = onProfileClick,
                 )
@@ -218,7 +220,7 @@ fun MoTopAppBarWithProfile(
 @Preview(name = "TopBar con Perfil Conectado - Claro", showBackground = true)
 @Composable
 fun TopAppBarWithProfilePreview_Light() {
-    MaginaOlivoTheme(darkTheme = false) {
+    MaginaOlivoTheme(mode = AppearanceMode.LIGHT) {
         MoTopAppBarWithProfile(
             title = "Mi Campo",
             subtitle = "4 parcelas · 14,8 ha",
@@ -233,7 +235,7 @@ fun TopAppBarWithProfilePreview_Light() {
 @Preview(name = "TopBar con Perfil Local - Claro", showBackground = true)
 @Composable
 fun TopAppBarWithProfile_GuestPreview() {
-    MaginaOlivoTheme(darkTheme = false) {
+    MaginaOlivoTheme(mode = AppearanceMode.LIGHT) {
         MoTopAppBarWithProfile(
             title = "Inicio",
             subtitle = "Martes, 3 de noviembre",
@@ -248,9 +250,9 @@ fun TopAppBarWithProfile_GuestPreview() {
 @Preview(name = "TopBar con Navegación Atrás - Claro", showBackground = true)
 @Composable
 fun TopAppBarWithProfile_NestedPreview() {
-    MaginaOlivoTheme(darkTheme = false) {
+    MaginaOlivoTheme(mode = AppearanceMode.LIGHT) {
         MoTopAppBarWithProfile(
-            title = "El Encinar",
+            title = "Finca La Esperanza",
             subtitle = "Campaña 2026/2027",
             navigationSymbol = "←",
             onNavigationClick = {},
@@ -265,7 +267,7 @@ fun TopAppBarWithProfile_NestedPreview() {
 @Preview(name = "TopBar con Perfil Conectado - Oscuro", showBackground = true)
 @Composable
 fun TopAppBarWithProfilePreview_Dark() {
-    MaginaOlivoTheme(darkTheme = true) {
+    MaginaOlivoTheme(mode = AppearanceMode.DARK) {
         MoTopAppBarWithProfile(
             title = "Cuaderno",
             subtitle = "Labores y tratamientos",

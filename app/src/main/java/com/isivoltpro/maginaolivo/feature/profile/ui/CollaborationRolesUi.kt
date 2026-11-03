@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.isivoltpro.maginaolivo.app.AppearanceMode
 import com.isivoltpro.maginaolivo.ui.components.MoIcons
 import com.isivoltpro.maginaolivo.ui.components.MoSectionHeader
 import com.isivoltpro.maginaolivo.ui.theme.MaginaOlivoTheme
@@ -46,6 +47,7 @@ import com.isivoltpro.maginaolivo.ui.theme.MoWarningText
 
 /**
  * Chip distintivo de Rol de Colaboración (CR-COLLAB-01 / CR-COLLAB-02).
+ * NOTA: Componente de prototipo visual.
  * Colores deterministas según la jerarquía de responsabilidades:
  * - Propietario: Verde Olivo Principal (control total de la finca).
  * - Gestor / Arrendatario: Ocre / Ámbar (gestión agronómica y de campaña).
@@ -141,7 +143,7 @@ fun RoleDetailCard(
 
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "Capacidades autorizadas:",
+                text = "Capacidades autorizadas (Diseño):",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MoColors.current.primaryText,
@@ -170,7 +172,7 @@ fun RoleDetailCard(
             if (role.restrictedActions.isNotEmpty()) {
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "Límites y privacidad:",
+                    text = "Límites y privacidad (Diseño):",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MoColors.current.warningText,
@@ -277,7 +279,7 @@ fun FarmMembershipCard(
 @Preview(name = "Comparativa de 3 Roles - Claro", showBackground = true)
 @Composable
 fun CollaborationRolesComparisonPreview_Light() {
-    MaginaOlivoTheme(darkTheme = false) {
+    MaginaOlivoTheme(mode = AppearanceMode.LIGHT) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -285,7 +287,7 @@ fun CollaborationRolesComparisonPreview_Light() {
                 .padding(MoSpacing.screen),
             verticalArrangement = Arrangement.spacedBy(MoSpacing.sm),
         ) {
-            MoSectionHeader("Roles de colaboración en Mágina Olivo")
+            MoSectionHeader("Roles de colaboración en Mágina Olivo (Prototipo)")
             CollaboratorRole.entries.forEach { role ->
                 RoleDetailCard(role = role)
             }
@@ -296,7 +298,7 @@ fun CollaborationRolesComparisonPreview_Light() {
 @Preview(name = "Lista de Fincas y Roles de la Cuenta - Claro", showBackground = true)
 @Composable
 fun FarmMembershipCardListPreview() {
-    MaginaOlivoTheme(darkTheme = false) {
+    MaginaOlivoTheme(mode = AppearanceMode.LIGHT) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -304,7 +306,7 @@ fun FarmMembershipCardListPreview() {
                 .padding(MoSpacing.screen),
             verticalArrangement = Arrangement.spacedBy(MoSpacing.sm),
         ) {
-            MoSectionHeader("Mis explotaciones y encargos")
+            MoSectionHeader("Mis explotaciones y encargos (Muestra)")
             ProfilePreviewMocks.farmMemberships.forEach { membership ->
                 FarmMembershipCard(membership = membership)
             }
@@ -315,7 +317,7 @@ fun FarmMembershipCardListPreview() {
 @Preview(name = "Comparativa de 3 Roles - Oscuro", showBackground = true)
 @Composable
 fun CollaborationRolesComparisonPreview_Dark() {
-    MaginaOlivoTheme(darkTheme = true) {
+    MaginaOlivoTheme(mode = AppearanceMode.DARK) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -323,7 +325,7 @@ fun CollaborationRolesComparisonPreview_Dark() {
                 .padding(MoSpacing.screen),
             verticalArrangement = Arrangement.spacedBy(MoSpacing.sm),
         ) {
-            MoSectionHeader("Roles de colaboración en Mágina Olivo")
+            MoSectionHeader("Roles de colaboración en Mágina Olivo (Prototipo)")
             CollaboratorRole.entries.forEach { role ->
                 RoleDetailCard(role = role)
             }

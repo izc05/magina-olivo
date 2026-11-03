@@ -35,6 +35,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.isivoltpro.maginaolivo.app.AppearanceMode
 import com.isivoltpro.maginaolivo.ui.components.MoDestructiveButton
 import com.isivoltpro.maginaolivo.ui.components.MoIcons
 import com.isivoltpro.maginaolivo.ui.components.MoPrimaryButton
@@ -56,9 +57,7 @@ import com.isivoltpro.maginaolivo.ui.theme.MoWarningText
 
 /**
  * Tarjeta de Invitación Recibida (CR-COLLAB-02).
- * Se muestra en el panel de Perfil bajo «Mis invitaciones y accesos».
- * Permite al agricultor revisar quién le invita, para qué finca y con qué rol exacto
- * antes de decidir si Aceptar o Rechazar.
+ * NOTA: Prototipo visual para revisión UX; no conectado a backend ni RLS real.
  */
 @Composable
 fun ReceivedInvitationCard(
@@ -97,7 +96,7 @@ fun ReceivedInvitationCard(
                             .background(MoColors.current.warningText, CircleShape),
                     )
                     Text(
-                        text = "Invitación de colaboración",
+                        text = "Invitación de colaboración (Diseño)",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = MoColors.current.primaryText,
@@ -194,8 +193,7 @@ fun ReceivedInvitationCard(
 
 /**
  * Formulario visual de Invitación de Colaborador (CR-COLLAB-02).
- * Se abre desde «Mi Campo > Finca > Personas y acuerdos > Invitar».
- * Guía al agricultor en 3 pasos sencillos sin tecnicismos.
+ * NOTA: Prototipo visual; no realiza envíos reales por red.
  */
 @Composable
 fun InviteCollaboratorSheetContent(
@@ -206,7 +204,7 @@ fun InviteCollaboratorSheetContent(
 ) {
     var selectedRole by remember { mutableStateOf(CollaboratorRole.GESTOR) }
     var selectedChannel by remember { mutableStateOf(InvitationChannel.WHATSAPP) }
-    var scopeDetail by remember { mutableStateOf("Toda la finca · Campaña vigente 2026/2027") }
+    var scopeDetail by remember { mutableStateOf("Toda la finca · Campaña vigente 2026/2027 (Prototipo)") }
 
     Column(
         modifier = modifier
@@ -222,7 +220,7 @@ fun InviteCollaboratorSheetContent(
             color = MoColors.current.primaryText,
         )
         Text(
-            text = "El colaborador accederá solo a los datos de esta finca con los permisos del rol elegido.",
+            text = "El colaborador accederá solo a los datos de esta finca con los permisos del rol elegido (Diseño).",
             style = MaterialTheme.typography.bodySmall,
             color = MoSurfaceTokens.secondaryText,
         )
@@ -367,7 +365,7 @@ fun InviteCollaboratorSheetContent(
 }
 
 /**
- * Ficha de Invitación Enviada que se muestra al titular en la lista de gestión de accesos.
+ * Ficha de Invitación Enviada (Prototipo UX).
  */
 @Composable
 fun SentInvitationCard(
@@ -412,7 +410,7 @@ fun SentInvitationCard(
 
             if (invitation.oneTimeCode != null) {
                 Text(
-                    text = "Código de un solo uso: ${invitation.oneTimeCode}",
+                    text = "Código de un solo uso (Demo): ${invitation.oneTimeCode}",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MoOlivePrimary,
@@ -457,7 +455,7 @@ fun SentInvitationCard(
 @Preview(name = "Invitación Recibida - Claro", showBackground = true)
 @Composable
 fun ReceivedInvitationCardPreview_Light() {
-    MaginaOlivoTheme(darkTheme = false) {
+    MaginaOlivoTheme(mode = AppearanceMode.LIGHT) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -476,9 +474,9 @@ fun ReceivedInvitationCardPreview_Light() {
 @Preview(name = "Formulario Invitar Colaborador - Claro", showBackground = true)
 @Composable
 fun InviteCollaboratorSheetPreview_Light() {
-    MaginaOlivoTheme(darkTheme = false) {
+    MaginaOlivoTheme(mode = AppearanceMode.LIGHT) {
         InviteCollaboratorSheetContent(
-            farmName = "El Encinar y Majuelos",
+            farmName = "Finca La Esperanza (Demo)",
             onSendInvitation = { _, _, _ -> },
             onCancel = {},
         )
@@ -488,7 +486,7 @@ fun InviteCollaboratorSheetPreview_Light() {
 @Preview(name = "Lista de Invitaciones Enviadas - Claro", showBackground = true)
 @Composable
 fun SentInvitationListPreview_Light() {
-    MaginaOlivoTheme(darkTheme = false) {
+    MaginaOlivoTheme(mode = AppearanceMode.LIGHT) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -496,7 +494,7 @@ fun SentInvitationListPreview_Light() {
                 .padding(MoSpacing.screen),
             verticalArrangement = Arrangement.spacedBy(MoSpacing.sm),
         ) {
-            MoSectionHeader("Colaboradores e invitaciones")
+            MoSectionHeader("Colaboradores e invitaciones (Muestra)")
             ProfilePreviewMocks.sentInvitations.forEach { invitation ->
                 SentInvitationCard(
                     invitation = invitation,
@@ -511,7 +509,7 @@ fun SentInvitationListPreview_Light() {
 @Preview(name = "Invitación Recibida - Oscuro", showBackground = true)
 @Composable
 fun ReceivedInvitationCardPreview_Dark() {
-    MaginaOlivoTheme(darkTheme = true) {
+    MaginaOlivoTheme(mode = AppearanceMode.DARK) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()

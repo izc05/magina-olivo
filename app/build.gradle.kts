@@ -102,6 +102,9 @@ android {
         create("dev") {
             dimension = "environment"
             applicationIdSuffix = ".dev"
+            // Integrated 1.0 review APKs must install over earlier DEV builds whose CI
+            // versionCode already exceeds the local default (1).
+            versionCode = 100_000 + appBuildNumber
             versionNameSuffix = "-dev"
             resValue("string", "app_name", "Mágina Olivo Dev")
             buildConfigField("String", "ENVIRONMENT", "\"DEV\"")

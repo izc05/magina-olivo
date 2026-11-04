@@ -217,13 +217,12 @@ class AccountAuthGateTest {
         val sessionA = AuthSession(userA, "a@example.com", "access", "refresh", Instant.now().plusSeconds(3600))
         store.write(AccountRecord(session = sessionA))
 
-        val root = AppCompositionRoot.createAndroid(context, "DEV")
+        val repo = AccountRepository(TestAuthApi(), store)
+        repo.resume(online = true)
+        val root = AppCompositionRoot.createAndroid(context, "DEV", accountRepository = repo)
         val local = checkNotNull(root.localPersistence)
         val workspace = (local.workspaceRepository.ensureLocalWorkspace() as AppResult.Success).value
         val farm = (local.farmRepository.create(NewFarm(workspace, "Finca local preservada")) as AppResult.Success).value
-
-        val repo = AccountRepository(TestAuthApi(), store)
-        repo.resume(online = true)
 
         renderGate(repo, root)
         waitFor("agricultural-content")

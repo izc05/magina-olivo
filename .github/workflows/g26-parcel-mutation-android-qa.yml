@@ -157,4 +157,4 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-          script: bash supabase/tests/g26-delivery-v3-android/run.sh && bash supabase/tests/g26-convergence-android/run.sh && bash supabase/tests/g26-parcel-send-android/run.sh && bash supabase/tests/g26-farm-send-android/run.sh && bash supabase/tests/g26-workspace-send-android/run.sh && bash supabase/tests/g26-parent-receive-android/run.sh
+          script: bash supabase/tests/g26-delivery-v3-android/run.sh && bash supabase/tests/g26-convergence-android/run.sh && bash supabase/tests/g26-parcel-send-android/run.sh && bash supabase/tests/g26-farm-send-android/run.sh && bash supabase/tests/g26-workspace-send-android/run.sh && bash supabase/tests/g26-parent-receive-android/run.sh && bash supabase/tests/g26-campaign-android-https/run.sh

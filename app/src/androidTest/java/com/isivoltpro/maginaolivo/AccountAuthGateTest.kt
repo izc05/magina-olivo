@@ -30,6 +30,8 @@ import com.isivoltpro.maginaolivo.data.local.entity.LocalMetadata
 import com.isivoltpro.maginaolivo.data.local.model.SyncStatus
 import androidx.activity.compose.setContent
 import com.isivoltpro.maginaolivo.feature.account.*
+import com.isivoltpro.maginaolivo.feature.sync.ManualSync
+import com.isivoltpro.maginaolivo.feature.sync.ManualSyncState
 import com.isivoltpro.maginaolivo.ui.theme.MaginaOlivoTheme
 import java.io.File
 import java.io.IOException
@@ -37,6 +39,9 @@ import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Rule
@@ -132,6 +137,30 @@ class AccountAuthGateTest {
                 }
             }
         }
+    }
+
+    @Test
+    fun signedInAccountShowsManualSyncAndStartsOnlyOnTap(): Unit = runBlocking {
+        val repo = AccountRepository(TestAuthApi(), MemoryAccountSessionStore())
+        repo.login("a@example.com", "passwordA123", online = true)
+        val root = AppCompositionRoot.createAndroid(context, "DEV", accountRepository = repo)
+        var requests = 0
+        val sync = object : ManualSync {
+            override val state: StateFlow<ManualSyncState> = MutableStateFlow(ManualSyncState.Idle)
+            override fun requestSync() { requests++ }
+        }
+        compose.setContent {
+            MaginaOlivoTheme {
+                AccountRoute(repo, onBack = {}, connectivity = flowOf(true), farmLinks = root.farmLinks,
+                    workspaces = root.localPersistence?.workspaceRepository, manualSync = sync)
+            }
+        }
+        compose.waitUntil(15_000) {
+            runCatching { compose.onNodeWithText("Sincronizar ahora").assertIsEnabled() }.isSuccess
+        }
+        assertEquals(0, requests)
+        compose.onNodeWithText("Sincronizar ahora").performClick()
+        assertEquals(1, requests)
     }
 
     @Test

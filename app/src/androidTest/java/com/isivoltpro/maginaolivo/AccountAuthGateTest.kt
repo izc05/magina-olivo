@@ -32,6 +32,7 @@ import androidx.activity.compose.setContent
 import com.isivoltpro.maginaolivo.feature.account.*
 import com.isivoltpro.maginaolivo.ui.theme.MaginaOlivoTheme
 import java.io.File
+import java.io.IOException
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
@@ -313,31 +314,87 @@ class AccountAuthGateTest {
         assertNotNull(local.database.farmDao().findById(farmB))
     }
 
+    /**
+     * Integration #796 + #808, owner decision (i) (PR #846): the approved G1b contract for legacy farms prevails.
+     *
+     * Replaces `historicalFarmsAreNotVisibleByDefaultToAuthenticatedUser`, whose expectation ("a historical unlinked farm
+     * is not visible to an authenticated user") contradicted G1b (#757, in `main`) and only coexisted with it through the
+     * removed `issuer == "fixture-project"` branch. The security it protected is kept and checked explicitly:
+     * - a legacy farm legitimately stored on this device, not belonging to another account, is only a CANDIDATE;
+     * - signing in never links it (no ledger, no consent); linking needs explicit consent;
+     * - linking changes no owner and grants no authorization;
+     * - a farm of a workspace that belongs to another account is never a candidate;
+     * - after logout another account is locked out of the consented local dataset and gains nothing.
+     */
     @Test
-    fun historicalFarmsAreNotVisibleByDefaultToAuthenticatedUser(): Unit = runBlocking {
-        val store = MemoryAccountSessionStore()
-        val repo = AccountRepository(TestAuthApi(), store)
-        val root = AppCompositionRoot.createAndroid(context, "DEV", accountRepository = repo)
-        val local = checkNotNull(root.localPersistence)
-        val linkRepo = checkNotNull(root.farmLinks)
+    fun historicalFarmsAreCandidatesButNeverLinkedOrReassignedWithoutExplicitConsent(): Unit = runBlocking {
+        // An isolated ledger and an explicit QA issuer (the QA build has no configured Auth project): the device's real
+        // consent ledger is never touched.
+        val ledgerFile = File(context.noBackupFilesDir, "qa-gate-legacy-${UUID.randomUUID()}.json")
+        val ledgerFiles = listOf(ledgerFile, File(ledgerFile.path + ".bak"), File(ledgerFile.path + ".new"))
+        val ledger = com.isivoltpro.maginaolivo.data.repository.AndroidFarmLinkLedger(ledgerFile)
+        val qaIssuer = "https://qa-gate.example"
+        try {
+            val store = MemoryAccountSessionStore()
+            val repo = AccountRepository(TestAuthApi(), store)
+            val root = AppCompositionRoot.createAndroid(context, "DEV", accountRepository = repo)
+            val local = checkNotNull(root.localPersistence)
+            val linkRepo = com.isivoltpro.maginaolivo.data.repository.LocalFarmLinkRepository(context, local.database, repo, qaIssuer, ledger)
+            val db = local.database.openHelper.writableDatabase
+            fun owner(workspace: String) = db.query("SELECT owner_user_id FROM workspaces WHERE id = ?", arrayOf(workspace)).use { it.moveToFirst(); it.getString(0) }
+            fun count(table: String) = db.query("SELECT COUNT(*) FROM $table").use { it.moveToFirst(); it.getInt(0) }
 
-        // Seed a historical unlinked farm in SQLite
-        val db = local.database.openHelper.writableDatabase
-        val historicalWorkspaceId = UUID.randomUUID().toString()
-        val historicalFarmId = UUID.randomUUID().toString()
-        db.execSQL("INSERT INTO workspaces (id,name,owner_user_id,country_code,timezone,locale,currency,created_at,updated_at,version,sync_status) VALUES (?,'Antiguo','local-owner','ES','Europe/Madrid','es-ES','EUR',1,1,1,'LOCAL_ONLY')", arrayOf(historicalWorkspaceId))
-        db.execSQL("INSERT INTO farms (id,workspace_id,name,status,created_at,updated_at,version,sync_status) VALUES (?,?,'Finca Antigua Sin Vincular','ACTIVE',1,1,1,'LOCAL_ONLY')", arrayOf(historicalFarmId, historicalWorkspaceId))
+            // A legacy farm stored on this device before any account (G1b).
+            val historicalWorkspaceId = UUID.randomUUID().toString()
+            val historicalFarmId = UUID.randomUUID()
+            db.execSQL("INSERT INTO workspaces (id,name,owner_user_id,country_code,timezone,locale,currency,created_at,updated_at,version,sync_status) VALUES (?,'Antiguo','local-owner','ES','Europe/Madrid','es-ES','EUR',1,1,1,'LOCAL_ONLY')", arrayOf(historicalWorkspaceId))
+            db.execSQL("INSERT INTO farms (id,workspace_id,name,status,created_at,updated_at,version,sync_status) VALUES (?,?,'Finca Antigua Sin Vincular','ACTIVE',1,1,1,'LOCAL_ONLY')", arrayOf(historicalFarmId.toString(), historicalWorkspaceId))
+            // A farm of a workspace that belongs to another account (B), which B selected on this device.
+            val foreignWorkspaceId = UUID.randomUUID().toString()
+            val foreignFarmId = UUID.randomUUID()
+            db.execSQL("INSERT INTO workspaces (id,name,owner_user_id,country_code,timezone,locale,currency,created_at,updated_at,version,sync_status) VALUES (?,'De B',?,'ES','Europe/Madrid','es-ES','EUR',1,1,1,'PENDING')", arrayOf(foreignWorkspaceId, userB.toString()))
+            db.execSQL("INSERT INTO workspace_selections(issuer,account_id,workspace_id) VALUES (?,?,?)", arrayOf(qaIssuer, userB.toString(), foreignWorkspaceId))
+            db.execSQL("INSERT INTO farms (id,workspace_id,name,status,created_at,updated_at,version,sync_status) VALUES (?,?,'Finca de B','ACTIVE',1,1,1,'LOCAL_ONLY')", arrayOf(foreignFarmId.toString(), foreignWorkspaceId))
+            val authorizationsBefore = count("workspace_authorization_cache")
 
-        // User A logs in
-        repo.login("a@example.com", "passwordA123", online = true)
+            // User A signs in: nothing is linked automatically.
+            repo.login("a@example.com", "passwordA123", online = true)
+            assertNull("Signing in never writes a consent", ledger.read())
+            assertFalse("Signing in never links a legacy farm", linkRepo.isFarmConsented(historicalFarmId, userA))
 
-        // Historical farm is NOT visible or linked to User A by default
-        val choices = linkRepo.choices()
-        assertFalse("Historical farm must not be visible by default to authenticated user", choices.any { it.name == "Finca Antigua Sin Vincular" })
-        assertEquals(0, choices.size)
+            // The legacy farm is a candidate; the farm of another account never is.
+            val choices = linkRepo.choices()
+            assertTrue("The local legacy farm is a G1b candidate", choices.any { it.id == historicalFarmId })
+            assertFalse("A farm of another account's workspace is never a candidate", choices.any { it.id == foreignFarmId })
 
-        // Data is strictly preserved in SQLite
-        assertNotNull("Historical farm must be preserved in SQLite", local.database.farmDao().findById(UUID.fromString(historicalFarmId)))
+            // Linking needs explicit consent.
+            val legacy = choices.filter { it.id == historicalFarmId }
+            try { linkRepo.consent(userA, legacy, false); fail("Consent must be explicit") } catch (_: IOException) { }
+            assertNull("A refused consent writes nothing", ledger.read())
+            val consented = linkRepo.consent(userA, legacy, true)
+            assertEquals(setOf(historicalFarmId), consented.farmIds)
+            assertTrue(linkRepo.isFarmConsented(historicalFarmId, userA))
+            // Linking changes no owner and grants no authorization.
+            assertEquals("local-owner", owner(historicalWorkspaceId))
+            assertEquals(userB.toString(), owner(foreignWorkspaceId))
+            assertEquals(authorizationsBefore, count("workspace_authorization_cache"))
+            assertFalse(linkRepo.isFarmConsented(foreignFarmId, userA))
+
+            // Logout and another account: locked out of the consented local dataset, gains nothing.
+            repo.logout(online = true)
+            repo.login("b@example.com", "passwordB123", online = true)
+            assertFalse(linkRepo.accessAllowed())
+            try { linkRepo.choices(); fail("Another account must not read A's consented dataset") } catch (_: IOException) { }
+            assertFalse(linkRepo.isFarmConsented(historicalFarmId, userB))
+            assertEquals("local-owner", owner(historicalWorkspaceId))
+
+            // Data is strictly preserved in SQLite.
+            assertNotNull("Historical farm must be preserved in SQLite", local.database.farmDao().findById(historicalFarmId))
+            assertNotNull(local.database.farmDao().findById(foreignFarmId))
+        } finally {
+            runCatching { ledger.read()?.consents?.forEach { File(context.noBackupFilesDir, "account-link-backups/${it.backupId}").deleteRecursively() } }
+            ledgerFiles.forEach { it.delete() }
+        }
     }
 
     @Test

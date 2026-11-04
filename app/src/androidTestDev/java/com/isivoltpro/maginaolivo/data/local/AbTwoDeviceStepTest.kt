@@ -26,6 +26,11 @@ import com.isivoltpro.maginaolivo.data.repository.OfflineFirstDeliveryRepository
 import com.isivoltpro.maginaolivo.data.repository.OfflineFirstFarmRepository
 import com.isivoltpro.maginaolivo.data.repository.OfflineFirstParcelRepository
 import com.isivoltpro.maginaolivo.data.repository.ServerWorkspaceOwnerVerifier
+import com.isivoltpro.maginaolivo.data.repository.sync.CampaignCasCoordinator
+import com.isivoltpro.maginaolivo.data.repository.sync.CampaignCasOutcome
+import com.isivoltpro.maginaolivo.data.repository.sync.CampaignCasRpcAdapter
+import com.isivoltpro.maginaolivo.data.repository.sync.CampaignCreateOutcome
+import com.isivoltpro.maginaolivo.data.repository.sync.CampaignCreateSendCoordinator
 import com.isivoltpro.maginaolivo.data.repository.sync.CampaignReceiveCoordinator
 import com.isivoltpro.maginaolivo.data.repository.sync.CampaignReceiveOutcome
 import com.isivoltpro.maginaolivo.data.repository.sync.DeliveryDispatchLease
@@ -48,6 +53,7 @@ import com.isivoltpro.maginaolivo.data.repository.sync.ReceiveLimit
 import com.isivoltpro.maginaolivo.data.repository.sync.WorkspaceDraft
 import com.isivoltpro.maginaolivo.data.repository.sync.WorkspaceSendCoordinator
 import com.isivoltpro.maginaolivo.data.repository.sync.WorkspaceSendOutcome
+import com.isivoltpro.maginaolivo.domain.campaign.CampaignPreparationChanges
 import com.isivoltpro.maginaolivo.domain.campaign.NewCampaign
 import com.isivoltpro.maginaolivo.domain.delivery.DeliveryDraft
 import com.isivoltpro.maginaolivo.domain.delivery.DeliveryShareInput
@@ -90,9 +96,8 @@ import org.junit.runner.RunWith
  *
  * One step per device, chosen by `-e ab_role A|B`; without it the class is skipped (opt-in, like the other device probes).
  * - A2 creates a workspace, a farm, a parcel and a campaign with the app's own repositories, records a Pesada, and sends
- *   them with the real senders (#798 workspace, #799 farm, #800 parcel, campaign CAS, #824 Jornada, #808 Pesada v3 + HEAD).
- *   The only QA stand-in: Android has no CAMPAIGN CREATE sender yet, so A2 publishes its own local campaign with the
- *   server's real `create_own_campaign` RPC under its own session and records the confirmation as that sender would.
+ *   them with the real senders only (#798 workspace, #799 farm, #800 parcel, CAMPAIGN CREATE, CAMPAIGN CAS for its
+ *   modification, activation and harvest, #824 Jornada, #808 Pesada v3 + HEAD). No direct RPC call, no stand-in.
  * - B2, an empty device, receives with the real receivers (parents, campaign, Jornadas with their Pesadas) and checks that
  *   everything equals A2's records, with no duplicate and a repeat receive that changes nothing.
  */
@@ -170,20 +175,39 @@ class AbTwoDeviceStepTest {
             val parcelSend = ParcelSendCoordinator(db, account, issuer, transport(RpcScope.PARCEL_SEND), { links.ledgerFor(it) })
             assertEquals("parcel stage", ParcelSendOutcome.STAGED, parcelSend.stage(parcelOp)); assertEquals(ParcelSendOutcome.SYNCED, parcelSend.send(parcelOp, lease))
 
-            // 4. Campaign: created, activated and put into harvest with the app's repository, then published as ONE server
-            //    create (create_own_campaign, its current snapshots) under A2's own session.
-            //    Known gaps, not hidden: Android has no CAMPAIGN CREATE sender; and activate() rebuilds the snapshots
-            //    locally (new ids, PENDING), which the CAMPAIGN CAS sender refuses, so a campaign confirmed in PREPARATION
-            //    and activated later cannot be sent today (see the phase 2 report).
+            // 4. Campaign, only through the app's repository and the real Android senders:
+            //    created in preparation and sent by the CAMPAIGN CREATE sender; modified in preparation; activated; put
+            //    into harvest. Each change travels through CAMPAIGN CAS. The confirmed snapshots are kept through all of it.
             val today = LocalDate.now(zone)
             val campaigns = OfflineFirstCampaignRepository(db, clock, ids, dispatchers, selector)
             val campaign = ok(campaigns.create(NewCampaign(farm, "Campaña A2", today.minusDays(30), setOf(parcel))))
+            val createOp = db.syncOutboxDao().listForEntity(SyncEntityType.CAMPAIGN, campaign).single { it.operation == OutboxOperation.CREATE }.id
+            val campaignSend = CampaignCreateSendCoordinator(db, account, issuer, transport(RpcScope.CAMPAIGN_CREATE), { links.ledgerFor(it) })
+            assertEquals("campaign create stage", CampaignCreateOutcome.STAGED, campaignSend.stage(createOp))
+            assertEquals("campaign create send", CampaignCreateOutcome.SYNCED, campaignSend.send(createOp, lease))
+            assertEquals(CampaignCreateOutcome.ALREADY_CONFIRMED, campaignSend.send(createOp, lease))
+            val snapshotIds = db.campaignDao().listSnapshots(campaign).map { it.id }
+            val cas = CampaignCasCoordinator(db, account, issuer, CampaignCasRpcAdapter(transport(RpcScope.CAMPAIGN_CAS)))
+            suspend fun sendCampaignChanges(label: String) {
+                val pending = db.syncOutboxDao().listForEntity(SyncEntityType.CAMPAIGN, campaign)
+                    .filter { it.operation == OutboxOperation.UPDATE && it.status == OutboxStatus.PENDING }
+                assertEquals("$label: one queued change", 1, pending.size)
+                assertEquals("$label stage ${casDiagnostics(db, campaign, farm, parcel)}", CampaignCasOutcome.STAGED, cas.stage(pending.single().id))
+                assertEquals("$label send", CampaignCasOutcome.SYNCED, cas.dispatch(pending.single().id, lease))
+            }
+            assertTrue(campaigns.updatePreparation(campaign, CampaignPreparationChanges("Campaña A2 editada", today.minusDays(30),
+                setOf(parcel), notes = "Modificada en A2")) is AppResult.Success)
+            sendCampaignChanges("modification")
             assertTrue(campaigns.activate(campaign) is AppResult.Success)
+            sendCampaignChanges("activation")
             assertTrue(campaigns.markHarvest(campaign) is AppResult.Success)
-            publishCampaignCreate(db, session, campaign)
-            assertEquals(CampaignStatus.HARVEST, db.campaignDao().findById(campaign)!!.status)
-            assertTrue("campaign ${casDiagnostics(db, campaign, farm, parcel)}",
-                db.syncOutboxDao().listForEntity(SyncEntityType.CAMPAIGN, campaign).all { it.status == OutboxStatus.CONFIRMED })
+            sendCampaignChanges("harvest")
+            val finalCampaign = db.campaignDao().findById(campaign)!!
+            assertEquals(CampaignStatus.HARVEST, finalCampaign.status); assertEquals(4L, finalCampaign.metadata.remoteVersion)
+            assertEquals(SyncStatus.SYNCED, finalCampaign.metadata.syncStatus)
+            // The confirmed snapshots survived the modification and the activation unchanged.
+            assertEquals(snapshotIds, db.campaignDao().listSnapshots(campaign).map { it.id })
+            assertTrue(db.campaignDao().listSnapshots(campaign).all { it.metadata.syncStatus == SyncStatus.SYNCED })
 
             // 5. Pesada: the app's repository (v3), its automatic Jornada through the real #824 sender, the Pesada through
             //    the real #808 v3 writer and its HEAD confirmation.
@@ -217,7 +241,9 @@ class AbTwoDeviceStepTest {
 
             val result = JSONObject().put("workspace", "$workspace").put("farm", "$farm").put("parcel", "$parcel")
                 .put("campaign", "$campaign").put("jornada", "$jornada").put("pesada", "$pesada").put("net", net)
-                .put("farmName", "Finca A2").put("parcelName", "Parcela A2").put("campaignName", "Campaña A2")
+                .put("farmName", "Finca A2").put("parcelName", "Parcela A2").put("campaignName", "Campaña A2 editada")
+                .put("campaignNotes", "Modificada en A2").put("campaignVersion", finalCampaign.metadata.remoteVersion)
+                .put("snapshot", "${snapshotIds.single()}")
                 .put("jornadaWeight", db.harvestDao().findById(jornada)!!.weightGrams)
                 .put("pesadaVersion", db.deliveryDao().findById(pesada)!!.metadata.remoteVersion)
                 .put("jornadaVersion", db.harvestDao().findById(jornada)!!.metadata.remoteVersion)
@@ -261,6 +287,8 @@ class AbTwoDeviceStepTest {
             assertEquals(expected.getString("parcelName"), db.parcelDao().findById(parcel)!!.displayName)
             val c = db.campaignDao().findById(campaign)!!
             assertEquals(expected.getString("campaignName"), c.name); assertEquals(CampaignStatus.HARVEST, c.status)
+            assertEquals(expected.getString("campaignNotes"), c.notes); assertEquals(expected.getLong("campaignVersion"), c.metadata.remoteVersion)
+            assertEquals(listOf(UUID.fromString(expected.getString("snapshot"))), db.campaignDao().listSnapshots(campaign).map { it.id })
             val j = db.harvestDao().findById(jornada)!!
             assertEquals(expected.getLong("jornadaWeight"), j.weightGrams); assertEquals(expected.getLong("jornadaVersion"), j.metadata.remoteVersion)
             val p = db.deliveryDao().findById(pesada)!!
@@ -282,31 +310,6 @@ class AbTwoDeviceStepTest {
     }
 
     // --------------------------------------------------------------------------------------------------------- helpers
-
-    /** The QA stand-in for the missing Android CAMPAIGN CREATE sender: the server's real RPC, this device's session. */
-    private suspend fun publishCampaignCreate(db: MaginaOlivoDatabase, session: AuthSession, campaign: UUID) {
-        val c = db.campaignDao().findById(campaign)!!
-        val op = db.syncOutboxDao().listForEntity(SyncEntityType.CAMPAIGN, campaign).single { it.operation == OutboxOperation.CREATE }
-        val snapshots = JSONArray(db.campaignDao().listSnapshots(campaign).map { s ->
-            JSONObject().put("id", "${s.id}").put("parcelId", "${s.parcelId}").put("farmIdAtStart", "${s.farmIdAtStart}")
-                .put("farmNameAtStart", s.farmNameAtStart).put("parcelNameAtStart", s.parcelNameAtStart)
-                .put("managedAreaM2AtStart", s.managedAreaM2AtStart ?: JSONObject.NULL)
-                .put("cadastralReferenceAtStart", s.cadastralReferenceAtStart ?: JSONObject.NULL)
-                .put("geometryGeoJsonSnapshot", s.geometryGeoJsonSnapshot ?: JSONObject.NULL)
-        })
-        val body = JSONObject().put("p_operation_id", "${op.id}").put("p_campaign", JSONObject().put("id", "$campaign")
-            .put("workspaceId", "${c.workspaceId}").put("farmId", "${c.farmId}").put("name", c.name).put("startDate", "${c.startDate}")
-            .put("endDate", c.endDate?.toString() ?: JSONObject.NULL).put("status", c.status.name).put("notes", c.notes ?: JSONObject.NULL)
-            .put("parcels", snapshots))
-        post("/rest/v1/rpc/create_own_campaign", body.toString(), session.accessToken)
-        // As the sender would on its receipt: the CREATE is confirmed at version 1.
-        db.campaignDao().upsert(c.copy(metadata = c.metadata.copy(syncStatus = SyncStatus.SYNCED, remoteVersion = 1L)))
-        db.openHelper.writableDatabase.execSQL("UPDATE campaign_parcels SET sync_status='SYNCED', remote_version=1 WHERE campaign_id=?",
-            arrayOf<Any>(campaign.toString()))
-        // The single server create carries the campaign's final state, so every local CAMPAIGN operation is settled by it.
-        db.openHelper.writableDatabase.execSQL("UPDATE sync_outbox SET status='CONFIRMED' WHERE entity_type='CAMPAIGN' AND entity_id=?",
-            arrayOf<Any>(campaign.toString()))
-    }
 
     /** The state CAMPAIGN CAS staging checks, for a failure message only. */
     private suspend fun casDiagnostics(db: MaginaOlivoDatabase, campaign: UUID, farm: UUID, parcel: UUID): String {
@@ -359,7 +362,6 @@ class AbTwoDeviceStepTest {
         InstrumentationRegistry.getInstrumentation().sendStatus(2, Bundle().apply { putString(key, json) })
 
     private fun get(path: String): String = http(path, "GET", null, null)
-    private fun post(path: String, body: String, token: String): String = http(path, "POST", body, token)
 
     private fun http(path: String, method: String, body: String?, token: String?): String {
         val connection = URL("$endpoint$path").openConnection() as HttpsURLConnection

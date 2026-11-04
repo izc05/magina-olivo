@@ -47,7 +47,7 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           script: |
-            set -o pipefail
+            set -e
             adb install -r app/build/outputs/apk/dev/debug/app-dev-debug.apk
             adb install -r app/build/outputs/apk/androidTest/dev/debug/app-dev-debug-androidTest.apk
             adb shell am instrument -w -r -e class com.isivoltpro.maginaolivo.AccountAuthGateTest,com.isivoltpro.maginaolivo.FarmLinkScreenTest,com.isivoltpro.maginaolivo.AppNavigationTest,com.isivoltpro.maginaolivo.HomeFeedsScreenTest,com.isivoltpro.maginaolivo.WeatherWeekScreenTest,com.isivoltpro.maginaolivo.data.local.RoomMigrationTest,com.isivoltpro.maginaolivo.data.local.WorkspaceSelectionRoomTest,com.isivoltpro.maginaolivo.data.local.WorkspaceSendRoomTest,com.isivoltpro.maginaolivo.data.local.CampaignCreateSendRoomTest com.isivoltpro.maginaolivo.dev.test/androidx.test.runner.AndroidJUnitRunner | tee integration-tests.txt

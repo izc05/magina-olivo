@@ -98,19 +98,14 @@ class LocalFarmLinkRepository(
     private fun readChoices(): List<FarmChoice> {
         val values=mutableListOf<FarmChoice>()
         val userId = account.state.value.userId
-        val query = if (userId != null) {
-            if (issuer == "fixture-project") {
-                // In G1b test fixtures, test suites seed unlinked mock workspaces with 'local-owner' or 'historical-owner'
-                "SELECT f.id, f.workspace_id, f.name, f.version FROM farms f INNER JOIN workspaces w ON f.workspace_id = w.id WHERE f.deleted_at IS NULL AND f.status='ACTIVE' AND (w.owner_user_id = '${userId}' OR w.owner_user_id IN ('local-owner', 'historical-owner')) ORDER BY f.name, f.id"
-            } else {
-                // In production / staging, historical farms are NEVER visible or linked by default.
-                // Strictly isolate to the current authenticated user's workspace.
-                "SELECT f.id, f.workspace_id, f.name, f.version FROM farms f INNER JOIN workspaces w ON f.workspace_id = w.id WHERE f.deleted_at IS NULL AND f.status='ACTIVE' AND w.owner_user_id = '${userId}' ORDER BY f.name, f.id"
-            }
-        } else {
-            "SELECT id,workspace_id,name,version FROM farms WHERE deleted_at IS NULL AND status='ACTIVE' ORDER BY name,id"
-        }
-        database.openHelper.readableDatabase.query(query).use { c ->
+        // Historical farms are never visible or linked by default: strictly the current authenticated user's workspace.
+        // Integration #796 + #808 (owner decision 2): no issuer-specific (test) branch in production; fixtures own
+        // their workspaces explicitly. The user id is bound, never interpolated.
+        val cursor = if (userId != null) database.openHelper.readableDatabase.query(
+            "SELECT f.id, f.workspace_id, f.name, f.version FROM farms f INNER JOIN workspaces w ON f.workspace_id = w.id WHERE f.deleted_at IS NULL AND f.status='ACTIVE' AND w.owner_user_id = ? ORDER BY f.name, f.id",
+            arrayOf<Any>(userId.toString()))
+        else database.openHelper.readableDatabase.query("SELECT id,workspace_id,name,version FROM farms WHERE deleted_at IS NULL AND status='ACTIVE' ORDER BY name,id")
+        cursor.use { c ->
             while(c.moveToNext()) values.add(FarmChoice(UUID.fromString(c.getString(0)),UUID.fromString(c.getString(1)),c.getString(2),c.getLong(3)))
         }
         return values

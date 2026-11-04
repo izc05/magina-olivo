@@ -16,7 +16,7 @@ class SupabaseAuthApiTest {
     @Test fun acceptsOnlyExplicitAuthorizedEnvironmentsAndPublicKeys() {
         assertNotNull(AuthConfiguration.forEnvironment("DEV",url,"sb_publishable_fake","com.isivoltpro.maginaolivo.dev"))
         assertNotNull(AuthConfiguration.forEnvironment("STAGING",url,"sb_publishable_fake","com.isivoltpro.maginaolivo.staging"))
-        assertNotNull(AuthConfiguration.forEnvironment("PRODUCTION",url,"sb_publishable_fake","com.isivoltpro.maginaolivo"))
+        assertNull(AuthConfiguration.forEnvironment("PRODUCTION",url,"sb_publishable_fake","com.isivoltpro.maginaolivo"))   // owner decision 3: PRODUCTION pending approval
         assertNull(AuthConfiguration.forEnvironment("UNKNOWN",url,"sb_publishable_fake","app"))
         listOf("http://abcdefghijklmnopqrst.supabase.co", "https://zzelvbcuxsboafibfxch.supabase.co", "$url/path", "$url?x=1", "https://user@abcdefghijklmnopqrst.supabase.co", "https://abcdefghijklmnopqrst.supabase.co.evil.test")
             .forEach { assertNull(it,AuthConfiguration.forEnvironment("DEV",it,"sb_publishable_fake","app")) }

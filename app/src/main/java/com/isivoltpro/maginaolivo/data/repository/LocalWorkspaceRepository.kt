@@ -105,7 +105,10 @@ class LocalWorkspaceRepository(
 
     override suspend fun ensureLocalWorkspace(): AppResult<UUID> = withContext(dispatchers.io) {
         safe("ensure_local_workspace") {
-            if (account?.state?.value?.online == true) refreshAuthorizations()
+            // Throttled: many repositories call this inside flows that also observe the authorization cache this refresh
+            // writes; an unthrottled refresh re-triggered them forever (~27 requests/s on a phone that sees a server
+            // workspace it has not received yet). Explicit user actions (list, select) still refresh at once.
+            refreshIfDue()
             resolve(true)
         }
     }

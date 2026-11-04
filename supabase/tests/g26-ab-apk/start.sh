@@ -11,6 +11,7 @@ set -euo pipefail
 #
 # It stays up until interrupted, printing the test account to sign in with on both phones. Everything is removed on exit.
 cd "$(dirname "$0")/../../.."
+export MSYS_NO_PATHCONV=1   # Git Bash on Windows: keep /CN=… and /data/… device paths literal
 for tool in supabase docker openssl adb node gradle; do command -v "$tool" >/dev/null || { echo "missing $tool" >&2; exit 2; }; done
 docker info >/dev/null
 A="${AB_SERIAL_A:?AB_SERIAL_A required}"; B="${AB_SERIAL_B:?AB_SERIAL_B required}"
@@ -21,7 +22,7 @@ for pair in "$A:A2" "$B:B2"; do
   [[ "$avd" == "MaginaOlivo_AB_${want}_Disposable_API35" ]] || { echo "Refusing $serial: '$avd' is not the disposable $want" >&2; exit 2; }
 done
 host=zubpicdibqbmewxeurhm.supabase.co
-work="$(mktemp -d)"
+work="$(mktemp -d)"; command -v cygpath >/dev/null && work="$(cygpath -m "$work")"
 project="mg26-apk-$(date +%s)-$$"
 server_pid=''
 cleanup() {
@@ -31,10 +32,12 @@ cleanup() {
 }
 trap cleanup EXIT
 supabase init --workdir "$work" >/dev/null
-node --input-type=module - "$work/supabase/config.toml" "$project" <<'JS'
+prefix="${G26_PORT_PREFIX:-581}"   # local ports <prefix>20-29, never the default 543xx of other local stacks
+[[ "$prefix" =~ ^[1-6][0-9]{2}$ && "$prefix" != 543 ]] || { echo "bad port prefix" >&2; exit 2; }
+node --input-type=module - "$work/supabase/config.toml" "$project" "$prefix" <<'JS'
 import {readFileSync,writeFileSync} from 'node:fs';
-const [file,project]=process.argv.slice(2);
-writeFileSync(file,readFileSync(file,'utf8').replace(/^project_id = .*$/m,`project_id = "${project}"`).replace(/^major_version = \d+$/m,'major_version = 17'));
+const [file,project,prefix]=process.argv.slice(2);
+writeFileSync(file,readFileSync(file,'utf8').replace(/^project_id = .*$/m,`project_id = "${project}"`).replace(/^major_version = \d+$/m,'major_version = 17').replace(/= 543(\d\d)$/mg,`= ${prefix}$1`));
 JS
 supabase start --workdir "$work" --exclude studio,postgres-meta,imgproxy,realtime,edge-runtime,logflare,vector,supavisor > "$work/start.log" 2>&1 \
   || { echo 'Disposable Supabase startup failed' >&2; tail -20 "$work/start.log" >&2; exit 1; }

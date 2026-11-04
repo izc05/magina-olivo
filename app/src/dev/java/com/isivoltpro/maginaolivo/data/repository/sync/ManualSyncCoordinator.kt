@@ -99,13 +99,21 @@ internal class ManualSyncCoordinator(
         val left = database.syncOutboxDao().listUnconfirmed()
         val other = left.filter { it.entityType !in SUPPORTED }
         if (other.isNotEmpty()) out.notes += "${other.size} registros de otros tipos (labores, gastos, documentos…) se quedan en este teléfono: no se sincronizan en la versión 1.0."
-        val open = left.filter { it.entityType in SUPPORTED }
+        // Operations a sender resolved on purpose without a request (adopted, derived only, never sent) leave nothing open.
+        val open = left.filter { it.entityType in SUPPORTED && it.lastErrorCode !in HarvestReceiveCoordinator.SETTLED_CODES &&
+            !(it.entityType == SyncEntityType.WORKSPACE && it.operation == OutboxOperation.CREATE && isEmptyLocalWorkspace(it.entityId)) }
         if (open.any { it.status == OutboxStatus.BLOCKED && it.lastErrorCode != DeliveryRetentionCodes.V3_ACK_AWAITING_HEAD })
             out.reasons += "${open.count { it.status == OutboxStatus.BLOCKED }} cambios retenidos para revisión: el servidor no los aceptó tal cual. Se conservan en este teléfono."
         if (open.isNotEmpty() && out.reasons.isEmpty())
             out.reasons += "${open.size} cambios siguen pendientes de enviar. Vuelve a sincronizar."
         return if (out.reasons.isEmpty()) ManualSyncState.Completed(now(), out.sent, out.received, out.notes.toList())
         else ManualSyncState.Pending(now(), out.sent, out.received, (out.reasons + out.notes).toList())
+    }
+
+    /** Never confirmed by the server and without any farm (even deleted): the app's own empty starting workspace. */
+    private suspend fun isEmptyLocalWorkspace(workspaceId: UUID): Boolean {
+        val workspace = database.workspaceDao().findById(workspaceId) ?: return false
+        return workspace.metadata.remoteVersion == null && database.farmDao().listIncludingDeleted(workspaceId).isEmpty()
     }
 
     // ---------------------------------------------------------------------------------------------------------- send
@@ -119,6 +127,9 @@ internal class ManualSyncCoordinator(
         step("enviando espacio de trabajo")
         val workspaceSend = WorkspaceSendCoordinator(database, account, issuer, transport(RpcScope.WORKSPACE_SEND))
         for (op in open(SyncEntityType.WORKSPACE, OutboxOperation.CREATE)) {
+            // An empty workspace the app opened by itself is never published: nothing of the user travels with it, and a
+            // second phone would otherwise create a duplicate empty workspace on the server.
+            if (isEmptyLocalWorkspace(op.entityId)) continue
             val staged = if (op.payloadJson == null) workspaceSend.stageOwned(op.id) else WorkspaceSendOutcome.STAGED
             val outcome = if (staged == WorkspaceSendOutcome.STAGED) workspaceSend.send(op.id, lease) else staged
             note(out, "El espacio de trabajo", outcome.name)
@@ -242,7 +253,9 @@ internal class ManualSyncCoordinator(
 
         // Campaigns and harvest data are received for the workspace in use on this phone.
         val active = when (val selected = workspaces.activeWorkspace()) {
-            is AppResult.Success -> selected.value
+            // A phone that only holds its own empty starting workspace moves to the one workspace the account owns.
+            is AppResult.Success -> selected.value.takeIf { it in owned.map { w -> w.id } || !isEmptyLocalWorkspace(it) }
+                ?: owned.singleOrNull()?.id?.takeIf { workspaces.selectWorkspace(it) is AppResult.Success }
             is AppResult.Failure -> owned.singleOrNull()?.id?.takeIf { workspaces.selectWorkspace(it) is AppResult.Success }
         } ?: run {
             if (owned.size > 1) out.reasons += "Elige en «Workspace activo» el espacio en uso para recibir sus campañas."

@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -55,6 +56,7 @@ import com.isivoltpro.maginaolivo.ui.components.MoDestructiveButton
 import com.isivoltpro.maginaolivo.ui.components.MoSecondaryButton
 import com.isivoltpro.maginaolivo.ui.components.MoSectionHeader
 import com.isivoltpro.maginaolivo.ui.components.MoTertiaryButton
+import com.isivoltpro.maginaolivo.ui.components.MoBackButton
 import kotlinx.coroutines.launch
 import com.isivoltpro.maginaolivo.ui.components.MoStatusChip
 import com.isivoltpro.maginaolivo.ui.components.MoStatusTone
@@ -62,6 +64,9 @@ import com.isivoltpro.maginaolivo.ui.theme.MoSpacing
 import com.isivoltpro.maginaolivo.ui.theme.MoSurfaceTokens
 import com.isivoltpro.maginaolivo.ui.theme.MoShape
 import com.isivoltpro.maginaolivo.ui.theme.MoSize
+import com.isivoltpro.maginaolivo.core.common.AppError
+import com.isivoltpro.maginaolivo.core.common.AppResult
+import java.util.UUID
 
 /** Perfil (UI polish v2): real settings only; what belongs to a later phase says so. */
 @Composable
@@ -84,9 +89,12 @@ fun ProfileRoute(
 ) {
     val context = LocalContext.current
     val avatarStore = remember(context) { ProfileAvatarStore.fromContext(context) }
-    var avatarVersion by remember { mutableStateOf(0) }
+    val avatarRevision by ProfileAvatarStore.changes.collectAsStateWithLifecycle()
     val accountState by (accountRepository?.state ?: kotlinx.coroutines.flow.MutableStateFlow(null)).collectAsStateWithLifecycle()
-    val personalProfile = remember(accountState, avatarVersion) {
+    val currentAccount by rememberUpdatedState(accountState)
+    var pickerAccountId by remember { mutableStateOf<UUID?>(null) }
+    var avatarMessage by remember(accountState?.userId) { mutableStateOf<String?>(null) }
+    val personalProfile = remember(accountState, avatarRevision) {
         val uid = accountState?.userId
         val avatarFile = uid?.let { avatarStore.getAvatarFile(it) }
         accountState?.let { PersonalProfile.fromAccountState(it, avatarFile) }
@@ -94,22 +102,35 @@ fun ProfileRoute(
     val photoPicker = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()
     ) { uri ->
-        val uid = accountState?.userId
-        if (uri != null && uid != null) {
-            context.contentResolver.openInputStream(uri)?.use { stream ->
-                val result = avatarStore.saveAvatar(uid, stream)
-                if (result is com.isivoltpro.maginaolivo.core.common.AppResult.Success) {
-                    avatarVersion++
+        val uid = pickerAccountId
+        pickerAccountId = null
+        if (uri != null && uid != null && currentAccount?.userId == uid) {
+            val result = runCatching { context.contentResolver.openInputStream(uri)?.use { avatarStore.saveAvatar(uid, it) } }.getOrNull()
+            avatarMessage = when (result) {
+                is AppResult.Success -> null
+                is AppResult.Failure -> when ((result.error as? AppError.Validation)?.code) {
+                    "FILE_TOO_LARGE" -> "La foto supera 5 MB. Elige una imagen más pequeña."
+                    "INVALID_IMAGE" -> "No se pudo leer la imagen. Elige otra foto."
+                    else -> "No se pudo guardar la foto en este teléfono. Inténtalo de nuevo."
                 }
+                else -> "No se pudo abrir la foto. Elige otra imagen."
             }
         }
     }
     val onPickAvatar = if (personalProfile != null) ({
+        pickerAccountId = personalProfile.userId
+        avatarMessage = null
         photoPicker.launch(
             androidx.activity.result.PickVisualMediaRequest(
                 androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly
             )
         )
+    }) else null
+    val onDeleteAvatar = if (personalProfile?.avatarFile != null) ({
+        avatarMessage = when (avatarStore.deleteAvatar(personalProfile.userId)) {
+            is AppResult.Success -> null
+            is AppResult.Failure -> "No se pudo quitar la foto. Inténtalo de nuevo."
+        }
     }) else null
     val profileRepository = persistence?.profileRepository
     val profileViewModel: MyProfileViewModel? = if (persistence != null && profileRepository != null) {
@@ -135,6 +156,9 @@ fun ProfileRoute(
         onLogout = if (personalProfile != null) ({ accountRepository?.requestLogout(accountState?.online == true) }) else null,
         personalProfile = personalProfile,
         onPickAvatar = onPickAvatar,
+        onDeleteAvatar = onDeleteAvatar,
+        avatarRevision = avatarRevision,
+        avatarMessage = avatarMessage,
         appVersion = appVersion,
         notificationsOn = notificationsOn,
         onNotifications = openNotifications,
@@ -220,6 +244,9 @@ fun ProfileScreen(
     onLogout: (() -> Unit)? = null,
     personalProfile: PersonalProfile? = null,
     onPickAvatar: (() -> Unit)? = null,
+    onDeleteAvatar: (() -> Unit)? = null,
+    avatarRevision: Long = 0L,
+    avatarMessage: String? = null,
     onBack: (() -> Unit)? = null,
 ) {
     var confirmLogout by remember { mutableStateOf(false) }
@@ -242,7 +269,7 @@ fun ProfileScreen(
     ) {
         Spacer(Modifier.height(MoSpacing.sm))
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            onBack?.let { MoTertiaryButton("Volver", it, Modifier.testTag("profile-back")) }
+            onBack?.let { MoBackButton("Volver", it, Modifier.testTag("profile-back")) }
             Text("Perfil", style = MaterialTheme.typography.headlineLarge, color = MoColors.current.primaryText)
         }
         Spacer(Modifier.height(MoSpacing.xs))
@@ -250,7 +277,15 @@ fun ProfileScreen(
             profile = personalProfile,
             onAccount = onAccount,
             onPickAvatar = onPickAvatar,
+            avatarRevision = avatarRevision,
         )
+        if (onPickAvatar != null) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MoSpacing.sm)) {
+                MoTertiaryButton("Cambiar foto", onPickAvatar, Modifier.testTag("profile-change-photo"))
+                if (onDeleteAvatar != null) MoTertiaryButton("Quitar foto", onDeleteAvatar, Modifier.testTag("profile-remove-photo"))
+            }
+        }
+        avatarMessage?.let { Text(it,Modifier.testTag("profile-avatar-message"),color=MoColors.current.errorText) }
         Spacer(Modifier.height(MoSpacing.xs))
         myProfile?.invoke()
         ProfileListItem(

@@ -153,14 +153,21 @@ class AppNavigationTest {
         composeRule.onNode(hasText("Finca Contexto B") and hasAnyAncestor(hasTestTag("quick-register-sheet")))
             .performScrollTo().performClick()
         composeRule.onNodeWithTag("quick-register-farm").assertTextContains("Finca Contexto B")
-        pressBack()
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+        composeRule.waitUntil(UI_TIMEOUT_MS) {
+            composeRule.onAllNodesWithTag("quick-register-sheet").fetchSemanticsNodes().isEmpty()
+        }
         composeRule.onNodeWithTag("notebook-context").assertTextContains("Finca Contexto A", substring = true)
         for (recreate in listOf(false, true)) {
             if (recreate) composeRule.activityRule.scenario.recreate()
+            waitForTag("bottom-add-record")
             composeRule.onNodeWithTag("bottom-add-record").performClick()
             waitForTag("quick-register-farm")
             composeRule.onNodeWithTag("quick-register-farm").assertTextContains("Finca Contexto A")
-            pressBack()
+            InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+            composeRule.waitUntil(UI_TIMEOUT_MS) {
+                composeRule.onAllNodesWithTag("quick-register-sheet").fetchSemanticsNodes().isEmpty()
+            }
         }
     }
 

@@ -30,9 +30,11 @@ import com.isivoltpro.maginaolivo.ui.theme.MoSurfaceTokens
 @Composable
 fun ProfileAvatarAction(repository: AccountRepository, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val account by repository.state.collectAsStateWithLifecycle()
+    val avatarRevision by ProfileAvatarStore.changes.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val store = remember(context) { ProfileAvatarStore.fromContext(context) }
-    val profile = account.let { state ->
+    val profile = remember(account, avatarRevision) {
+        val state = account
         val file = state.userId?.let(store::getAvatarFile)
         PersonalProfile.fromAccountState(state, file)
     }
@@ -46,7 +48,7 @@ fun ProfileAvatarAction(repository: AccountRepository, onClick: () -> Unit, modi
     ) {
         Box(contentAlignment = Alignment.Center) {
             if (profile?.avatarFile?.exists() == true) {
-                AsyncImage(profile.avatarFile, "Foto de perfil", Modifier.size(48.dp).clip(CircleShape), contentScale = ContentScale.Crop)
+                AsyncImage(avatarImageRequest(context, profile.avatarFile, avatarRevision), "Foto de perfil", Modifier.size(48.dp).clip(CircleShape), contentScale = ContentScale.Crop)
             } else if (profile != null) {
                 Text(profile.initials, style = MaterialTheme.typography.titleMedium)
             } else {

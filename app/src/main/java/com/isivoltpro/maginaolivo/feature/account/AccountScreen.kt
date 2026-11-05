@@ -92,7 +92,7 @@ fun AccountRoute(repository:AccountRepository,onBack:()->Unit,simulationAllowed:
     fun choose(next:AccountForm) { form=next;password="";model.repository.clearNotice() }
     Column(Modifier.fillMaxSize().background(MoCream).statusBarsPadding().imePadding()
         .verticalScroll(rememberScrollState()).padding(MoSpacing.screen).testTag("account-root"),verticalArrangement=Arrangement.spacedBy(MoSpacing.sm)) {
-        if(showBack) MoTertiaryButton("Volver a Perfil",onBack,Modifier.testTag("account-back"))
+        if(showBack) MoBackButton("Volver a Perfil",onBack,Modifier.testTag("account-back"))
         if(state.email==null || state.status==AccountStatus.EXPIRED) {
             MaginaOlivoWordmark(Modifier.align(Alignment.CenterHorizontally).testTag("account-logo"))
         }

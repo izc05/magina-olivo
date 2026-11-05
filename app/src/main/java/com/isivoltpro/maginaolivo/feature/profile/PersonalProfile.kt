@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -94,7 +95,9 @@ fun PersonalProfileHeader(
     onAccount: (() -> Unit)?,
     modifier: Modifier = Modifier,
     onPickAvatar: (() -> Unit)? = null,
+    avatarRevision: Long = 0L,
 ) {
+    val context = LocalContext.current
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -123,7 +126,7 @@ fun PersonalProfileHeader(
 
                 if (profile.avatarFile != null && profile.avatarFile.exists()) {
                     AsyncImage(
-                        model = profile.avatarFile,
+                        model = avatarImageRequest(context, profile.avatarFile, avatarRevision),
                         contentDescription = "Foto de perfil",
                         contentScale = ContentScale.Crop,
                         modifier = avatarModifier

@@ -3,7 +3,11 @@ package com.isivoltpro.maginaolivo
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.SystemClock
+import android.os.Build
 import android.view.KeyEvent
+import android.view.inspector.WindowInspector
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -35,7 +39,6 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.printToString
-import androidx.test.espresso.Espresso.closeSoftKeyboard
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.isivoltpro.maginaolivo.feature.deliveries.PESADA_NO_RUNNING_CAMPAIGN
@@ -1269,7 +1272,10 @@ class AppNavigationTest {
             .getOrElse { "(screen not readable: $it)" }
         val screenshotPath = runCatching {
             val bitmap = composeRule.onRoot().captureToImage().asAndroidBitmap()
-            val dir = File("/sdcard/evidence").apply { mkdirs() }
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            val dir = File(context.getExternalFilesDir(null), "navigation-evidence").apply {
+                check(mkdirs() || isDirectory)
+            }
             val file = File(dir, "nav-timeout-$tag.png")
             FileOutputStream(file).use { out ->
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
@@ -1564,7 +1570,28 @@ class AppNavigationTest {
     }
 
     private fun safeCloseSoftKeyboard() {
-        runCatching { closeSoftKeyboard() }
+        // A sheet owns a different window from the Activity. Espresso's root picker
+        // can wait on an unfocused Activity, then silently fail inside runCatching.
+        // Hide the IME on the attached windows and require the real insets/focus state
+        // before the next touch or single Back event; never retry navigation itself.
+        fun roots() = if (Build.VERSION.SDK_INT >= 29) WindowInspector.getGlobalWindowViews()
+            else listOf(composeRule.activity.window.decorView)
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.runOnMainSync {
+            roots().filter { it.isAttachedToWindow }.forEach {
+                ViewCompat.getWindowInsetsController(it)?.hide(WindowInsetsCompat.Type.ime())
+            }
+        }
+        composeRule.waitUntil(UI_TIMEOUT_MS) {
+            var ready = false
+            instrumentation.runOnMainSync {
+                val attached = roots().filter { it.isAttachedToWindow }
+                ready = attached.any { it.hasWindowFocus() } && attached.all {
+                    ViewCompat.getRootWindowInsets(it)?.isVisible(WindowInsetsCompat.Type.ime()) != true
+                }
+            }
+            ready
+        }
     }
 
     private fun pressBack() {

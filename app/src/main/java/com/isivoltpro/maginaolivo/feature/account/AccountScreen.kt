@@ -143,11 +143,12 @@ fun AccountRoute(repository:AccountRepository,onBack:()->Unit,simulationAllowed:
         Text("Mis datos",style=MaterialTheme.typography.titleLarge,color=MoColors.current.primaryText)
         MoCompactListItem("Guardados en este teléfono",subtitle="Tus fincas y registros locales se conservan al cerrar sesión.",modifier=Modifier.testTag("account-local-data"))
         val canViewLinks=state.userId!=null && farmLinks?.accessAllowed(state.userId)==true
-        val linkState=if(!simulation && canViewLinks) farmLinks?.state?.collectAsStateWithLifecycle()?.value else null
+        val observedLinkState=if(!simulation) farmLinks?.state?.collectAsStateWithLifecycle()?.value else null
+        val linkState=observedLinkState.takeIf { canViewLinks }
         val linkStatus=when {
             state.userId==null -> "Inicia sesión para comprobar tus fincas"
             farmLinks==null -> "Vinculación no disponible en esta pantalla"
-            farmLinks.state.value.unreadable -> "No se puede comprobar la vinculación local"
+            observedLinkState?.unreadable == true -> "No se puede comprobar la vinculación local"
             !canViewLinks -> "Estas fincas están protegidas con otra cuenta"
             linkState?.ledger!=null -> "Consentimiento local registrado · confirmación remota no comprobada"
             else -> "Vinculación de fincas pendiente"

@@ -19,6 +19,7 @@ concreta está en la ejecución de CI con ese número (Actions → Android CI �
 
 ## 1.0.0 — candidato de publicación (sin publicar)
 
+- Parcelas de Catastro: provincia y municipio oficiales se guardan al importar y se leen sin conexión. La recuperación de parcelas antiguas solo completa campos vacíos; si no se verifica la ubicación, se puede elegir con los selectores guiados.
 - Revisión DEV de Fincas y Tiempo: provincia y municipio se eligen del catálogo INE local, con búsqueda de pueblo limitada a la provincia seleccionada. Nueva finca guía por identificación, ubicación opcional, detalles y confirmación; también permite crear una finca básica solo con nombre. Las fincas antiguas conservan su ubicación hasta que el usuario la cambie expresamente.
 - Revisión DEV del mapa de parcelas: ayuda plegada, ficha de selección con datos esenciales y detalles ampliables, y contorno seleccionado más visible. La revisión y la protección contra duplicados se conservan antes de incorporar una parcela.
 - Preparación de la variante de producción para Google Play: configuración separada por entorno, firma de subida y enlaces de privacidad y solicitud de eliminación de cuenta. La publicación requiere verificar los servicios y datos reales de producción.

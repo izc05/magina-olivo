@@ -395,10 +395,11 @@ class FarmMapViewModel(
     /** Catastro's place for a reference, or null: a failed lookup never blocks saving. */
     private suspend fun locate(reference: String) = try {
         kotlinx.coroutines.withTimeoutOrNull(com.isivoltpro.maginaolivo.feature.catastro.PLACE_TIMEOUT_MS) { client.locate(reference) }
+            ?: com.isivoltpro.maginaolivo.feature.catastro.CadastralMunicipalityCatalog.resolve(reference)
     } catch (cancelled: kotlinx.coroutines.CancellationException) {
         throw cancelled
     } catch (_: Exception) {
-        null
+        com.isivoltpro.maginaolivo.feature.catastro.CadastralMunicipalityCatalog.resolve(reference)
     }
 
     /** LOCATE: the chosen Catastro parcel becomes this parcel's identity and boundary. */

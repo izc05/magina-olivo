@@ -257,7 +257,7 @@ class FarmMapViewModel(
                         selectedSavedId = own?.id,
                         taken = if (elsewhere) it.taken + candidate.reference else it.taken,
                         message = when {
-                            elsewhere -> "La parcela ${candidate.reference} ya está en otra finca de tu olivar."
+                            elsewhere -> "Parcela ya añadida a otra finca."
                             else -> null
                         },
                     )
@@ -322,7 +322,7 @@ class FarmMapViewModel(
                 it.copy(selectedSavedId = runCatching { UUID.fromString(id) }.getOrNull(), inspected = null, inspectedPlace = null)
             }
             candidate.reference in current.taken -> mutableState.update {
-                it.copy(message = "La parcela ${candidate.reference} ya está en tu olivar.")
+                it.copy(message = "Parcela ya añadida a tu olivar.")
             }
             // Viewing, touching a parcel reads it; marking parcels is what ADD is for.
             current.mode == FarmMapMode.VIEW -> {

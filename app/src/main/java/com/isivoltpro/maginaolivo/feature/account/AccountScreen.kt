@@ -22,6 +22,9 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.Alignment
+import com.isivoltpro.maginaolivo.ui.brand.MaginaOlivoWordmark
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -75,10 +78,13 @@ fun AccountRoute(repository:AccountRepository,onBack:()->Unit,simulationAllowed:
         }
     }
     fun choose(next:AccountForm) { form=next;password="";model.repository.clearNotice() }
-    Column(Modifier.fillMaxSize().background(MoSurfaceTokens.appBackground).statusBarsPadding().imePadding()
+    Column(Modifier.fillMaxSize().background(MoCream).statusBarsPadding().imePadding()
         .verticalScroll(rememberScrollState()).padding(MoSpacing.screen).testTag("account-root"),verticalArrangement=Arrangement.spacedBy(MoSpacing.sm)) {
         if(showBack) MoTertiaryButton("Volver a Perfil",onBack,Modifier.testTag("account-back"))
-        Text("Cuenta",style=MaterialTheme.typography.headlineLarge,color=MoColors.current.primaryText)
+        if(state.email==null || state.status==AccountStatus.EXPIRED) {
+            MaginaOlivoWordmark(Modifier.align(Alignment.CenterHorizontally).testTag("account-logo"))
+        }
+        Text("Cuenta",style=MaterialTheme.typography.headlineLarge,color=MoInk)
         if(state.simulated) Text("Simulación de Auth: no crea cuentas ni envía correos. Usa datos ficticios.",Modifier.testTag("account-simulation"),color=MoColors.current.warningText)
         val status=when(state.status) {
             AccountStatus.UNCONFIGURED -> "Configuración de pruebas pendiente"
@@ -137,16 +143,16 @@ fun AccountRoute(repository:AccountRepository,onBack:()->Unit,simulationAllowed:
             MoPrimaryButton("Guardar nueva contraseña",{ val value=password;password="";model.updatePassword(value,online) },Modifier.fillMaxWidth().testTag("account-save-password"),enabled)
         } else if(state.email==null || state.status==AccountStatus.EXPIRED) {
             MoTextField(email,{email=it},"Correo electrónico",Modifier.fillMaxWidth().testTag("account-email"),enabled=!state.busy,
-                keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Email))
+                keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Email),containerColor=MoWarmWhite)
             if(form!=AccountForm.RECOVER) PasswordInput(password,{password=it},if(form==AccountForm.REGISTER)"Contraseña (8–128 caracteres)" else "Contraseña","account-password",!state.busy)
             when(form) {
-                AccountForm.LOGIN -> MoPrimaryButton("Iniciar sesión",{val value=password;password="";model.login(email,value,online)},Modifier.fillMaxWidth().testTag("account-login"),enabled)
+                AccountForm.LOGIN -> MoPrimaryButton("Entrar",{val value=password;password="";model.login(email,value,online)},Modifier.fillMaxWidth().testTag("account-login"),enabled)
                 AccountForm.REGISTER -> MoPrimaryButton("Registrarme",{val value=password;password="";model.register(email,value,online)},Modifier.fillMaxWidth().testTag("account-register"),enabled)
                 AccountForm.RECOVER -> MoPrimaryButton("Enviar enlace de recuperación",{model.recover(email,online)},Modifier.fillMaxWidth().testTag("account-recover"),enabled)
             }
-            MoSecondaryButton("Tengo cuenta",{choose(AccountForm.LOGIN)},Modifier.fillMaxWidth().testTag("account-mode-login"),!state.busy)
-            MoSecondaryButton("Crear cuenta",{choose(AccountForm.REGISTER)},Modifier.fillMaxWidth().testTag("account-mode-register"),!state.busy)
-            MoTertiaryButton("He olvidado la contraseña",{choose(AccountForm.RECOVER)},Modifier.testTag("account-mode-recover"),!state.busy)
+            if(form!=AccountForm.LOGIN) MoSecondaryButton("Volver a entrar",{choose(AccountForm.LOGIN)},Modifier.fillMaxWidth().testTag("account-mode-login"),!state.busy)
+            if(form!=AccountForm.REGISTER) MoSecondaryButton("Crear cuenta",{choose(AccountForm.REGISTER)},Modifier.fillMaxWidth().testTag("account-mode-register"),!state.busy)
+            if(form!=AccountForm.RECOVER) MoTertiaryButton("Recuperar contraseña",{choose(AccountForm.RECOVER)},Modifier.testTag("account-mode-recover"),!state.busy)
         }
         if(state.email!=null) MoDestructiveButton("Cerrar sesión",{model.logout(online)},Modifier.fillMaxWidth().testTag("account-logout"),!state.busy)
         if(!simulation && BuildConfig.ACCOUNT_DELETION_URL.isNotBlank()) {
@@ -161,8 +167,13 @@ fun AccountRoute(repository:AccountRepository,onBack:()->Unit,simulationAllowed:
 }
 
 @Composable private fun PasswordInput(value:String,onChange:(String)->Unit,label:String,tag:String,enabled:Boolean) {
+    var visible by remember { mutableStateOf(false) }
     MoTextField(value,onChange,label,Modifier.fillMaxWidth().testTag(tag),enabled=enabled,
-        visualTransformation=PasswordVisualTransformation(),keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Password))
+        visualTransformation=if(visible) VisualTransformation.None else PasswordVisualTransformation(),
+        keyboardOptions=KeyboardOptions(keyboardType=if(visible) KeyboardType.Text else KeyboardType.Password),
+        trailingIcon={ TextButton(onClick={visible=!visible},modifier=Modifier.testTag("account-password-visibility")) {
+            Text(if(visible) "Ocultar" else "Mostrar")
+        } },containerColor=MoWarmWhite)
 }
 private fun accountConnectivity(context:Context):Flow<Boolean> = callbackFlow {
     val manager=context.getSystemService(ConnectivityManager::class.java)

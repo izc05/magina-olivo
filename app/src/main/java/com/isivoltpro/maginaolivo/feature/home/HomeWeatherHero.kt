@@ -78,6 +78,7 @@ internal fun HomeWeatherHero(
     weatherMotion: Boolean?,
     onForecast: () -> Unit,
     onAlerts: () -> Unit,
+    profileAvatar: (@Composable () -> Unit)? = null,
     /** Selector 1.0: opens the weather municipality selector; null hides the action. */
     onChangeLocation: (() -> Unit)? = null,
 ) {
@@ -123,6 +124,7 @@ internal fun HomeWeatherHero(
                 ) {
                     Box(contentAlignment = Alignment.Center) { Icon(MoIcons.Bell, null, Modifier.size(24.dp)) }
                 }
+                profileAvatar?.invoke()
             }
             Spacer(Modifier.height(MoSpacing.lg))
             Column(verticalArrangement = Arrangement.spacedBy(MoSpacing.sm)) {

@@ -75,7 +75,7 @@ data class PersonalProfile(
         fun fromAccountState(state: AccountState, avatarFile: File? = null): PersonalProfile? {
             val uid = state.userId
             val em = state.email
-            return if (state.status == AccountStatus.SIGNED_IN && uid != null && !em.isNullOrBlank()) {
+            return if (state.status in setOf(AccountStatus.SIGNED_IN, AccountStatus.OFFLINE) && uid != null && !em.isNullOrBlank()) {
                 PersonalProfile(userId = uid, email = em, avatarFile = avatarFile)
             } else {
                 null
@@ -101,7 +101,7 @@ fun PersonalProfileHeader(
             .testTag("profile-personal-header"),
         shape = MoShape.card,
         color = MoSurfaceTokens.cardSurface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, MoSurfaceTokens.cardStroke),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MoSurfaceTokens.cardStroke.copy(alpha = 0.38f)),
     ) {
         Row(
             modifier = Modifier
@@ -175,6 +175,8 @@ fun PersonalProfileHeader(
                         color = MoSurfaceTokens.secondaryText,
                         modifier = Modifier.testTag("profile-email"),
                     )
+                    Text("Sesión iniciada", style = MaterialTheme.typography.labelSmall,
+                        color = MoColors.current.primaryText)
                 } else {
                     Text(
                         text = "Perfil local",
@@ -188,6 +190,8 @@ fun PersonalProfileHeader(
                         style = MaterialTheme.typography.bodySmall,
                         color = MoSurfaceTokens.secondaryText,
                     )
+                    Text("Sin sesión", style = MaterialTheme.typography.labelSmall,
+                        color = MoColors.current.primaryText)
                 }
             }
 

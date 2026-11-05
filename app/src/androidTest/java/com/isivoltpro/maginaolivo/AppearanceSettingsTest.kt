@@ -121,7 +121,7 @@ class AppearanceSettingsTest {
                 val restoredRoot = root(AndroidAppearanceStore(isolated))
                 activity.setContent { AppRoot(restoredRoot) }
             }
-            compose.onNodeWithTag("bottom-Perfil").performClick()
+            compose.onNodeWithTag("profile-root").assertExists()
             compose.onNodeWithTag("profile-appearance").performScrollTo()
             expectBackground(0xFF171914.toInt(), lightIcons = false)
             expectSummary("Oscuro")
@@ -145,7 +145,7 @@ class AppearanceSettingsTest {
             }
             CompositionLocalProvider(LocalConfiguration provides config) { AppRoot(root) }
         }
-        compose.onNodeWithTag("bottom-Perfil").performClick()
+        compose.onNodeWithTag("top-profile-avatar").performClick()
         expectBackground(0xFFF1ECDF.toInt(), lightIcons = true)
         compose.runOnIdle { night = true }
         expectBackground(0xFF171914.toInt(), lightIcons = false)
@@ -159,7 +159,7 @@ class AppearanceSettingsTest {
     private fun showProfile(store: AppearanceStore) {
         val root = root(store)
         compose.setContent { AppRoot(root) }
-        compose.onNodeWithTag("bottom-Perfil").performClick()
+        compose.onNodeWithTag("top-profile-avatar").performClick()
         compose.onNodeWithTag("profile-root").assertIsDisplayed()
     }
 

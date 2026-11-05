@@ -32,9 +32,10 @@ import com.isivoltpro.maginaolivo.ui.theme.MoSurfaceTokens
 
 /** Phase 21C — Perfil → Ayuda y privacidad. Everything here is read from the phone. */
 enum class HelpTopic(val route: String, val title: String) {
+    GENERAL("general", "Ayuda"),
     NEWS("news", "Qué hay de nuevo"),
     PRIVACY("privacy", "Privacidad y datos"),
-    OFFLINE("offline", "Usar la app sin cobertura"),
+    OFFLINE("offline", "Funcionamiento sin conexión"),
     ;
 
     companion object {
@@ -113,6 +114,10 @@ fun HelpScreen(topic: HelpTopic, notes: List<NoteBlock>? = null) {
         Spacer(Modifier.height(MoSpacing.sm))
         Text(topic.title, style = MaterialTheme.typography.headlineMedium, color = MoColors.current.primaryText)
         when (topic) {
+            HelpTopic.GENERAL -> Sections(listOf(
+                "Por dónde empezar" to "En Mi Campo crea una finca y añade sus parcelas. En Cuaderno anota los trabajos y las entregas.",
+                "Tu cuenta" to "En Perfil puedes iniciar sesión y consultar la sincronización manual. Tus registros se guardan primero en este teléfono.",
+            ))
             HelpTopic.NEWS -> News(notes)
             HelpTopic.PRIVACY -> {
                 Sections(PRIVACY)

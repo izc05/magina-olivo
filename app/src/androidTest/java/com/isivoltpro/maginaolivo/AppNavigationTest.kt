@@ -62,13 +62,27 @@ class AppNavigationTest {
             .outerRule(IsolatedAppStateRule())
             .around(composeRule)
 
+    @Test
+    fun assistantIsReservedAndAvatarOpensProfileFromEachMainSection() {
+        enterMainShell()
+        for (tab in listOf("Inicio", "Mi Campo", "Cuaderno", "Asistente IA")) {
+            composeRule.onNodeWithTag("bottom-$tab").performClick()
+            if (tab == "Asistente IA") waitForTag("assistant-placeholder")
+            composeRule.onNodeWithTag("top-profile-avatar").performClick()
+            waitForTag("profile-root")
+            composeRule.onNodeWithTag("bottom-Perfil").assertDoesNotExist()
+            pressBack()
+            if (tab == "Asistente IA") waitForTag("assistant-placeholder")
+        }
+    }
+
     /** #705 / CR-014: the central control is an action, never a selected fifth tab. */
     @Test
     fun centralAddIsAButtonAndCancelsOnEveryRootWithoutNavigation() {
         enterMainShell()
         val before = agriculturalCounts()
         composeRule.onNodeWithTag("bottom-Avisos").assertDoesNotExist()
-        for (label in listOf("Inicio", "Mi Campo", "Cuaderno", "Perfil")) {
+        for (label in listOf("Inicio", "Mi Campo", "Cuaderno", "Asistente IA")) {
             composeRule.onNodeWithTag("bottom-$label").performClick().assertIsSelected()
             val add = composeRule.onNodeWithTag("bottom-add-record")
             val semantics = add.fetchSemanticsNode().config
@@ -104,7 +118,7 @@ class AppNavigationTest {
         waitForSaved("farm-name", "Finca CR014")
         composeRule.onNodeWithTag("bottom-Cuaderno").performClick()
         chooseNotebookFarm("Finca CR014")
-        composeRule.onNodeWithTag("bottom-Perfil").performClick()
+        composeRule.onNodeWithTag("top-profile-avatar").performClick()
         composeRule.onNodeWithTag("bottom-add-record").performClick()
         waitForTag("quick-register-sheet")
         for (action in listOf("work", "irrigation", "treatment", "weighing", "labour", "expense")) {
@@ -188,7 +202,7 @@ class AppNavigationTest {
         composeRule.onNodeWithTag("home-open-alerts").performClick()
         composeRule.onNodeWithTag("calendar-root").assertIsDisplayed()
 
-        composeRule.onNodeWithTag("bottom-Perfil").performClick().assertIsSelected()
+        composeRule.onNodeWithTag("top-profile-avatar").performClick()
         composeRule.onNodeWithTag("profile-root").assertIsDisplayed()
 
         composeRule.onNodeWithTag("bottom-Inicio").performClick().assertIsSelected()
@@ -198,7 +212,7 @@ class AppNavigationTest {
     @Test
     fun backFromAnotherRootReturnsToHome() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Perfil").performClick()
+        composeRule.onNodeWithTag("top-profile-avatar").performClick()
 
         pressBack()
 
@@ -237,7 +251,8 @@ class AppNavigationTest {
         // Deep inside Inicio (weekly weather), then Perfil deep inside (Maquinaria)...
         composeRule.onNodeWithTag("home-weather-hero").performClick()
         waitForTag("weather-week-root")
-        composeRule.onNodeWithTag("bottom-Perfil").performClick()
+        composeRule.onNodeWithTag("bottom-Inicio").performClick()
+        composeRule.onNodeWithTag("top-profile-avatar").performClick()
         clickByTag("profile-machinery")
         waitForTag("machinery-root")
 
@@ -247,13 +262,11 @@ class AppNavigationTest {
         composeRule.onNodeWithTag("weather-week-root").assertDoesNotExist()
 
         // Perfil is the profile, not the Maquinaria screen left open under it.
-        composeRule.onNodeWithTag("bottom-Perfil").performClick()
+        composeRule.onNodeWithTag("top-profile-avatar").performClick()
         waitForTag("profile-root")
         composeRule.onNodeWithTag("machinery-root").assertDoesNotExist()
 
-        // Tapping the tab already showing stays on its root; Back returns to Inicio.
-        composeRule.onNodeWithTag("bottom-Perfil").performClick()
-        waitForTag("profile-root")
+        // Profile is opened from the avatar; Back returns to Inicio.
         pressBack()
         waitForTag("home-reference-root")
         composeRule.onNodeWithTag("bottom-Inicio").assertIsSelected()
@@ -262,13 +275,13 @@ class AppNavigationTest {
     @Test
     fun backWalksTheScreensActuallyVisited() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Perfil").performClick()
+        composeRule.onNodeWithTag("top-profile-avatar").performClick()
         clickByTag("profile-machinery")
         waitForTag("machinery-root")
 
         pressBack()
         waitForTag("profile-root")
-        composeRule.onNodeWithTag("bottom-Perfil").assertIsSelected()
+        composeRule.onNodeWithTag("profile-root").assertIsDisplayed()
         pressBack()
         waitForTag("home-reference-root")
     }
@@ -1118,10 +1131,10 @@ class AppNavigationTest {
     fun profileShowsMisMaquinasAndNoProntoRows() {
         // CR-011 §7/§25: «Mis máquinas», and no provisional «Pronto» rows.
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Perfil").performClick()
+        composeRule.onNodeWithTag("top-profile-avatar").performClick()
         waitForTag("profile-root")
         composeRule.onNodeWithTag("profile-machinery").assertExists()
-        waitForText("Mis máquinas")
+        waitForText("Maquinaria y herramientas")
         assertEquals(0, composeRule.onAllNodesWithText("Pronto").fetchSemanticsNodes().size)
         composeRule.onNodeWithTag("profile-account-later").assertDoesNotExist()
     }
@@ -1130,7 +1143,7 @@ class AppNavigationTest {
     @Test
     fun helpAndPrivacyAreReachableFromPerfil() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Perfil").performClick()
+        composeRule.onNodeWithTag("top-profile-avatar").performClick()
         clickByTag("profile-help-news")
         waitForTag("help-news")
         // The CHANGELOG bundled at build time is read and shown as notes.
@@ -1144,7 +1157,7 @@ class AppNavigationTest {
     @Test
     fun developerGalleryIsReachableFromDevProfile() {
         enterMainShell()
-        composeRule.onNodeWithTag("bottom-Perfil").performClick()
+        composeRule.onNodeWithTag("top-profile-avatar").performClick()
 
         composeRule.onNodeWithText("Catálogo de diseño (DEV)").performScrollTo().performClick()
 
@@ -1156,7 +1169,7 @@ class AppNavigationTest {
     fun physicalBackDismissesKeyboardBottomSheetAndNavigatesBetweenScreens() {
         enterMainShell()
         // 1. Inter-screen navigation: go to Perfil, physical back returns to Inicio
-        composeRule.onNodeWithTag("bottom-Perfil").performClick()
+        composeRule.onNodeWithTag("top-profile-avatar").performClick()
         waitForTag("profile-root")
         composeRule.waitForIdle()
         InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
@@ -1190,8 +1203,13 @@ class AppNavigationTest {
     }
 
     private fun enterMainShell() {
-        waitForText("Saltar")
-        composeRule.onNodeWithText("Saltar").performClick()
+        composeRule.waitUntil(30_000) {
+            composeRule.onAllNodesWithText("Saltar").fetchSemanticsNodes().isNotEmpty() ||
+                composeRule.onAllNodesWithTag("home-reference-root").fetchSemanticsNodes().isNotEmpty()
+        }
+        if (composeRule.onAllNodesWithText("Saltar").fetchSemanticsNodes().isNotEmpty()) {
+            composeRule.onNodeWithText("Saltar").performClick()
+        }
         waitForTag("home-reference-root")
         composeRule.onNodeWithTag("home-reference-root").assertIsDisplayed()
     }

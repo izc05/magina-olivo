@@ -68,6 +68,7 @@ fun HomeRoute(
     /** Phase 20D-3: the oil market screen (12-week official chart). */
     onOilMarket: () -> Unit = {},
     onAlerts: () -> Unit = onCalendar,
+    profileAvatar: (@Composable () -> Unit)? = null,
 ) {
     val viewModel: HomeViewModel = viewModel(
         key = "home",
@@ -101,6 +102,7 @@ fun HomeRoute(
         onOilMarket = onOilMarket,
         onRetryLocalData = viewModel::retryLocalData,
         onAlerts = onAlerts,
+        profileAvatar = profileAvatar,
         onSelectWeatherMunicipality = viewModel::selectWeatherMunicipality.takeIf { persistence.weatherLocationStore != null },
         onClearWeatherMunicipality = viewModel::clearWeatherMunicipality,
     )
@@ -128,6 +130,7 @@ fun HomeScreen(
     onOilMarket: (() -> Unit)? = null,
     onRetryLocalData: () -> Unit = {},
     onAlerts: () -> Unit = onCalendar,
+    profileAvatar: (@Composable () -> Unit)? = null,
     /** Selector 1.0: null hides «Cambiar» on the weather card (no store wired, e.g. previews). */
     onSelectWeatherMunicipality: ((IneMunicipality) -> Unit)? = null,
     onClearWeatherMunicipality: () -> Unit = {},
@@ -162,6 +165,7 @@ fun HomeScreen(
                 weatherMotion = weatherMotion,
                 onForecast = onWeatherWeek,
                 onAlerts = onAlerts,
+                profileAvatar = profileAvatar,
                 onChangeLocation = if (onSelectWeatherMunicipality != null) ({ weatherSelectorOpen = true }) else null,
             )
             Column(

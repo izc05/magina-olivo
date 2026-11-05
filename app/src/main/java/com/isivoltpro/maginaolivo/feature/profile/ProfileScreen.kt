@@ -67,6 +67,7 @@ import com.isivoltpro.maginaolivo.ui.theme.MoSize
 @Composable
 fun ProfileRoute(
     appVersion: String,
+    onBack: () -> Unit = {},
     onMachinery: () -> Unit,
     developerGalleryEnabled: Boolean,
     onDeveloperGallery: () -> Unit,
@@ -129,7 +130,9 @@ fun ProfileRoute(
         else context.startActivity(notificationSettingsIntent(context, ReminderNotifier.CHANNEL_ID))
     }
     ProfileScreen(
+        onBack = onBack,
         onAccount = onAccount,
+        onLogout = if (personalProfile != null) ({ accountRepository?.requestLogout(accountState?.online == true) }) else null,
         personalProfile = personalProfile,
         onPickAvatar = onPickAvatar,
         appVersion = appVersion,
@@ -151,10 +154,15 @@ fun ProfileRoute(
                     onCreateCooperative = profileViewModel::createCooperative,
                     onClearError = profileViewModel::clearError,
                 )
-                // Selector 1.0: personal weather municipality, independent of the profile row above.
+            }
+        } else {
+            null
+        },
+        weatherSettings = if (persistence != null && persistence.weatherLocationStore != null) {
+            {
                 val weatherPersistence = persistence
-                val store = weatherPersistence?.weatherLocationStore
-                if (weatherPersistence != null && store != null) {
+                val store = weatherPersistence.weatherLocationStore
+                if (store != null) {
                     val weatherViewModel: WeatherLocationSettingsViewModel = viewModel(
                         key = "profile-weather-location",
                         factory = viewModelFactory {
@@ -167,9 +175,7 @@ fun ProfileRoute(
                     WeatherLocationSettingsRow(weatherState, weatherViewModel::select, weatherViewModel::clear)
                 }
             }
-        } else {
-            null
-        },
+        } else null,
         devTools = demoFarm?.let { tools -> { DemoFarmSection(tools) } },
         reminderSettings = if (profileViewModel != null) {
             {
@@ -202,6 +208,7 @@ fun ProfileScreen(
     onHelp: ((HelpTopic) -> Unit)? = null,
     /** Phase 21A: «Mi perfil» (municipality + cooperative); absent where no storage exists. */
     myProfile: (@Composable () -> Unit)? = null,
+    weatherSettings: (@Composable () -> Unit)? = null,
     /** Phase 21B: Perfil → Avisos (switch + day-before hour); absent where no storage exists. */
     reminderSettings: (@Composable () -> Unit)? = null,
     /** #399: «Herramientas de desarrollo», only in the dev flavor. */
@@ -210,9 +217,19 @@ fun ProfileScreen(
     onAgronomicPeople: () -> Unit = {},
     appearanceSettings: (@Composable () -> Unit)? = null,
     onAccount: (() -> Unit)? = null,
+    onLogout: (() -> Unit)? = null,
     personalProfile: PersonalProfile? = null,
     onPickAvatar: (() -> Unit)? = null,
+    onBack: (() -> Unit)? = null,
 ) {
+    var confirmLogout by remember { mutableStateOf(false) }
+    if (confirmLogout) androidx.compose.material3.AlertDialog(
+        onDismissRequest = { confirmLogout = false },
+        title = { Text("Cerrar sesión") },
+        text = { Text("La sesión se cerrará en este teléfono. Tus fincas, parcelas y documentos locales se conservan.") },
+        confirmButton = { MoDestructiveButton("Cerrar sesión", { confirmLogout = false; onLogout?.invoke() }) },
+        dismissButton = { MoTertiaryButton("Cancelar", { confirmLogout = false }) },
+    )
     Column(
         Modifier
             .fillMaxSize()
@@ -224,7 +241,10 @@ fun ProfileScreen(
         verticalArrangement = Arrangement.spacedBy(MoSpacing.xs),
     ) {
         Spacer(Modifier.height(MoSpacing.sm))
-        Text("Perfil", style = MaterialTheme.typography.headlineLarge, color = MoColors.current.primaryText)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            onBack?.let { MoTertiaryButton("Volver", it, Modifier.testTag("profile-back")) }
+            Text("Perfil", style = MaterialTheme.typography.headlineLarge, color = MoColors.current.primaryText)
+        }
         Spacer(Modifier.height(MoSpacing.xs))
         PersonalProfileHeader(
             profile = personalProfile,
@@ -233,29 +253,28 @@ fun ProfileScreen(
         )
         Spacer(Modifier.height(MoSpacing.xs))
         myProfile?.invoke()
-        MoSectionHeader("Tu olivar")
-        MoCompactListItem(
-            title = "Mis máquinas",
-            subtitle = "Tus máquinas, para anotarlas en los trabajos",
+        ProfileListItem(
+            title = "Maquinaria y herramientas",
+            subtitle = "Equipos para tus trabajos",
             icon = MoIcons.Tractor,
             onClick = onMachinery,
             modifier = Modifier.testTag("profile-machinery"),
             trailing = { Chevron() },
         )
-        MoSectionHeader("Datos del cuaderno")
-        MoCompactListItem(
+        ProfileListItem(
             title = "Aplicadores y asesores",
-            subtitle = "Personas y credenciales para el cuaderno",
+            subtitle = "Personas del cuaderno",
             icon = MoIcons.People,
             onClick = onAgronomicPeople,
             modifier = Modifier.testTag("profile-agronomic-people"),
             trailing = { Chevron() },
         )
-        MoSectionHeader("Ajustes")
+        MoSectionHeader("Preferencias")
+        weatherSettings?.invoke()
         appearanceSettings?.invoke()
         ProfileStatusRow(
             title = "Notificaciones",
-            subtitle = "Avisos de los trabajos planificados",
+            subtitle = "Permisos de avisos",
             icon = MoIcons.Bell,
             onClick = onNotifications,
             modifier = Modifier.testTag("profile-notifications"),
@@ -263,30 +282,29 @@ fun ProfileScreen(
             tone = if (notificationsOn) MoStatusTone.Success else MoStatusTone.Warning,
         )
         reminderSettings?.invoke()
-        ProfileStatusRow(
-            title = "Modo sin conexión",
-            subtitle = "Los registros se guardan en este teléfono. Para actualizar mapas, tiempo y otros datos necesitas conexión.",
-            icon = MoIcons.Checklist,
-            modifier = Modifier.testTag("profile-offline"),
-            status = "Siempre",
-            tone = MoStatusTone.Success,
-        )
         if (onAccount != null) {
-            MoSectionHeader("Cuenta")
-            MoCompactListItem(title="Cuenta",subtitle="Acceso y recuperación. Tus fincas siguen guardadas en este teléfono.",
-                onClick=onAccount,modifier=Modifier.testTag("profile-account"),trailing={Chevron()})
+            MoSectionHeader("Cuenta y seguridad")
+            ProfileListItem(title="Cuenta y sincronización",subtitle="Acceso, recuperación y sincronización manual",
+                icon=MoIcons.Person,onClick=onAccount,modifier=Modifier.testTag("profile-account"),trailing={Chevron()})
+            if (onLogout != null) ProfileListItem(
+                title = "Cerrar sesión", subtitle = "Los datos de este teléfono se conservan",
+                icon = MoIcons.Person, onClick = { confirmLogout = true },
+                modifier = Modifier.testTag("profile-logout"), trailing = { Chevron() },
+            )
         }
         if (onHelp != null) {
-            MoSectionHeader("Ayuda y privacidad")
+            MoSectionHeader("Información")
             HelpTopic.entries.forEach { topic ->
-                MoCompactListItem(
+                ProfileListItem(
                     title = topic.title,
                     subtitle = when (topic) {
+                        HelpTopic.GENERAL -> "Primeros pasos y dónde encontrar cada opción"
                         HelpTopic.NEWS -> "Lo que ha cambiado en cada versión"
                         HelpTopic.PRIVACY -> "Qué se guarda en el teléfono y qué servicios se consultan"
-                        HelpTopic.OFFLINE -> "Qué funciona en modo avión"
+                        HelpTopic.OFFLINE -> "Sin cobertura"
                     },
                     icon = when (topic) {
+                        HelpTopic.GENERAL -> MoIcons.Checklist
                         HelpTopic.NEWS -> MoIcons.Bell
                         HelpTopic.PRIVACY -> MoIcons.Checklist
                         HelpTopic.OFFLINE -> MoIcons.Map
@@ -297,21 +315,20 @@ fun ProfileScreen(
                 )
             }
         }
-        MoSectionHeader("Acerca de")
-        MoCompactListItem(
+        ProfileListItem(
             title = "Mágina Olivo",
             subtitle = "Versión $appVersion",
             modifier = Modifier.testTag("profile-about"),
             trailing = { OliveMark(Modifier.size(32.dp)) },
         )
-        MoCompactListItem(
+        ProfileListItem(
             title = "Datos de parcelas",
             subtitle = "Consulta al servicio INSPIRE de la Dirección General del Catastro. La copia guardada no sustituye una certificación oficial.",
             icon = MoIcons.Map,
             modifier = Modifier.testTag("profile-catastro-source"),
         )
         if (developerGalleryEnabled) {
-            MoCompactListItem(
+            ProfileListItem(
                 title = "Catálogo de diseño (DEV)",
                 subtitle = "Solo en la versión de desarrollo",
                 icon = MoIcons.Parcels,
@@ -323,6 +340,22 @@ fun ProfileScreen(
         Spacer(Modifier.height(MoSpacing.lg))
     }
 }
+
+@Composable
+private fun ProfileListItem(
+    title: String,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    icon: ImageVector? = null,
+    onClick: (() -> Unit)? = null,
+    trailing: (@Composable () -> Unit)? = null,
+) = MoCompactListItem(
+    title = title, modifier = modifier, subtitle = subtitle, icon = icon,
+    iconTint = MoColors.current.primaryText, iconContainer = MoSurfaceTokens.appBackground,
+    onClick = onClick, trailing = trailing,
+    borderColor = MoSurfaceTokens.cardStroke.copy(alpha = 0.38f),
+    titleMaxLines = 4, subtitleMaxLines = 3,
+)
 
 /** Profile-only: the status never competes with the title/explanation for horizontal space. */
 @Composable
@@ -340,7 +373,7 @@ private fun ProfileStatusRow(
             .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier),
         shape = MoShape.card,
         color = MoSurfaceTokens.cardSurface,
-        border = BorderStroke(1.dp, MoSurfaceTokens.cardStroke),
+        border = BorderStroke(1.dp, MoSurfaceTokens.cardStroke.copy(alpha = 0.38f)),
     ) {
         Row(
             Modifier.padding(horizontal = MoSpacing.sm, vertical = 10.dp),

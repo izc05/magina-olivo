@@ -1,5 +1,8 @@
 package com.isivoltpro.maginaolivo.feature.profile
 
+import com.isivoltpro.maginaolivo.ui.theme.MoSurfaceTokens
+import com.isivoltpro.maginaolivo.ui.theme.MoColors
+
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.Composable
@@ -107,8 +110,11 @@ fun WeatherLocationSettingsRow(
             else -> "Sin elegir · Inicio y El tiempo la usan para la previsión"
         },
         icon = MoIcons.Weather,
+        iconTint = MoColors.current.primaryText,
+        iconContainer = MoSurfaceTokens.appBackground,
         onClick = if (state.locked) null else ({ open = true }),
         modifier = Modifier.testTag("profile-weather-location"),
+        borderColor = MoSurfaceTokens.cardStroke.copy(alpha = 0.38f),
     )
     if (open && !state.locked) {
         ModalBottomSheet(onDismissRequest = { open = false }) {

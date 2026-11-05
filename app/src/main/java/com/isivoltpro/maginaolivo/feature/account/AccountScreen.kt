@@ -69,6 +69,17 @@ fun AccountRoute(repository:AccountRepository,onBack:()->Unit,simulationAllowed:
     var workspaceChoices by remember { mutableStateOf<List<WorkspaceChoice>>(emptyList()) }
     var selectedWorkspace by remember { mutableStateOf<UUID?>(null) }
     var workspaceNotice by remember { mutableStateOf<String?>(null) }
+    var confirmDeletionRequest by rememberSaveable { mutableStateOf(false) }
+    if (confirmDeletionRequest) AlertDialog(
+        onDismissRequest = { confirmDeletionRequest = false },
+        title = { Text("Solicitar eliminación de cuenta") },
+        text = { Text("Abrirás una página externa para solicitar la eliminación de la cuenta y los datos asociados. Cerrar sesión no elimina tus datos locales.") },
+        confirmButton = { MoPrimaryButton("Abrir solicitud", {
+            confirmDeletionRequest = false
+            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(BuildConfig.ACCOUNT_DELETION_URL)))
+        }) },
+        dismissButton = { MoTertiaryButton("Cancelar", { confirmDeletionRequest = false }) },
+    )
     LaunchedEffect(workspaces,state.userId,state.status,state.online,simulation) {
         if(workspaces==null || simulation || state.status==AccountStatus.EXPIRED) {
             workspaceChoices=emptyList();selectedWorkspace=null
@@ -155,9 +166,9 @@ fun AccountRoute(repository:AccountRepository,onBack:()->Unit,simulationAllowed:
             if(form!=AccountForm.RECOVER) MoTertiaryButton("Recuperar contraseña",{choose(AccountForm.RECOVER)},Modifier.testTag("account-mode-recover"),!state.busy)
         }
         if(state.email!=null) MoDestructiveButton("Cerrar sesión",{model.logout(online)},Modifier.fillMaxWidth().testTag("account-logout"),!state.busy)
-        if(!simulation && BuildConfig.ACCOUNT_DELETION_URL.isNotBlank()) {
+        if(!simulation && state.userId != null && BuildConfig.ACCOUNT_DELETION_URL.isNotBlank()) {
             MoTertiaryButton("Solicitar eliminación de cuenta y datos",{
-                context.startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(BuildConfig.ACCOUNT_DELETION_URL)))
+                confirmDeletionRequest = true
             },Modifier.fillMaxWidth().testTag("account-delete-request"))
         }
         if(state.simulated && state.pendingPurpose!=null) MoSecondaryButton("Abrir enlace simulado",{model.simulateLink(online)},Modifier.fillMaxWidth().testTag("account-simulate-link"),!state.busy)

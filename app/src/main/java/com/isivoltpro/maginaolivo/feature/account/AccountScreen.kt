@@ -24,6 +24,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 import com.isivoltpro.maginaolivo.ui.brand.MaginaOlivoWordmark
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -96,6 +97,7 @@ fun AccountRoute(repository:AccountRepository,onBack:()->Unit,simulationAllowed:
             MaginaOlivoWordmark(Modifier.align(Alignment.CenterHorizontally).testTag("account-logo"))
         }
         Text("Cuenta",style=MaterialTheme.typography.headlineLarge,color=MoInk)
+        Text("Mi cuenta",style=MaterialTheme.typography.titleLarge,color=MoColors.current.primaryText)
         if(state.simulated) Text("Simulación de Auth: no crea cuentas ni envía correos. Usa datos ficticios.",Modifier.testTag("account-simulation"),color=MoColors.current.warningText)
         val status=when(state.status) {
             AccountStatus.UNCONFIGURED -> "Configuración de pruebas pendiente"
@@ -106,22 +108,62 @@ fun AccountRoute(repository:AccountRepository,onBack:()->Unit,simulationAllowed:
             AccountStatus.EXPIRED -> "Sesión caducada · vuelve a iniciar sesión cuando tengas conexión"
             AccountStatus.RECOVERY -> "Enlace verificado · nueva contraseña"
         }
-        Text(status,Modifier.testTag("account-status"),style=MaterialTheme.typography.titleMedium,color=MoColors.current.bodyText)
-        state.email?.let { Text(it,color=MoSurfaceTokens.secondaryText) }
-        Text(if(farmLinks!=null && !simulation && manualSync!=null) "Tus registros siguen guardados en este teléfono. Vincula tus fincas a la cuenta y pulsa «Sincronizar ahora» para enviarlas y recibir las de tus otros dispositivos."
-            else if(farmLinks!=null && !simulation) "Tus registros, fincas, fotos y documentos se guardan primero en este teléfono. La sincronización de los datos habilitados necesita una cuenta autorizada y puede requerir conexión."
-            else "Tus registros, fincas, fotos y documentos se guardan primero en este teléfono. Esta pantalla no los vincula por sí sola.",color=MoSurfaceTokens.secondaryText)
+        Surface(shape=MoShape.card,color=MoWarmWhite,border=androidx.compose.foundation.BorderStroke(1.dp,MoSurfaceTokens.cardStroke)) {
+            Column(Modifier.fillMaxWidth().padding(MoSpacing.sm)) {
+                Text(status,Modifier.testTag("account-status"),style=MaterialTheme.typography.titleMedium,color=MoColors.current.bodyText)
+                Text(state.email ?: "Inicia sesión para vincular tus fincas",color=MoSurfaceTokens.secondaryText)
+            }
+        }
+        if(state.status==AccountStatus.RECOVERY) {
+            PasswordInput(password,{password=it},"Nueva contraseña (8–128 caracteres)","account-new-password",enabled)
+            MoPrimaryButton("Guardar nueva contraseña",{ val value=password;password="";model.updatePassword(value,online) },Modifier.fillMaxWidth().testTag("account-save-password"),enabled)
+        } else if(state.email==null || state.status==AccountStatus.EXPIRED) {
+            MoTextField(email,{email=it},"Correo electrónico",Modifier.fillMaxWidth().testTag("account-email"),enabled=!state.busy,
+                keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Email),containerColor=MoWarmWhite)
+            if(form!=AccountForm.RECOVER) PasswordInput(password,{password=it},if(form==AccountForm.REGISTER)"Contraseña (8–128 caracteres)" else "Contraseña","account-password",!state.busy)
+            when(form) {
+                AccountForm.LOGIN -> MoPrimaryButton("Entrar",{val value=password;password="";model.login(email,value,online)},Modifier.fillMaxWidth().testTag("account-login"),enabled)
+                AccountForm.REGISTER -> MoPrimaryButton("Registrarme",{val value=password;password="";model.register(email,value,online)},Modifier.fillMaxWidth().testTag("account-register"),enabled)
+                AccountForm.RECOVER -> MoPrimaryButton("Enviar enlace de recuperación",{model.recover(email,online)},Modifier.fillMaxWidth().testTag("account-recover"),enabled)
+            }
+            if(form!=AccountForm.LOGIN) MoSecondaryButton("Volver a entrar",{choose(AccountForm.LOGIN)},Modifier.fillMaxWidth().testTag("account-mode-login"),!state.busy)
+            if(form!=AccountForm.REGISTER) MoSecondaryButton("Crear cuenta",{choose(AccountForm.REGISTER)},Modifier.fillMaxWidth().testTag("account-mode-register"),!state.busy)
+            if(form!=AccountForm.RECOVER) MoTertiaryButton("Recuperar contraseña",{choose(AccountForm.RECOVER)},Modifier.testTag("account-mode-recover"),!state.busy)
+        }
+        if(state.email!=null) {
+            Text("Acceso y seguridad",style=MaterialTheme.typography.titleMedium,color=MoColors.current.primaryText)
+            Text("Para cambiar la contraseña, cierra sesión y usa «Recuperar contraseña».",color=MoSurfaceTokens.secondaryText)
+            MoDestructiveButton("Cerrar sesión",{model.logout(online)},Modifier.fillMaxWidth().testTag("account-logout"),!state.busy)
+        }
+        if(!simulation && state.userId != null && BuildConfig.ACCOUNT_DELETION_URL.isNotBlank()) {
+            MoTertiaryButton("Solicitar eliminación de cuenta y datos",{
+                confirmDeletionRequest = true
+            },Modifier.fillMaxWidth().testTag("account-delete-request"))
+        }
+        Text("Mis datos",style=MaterialTheme.typography.titleLarge,color=MoColors.current.primaryText)
+        MoCompactListItem("Guardados en este teléfono",subtitle="Tus fincas y registros locales se conservan al cerrar sesión.",modifier=Modifier.testTag("account-local-data"))
+        val canViewLinks=state.userId!=null && farmLinks?.accessAllowed(state.userId)==true
+        val linkState=if(!simulation && canViewLinks) farmLinks?.state?.collectAsStateWithLifecycle()?.value else null
+        val linkStatus=when {
+            state.userId==null -> "Inicia sesión para comprobar tus fincas"
+            farmLinks==null -> "Vinculación no disponible en esta pantalla"
+            farmLinks.state.value.unreadable -> "No se puede comprobar la vinculación local"
+            !canViewLinks -> "Estas fincas están protegidas con otra cuenta"
+            linkState?.ledger!=null -> "Consentimiento local registrado · confirmación remota no comprobada"
+            else -> "Vinculación de fincas pendiente"
+        }
+        MoCompactListItem("Vinculación con la cuenta",subtitle=linkStatus,modifier=Modifier.testTag("account-link-status"),subtitleMaxLines=3)
         if(workspaces!=null && !simulation) {
-            Text("Workspace activo",style=MaterialTheme.typography.titleMedium,color=MoColors.current.primaryText)
-            if(workspaceChoices.isEmpty()) Text("No hay workspaces disponibles para esta sesión. Los datos locales se conservan.",color=MoSurfaceTokens.secondaryText)
+            Text("Espacio de trabajo",style=MaterialTheme.typography.titleMedium,color=MoColors.current.primaryText)
+            if(workspaceChoices.isEmpty()) Text("No hay espacios disponibles para esta sesión. Tus datos locales se conservan.",color=MoSurfaceTokens.secondaryText)
             workspaceChoices.forEach { choice ->
                 MoSecondaryButton(
-                    if(choice.id==selectedWorkspace) "${choice.name} · ${if(choice.remote) "autorización en caché" else "local sin vincular"} · activo"
-                    else "Usar ${choice.name} · ${if(choice.remote) "autorización en caché" else "local sin vincular"}",
+                    if(choice.id==selectedWorkspace) "${choice.name} · ${if(choice.remote) "acceso guardado" else "solo local"} · seleccionado"
+                    else "Usar ${choice.name} · ${if(choice.remote) "acceso guardado" else "solo local"}",
                     { scope.launch {
                         when(workspaces.selectWorkspace(choice.id)) {
-                            is AppResult.Success -> { selectedWorkspace=choice.id;workspaceNotice="Workspace seleccionado" }
-                            is AppResult.Failure -> workspaceNotice="No se pudo seleccionar este workspace"
+                            is AppResult.Success -> { selectedWorkspace=choice.id;workspaceNotice="Espacio seleccionado" }
+                            is AppResult.Failure -> workspaceNotice="No se pudo seleccionar este espacio"
                         }
                     } },
                     Modifier.fillMaxWidth().testTag("workspace-select-${choice.id}"),
@@ -148,28 +190,12 @@ fun AccountRoute(repository:AccountRepository,onBack:()->Unit,simulationAllowed:
                     (repo.activeWorkspace() as? AppResult.Success)?.let { selectedWorkspace=it.value }
                 }
             }
-        }
-        if(state.status==AccountStatus.RECOVERY) {
-            PasswordInput(password,{password=it},"Nueva contraseña (8–128 caracteres)","account-new-password",enabled)
-            MoPrimaryButton("Guardar nueva contraseña",{ val value=password;password="";model.updatePassword(value,online) },Modifier.fillMaxWidth().testTag("account-save-password"),enabled)
-        } else if(state.email==null || state.status==AccountStatus.EXPIRED) {
-            MoTextField(email,{email=it},"Correo electrónico",Modifier.fillMaxWidth().testTag("account-email"),enabled=!state.busy,
-                keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Email),containerColor=MoWarmWhite)
-            if(form!=AccountForm.RECOVER) PasswordInput(password,{password=it},if(form==AccountForm.REGISTER)"Contraseña (8–128 caracteres)" else "Contraseña","account-password",!state.busy)
-            when(form) {
-                AccountForm.LOGIN -> MoPrimaryButton("Entrar",{val value=password;password="";model.login(email,value,online)},Modifier.fillMaxWidth().testTag("account-login"),enabled)
-                AccountForm.REGISTER -> MoPrimaryButton("Registrarme",{val value=password;password="";model.register(email,value,online)},Modifier.fillMaxWidth().testTag("account-register"),enabled)
-                AccountForm.RECOVER -> MoPrimaryButton("Enviar enlace de recuperación",{model.recover(email,online)},Modifier.fillMaxWidth().testTag("account-recover"),enabled)
-            }
-            if(form!=AccountForm.LOGIN) MoSecondaryButton("Volver a entrar",{choose(AccountForm.LOGIN)},Modifier.fillMaxWidth().testTag("account-mode-login"),!state.busy)
-            if(form!=AccountForm.REGISTER) MoSecondaryButton("Crear cuenta",{choose(AccountForm.REGISTER)},Modifier.fillMaxWidth().testTag("account-mode-register"),!state.busy)
-            if(form!=AccountForm.RECOVER) MoTertiaryButton("Recuperar contraseña",{choose(AccountForm.RECOVER)},Modifier.testTag("account-mode-recover"),!state.busy)
-        }
-        if(state.email!=null) MoDestructiveButton("Cerrar sesión",{model.logout(online)},Modifier.fillMaxWidth().testTag("account-logout"),!state.busy)
-        if(!simulation && state.userId != null && BuildConfig.ACCOUNT_DELETION_URL.isNotBlank()) {
-            MoTertiaryButton("Solicitar eliminación de cuenta y datos",{
-                confirmDeletionRequest = true
-            },Modifier.fillMaxWidth().testTag("account-delete-request"))
+        } else if (!simulation && !state.simulated && farmLinks != null) {
+            Text("Mis fincas",style=MaterialTheme.typography.titleLarge,color=MoColors.current.primaryText)
+            Text("Inicia sesión para ver y preparar la vinculación de tus fincas. Los datos locales siguen protegidos.",color=MoSurfaceTokens.secondaryText)
+            Text("Sincronización",style=MaterialTheme.typography.titleLarge,color=MoColors.current.primaryText)
+            MoPrimaryButton("Sincronizar ahora",{},Modifier.fillMaxWidth().testTag("manual-sync-now"),enabled=false)
+            Text("Inicia sesión para sincronizar.",color=MoSurfaceTokens.secondaryText)
         }
         if(state.simulated && state.pendingPurpose!=null) MoSecondaryButton("Abrir enlace simulado",{model.simulateLink(online)},Modifier.fillMaxWidth().testTag("account-simulate-link"),!state.busy)
         if(simulationAllowed && !state.simulated) MoTertiaryButton("Probar Cuenta (simulación)",{simulation=true;choose(AccountForm.LOGIN)},Modifier.testTag("account-start-simulation"),!state.busy)

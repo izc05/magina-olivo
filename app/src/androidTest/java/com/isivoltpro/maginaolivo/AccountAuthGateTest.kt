@@ -156,10 +156,11 @@ class AccountAuthGateTest {
             }
         }
         compose.waitUntil(15_000) {
-            runCatching { compose.onNodeWithText("Sincronizar ahora").assertIsEnabled() }.isSuccess
+            runCatching { compose.onNodeWithTag("manual-sync-now").assertIsEnabled() }.isSuccess
         }
         assertEquals(0, requests)
-        compose.onNodeWithText("Sincronizar ahora").performClick()
+        compose.onNodeWithTag("manual-sync-now").performScrollTo().performClick()
+        compose.waitUntil(5_000) { requests == 1 }
         assertEquals(1, requests)
     }
 

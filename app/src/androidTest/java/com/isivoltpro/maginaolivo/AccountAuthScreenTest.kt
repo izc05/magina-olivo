@@ -96,12 +96,12 @@ class AccountAuthScreenTest {
         compose.onNodeWithTag("account-simulation").assertIsDisplayed()
         compose.onNodeWithTag("account-email").performScrollTo().performTextReplacement("qa@example.com")
         compose.onNodeWithTag("account-password").performScrollTo().performTextReplacement("password42")
-        compose.onNodeWithTag("account-login").performScrollTo().performClick()
+        clickAccountAction("account-login")
         waitFor("account-logout");assertNotNull(store.read().session);capture("signed-in")
         online.value=false
         compose.waitUntil(15_000) { repo.state.value.status==AccountStatus.OFFLINE }
         compose.activityRule.scenario.recreate();content();waitFor("account-logout");capture("offline-restored")
-        compose.onNodeWithTag("account-logout").performScrollTo().performClick();waitFor("account-login")
+        clickAccountAction("account-logout");waitFor("account-login")
         assertNull(store.read().session);assertEquals(before,fingerprint(local.database));assertArrayEquals(byteArrayOf(4,2,1,9),photo.readBytes())
         assertNotNull(local.database.farmDao().findById(farm));capture("logged-out")
         assertNotNull(local.database.parcelDao().findById(parcel))
@@ -115,24 +115,24 @@ class AccountAuthScreenTest {
         waitFor("account-email")
         compose.onNodeWithTag("account-email").performScrollTo().performTextReplacement("qa@example.com")
         compose.onNodeWithTag("account-password").performScrollTo().performTextReplacement("incorrecta")
-        compose.onNodeWithTag("account-login").performScrollTo().performClick()
+        clickAccountAction("account-login")
         compose.waitUntil(15_000) { repo.state.value.error!=null && !repo.state.value.busy };assertNull(store.read().session);assertEquals(1,api.calls)
-        compose.onNodeWithTag("account-mode-register").performScrollTo().assertIsEnabled().performClick()
+        clickAccountAction("account-mode-register")
         waitFor("account-register")
         compose.onNodeWithTag("account-password").performScrollTo().performTextReplacement("password42")
-        compose.onNodeWithTag("account-register").performScrollTo().performClick()
+        clickAccountAction("account-register")
         // Pending is persisted before the IO request finishes; only published idle state
         // guarantees the mode controls can accept a click.
         compose.waitUntil(15_000) { store.read().pending?.purpose==LinkPurpose.SIGNUP && repo.state.value.pendingPurpose==LinkPurpose.SIGNUP && !repo.state.value.busy }
         assertNull(store.read().session);capture("confirm-pending")
-        compose.onNodeWithTag("account-mode-recover").performScrollTo().assertIsEnabled().performClick()
+        clickAccountAction("account-mode-recover")
         waitFor("account-recover")
-        compose.onNodeWithTag("account-recover").performScrollTo().assertIsEnabled().performClick()
+        clickAccountAction("account-recover")
         compose.waitUntil(15_000) { store.read().pending?.purpose==LinkPurpose.RECOVERY && repo.state.value.pendingPurpose==LinkPurpose.RECOVERY && !repo.state.value.busy }
         runBlocking { repo.completeLink("${api.redirectUri}?code=synthetic-code",true) }
         waitFor("account-new-password")
         compose.onNodeWithTag("account-new-password").performScrollTo().performTextReplacement("New-password42")
-        compose.onNodeWithTag("account-save-password").performScrollTo().performClick()
+        clickAccountAction("account-save-password")
         compose.waitUntil(15_000) { store.read().recovery==null && repo.state.value.message?.contains("actualizada")==true }
         assertNull(store.read().session);capture("password-updated")
     }
@@ -156,9 +156,15 @@ class AccountAuthScreenTest {
         compose.onNodeWithTag("account-password-visibility").performClick()
         compose.onNodeWithTag("account-password").assertTextContains("password42")
         compose.onNodeWithTag("account-password-visibility").performClick()
-        // Toggling password visibility restarts the input connection. Finish the real IME
-        // transition before scrolling/clicking a mode button; otherwise focus bring-into-view
-        // can move it back under the keyboard between the scroll and the injected touch.
+        clickAccountAction("account-mode-recover")
+        waitFor("account-recover")
+        clickAccountAction("account-mode-login")
+        waitFor("account-login")
+        compose.onNodeWithTag("account-mode-login").assertDoesNotExist()
+    }
+    private fun clickAccountAction(tag:String) {
+        // IME resize and focused-field bring-into-view run outside the Compose test clock.
+        // Settle the actual window before deriving coordinates and injecting a real click.
         Espresso.closeSoftKeyboard()
         compose.waitUntil(15_000) {
             var ready=false
@@ -169,11 +175,7 @@ class AccountAuthScreenTest {
             }
             ready
         }
-        compose.onNodeWithTag("account-mode-recover").performScrollTo().assertIsDisplayed().assertIsEnabled().performClick()
-        waitFor("account-recover")
-        compose.onNodeWithTag("account-mode-login").performScrollTo().performClick()
-        waitFor("account-login")
-        compose.onNodeWithTag("account-mode-login").assertDoesNotExist()
+        compose.onNodeWithTag(tag).performScrollTo().assertIsDisplayed().assertIsEnabled().performClick()
     }
     private fun fingerprint(db:com.isivoltpro.maginaolivo.data.local.MaginaOlivoDatabase):String {
         val sqlite=db.openHelper.readableDatabase

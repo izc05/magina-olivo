@@ -11,6 +11,11 @@ import com.isivoltpro.maginaolivo.domain.workspace.WorkspaceRepository
 import com.isivoltpro.maginaolivo.domain.cycle.CycleRecordKind
 import com.isivoltpro.maginaolivo.data.local.model.ActivityStatus
 import com.isivoltpro.maginaolivo.data.local.model.CampaignStatus
+import com.isivoltpro.maginaolivo.data.repository.OfflineFirstActivityRepository
+import com.isivoltpro.maginaolivo.core.dispatchers.DefaultAppDispatchers
+import com.isivoltpro.maginaolivo.core.id.UuidGenerator
+import com.isivoltpro.maginaolivo.domain.activity.NewActivity
+import com.isivoltpro.maginaolivo.domain.activity.ActivityType
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -141,5 +146,29 @@ class AgriculturalCycleRoomTest {
         repo.close(repo.previewClose(cycle,date("2027-01-20"),false).value(),UUID.randomUUID()).value()
         assertEquals(date("2027-01-20"),repo.observe(farm).first().value().cycles.single().effectiveEndDate)
         assertEquals(delivery,db.deliveryDao().findById(delivery.id))
+    }
+
+    @Test fun newWorkUsesConfirmedCycleUuidAndRejectsTheClosedHistoricDestinationWithoutWriting() = runBlocking {
+        val repo=repository()
+        val previous=repo.create(repo.observe(farm).first().value().scope,"2026/27",date("2026-02-01"),UUID.randomUUID()).value()
+        repo.close(repo.previewClose(previous,date("2027-01-25"),true).value(),UUID.randomUUID()).value()
+        val next=repo.create(repo.observe(farm).first().value().scope,"2027/28",date("2027-01-26"),UUID.randomUUID()).value()
+        val parcel=UUID.randomUUID()
+        val meta=LocalMetadata(clock.nowInstant(),clock.nowInstant())
+        db.parcelDao().upsert(ParcelEntity(parcel,workspace,"QA parcela",source="MANUAL",metadata=meta))
+        db.parcelDao().upsertMembership(FarmParcelMembershipEntity(UUID.randomUUID(),workspace,farm,parcel,
+            Instant.parse("2020-01-01T00:00:00Z"),metadata=meta))
+        val activities=OfflineFirstActivityRepository(db,clock,UuidGenerator(),DefaultAppDispatchers(),workspaceRepository=scope)
+        val command=NewActivity(farm,null,ActivityType.PRUNING,date("2027-01-26"),"Poda del siguiente ciclo",setOf(parcel),
+            completeImmediately=true,costMinor=500,agriculturalCycleId=next)
+        val id=activities.create(command).value()
+        assertTrue(activities.create(command.copy(agriculturalCycleId=previous)) is AppResult.Failure)
+        assertTrue(activities.create(command.copy(agriculturalCycleId=null)) is AppResult.Failure)
+        val state=repo.observe(farm).first().value()
+        assertEquals(next,state.records.single { it.id==id }.cycleId)
+        assertEquals(1,state.records.count { it.kind=="ACTIVITY" })
+        assertEquals(1,state.records.count { it.kind=="EXPENSE" })
+        assertEquals(next,state.records.single { it.kind=="EXPENSE" }.cycleId)
+        assertEquals(date("2027-01-25"),state.cycles.single { it.id==previous }.effectiveEndDate)
     }
 }

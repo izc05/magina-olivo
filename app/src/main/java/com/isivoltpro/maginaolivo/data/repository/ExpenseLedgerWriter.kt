@@ -35,6 +35,7 @@ internal class ExpenseLedgerWriter(
     private val database: MaginaOlivoDatabase,
     private val idGenerator: IdGenerator,
 ) {
+    private val cycles = AgriculturalCycleWriter(database, null, com.isivoltpro.maginaolivo.core.time.SystemAppClock())
     suspend fun insert(
         workspaceId: UUID,
         draft: ExpenseDraft,
@@ -45,7 +46,12 @@ internal class ExpenseLedgerWriter(
         val id = idGenerator.newId()
         val expense = resolve(id, workspaceId, draft, status, origin, LocalMetadata(now, now, syncStatus = SyncStatus.PENDING))
         requireEditableCampaign(expense)
+        val cycleId = cycles.validateNew(workspaceId, expense.farmId, draft.agriculturalCycleId,
+            expense.expenseDate, campaignId=expense.campaignId, activityId=expense.activityId)
         database.expenseDao().upsert(expense)
+        expense.farmId?.let { farmId -> cycles.bindNew(workspaceId, farmId, cycleId,
+            com.isivoltpro.maginaolivo.domain.cycle.CycleRecordKind.EXPENSE, id,
+            inherited=expense.campaignId!=null || expense.activityId!=null, now=now) }
         writePurchase(id, workspaceId, draft, now)
         database.enqueueCollapsed(idGenerator, SyncEntityType.EXPENSE, id, OutboxOperation.CREATE, now)
         return id

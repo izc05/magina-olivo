@@ -45,6 +45,7 @@ class OfflineFirstCampaignRepository(
     private val workspaceRepository: WorkspaceRepository? = null,
 ) : CampaignRepository {
     private val workspaceScope = ActiveWorkspaceScope(database, workspaceRepository)
+    private val cycles = AgriculturalCycleWriter(database, workspaceRepository, clock)
     override fun observeSelectableParcels(farmId: UUID): Flow<List<CampaignParcelOption>> =
         flow {
             val active = when (val result = workspaceScope.resolve()) {
@@ -114,10 +115,13 @@ class OfflineFirstCampaignRepository(
                 if (farm.status != FarmStatus.ACTIVE || farm.metadata.deletedAt != null) {
                     return@safely AppResult.Failure(AppError.Conflict("archived_farm"))
                 }
+                val cycleId = cycles.validateNew(farm.workspaceId, farm.id, command.agriculturalCycleId, command.startDate)
                 val id = idGenerator.newId()
                 val now = clock.nowInstant()
                 database.campaignDao().upsert(CampaignEntity(id, farm.workspaceId, farm.id, name, command.startDate,
                     status = CampaignStatus.PREPARATION, notes = command.notes.normalized(), metadata = pending(now)))
+                cycles.bindNew(farm.workspaceId, farm.id, cycleId,
+                    com.isivoltpro.maginaolivo.domain.cycle.CycleRecordKind.RECOLLECTION, id)
                 replaceSnapshots(id, command.parcelIds, now)
                 enqueue(id, OutboxOperation.CREATE, now)
                 AppResult.Success(id)
@@ -320,6 +324,7 @@ class OfflineFirstCampaignRepository(
 
     private suspend fun <T> safely(operation: String, block: suspend () -> AppResult<T>): AppResult<T> =
         try { database.withTransaction { block() } }
+        catch (error: InvalidAgriculturalCycle) { AppResult.Failure(error.error) }
         catch (error: InvalidSelection) { AppResult.Failure(AppError.Validation("parcelIds", error.message ?: "invalid")) }
         catch (error: Throwable) { AppResult.Failure(AppError.Storage(operation, error)) }
 

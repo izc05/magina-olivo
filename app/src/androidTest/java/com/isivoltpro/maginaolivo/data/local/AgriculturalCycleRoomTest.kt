@@ -12,6 +12,11 @@ import com.isivoltpro.maginaolivo.domain.cycle.CycleRecordKind
 import com.isivoltpro.maginaolivo.data.local.model.ActivityStatus
 import com.isivoltpro.maginaolivo.data.local.model.CampaignStatus
 import com.isivoltpro.maginaolivo.data.repository.OfflineFirstActivityRepository
+import com.isivoltpro.maginaolivo.data.repository.OfflineFirstCampaignRepository
+import com.isivoltpro.maginaolivo.data.repository.OfflineFirstExpenseRepository
+import com.isivoltpro.maginaolivo.domain.campaign.NewCampaign
+import com.isivoltpro.maginaolivo.domain.expense.ExpenseDraft
+import com.isivoltpro.maginaolivo.domain.expense.ExpenseCategory
 import com.isivoltpro.maginaolivo.core.dispatchers.DefaultAppDispatchers
 import com.isivoltpro.maginaolivo.core.id.UuidGenerator
 import com.isivoltpro.maginaolivo.domain.activity.NewActivity
@@ -40,12 +45,13 @@ class AgriculturalCycleRoomTest {
     private val otherFarm = UUID.randomUUID()
     private val selected = MutableStateFlow<UUID?>(workspace)
     private var user: UUID? = owner
+    private var provisioningCalls = 0
     private val clock = object : AppClock {
         override fun nowInstant() = Instant.parse("2027-05-04T12:00:00Z")
         override fun today(zoneId: ZoneId) = LocalDate.of(2027, 5, 4)
     }
     private val scope = object : WorkspaceRepository {
-        override suspend fun ensureLocalWorkspace(): AppResult<UUID> = error("Cycle reads must never provision a workspace")
+        override suspend fun ensureLocalWorkspace(): AppResult<UUID> { provisioningCalls++; return activeWorkspace() }
         override suspend fun activeWorkspace(): AppResult<UUID> = selected.value?.let { AppResult.Success(it) }
             ?: AppResult.Failure(com.isivoltpro.maginaolivo.core.common.AppError.Permission("signed_out"))
         override fun currentOwnerId() = user
@@ -69,6 +75,7 @@ class AgriculturalCycleRoomTest {
         val repo = repository()
         val initial = repo.observe(farm).first().value()
         assertTrue(initial.cycles.isEmpty())
+        assertEquals(0,provisioningCalls)
         val operation = UUID.randomUUID()
         val cycle = repo.create(initial.scope,"2026/27",date("2026-02-01"),operation).value()
         assertEquals(cycle, repo.create(initial.scope,"2026/27",date("2026-02-01"),operation).value())
@@ -170,5 +177,24 @@ class AgriculturalCycleRoomTest {
         assertEquals(1,state.records.count { it.kind=="EXPENSE" })
         assertEquals(next,state.records.single { it.kind=="EXPENSE" }.cycleId)
         assertEquals(date("2027-01-25"),state.cycles.single { it.id==previous }.effectiveEndDate)
+    }
+
+    @Test fun newRecollectionAndGeneralExpenseKeepExplicitLinksButUnassignedExpensesStayUnassigned() = runBlocking {
+        val cycles=repository()
+        val cycle=cycles.create(cycles.observe(farm).first().value().scope,"Flexible",date("2026-02-01"),UUID.randomUUID()).value()
+        val campaigns=OfflineFirstCampaignRepository(db,clock,UuidGenerator(),DefaultAppDispatchers(),scope)
+        assertTrue(campaigns.create(NewCampaign(farm,"Sin selección",date("2026-12-01"))) is AppResult.Failure)
+        val campaign=campaigns.create(NewCampaign(farm,"Recogida QA",date("2026-12-01"),agriculturalCycleId=cycle)).value()
+        val expenses=OfflineFirstExpenseRepository(db,scope,clock,UuidGenerator(),DefaultAppDispatchers())
+        val expense=expenses.create(ExpenseDraft(date("2026-03-15"),"Abonado QA",ExpenseCategory.OTHER,1234,
+            farmId=farm,agriculturalCycleId=cycle)).value()
+        val unassigned=expenses.create(ExpenseDraft(date("2026-03-15"),"Compartido sin finca",ExpenseCategory.OTHER,567)).value()
+        assertNull(db.expenseDao().findById(unassigned)!!.farmId)
+        assertTrue(expenses.create(ExpenseDraft(date("2026-03-15"),"Otra finca",ExpenseCategory.OTHER,100,
+            farmId=otherFarm,agriculturalCycleId=cycle)) is AppResult.Failure)
+        val snapshot=cycles.observe(farm).first().value()
+        assertEquals(cycle,snapshot.records.single { it.id==campaign }.cycleId)
+        assertEquals(cycle,snapshot.records.single { it.id==expense }.cycleId)
+        assertEquals(1234L,db.expenseDao().findById(expense)!!.amountMinor)
     }
 }

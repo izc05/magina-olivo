@@ -41,7 +41,8 @@ internal class AgriculturalCycleWriter(
         requireCycle(cycle.workspaceId==workspaceId && cycle.farmId==farmId,"context_mismatch")
         val owner=workspaces?.currentOwnerId()
         val workspace=db.workspaceDao().findById(workspaceId) ?: invalid("workspace_not_found")
-        if(owner!=null && owner!=workspace.ownerUserId || owner==null && workspace.metadata.remoteVersion!=null)
+        // Shared ledger callers already validated their Workspace; they do not own Auth.
+        if(workspaces!=null && (owner!=null && owner!=workspace.ownerUserId || owner==null && workspace.metadata.remoteVersion!=null))
             throw InvalidAgriculturalCycle(AppError.Permission("cycle_owner_required"))
         requireCycle(cycle.effectiveEndDate==null,"cycle_closed")
         requireCycle(CycleInterval(cycle.startDate,cycle.effectiveEndDate).contains(date,lastDate),"outside_cycle")
@@ -49,7 +50,7 @@ internal class AgriculturalCycleWriter(
     }
 
     suspend fun bindNew(workspaceId: UUID, farmId: UUID, cycleId: UUID?, kind: CycleRecordKind, id: UUID,
-                        inherited: Boolean=false) {
+                        inherited: Boolean=false, now: java.time.Instant=clock.nowInstant()) {
         if(cycleId==null || inherited) return
         when(kind) {
             CycleRecordKind.ACTIVITY -> dao.link(AgriculturalCycleActivityEntity(id,cycleId))
@@ -59,7 +60,7 @@ internal class AgriculturalCycleWriter(
         val cycle=dao.find(cycleId) ?: invalid("cycle_not_found")
         requireCycle(cycle.farmId==farmId && cycle.workspaceId==workspaceId,"context_mismatch")
         dao.insert(AgriculturalCycleOperationEntity(UUID.randomUUID(),cycleId,workspaces?.currentOwnerId(),
-            "NEW:$kind:$id",clock.nowInstant(),"Registro nuevo confirmado: $kind $id"))
+            "NEW:$kind:$id",now,"Registro nuevo confirmado: $kind $id"))
         dao.setRevision(AgriculturalCycleFarmStateEntity(farmId,Math.addExact(dao.revision(farmId) ?: 0,1)))
     }
 

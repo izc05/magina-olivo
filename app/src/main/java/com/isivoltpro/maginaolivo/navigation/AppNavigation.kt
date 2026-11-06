@@ -234,14 +234,9 @@ fun AppNavigation(
                             HeaderActions(compositionRoot, onAssistant = { navController.navigate(RootDestination.Assistant.route) { launchSingleTop = true } },
                                 onClick = { navController.navigate(RootDestination.Profile.route) { launchSingleTop = true } })
                         },
-                        // CR-011 §17: a running campaign opens its Farm's Cuaderno on Campaña.
                         onCampaign = { farmId ->
-                            if (farmId == null) {
-                                navController.navigateToRoot(RootDestination.Notebook)
-                            } else {
-                                notebookTabRequest = NotebookHubTab.CAMPAIGN.name
-                                openNotebookOn(farmId, null, null, NotebookOrigin.ROOT)
-                            }
+                            campaignFarmRequest = farmId?.toString()
+                            navController.navigateToRoot(RootDestination.CampaignHub)
                         },
                         onWeatherWeek = { navController.navigate(AppDestination.Weather) },
                         onActivitySelected = { id -> navController.navigate(AppDestination.activity(id.toString())) },
@@ -317,6 +312,7 @@ fun AppNavigation(
                         tabRequest = notebookTabRequest?.let { name -> NotebookHubTab.entries.firstOrNull { it.name == name } },
                         onTabRequestHandled = { notebookTabRequest = null },
                         origin = origin,
+                        onCampaign = { farmId -> campaignFarmRequest = farmId.toString(); navController.navigateToRoot(RootDestination.CampaignHub) },
                     )
                 }
             }
@@ -399,7 +395,7 @@ fun AppNavigation(
                     onHelp = { topic -> navController.navigate(AppDestination.help(topic.route)) },
                 )
             }
-            composable(RootDestination.CampaignHub.route) {
+            composable(RootDestination.CampaignHub.route) { entry ->
                 val persistence = compositionRoot.localPersistence
                 if (persistence == null) PersistenceUnavailableScreen() else
                     com.isivoltpro.maginaolivo.feature.campaignhub.AgriculturalCampaignRoute(
@@ -412,6 +408,7 @@ fun AppNavigation(
                         onNotebook = { farmId -> openNotebookOn(farmId, null, null, NotebookOrigin.ROOT) },
                         onGoToFields = { navController.navigateToRoot(RootDestination.Olivar) },
                         onRecollection = { id -> navController.navigate(AppDestination.campaign(id.toString())) },
+                        onActiveFarmChanged = { id -> entry.savedStateHandle[NOTEBOOK_FARM_ID_KEY] = id?.toString() },
                     )
             }
             composable(RootDestination.Assistant.route) {
@@ -471,6 +468,7 @@ fun AppNavigation(
                         },
                         onArchived = { navController.popBackStack() },
                         onRegister = { openNotebookOn(farmId, null, null, NotebookOrigin.FARM_CONTEXT) },
+                        onCampaign = { campaignFarmRequest = farmId.toString(); navController.navigate(RootDestination.CampaignHub.route) },
                     )
                 }
             }

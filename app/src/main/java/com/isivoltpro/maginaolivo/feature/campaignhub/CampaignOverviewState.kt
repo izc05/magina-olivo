@@ -56,13 +56,17 @@ internal fun observeCampaignOverview(persistence: LocalPersistence, workspaceId:
     return campaigns.flatMapLatest { loaded ->
         val scoped = loaded.filter { it.workspaceId == workspaceId }
         // Wait for all crew reads before claiming completeness; money remains the posted ledger.
-        val completeness = if (scoped.isEmpty()) flowOf(emptySet<UUID>()) else combine(scoped.map { campaign ->
-            combine(persistence.labourRepository.observeForCampaign(campaign.id), persistence.equipmentRepository.observeForCampaign(campaign.id), persistence.expenseRepository.observeAll()) { labour, equipment, expenses ->
-                campaign.id.takeUnless { RecollectionCostCompleteness.of(labour, equipment, expenses.filter { it.campaignId == campaign.id }).complete }
+        val crews = if (scoped.isEmpty()) flowOf(emptyMap<UUID, Pair<List<com.isivoltpro.maginaolivo.domain.labour.LabourEntry>, List<com.isivoltpro.maginaolivo.domain.equipment.EquipmentLine>>>()) else combine(scoped.map { campaign ->
+            combine(persistence.labourRepository.observeForCampaign(campaign.id), persistence.equipmentRepository.observeForCampaign(campaign.id)) { labour, equipment ->
+                campaign.id to (labour to equipment)
             }
-        }) { parts -> parts.filterNotNull().toSet() }
-        combine(persistence.deliveryRepository.observeAll(), persistence.expenseRepository.observeAll(), completeness) { deliveries, expenses, incomplete ->
+        }) { parts -> parts.toMap() }
+        combine(persistence.deliveryRepository.observeAll(), persistence.expenseRepository.observeAll(), crews) { deliveries, expenses, loadedCrews ->
             val scopedExpenses = expenses.filter { it.workspaceId == workspaceId }
+            val incomplete = scoped.filter { campaign ->
+                val (labour, equipment) = loadedCrews.getValue(campaign.id)
+                !RecollectionCostCompleteness.of(labour, equipment, scopedExpenses.filter { it.campaignId == campaign.id }).complete
+            }.map { it.id }.toSet()
             CampaignOverviewState(isLoading = false,
                 overviews = OliveSeason.available(scoped).map { season ->
                     FarmOverview.of(season, farms, scoped, deliveries.filter { it.workspaceId == workspaceId }, scopedExpenses, incomplete)

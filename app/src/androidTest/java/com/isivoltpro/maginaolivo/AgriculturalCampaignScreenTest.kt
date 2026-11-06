@@ -16,6 +16,20 @@ import org.junit.Test
 class AgriculturalCampaignScreenTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun closedRecollectionKeepsTheCanonicalSummaryAndCharts() {
+        val campaign = UiPolishFixtures.campaign.copy(status = com.isivoltpro.maginaolivo.data.local.model.CampaignStatus.CLOSED)
+        val notebook = com.isivoltpro.maginaolivo.domain.notebook.CampaignNotebook.project(campaign, emptyList(), emptyList(), emptyList(), emptyList())
+        compose.setContent { MaginaOlivoTheme { Column(Modifier.verticalScroll(rememberScrollState())) { AgriculturalCampaignContent(
+            NotebookUiState(isLoading = false, campaigns = listOf(campaign), selectedCampaignId = campaign.id, notebook = notebook),
+            NotebookActions(), {}, {}, {}, {}) } } }
+        compose.onNodeWithTag("campaign-recollection-selector").assertTextContains("cerrada", substring = true)
+        compose.onNodeWithTag("campaign-section-RECOLLECTION").performScrollTo().performClick()
+        compose.onNodeWithTag("notebook-summary").performScrollTo().assertExists()
+        compose.onNodeWithTag("notebook-open-deliveries").assertDoesNotExist()
+        compose.onNodeWithTag("campaign-section-CHARTS").performScrollTo().performClick()
+        compose.onNodeWithTag("campaign-stats-toggle").performScrollTo().assertExists()
+    }
+
     @Test fun failedReadsNeverBecomeEmptyCampaignOrEnableSections() {
         compose.setContent { MaginaOlivoTheme { Column { AgriculturalCampaignContent(
             NotebookUiState(isLoading = false, error = "Sin conexión con el almacén local"), NotebookActions(), {}, {}, {}, {}) } } }

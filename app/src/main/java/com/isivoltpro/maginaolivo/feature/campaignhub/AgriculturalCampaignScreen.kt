@@ -70,6 +70,7 @@ fun AgriculturalCampaignRoute(
     onNotebook: (UUID) -> Unit,
     onGoToFields: () -> Unit,
     onRecollection: (UUID) -> Unit,
+    onActiveFarmChanged: (UUID?) -> Unit = {},
 ) {
     var retry by remember { mutableStateOf(0) }
     val farms by remember(persistence, retry) {
@@ -87,6 +88,11 @@ fun AgriculturalCampaignRoute(
         }
     }
     val farm = active.firstOrNull { it.id.toString() == chosen }
+    LaunchedEffect(farms.isLoading, farms.error, farm?.id, allFarms) {
+        val visible = farm?.id.takeIf { !farms.isLoading && farms.error == null && !allFarms }
+        onActiveFarmChanged(visible)
+        visible?.let(activeFarmStore::set)
+    }
     Column(Modifier.fillMaxSize().testTag("agricultural-campaign-root")
         .verticalScroll(rememberScrollState()).padding(MoSpacing.screen), verticalArrangement = Arrangement.spacedBy(MoSpacing.sm)) {
         Text("Campaña", style = MaterialTheme.typography.headlineLarge)

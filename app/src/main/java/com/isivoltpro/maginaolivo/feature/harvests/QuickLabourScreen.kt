@@ -46,10 +46,10 @@ internal fun QuickLabourScreen(
                 Text("Asignar a", style = MaterialTheme.typography.titleSmall)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(MoSpacing.xs)) {
                     FilterChip(scope == "GENERAL", { scope = "GENERAL" },
-                        { Text("Fuera de campaña") }, enabled = !isSaving, modifier = Modifier.heightIn(min = 48.dp).testTag("quick-labour-general"))
+                        { Text("Trabajo general") }, enabled = !isSaving, modifier = Modifier.heightIn(min = 48.dp).testTag("quick-labour-general"))
                     if (campaign != null) FilterChip(scope == "CAMPAIGN" && selectedCampaignId == campaign.campaignId.toString(),
                         { selectedCampaignId = campaign.campaignId.toString(); scope = "CAMPAIGN" },
-                        { Text("Campaña de recogida · ${campaign.campaignName}") }, enabled = !isSaving,
+                        { Text("Recolección · ${campaign.campaignName}") }, enabled = !isSaving,
                         modifier = Modifier.heightIn(min = 48.dp).testTag("quick-labour-campaign"))
                 }
                 Text("Los borradores se conservan al cambiar de ámbito.", style = MaterialTheme.typography.bodySmall)
@@ -63,7 +63,7 @@ internal fun QuickLabourScreen(
                 // General work cannot silently become a Campaign cost through its linked Activity.
                 val generalOptions = options.copy(campaigns = emptyList(), campaignsFor = farmId,
                     activities = options.activities.filter { it.campaignId == null })
-                ExpenseEditor("Fuera de campaña", generalDraft.value, generalOptions, errors,
+                ExpenseEditor("Trabajo general", generalDraft.value, generalOptions, errors,
                     isSaving || !ready, "Guardar jornal general", {},
                     { onSaveGeneral(it.copy(category = ExpenseCategory.LABOR, campaignId = null, harvestId = null)) }, onCancel,
                     subtitle = "Mano de obra general: importe y concepto. Persona y horas todavía no disponibles.",
@@ -94,7 +94,7 @@ internal fun QuickLabourScreen(
                             // A draft identity only; the transactional save replaces it with the actual day.
                             UUID(0, 0), campaign.campaignId, formDate, rates,
                             { if (!blocked) onSaveCrew(campaign.campaignId, formDate, it) }, onAddWorker, onCancel,
-                            currency = draftCurrency.value!!, title = "Recogida", currencyResetToken = currencyResetToken)
+                            currency = draftCurrency.value!!, title = "Recolección", currencyResetToken = currencyResetToken)
                     }
                     if (reviewCurrency && currencyChanged) AlertDialog(
                         onDismissRequest = { reviewCurrency = false },
@@ -108,7 +108,7 @@ internal fun QuickLabourScreen(
             } else {
                 Column(Modifier.padding(MoSpacing.screen)) {
                     Text("La campaña seleccionada ya no está disponible. El borrador se conserva.")
-                    MoSecondaryButton("Fuera de campaña", { scope = "GENERAL" }, modifier = Modifier.testTag("quick-labour-return-general"))
+                    MoSecondaryButton("Trabajo general", { scope = "GENERAL" }, modifier = Modifier.testTag("quick-labour-return-general"))
                     MoTertiaryButton("Cancelar", onCancel)
                 }
             }

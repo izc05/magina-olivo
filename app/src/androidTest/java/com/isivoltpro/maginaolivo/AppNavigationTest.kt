@@ -106,11 +106,22 @@ class AppNavigationTest {
         composeRule.onNodeWithTag("campaign-section-WORKS").performScrollTo().performClick()
         waitForTag("notebook-root")
         assertEquals(before, agriculturalCounts())
+        composeRule.onNodeWithTag("notebook-open-campaign").performScrollTo().performClick()
+        waitForTag("agricultural-campaign-root")
+        composeRule.onNodeWithTag("bottom-Mi Campo").performClick()
+        clickByText("Finca P1 sin recogida")
+        waitForTag("farm-detail-root")
+        composeRule.onNodeWithTag("farm-open-campaign").performScrollTo().performClick()
+        waitForTag("agricultural-campaign-root")
+        pressBack()
+        waitForTag("farm-detail-root")
+        assertEquals(before, agriculturalCounts())
     }
 
     @Test
     fun centralAddIsAButtonAndCancelsOnEveryRootWithoutNavigation() {
         enterMainShell()
+        assertEquals(4, composeRule.onAllNodes(androidx.compose.ui.test.SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab)).fetchSemanticsNodes().size)
         val before = agriculturalCounts()
         composeRule.onNodeWithTag("bottom-Avisos").assertDoesNotExist()
         for (label in listOf("Inicio", "Mi Campo", "Cuaderno", "Campaña")) {
@@ -1145,7 +1156,7 @@ class AppNavigationTest {
         waitForTag("notebook-views")
         clickByTag("notebook-quick-labour")
         waitForTag("quick-labour-form")
-        waitForText("Fuera de campaña")
+        waitForText("Trabajo general")
         composeRule.onNodeWithTag("quick-labour-campaign").assertDoesNotExist()
         composeRule.onNodeWithText("Asignar a").assertDoesNotExist()
         composeRule.onNodeWithTag("bottom-Cuaderno").assertIsSelected()

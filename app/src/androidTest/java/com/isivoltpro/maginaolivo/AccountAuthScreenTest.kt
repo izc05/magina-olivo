@@ -2,6 +2,7 @@ package com.isivoltpro.maginaolivo
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,7 +11,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.espresso.Espresso
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.isivoltpro.maginaolivo.app.AppCompositionRoot
 import com.isivoltpro.maginaolivo.core.common.AppResult
 import com.isivoltpro.maginaolivo.domain.farm.NewFarm
@@ -26,6 +30,7 @@ import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.After
+import org.junit.Before
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -47,6 +52,13 @@ class AccountAuthScreenTest {
     } }
     @get:Rule val rules:TestRule=RuleChain.outerRule(guard).around(IsolatedAppStateRule()).around(compose)
     private val photo=File(context.noBackupFilesDir,"qa-account-photo-${UUID.randomUUID()}.bin")
+    @Before fun matchProductionKeyboardResize() {
+        // MainActivity declares adjustResize. The generic test Activity otherwise lets the
+        // IME cover the mode buttons while performScrollTo considers them inside its viewport.
+        compose.activityRule.scenario.onActivity {
+            it.window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        }
+    }
     @After fun removeOwnPhoto() { check(photo.name.startsWith("qa-account-photo-"));photo.delete() }
     private inner class Api:AccountAuthApi {
         override val simulated=true
@@ -144,7 +156,20 @@ class AccountAuthScreenTest {
         compose.onNodeWithTag("account-password-visibility").performClick()
         compose.onNodeWithTag("account-password").assertTextContains("password42")
         compose.onNodeWithTag("account-password-visibility").performClick()
-        compose.onNodeWithTag("account-mode-recover").performScrollTo().performClick()
+        // Toggling password visibility restarts the input connection. Finish the real IME
+        // transition before scrolling/clicking a mode button; otherwise focus bring-into-view
+        // can move it back under the keyboard between the scroll and the injected touch.
+        Espresso.closeSoftKeyboard()
+        compose.waitUntil(15_000) {
+            var ready=false
+            InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                val view=compose.activity.window.decorView
+                val insets=ViewCompat.getRootWindowInsets(view)
+                ready=view.hasWindowFocus() && insets!=null && !insets.isVisible(WindowInsetsCompat.Type.ime())
+            }
+            ready
+        }
+        compose.onNodeWithTag("account-mode-recover").performScrollTo().assertIsDisplayed().assertIsEnabled().performClick()
         waitFor("account-recover")
         compose.onNodeWithTag("account-mode-login").performScrollTo().performClick()
         waitFor("account-login")
@@ -160,7 +185,17 @@ class AccountAuthScreenTest {
             }
         }
     }
-    private fun waitFor(tag:String)=compose.waitUntil(15_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
+    private fun waitFor(tag:String) {
+        try {
+            compose.waitUntil(15_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
+        } catch (failure: ComposeTimeoutException) {
+            runCatching {
+                capture("failure-$tag")
+                compose.onRoot(useUnmergedTree=true).printToLog("AccountFailure")
+            }.exceptionOrNull()?.let(failure::addSuppressed)
+            throw failure
+        }
+    }
     private fun capture(stage:String) {
         compose.waitForIdle()
         val config=context.resources.configuration;val out=File(context.getExternalFilesDir(null),"account-auth-evidence/$stage-sw${config.smallestScreenWidthDp}dp-font${config.fontScale}.png")

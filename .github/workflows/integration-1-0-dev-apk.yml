@@ -48,10 +48,10 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           script: |
             set -e
-            trap 'adb pull /sdcard/Android/data/com.isivoltpro.maginaolivo.dev/files/navigation-evidence navigation-evidence >/dev/null 2>&1 || true' EXIT
+            trap 'adb pull /sdcard/Android/data/com.isivoltpro.maginaolivo.dev/files/navigation-evidence navigation-evidence >/dev/null 2>&1 || true; adb pull /sdcard/Android/data/com.isivoltpro.maginaolivo.dev/files/account-auth-evidence account-auth-evidence >/dev/null 2>&1 || true' EXIT
             adb install -r app/build/outputs/apk/dev/debug/app-dev-debug.apk
             adb install -r app/build/outputs/apk/androidTest/dev/debug/app-dev-debug-androidTest.apk
-            adb shell am instrument -w -r -e class com.isivoltpro.maginaolivo.AccountAuthGateTest,com.isivoltpro.maginaolivo.FarmLinkScreenTest,com.isivoltpro.maginaolivo.AppNavigationTest,com.isivoltpro.maginaolivo.AgriculturalCampaignScreenTest,com.isivoltpro.maginaolivo.CampaignOverviewFlowTest,com.isivoltpro.maginaolivo.NotebookHomeScreenTest,com.isivoltpro.maginaolivo.FarmScreensTest,com.isivoltpro.maginaolivo.FarmOverviewScreenTest,com.isivoltpro.maginaolivo.GlobalQuickActionsTest,com.isivoltpro.maginaolivo.HomeFeedsScreenTest,com.isivoltpro.maginaolivo.WeatherWeekScreenTest,com.isivoltpro.maginaolivo.data.local.RoomMigrationTest,com.isivoltpro.maginaolivo.data.local.WorkspaceSelectionRoomTest,com.isivoltpro.maginaolivo.data.local.WorkspaceSendRoomTest,com.isivoltpro.maginaolivo.data.local.CampaignCreateSendRoomTest com.isivoltpro.maginaolivo.dev.test/androidx.test.runner.AndroidJUnitRunner | tee integration-tests.txt
+            adb shell am instrument -w -r -e class com.isivoltpro.maginaolivo.AccountAuthGateTest,com.isivoltpro.maginaolivo.AccountAuthScreenTest,com.isivoltpro.maginaolivo.FarmLinkScreenTest,com.isivoltpro.maginaolivo.AppNavigationTest,com.isivoltpro.maginaolivo.AgriculturalCampaignScreenTest,com.isivoltpro.maginaolivo.CampaignOverviewFlowTest,com.isivoltpro.maginaolivo.NotebookHomeScreenTest,com.isivoltpro.maginaolivo.FarmScreensTest,com.isivoltpro.maginaolivo.FarmOverviewScreenTest,com.isivoltpro.maginaolivo.GlobalQuickActionsTest,com.isivoltpro.maginaolivo.HomeFeedsScreenTest,com.isivoltpro.maginaolivo.WeatherWeekScreenTest,com.isivoltpro.maginaolivo.data.local.RoomMigrationTest,com.isivoltpro.maginaolivo.data.local.WorkspaceSelectionRoomTest,com.isivoltpro.maginaolivo.data.local.WorkspaceSendRoomTest,com.isivoltpro.maginaolivo.data.local.CampaignCreateSendRoomTest com.isivoltpro.maginaolivo.dev.test/androidx.test.runner.AndroidJUnitRunner | tee integration-tests.txt
             grep -q 'INSTRUMENTATION_CODE: -1' integration-tests.txt
             grep -Eq 'OK \([0-9]+ tests\)' integration-tests.txt
       - name: Upload test log
@@ -62,4 +62,5 @@ jobs:
           path: |
             integration-tests.txt
             navigation-evidence/
+            account-auth-evidence/
           if-no-files-found: ignore

@@ -26,6 +26,7 @@ class AgriculturalCampaignScreenTest {
         compose.onNodeWithTag("campaign-section-RECOLLECTION").performScrollTo().performClick()
         compose.onNodeWithTag("notebook-summary").performScrollTo().assertExists()
         compose.onNodeWithTag("notebook-open-deliveries").assertDoesNotExist()
+        compose.onNodeWithTag("campaign-sections-back").performScrollTo().performClick()
         compose.onNodeWithTag("campaign-section-CHARTS").performScrollTo().performClick()
         compose.onNodeWithTag("campaign-stats-toggle").performScrollTo().assertExists()
     }
@@ -43,6 +44,7 @@ class AgriculturalCampaignScreenTest {
             NotebookUiState(isLoading = false), NotebookActions(), {}, {}, {}, {}) } } }
         compose.onNodeWithTag("campaign-section-ECONOMY").performScrollTo().performClick()
         compose.onNodeWithTag("campaign-balance-incomplete").performScrollTo().assertTextContains("balance incompleto", substring = true)
+        compose.onNodeWithTag("campaign-sections-back").performScrollTo().performClick()
         compose.onNodeWithTag("campaign-section-RECOLLECTION").performScrollTo().performClick()
         compose.onNodeWithTag("campaign-no-recollection").performScrollTo().assertExists()
     }

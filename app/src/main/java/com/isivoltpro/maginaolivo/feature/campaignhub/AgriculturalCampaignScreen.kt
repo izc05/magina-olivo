@@ -1,6 +1,7 @@
 package com.isivoltpro.maginaolivo.feature.campaignhub
 
 import androidx.compose.foundation.BorderStroke
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -57,7 +58,7 @@ internal enum class CampaignSection(val title: String, val description: String) 
     WORKS("Trabajos del año", "Consultar el historial de esta finca en Cuaderno"),
     RECOLLECTION("Recolección", "Días, pesadas, jornales y gastos de recogida"),
     ECONOMY("Economía y balance", "Gastos contabilizados · balance incompleto"),
-    CHARTS("Gráficas y estadísticas", "Producción, rendimiento y comparación histórica"),
+    CHARTS("Gráficas e históricos", "Producción, rendimiento y comparación histórica"),
 }
 
 @Composable
@@ -93,8 +94,9 @@ fun AgriculturalCampaignRoute(
         onActiveFarmChanged(visible)
         visible?.let(activeFarmStore::set)
     }
+    val scroll = rememberScrollState()
     Column(Modifier.fillMaxSize().testTag("agricultural-campaign-root")
-        .verticalScroll(rememberScrollState()).padding(MoSpacing.screen), verticalArrangement = Arrangement.spacedBy(MoSpacing.sm)) {
+        .verticalScroll(scroll).padding(MoSpacing.screen), verticalArrangement = Arrangement.spacedBy(MoSpacing.sm)) {
         Text("Campaña", style = MaterialTheme.typography.headlineLarge)
         Text("Agrupación provisional: septiembre–agosto", style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.testTag("campaign-provisional-period"))
@@ -139,7 +141,8 @@ fun AgriculturalCampaignRoute(
                         var labour by rememberSaveable { mutableStateOf<String?>(null) }
                         val actions = actionsFor(farm.id).copy(onLabour = { id -> labour = id.toString() })
                         AgriculturalCampaignContent(state, actions, { selected = it.toString(); model.selectCampaign(it) },
-                            { onNotebook(farm.id) }, { retry++ }, onRecollection)
+                            { onNotebook(farm.id) }, { retry++ }, onRecollection,
+                            onSectionChanged = { scroll.scrollTo(0) })
                         labour?.let { id ->
                             @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
                             androidx.compose.material3.ModalBottomSheet(onDismissRequest = { labour = null }, containerColor = MoSurfaceTokens.cardSurface) {
@@ -155,39 +158,51 @@ fun AgriculturalCampaignRoute(
 
 @Composable
 internal fun AgriculturalCampaignContent(state: NotebookUiState, actions: NotebookActions, onSelectCampaign: (UUID) -> Unit,
-    onNotebook: () -> Unit, onRetry: () -> Unit, onRecollection: (UUID) -> Unit) {
+    onNotebook: () -> Unit, onRetry: () -> Unit, onRecollection: (UUID) -> Unit,
+    onSectionChanged: suspend () -> Unit = {}) {
     var section by rememberSaveable { mutableStateOf<String?>(null) }
+    BackHandler(enabled = section != null) { section = null }
+    LaunchedEffect(section) { onSectionChanged() }
     when {
         state.isLoading -> CircularProgressIndicator(Modifier.testTag("campaign-loading"))
         state.error != null -> MoErrorState("No pudimos consultar los registros", state.error, onRetry = onRetry)
         else -> {
             var menu by remember { mutableStateOf(false) }
             val notebook = state.notebook
-            Text("Periodo ${OliveSeason.of(notebook?.campaign?.startDate ?: LocalDate.now())}", style = MaterialTheme.typography.titleMedium)
-            Box {
-                MoTertiaryButton(notebook?.campaign?.let { "${it.name} · Recolección ${when {
-                    it.status.isRunning -> "abierta"
-                    it.status == com.isivoltpro.maginaolivo.data.local.model.CampaignStatus.CLOSED -> "cerrada"
-                    else -> "en borrador"
-                }}" }
-                    ?: "Sin recolección", { menu = true }, Modifier.testTag("campaign-recollection-selector"))
-                DropdownMenu(menu, { menu = false }) {
-                    state.campaigns.sortedByDescending { it.startDate }.forEach { campaign ->
-                        DropdownMenuItem(text = { Text(campaign.name) }, onClick = { onSelectCampaign(campaign.id); menu = false })
+            if (section == null) {
+                Text("Periodo ${OliveSeason.of(notebook?.campaign?.startDate ?: LocalDate.now())}", style = MaterialTheme.typography.titleMedium)
+                Box {
+                    MoTertiaryButton(notebook?.campaign?.let { "${it.name} · Recolección ${when {
+                        it.status.isRunning -> "abierta"
+                        it.status == com.isivoltpro.maginaolivo.data.local.model.CampaignStatus.CLOSED -> "cerrada"
+                        else -> "en borrador"
+                    }}" }
+                        ?: "Sin recolección", { menu = true }, Modifier.testTag("campaign-recollection-selector"))
+                    DropdownMenu(menu, { menu = false }) {
+                        state.campaigns.sortedByDescending { it.startDate }.forEach { campaign ->
+                            DropdownMenuItem(text = { Text(campaign.name) }, onClick = { onSelectCampaign(campaign.id); menu = false })
+                        }
                     }
                 }
-            }
-            CampaignSection.entries.forEach { option ->
-                Surface(shape = MoShape.card, color = MoSurfaceTokens.cardSurface, border = BorderStroke(1.dp, MoSurfaceTokens.cardStroke),
-                    modifier = Modifier.fillMaxWidth()) {
-                    MoCompactListItem(title = option.title, subtitle = option.description,
-                        icon = when (option) { CampaignSection.WORKS -> MoIcons.Activity; CampaignSection.RECOLLECTION -> MoIcons.Harvest
-                            CampaignSection.ECONOMY -> MoIcons.Euro; CampaignSection.CHARTS -> MoIcons.Campaign },
-                        onClick = { if (option == CampaignSection.WORKS) onNotebook() else section = option.name },
-                        modifier = Modifier.testTag("campaign-section-${option.name}"))
+                CampaignSection.entries.forEach { option ->
+                    Surface(shape = MoShape.card, color = MoSurfaceTokens.cardSurface, border = BorderStroke(1.dp, MoSurfaceTokens.cardStroke),
+                        modifier = Modifier.fillMaxWidth()) {
+                        MoCompactListItem(title = option.title, subtitle = option.description,
+                            icon = when (option) { CampaignSection.WORKS -> MoIcons.Activity; CampaignSection.RECOLLECTION -> MoIcons.Harvest
+                                CampaignSection.ECONOMY -> MoIcons.Euro; CampaignSection.CHARTS -> MoIcons.Campaign },
+                            onClick = { if (option == CampaignSection.WORKS) onNotebook() else section = option.name },
+                            modifier = Modifier.testTag("campaign-section-${option.name}"))
+                    }
                 }
+                Text("Trabajos abre el historial completo de la finca; no se asigna automáticamente a este periodo.", style = MaterialTheme.typography.bodySmall)
+            } else {
+                MoTertiaryButton("← Volver a Campaña", { section = null },
+                    Modifier.testTag("campaign-sections-back"))
+                Text(CampaignSection.entries.first { it.name == section }.title,
+                    style = MaterialTheme.typography.titleLarge)
+                notebook?.campaign?.let { Text("${it.name} · ${OliveSeason.of(it.startDate)}",
+                    style = MaterialTheme.typography.bodySmall) }
             }
-            Text("Trabajos abre el historial completo de la finca; no se asigna automáticamente a este periodo.", style = MaterialTheme.typography.bodySmall)
             when (section) {
                 CampaignSection.RECOLLECTION.name -> if (notebook == null) NoRecollection(actions) else {
                     MoSecondaryButton("Ver días y pesadas de esta recolección", { onRecollection(notebook.campaign.id) }, Modifier.fillMaxWidth())

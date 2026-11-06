@@ -10,7 +10,7 @@ Orden sugerido para revisar la APK DEV:
    mapas, parcelas, Cuaderno, documentos y gestión de recolecciones; añade «Ver campaña de esta finca».
 3. **+ / Cuaderno:** seis formularios existentes. Diario, Fitosanitario y Gastos mantienen
    los mismos registros; Campaña tiene ahora su propia raíz.
-4. **Campaña:** Trabajos del año, Recolección, Economía y balance, Gráficas y estadísticas.
+4. **Campaña:** Trabajos del año, Recolección, Economía y balance, Gráficas e históricos.
    Cambiar finca, consultar recolección cerrada, volver atrás y cerrar/reabrir la aplicación.
 5. **Todas mis fincas:** resumen de consulta e informe existente por periodo; incluye
    histórico archivado y declara por separado los gastos sin finca.

@@ -50,6 +50,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
@@ -176,6 +177,81 @@ class AppNavigationTest {
         waitForTag("register-activity-root")
         composeRule.onNodeWithTag("quick-register-sheet").assertDoesNotExist()
         waitForText("Finca CR014")
+    }
+
+    /** Physical IME and footer geometry, on a small screen with enlarged text. */
+    @Test
+    fun workIrrigationAndTreatmentFootersStayAboveTheOpenKeyboardWithoutWriting() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        fun shell(command: String): String = android.os.ParcelFileDescriptor.AutoCloseInputStream(
+            instrumentation.uiAutomation.executeShellCommand(command)
+        ).bufferedReader().use { it.readText().trim() }
+        assertEquals("1", shell("getprop ro.kernel.qemu"))
+        assertEquals("com.isivoltpro.maginaolivo.dev", instrumentation.targetContext.packageName)
+        val size = Regex("Override size: (\\d+x\\d+)").find(shell("wm size"))?.groupValues?.get(1) ?: "reset"
+        val density = Regex("Override density: (\\d+)").find(shell("wm density"))?.groupValues?.get(1) ?: "reset"
+        val font = shell("settings get system font_scale")
+        val showIme = shell("settings get secure show_ime_with_hard_keyboard")
+        fun keyboardTop(): Int {
+            var top = -1
+            instrumentation.runOnMainSync {
+                val view = composeRule.activity.window.decorView
+                val insets = ViewCompat.getRootWindowInsets(view)
+                if (view.hasWindowFocus() && insets?.isVisible(WindowInsetsCompat.Type.ime()) == true) {
+                    top = view.height - insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
+                }
+            }
+            return top
+        }
+        try {
+            shell("wm size 1080x1920")
+            shell("wm density 480")
+            shell("settings put system font_scale 1.3")
+            shell("settings put secure show_ime_with_hard_keyboard 1")
+            assertTrue(shell("wm size").contains("1080x1920"))
+            assertTrue(shell("wm density").contains("480"))
+            enterMainShell()
+            val local = checkNotNull(com.isivoltpro.maginaolivo.app.AppCompositionRoot.createAndroid(
+                instrumentation.targetContext, "DEV").localPersistence)
+            runBlocking {
+                val workspace = (local.workspaceRepository.ensureLocalWorkspace() as com.isivoltpro.maginaolivo.core.common.AppResult.Success).value
+                assertTrue(local.farmRepository.create(com.isivoltpro.maginaolivo.domain.farm.NewFarm(workspace, "Finca teclado P1")) is com.isivoltpro.maginaolivo.core.common.AppResult.Success)
+            }
+            composeRule.onNodeWithTag("bottom-Cuaderno").performClick()
+            chooseNotebookFarm("Finca teclado P1")
+            val before = agriculturalCounts()
+            for (action in listOf("work", "irrigation", "treatment")) {
+                openGlobalQuickAction(action)
+                if (action == "work") {
+                    waitForTag("register-activity-type-pruning")
+                    composeRule.onNodeWithTag("register-activity-type-pruning").performClick()
+                }
+                waitForTag("activity-description")
+                composeRule.onNodeWithTag("activity-description").performScrollTo().performClick().performTextInput("Revisión sin guardar")
+                composeRule.waitUntil(UI_TIMEOUT_MS) { keyboardTop() > 0 }
+                for (button in listOf(composeRule.onNodeWithTag("save-activity"), composeRule.onNodeWithText("Cancelar"))) {
+                    button.performScrollTo().assertIsDisplayed()
+                    composeRule.waitForIdle()
+                    val top = keyboardTop()
+                    val bottom = button.fetchSemanticsNode().boundsInWindow.bottom
+                    assertTrue("$action footer bottom=$bottom must remain above visible IME top=$top", top > 0 && bottom <= top)
+                }
+                // A real touch while IME remains open; cancellation must remove the editor,
+                // retain Farm context and create no Activity, day, weighing or Expense.
+                composeRule.onNodeWithText("Cancelar").performClick()
+                composeRule.waitUntil(UI_TIMEOUT_MS) { composeRule.onAllNodesWithTag("activity-description").fetchSemanticsNodes().isEmpty() }
+                safeCloseSoftKeyboard()
+                composeRule.onNodeWithTag("bottom-Cuaderno").performClick()
+                waitForTag("notebook-context")
+                composeRule.onNodeWithTag("notebook-context").assertTextContains("Finca teclado P1", substring = true)
+                assertEquals(before, agriculturalCounts())
+            }
+        } finally {
+            shell("wm size $size")
+            shell("wm density $density")
+            shell(if (font.matches(Regex("[0-9]+(?:\\.[0-9]+)?"))) "settings put system font_scale $font" else "settings delete system font_scale")
+            shell(if (showIme.matches(Regex("[01]"))) "settings put secure show_ime_with_hard_keyboard $showIme" else "settings delete secure show_ime_with_hard_keyboard")
+        }
     }
 
     /** Cancelling a global Farm change must not replace the visible Notebook context. */

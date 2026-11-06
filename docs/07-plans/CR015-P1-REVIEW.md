@@ -3,6 +3,10 @@
 Base validada: `1c2a4574ea73b044d5937578afe37f1cb3745924` (#853).
 Alcance autorizado y plan: #855 / #856. PR independiente apilada sobre #853.
 
+El propietario aprobó las 12 capturas de P1 en `d43d46cfafab4eadc692e14022dd071c64d3613b`.
+Se conserva ese diseño; el cierre funcional solo admite correcciones mínimas de funcionamiento
+o accesibilidad, sin rediseño, cambios de persistencia ni ampliación de funcionalidades.
+
 Orden sugerido para revisar la APK DEV:
 
 1. **Inicio:** campana, avatar e IA en cabecera; la tarjeta de recolección abre Campaña.

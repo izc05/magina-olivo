@@ -1,5 +1,6 @@
 package com.isivoltpro.maginaolivo.navigation
 
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -93,6 +94,7 @@ private val bottomBarItems = bottomNavigationRoots.map { destination ->
             RootDestination.Alerts -> MoIcons.Bell
             RootDestination.Profile -> MoIcons.Person
             RootDestination.Assistant -> MoIcons.Assistant
+            RootDestination.CampaignHub -> MoIcons.Campaign
         },
     )
 }
@@ -169,13 +171,13 @@ fun AppNavigation(
         topBar = {
             if (backStackEntry?.destination?.route in setOf(
                     RootDestination.Olivar.route, RootDestination.Notebook.route,
-                    RootDestination.Alerts.route, AppDestination.Calendar, RootDestination.Assistant.route,
+                    RootDestination.Alerts.route, AppDestination.Calendar, RootDestination.Assistant.route, RootDestination.CampaignHub.route,
                 )) {
                 MoTopAppBar(
                     title = "Mágina Olivo",
                     modifier = Modifier.statusBarsPadding(),
                     action = {
-                        ProfileAvatarAction(compositionRoot.accountRepository,
+                        HeaderActions(compositionRoot, onAssistant = { navController.navigate(RootDestination.Assistant.route) { launchSingleTop = true } },
                             onClick = { navController.navigate(RootDestination.Profile.route) { launchSingleTop = true } })
                     },
                 )
@@ -228,7 +230,7 @@ fun AppNavigation(
                         onCalendar = { navController.navigate(AppDestination.Calendar) },
                         onAlerts = { navController.navigate(RootDestination.Alerts.route) { launchSingleTop = true } },
                         profileAvatar = {
-                            ProfileAvatarAction(compositionRoot.accountRepository,
+                            HeaderActions(compositionRoot, onAssistant = { navController.navigate(RootDestination.Assistant.route) { launchSingleTop = true } },
                                 onClick = { navController.navigate(RootDestination.Profile.route) { launchSingleTop = true } })
                         },
                         // CR-011 §17: a running campaign opens its Farm's Cuaderno on Campaña.
@@ -396,10 +398,17 @@ fun AppNavigation(
                     onHelp = { topic -> navController.navigate(AppDestination.help(topic.route)) },
                 )
             }
+            composable(RootDestination.CampaignHub.route) {
+                NavigationPlaceholderScreen(
+                    title = "Campaña",
+                    description = "Agrupación provisional: septiembre–agosto",
+                    testTag = "agricultural-campaign-root",
+                )
+            }
             composable(RootDestination.Assistant.route) {
                 NavigationPlaceholderScreen(
                     title = "Asistente IA",
-                    description = "Estamos preparando este espacio para ayudarte con tu olivar. Por ahora, tus datos y registros siguen disponibles en las otras secciones.",
+                    description = "En desarrollo. Tus registros siguen disponibles en las otras secciones.",
                     testTag = "assistant-placeholder",
                 )
             }
@@ -1087,5 +1096,16 @@ private fun NavHostController.openQuickAction(action: NotebookQuickAction, farmI
         // #378: outside a running campaign, Jornal is the Farm's own labour — a labour expense,
         // opened and labelled as such, never a plain «Nuevo gasto».
         NotebookQuickAction.LABOUR -> navigate(AppDestination.farmLabour(farmId.toString(), parcelId))
+    }
+}
+
+@Composable
+private fun HeaderActions(compositionRoot: AppCompositionRoot, onAssistant: () -> Unit, onClick: () -> Unit) {
+    Row {
+        com.isivoltpro.maginaolivo.ui.components.MoIconButton(
+            symbol = "✦", contentDescription = "Asistente IA · En desarrollo",
+            onClick = onAssistant, modifier = Modifier.testTag("top-assistant"),
+        )
+        ProfileAvatarAction(compositionRoot.accountRepository, onClick = onClick)
     }
 }

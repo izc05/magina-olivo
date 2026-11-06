@@ -68,14 +68,18 @@ class AppNavigationTest {
     @Test
     fun assistantIsReservedAndAvatarOpensProfileFromEachMainSection() {
         enterMainShell()
-        for (tab in listOf("Inicio", "Mi Campo", "Cuaderno", "Asistente IA")) {
+        composeRule.onNodeWithTag("bottom-Asistente IA").assertDoesNotExist()
+        composeRule.onNodeWithTag("top-assistant").performClick()
+        waitForTag("assistant-placeholder")
+        pressBack()
+        for (tab in listOf("Inicio", "Mi Campo", "Cuaderno", "Campaña")) {
             composeRule.onNodeWithTag("bottom-$tab").performClick()
-            if (tab == "Asistente IA") waitForTag("assistant-placeholder")
+            if (tab == "Campaña") waitForTag("agricultural-campaign-root")
             composeRule.onNodeWithTag("top-profile-avatar").performClick()
             waitForTag("profile-root")
             composeRule.onNodeWithTag("bottom-Perfil").assertDoesNotExist()
             pressBack()
-            if (tab == "Asistente IA") waitForTag("assistant-placeholder")
+            if (tab == "Campaña") waitForTag("agricultural-campaign-root")
         }
     }
 
@@ -85,7 +89,7 @@ class AppNavigationTest {
         enterMainShell()
         val before = agriculturalCounts()
         composeRule.onNodeWithTag("bottom-Avisos").assertDoesNotExist()
-        for (label in listOf("Inicio", "Mi Campo", "Cuaderno", "Asistente IA")) {
+        for (label in listOf("Inicio", "Mi Campo", "Cuaderno", "Campaña")) {
             composeRule.onNodeWithTag("bottom-$label").performClick().assertIsSelected()
             val add = composeRule.onNodeWithTag("bottom-add-record")
             val semantics = add.fetchSemanticsNode().config

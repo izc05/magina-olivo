@@ -85,6 +85,30 @@ class AppNavigationTest {
 
     /** #705 / CR-014: the central control is an action, never a selected fifth tab. */
     @Test
+    fun campaignRootKeepsFourSectionsWithoutCreatingARecollection() {
+        enterMainShell()
+        navigateToOlivar()
+        openSheet("add-farm", "farm-name")
+        composeRule.onNodeWithTag("farm-name").performTextInput("Finca P1 sin recogida")
+        saveEditor("save-farm", "farm-name")
+        waitForSaved("farm-name", "Finca P1 sin recogida")
+        val before = agriculturalCounts()
+        composeRule.onNodeWithTag("bottom-Campaña").performClick()
+        waitForTag("campaign-section-WORKS")
+        for (section in listOf("WORKS", "RECOLLECTION", "ECONOMY", "CHARTS")) {
+            composeRule.onNodeWithTag("campaign-section-$section").performScrollTo().assertExists()
+        }
+        composeRule.onNodeWithTag("campaign-section-RECOLLECTION").performScrollTo().performClick()
+        waitForTag("campaign-no-recollection")
+        assertEquals(before, agriculturalCounts())
+        composeRule.activityRule.scenario.recreate()
+        waitForTag("campaign-no-recollection")
+        composeRule.onNodeWithTag("campaign-section-WORKS").performScrollTo().performClick()
+        waitForTag("notebook-root")
+        assertEquals(before, agriculturalCounts())
+    }
+
+    @Test
     fun centralAddIsAButtonAndCancelsOnEveryRootWithoutNavigation() {
         enterMainShell()
         val before = agriculturalCounts()

@@ -85,6 +85,7 @@ class QuickLabourFormTest {
                         RootDestination.Notebook -> MoIcons.Notebook
                         RootDestination.Profile -> MoIcons.Person
                         RootDestination.Assistant -> MoIcons.Assistant
+                        RootDestination.CampaignHub -> MoIcons.Campaign
                         RootDestination.Alerts -> MoIcons.Bell
                     })
                 }, selectedIndex = 2, onSelected = {}, onAddRecord = {})

@@ -126,6 +126,7 @@ fun AppNavigation(
     // CR-011 §14: the Farm the Cuaderno opens on (from a Farm, a Parcel or Inicio).
     var notebookFarmRequest by rememberSaveable { mutableStateOf<String?>(null) }
     var notebookTabRequest by rememberSaveable { mutableStateOf<String?>(null) }
+    var campaignFarmRequest by rememberSaveable { mutableStateOf<String?>(null) }
     // The Parcel of the Cuaderno a work action was tapped on, handed to the work form.
     var registerParcelId by rememberSaveable { mutableStateOf<String?>(null) }
     var quickActionOpen by rememberSaveable { mutableStateOf(false) }
@@ -399,11 +400,19 @@ fun AppNavigation(
                 )
             }
             composable(RootDestination.CampaignHub.route) {
-                NavigationPlaceholderScreen(
-                    title = "Campaña",
-                    description = "Agrupación provisional: septiembre–agosto",
-                    testTag = "agricultural-campaign-root",
-                )
+                val persistence = compositionRoot.localPersistence
+                if (persistence == null) PersistenceUnavailableScreen() else
+                    com.isivoltpro.maginaolivo.feature.campaignhub.AgriculturalCampaignRoute(
+                        persistence, compositionRoot.activeFarmStore,
+                        requestedFarmId = campaignFarmRequest?.let { runCatching { UUID.fromString(it) }.getOrNull() },
+                        onRequestHandled = { campaignFarmRequest = null },
+                        actionsFor = { farmId -> navController.notebookActions(farmId).copy(
+                            onDeliveries = { navController.navigate(AppDestination.newPesada(farmId.toString())) },
+                        ) },
+                        onNotebook = { farmId -> openNotebookOn(farmId, null, null, NotebookOrigin.ROOT) },
+                        onGoToFields = { navController.navigateToRoot(RootDestination.Olivar) },
+                        onRecollection = { id -> navController.navigate(AppDestination.campaign(id.toString())) },
+                    )
             }
             composable(RootDestination.Assistant.route) {
                 NavigationPlaceholderScreen(

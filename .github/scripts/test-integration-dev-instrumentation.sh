@@ -17,6 +17,8 @@ printf '%s\n' "$*" >> "$MOCK_LOG"
 case "$*" in
   get-serialno) echo "${MOCK_SERIAL:-emulator-5554}" ;;
   'shell getprop ro.kernel.qemu'|'shell getprop ro.boot.qemu') echo "${MOCK_QEMU:-1}" ;;
+  'shell dumpsys power'|'shell dumpsys window'|'shell dumpsys input') echo 'synthetic device diagnostics' ;;
+  'shell input keyevent KEYCODE_WAKEUP'|'shell wm dismiss-keyguard'|'shell svc power stayon true') exit 0 ;;
   install*) echo Success ;;
   'shell am instrument'*)
     if [[ "$MOCK_RESULT" == junit-fail ]]; then
@@ -48,10 +50,14 @@ for scenario in pass junit-fail transport-fail physical non-qemu no-opt-in; do
     [[ "$status" != 0 ]] || { echo "Unexpected success: $scenario"; exit 1; }
   fi
   if [[ "$scenario" == physical || "$scenario" == non-qemu || "$scenario" == no-opt-in ]]; then
-    ! grep -Eq '^install|^shell am instrument|^pull' "$dir/adb.log" 2>/dev/null || { echo 'Unsafe side effect'; exit 1; }
+    ! grep -Eq '^install|^shell am instrument|^pull|^shell input|^shell wm|^shell svc' "$dir/adb.log" 2>/dev/null || { echo 'Unsafe side effect'; exit 1; }
   else
     [[ $(grep -c '^pull' "$dir/adb.log") == 2 ]] || { echo 'Missing diagnostics'; exit 1; }
     tail -n 2 "$dir/adb.log" | grep -q '^pull' || exit 1
+    [[ $(grep -c '^shell dumpsys' "$dir/adb.log") == 9 ]] || { echo 'Missing device diagnostics'; exit 1; }
+    grep -q '^shell input keyevent KEYCODE_WAKEUP$' "$dir/adb.log"
+    grep -q '^shell wm dismiss-keyguard$' "$dir/adb.log"
+    grep -q '^shell svc power stayon true$' "$dir/adb.log"
   fi
   echo "PASS: $scenario (rc=$status)"
 done

@@ -58,4 +58,5 @@ jobs:
             integration-tests.txt
             navigation-evidence/
             account-auth-evidence/
+            integration-device-evidence/
           if-no-files-found: ignore

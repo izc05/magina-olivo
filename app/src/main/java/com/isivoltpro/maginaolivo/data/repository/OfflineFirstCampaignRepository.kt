@@ -318,6 +318,9 @@ class OfflineFirstCampaignRepository(
                     return@safely AppResult.Failure(AppError.Validation("workspaceId", "context_mismatch"))
                 }
                 if (!allowArchived && current.metadata.deletedAt != null) return@safely conflict("archived_campaign")
+                if (operation in setOf("activate_campaign", "mark_harvest", "reopen_campaign")) {
+                    requireOperationalAgriculturalCycle(database, current, current.startDate)
+                }
                 block(current, clock.nowInstant())
             }
         }

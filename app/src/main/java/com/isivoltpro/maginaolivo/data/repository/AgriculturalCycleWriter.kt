@@ -20,6 +20,15 @@ internal class AgriculturalCycleWriter(
 ) {
     private val dao get() = db.agriculturalCycleDao()
 
+    suspend fun validateActivityDate(current: ActivityEntity, date: LocalDate, lastDate: LocalDate=date,
+                                     requireOpen: Boolean=false) {
+        val farm=current.farmId ?: return
+        val cycleId=dao.records(farm,current.workspaceId).firstOrNull {it.id==current.id && it.kind=="ACTIVITY"}?.cycleId ?: return
+        val cycle=dao.find(cycleId) ?: invalid("cycle_not_found")
+        requireCycle(CycleInterval(cycle.startDate,cycle.effectiveEndDate).contains(date,lastDate),"outside_cycle")
+        if(requireOpen) requireCycle(cycle.effectiveEndDate==null,"cycle_closed")
+    }
+
     suspend fun validateNew(workspaceId: UUID, farmId: UUID?, selected: UUID?, date: LocalDate,
                             lastDate: LocalDate=date, campaignId: UUID?=null, activityId: UUID?=null): UUID? {
         if(farmId==null) {
@@ -66,4 +75,18 @@ internal class AgriculturalCycleWriter(
 
     private fun requireCycle(ok: Boolean,code: String) { if(!ok) invalid(code) }
     private fun invalid(code: String): Nothing = throw InvalidAgriculturalCycle(AppError.Validation("agriculturalCycleId",code))
+}
+
+/** Local physical writes only; receivers and transport contracts never call this guard. */
+internal suspend fun requireOperationalAgriculturalCycle(
+    db: MaginaOlivoDatabase, campaign: CampaignEntity, date: LocalDate,
+) {
+    val dao=db.agriculturalCycleDao()
+    if(dao.list(campaign.farmId).isEmpty()) return
+    fun invalid(code: String): Nothing = throw InvalidAgriculturalCycle(AppError.Validation("agriculturalCycleId",code))
+    val id=dao.recollectionCycle(campaign.id) ?: invalid("assign_parent_first")
+    val cycle=dao.find(id) ?: invalid("cycle_not_found")
+    if(cycle.workspaceId!=campaign.workspaceId || cycle.farmId!=campaign.farmId) invalid("context_mismatch")
+    if(cycle.effectiveEndDate!=null) invalid("cycle_closed")
+    if(!CycleInterval(cycle.startDate,null).contains(date)) invalid("outside_cycle")
 }

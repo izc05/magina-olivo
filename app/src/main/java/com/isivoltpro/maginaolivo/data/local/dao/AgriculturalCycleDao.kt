@@ -15,6 +15,8 @@ interface AgriculturalCycleDao {
     suspend fun list(farmId: UUID): List<AgriculturalCycleEntity>
     @Query("SELECT * FROM agricultural_cycles WHERE id=:id")
     suspend fun find(id: UUID): AgriculturalCycleEntity?
+    @Query("SELECT cycle_id FROM agricultural_cycle_recollections WHERE campaign_id=:id")
+    suspend fun recollectionCycle(id: UUID): UUID?
     @Insert suspend fun insert(cycle: AgriculturalCycleEntity)
     @Update suspend fun update(cycle: AgriculturalCycleEntity)
     @Query("SELECT revision FROM agricultural_cycle_farm_state WHERE farm_id=:farmId")

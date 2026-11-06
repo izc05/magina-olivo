@@ -432,6 +432,7 @@ class OfflineFirstActivityRepository(
         now: Instant,
         preserveScheduling: Boolean,
     ): AppResult<Unit> {
+        cycles.validateActivityDate(current, changes.activityDate, changes.activityEndDate ?: changes.activityDate)
         validatePhytosanitaryReferences(current.workspaceId, changes.detail)?.let { return it }
         if (changes.type == ActivityType.HARVEST_DAY) {
             val farmId = current.farmId
@@ -841,6 +842,10 @@ class OfflineFirstActivityRepository(
                     return@safely AppResult.Failure(AppError.Validation("workspaceId", "context_mismatch"))
                 }
                 if (!allowArchived && current.metadata.deletedAt != null) return@safely conflict("archived_activity")
+                if (operation in setOf("plan_activity", "complete_activity", "reopen_activity")) {
+                    cycles.validateActivityDate(current, current.activityDate,
+                        current.activityEndDate ?: current.activityDate, requireOpen = true)
+                }
                 block(current, clock.nowInstant())
             }
         }

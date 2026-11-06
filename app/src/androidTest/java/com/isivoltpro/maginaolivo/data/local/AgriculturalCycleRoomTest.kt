@@ -21,6 +21,9 @@ import com.isivoltpro.maginaolivo.core.dispatchers.DefaultAppDispatchers
 import com.isivoltpro.maginaolivo.core.id.UuidGenerator
 import com.isivoltpro.maginaolivo.domain.activity.NewActivity
 import com.isivoltpro.maginaolivo.domain.activity.ActivityType
+import com.isivoltpro.maginaolivo.domain.activity.ActivityChanges
+import com.isivoltpro.maginaolivo.data.repository.OfflineFirstDeliveryRepository
+import com.isivoltpro.maginaolivo.domain.delivery.DeliveryDraft
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -196,5 +199,51 @@ class AgriculturalCycleRoomTest {
         assertEquals(cycle,snapshot.records.single { it.id==campaign }.cycleId)
         assertEquals(cycle,snapshot.records.single { it.id==expense }.cycleId)
         assertEquals(1234L,db.expenseDao().findById(expense)!!.amountMinor)
+    }
+
+    @Test fun closedAgriculturalCycleCannotBeBypassedByReopeningItsRecollection() = runBlocking {
+        val repo=repository()
+        val cycle=repo.create(repo.observe(farm).first().value().scope,"Cerrada",date("2026-02-01"),UUID.randomUUID()).value()
+        val meta=LocalMetadata(clock.nowInstant(),clock.nowInstant())
+        val campaign=CampaignEntity(UUID.randomUUID(),workspace,farm,"Recogida",date("2026-12-01"),date("2027-01-15"),CampaignStatus.CLOSED,metadata=meta)
+        db.campaignDao().upsert(campaign)
+        repo.assign(repo.observe(farm).first().value().scope,cycle,CycleRecordKind.RECOLLECTION,campaign.id,"Confirmo",UUID.randomUUID()).value()
+        repo.close(repo.previewClose(cycle,date("2027-01-20"),false).value(),UUID.randomUUID()).value()
+        val campaigns=OfflineFirstCampaignRepository(db,clock,UuidGenerator(),DefaultAppDispatchers(),scope)
+        assertTrue(campaigns.reopen(campaign.id) is AppResult.Failure)
+        assertEquals(campaign,db.campaignDao().findById(campaign.id))
+    }
+
+    @Test fun existingUnassignedRecollectionCannotSilentlyReceiveNewWeighingsAfterCyclesAreEnabled() = runBlocking {
+        val meta=LocalMetadata(clock.nowInstant(),clock.nowInstant())
+        val campaign=CampaignEntity(UUID.randomUUID(),workspace,farm,"Anterior sin vínculo",date("2026-12-01"),
+            status=CampaignStatus.ACTIVE,metadata=meta)
+        db.campaignDao().upsert(campaign)
+        val parcel=UUID.randomUUID()
+        db.parcelDao().upsert(ParcelEntity(parcel,workspace,"QA",source="MANUAL",metadata=meta))
+        db.campaignDao().upsertSnapshots(listOf(CampaignParcelSnapshotEntity(UUID.randomUUID(),workspace,
+            campaign.id,parcel,farm,"Finca A","QA",metadata=meta)))
+        val repo=repository()
+        val deliveries=OfflineFirstDeliveryRepository(db,clock,UuidGenerator(),DefaultAppDispatchers(),scope)
+        val draft=DeliveryDraft(farm,date("2027-01-15"),destinationOrganizationId=null,netGrams=1000,
+            destinationName="QA",shares=listOf(com.isivoltpro.maginaolivo.domain.delivery.DeliveryShareInput(parcel,1000)),
+            origin=com.isivoltpro.maginaolivo.domain.delivery.PesadaOrigin.TREE)
+        deliveries.create(draft.copy(deliveryDate=date("2027-01-14"))).value()
+        repo.create(repo.observe(farm).first().value().scope,"Flexible",date("2026-02-01"),UUID.randomUUID()).value()
+        assertTrue(deliveries.create(draft) is AppResult.Failure)
+        db.openHelper.readableDatabase.query("SELECT COUNT(*) FROM deliveries").use {c->c.moveToFirst();assertEquals(1,c.getInt(0))}
+    }
+
+    @Test fun editingAnAssignedWorkDateCannotSilentlyMoveItOutsideItsCycle() = runBlocking {
+        val repo=repository()
+        val cycle=repo.create(repo.observe(farm).first().value().scope,"Flexible",date("2026-02-01"),UUID.randomUUID()).value()
+        val activities=OfflineFirstActivityRepository(db,clock,UuidGenerator(),DefaultAppDispatchers(),workspaceRepository=scope)
+        val id=activities.create(NewActivity(farm,null,ActivityType.OTHER,date("2026-02-15"),"Borrador QA",
+            asDraft=true,agriculturalCycleId=cycle)).value()
+        val before=db.activityDao().findById(id)
+        assertTrue(activities.update(id,ActivityChanges(type=ActivityType.OTHER,activityDate=date("2026-01-31"),
+            description="Fecha fuera del ciclo",parcelIds=emptySet())) is AppResult.Failure)
+        assertEquals(before,db.activityDao().findById(id))
+        assertEquals(cycle,repo.observe(farm).first().value().records.single {it.id==id}.cycleId)
     }
 }

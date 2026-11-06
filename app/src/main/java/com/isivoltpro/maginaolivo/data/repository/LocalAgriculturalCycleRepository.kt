@@ -23,6 +23,7 @@ class LocalAgriculturalCycleRepository(
     private val db: MaginaOlivoDatabase,
     private val workspaces: WorkspaceRepository,
     private val clock: AppClock,
+    private val account: com.isivoltpro.maginaolivo.feature.account.AccountRepository? = null,
 ) : AgriculturalCycleRepository {
     private val dao get() = db.agriculturalCycleDao()
 
@@ -113,7 +114,8 @@ class LocalAgriculturalCycleRepository(
 
     private suspend fun snapshot(farmId: UUID): CycleSnapshot {
         val scope=authorize(farmId)
-        return CycleSnapshot(scope,dao.list(farmId).map { it.domain() },dao.records(farmId,scope.workspaceId))
+        return CycleSnapshot(scope,dao.list(farmId).map { it.domain() },dao.records(farmId,scope.workspaceId),
+            today=db.todayForWorkspace(scope.workspaceId,clock))
     }
 
     private suspend fun authorize(farmId: UUID,write: Boolean=false): CycleScope {
@@ -166,6 +168,10 @@ class LocalAgriculturalCycleRepository(
         catch(e: Rejected) { AppResult.Failure(e.error) }
         catch(e: Exception) { AppResult.Failure(AppError.Storage("agricultural_cycle",e)) }
     private suspend fun <T> transaction(block: suspend () -> T): AppResult<T> = withContext(Dispatchers.IO) {
-        safe { db.withTransaction { block() } }
+        safe {
+            // Existing Auth lock, before Room: logout/account replacement cannot interleave a commit.
+            if(account==null) db.withTransaction {block()}
+            else account.withLocalWriteIdentity {db.withTransaction {block()}}
+        }
     }
 }

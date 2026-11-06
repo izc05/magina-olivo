@@ -35,7 +35,7 @@ fun AgriculturalCyclePanel(repository: AgriculturalCycleRepository, farmId: UUID
         result==null -> CircularProgressIndicator()
         snapshot==null -> Text(cycleMessage((result as AppResult.Failure).error),color=MaterialTheme.colorScheme.error)
         else -> key(snapshot.scope.workspaceId,snapshot.scope.ownerId,farmId) {
-            CyclePanelContent(repository,snapshot,today,onSelection,onRecord)
+            CyclePanelContent(repository,snapshot,snapshot.today ?: today,onSelection,onRecord)
         }
     }
 }

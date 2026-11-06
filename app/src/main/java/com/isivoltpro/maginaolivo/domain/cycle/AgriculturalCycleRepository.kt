@@ -19,7 +19,8 @@ data class CycleRecord(
     val id: UUID, val kind: String, val title: String, val date: LocalDate,
     val lastDate: LocalDate, val cycleId: UUID?, val status: String, val version: Long,
 )
-data class CycleSnapshot(val scope: CycleScope, val cycles: List<AgriculturalCycle>, val records: List<CycleRecord>)
+data class CycleSnapshot(val scope: CycleScope, val cycles: List<AgriculturalCycle>, val records: List<CycleRecord>,
+    val today: LocalDate? = null)
 data class CycleClosePreview(
     val cycle: AgriculturalCycle, val scope: CycleScope, val effectiveEndDate: LocalDate,
     val noRecollection: Boolean, val lastDeliveryDate: LocalDate?,

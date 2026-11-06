@@ -1617,25 +1617,37 @@ class AppNavigationTest {
     private fun safeCloseSoftKeyboard() {
         // A sheet owns a different window from the Activity. Espresso's root picker
         // can wait on an unfocused Activity, then silently fail inside runCatching.
-        // Hide the IME on the attached windows and require the real insets/focus state
-        // before the next touch or single Back event; never retry navigation itself.
+        // A text edit can still have an asynchronous IME-show request in flight. Hide
+        // while the real insets report it visible, rather than issuing one hide before
+        // that request arrives. Require the same focus/hidden state before any touch
+        // or single Back event; never retry navigation or a form submission.
         fun roots() = if (Build.VERSION.SDK_INT >= 29) WindowInspector.getGlobalWindowViews()
             else listOf(composeRule.activity.window.decorView)
         val instrumentation = InstrumentationRegistry.getInstrumentation()
-        instrumentation.runOnMainSync {
-            roots().filter { it.isAttachedToWindow }.forEach {
-                ViewCompat.getWindowInsetsController(it)?.hide(WindowInsetsCompat.Type.ime())
-            }
-        }
-        composeRule.waitUntil(UI_TIMEOUT_MS) {
-            var ready = false
-            instrumentation.runOnMainSync {
-                val attached = roots().filter { it.isAttachedToWindow }
-                ready = attached.any { it.hasWindowFocus() } && attached.all {
-                    ViewCompat.getRootWindowInsets(it)?.isVisible(WindowInsetsCompat.Type.ime()) != true
+        try {
+            composeRule.waitUntil(UI_TIMEOUT_MS) {
+                var ready = false
+                instrumentation.runOnMainSync {
+                    val attached = roots().filter { it.isAttachedToWindow }
+                    val showingIme = attached.filter {
+                        ViewCompat.getRootWindowInsets(it)?.isVisible(WindowInsetsCompat.Type.ime()) == true
+                    }
+                    ready = attached.any { it.hasWindowFocus() } && showingIme.isEmpty()
+                    showingIme.forEach {
+                        ViewCompat.getWindowInsetsController(it)?.hide(WindowInsetsCompat.Type.ime())
+                    }
                 }
+                ready
             }
-            ready
+        } catch (error: androidx.compose.ui.test.ComposeTimeoutException) {
+            runCatching {
+                instrumentation.runOnMainSync {
+                    error.addSuppressed(AssertionError("IME timeout roots: " + roots().joinToString { view ->
+                        "${view.javaClass.name} attached=${view.isAttachedToWindow} shown=${view.isShown} focus=${view.hasWindowFocus()} ime=${ViewCompat.getRootWindowInsets(view)?.isVisible(WindowInsetsCompat.Type.ime())}"
+                    }))
+                }
+            }.exceptionOrNull()?.let(error::addSuppressed)
+            throw error
         }
     }
 

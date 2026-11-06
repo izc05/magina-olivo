@@ -182,6 +182,15 @@ class AppNavigationTest {
     /** Physical IME and footer geometry, on a small screen with enlarged text. */
     @Test
     fun workIrrigationAndTreatmentFootersStayAboveTheOpenKeyboardWithoutWriting() {
+        verifyQuickActionFooters(listOf("work", "irrigation", "treatment"))
+    }
+
+    @Test
+    fun generalAndRecollectionLabourFootersStayAboveTheOpenKeyboardWithoutWriting() {
+        verifyQuickActionFooters(listOf("labour-general", "labour-recollection"))
+    }
+
+    private fun verifyQuickActionFooters(actions: List<String>) {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         fun shell(command: String): String = android.os.ParcelFileDescriptor.AutoCloseInputStream(
             instrumentation.uiAutomation.executeShellCommand(command)
@@ -215,21 +224,40 @@ class AppNavigationTest {
                 instrumentation.targetContext, "DEV").localPersistence)
             runBlocking {
                 val workspace = (local.workspaceRepository.ensureLocalWorkspace() as com.isivoltpro.maginaolivo.core.common.AppResult.Success).value
-                assertTrue(local.farmRepository.create(com.isivoltpro.maginaolivo.domain.farm.NewFarm(workspace, "Finca teclado P1")) is com.isivoltpro.maginaolivo.core.common.AppResult.Success)
+                val farm = (local.farmRepository.create(com.isivoltpro.maginaolivo.domain.farm.NewFarm(workspace, "Finca teclado P1")) as com.isivoltpro.maginaolivo.core.common.AppResult.Success).value
+                if (actions.any { it.startsWith("labour") }) {
+                    val parcel = (local.parcelRepository.create(com.isivoltpro.maginaolivo.domain.parcel.NewParcel(farm, "Parcela teclado")) as com.isivoltpro.maginaolivo.core.common.AppResult.Success).value
+                    val campaign = (local.campaignRepository.create(com.isivoltpro.maginaolivo.domain.campaign.NewCampaign(farm, "Campaña de recogida 2026/27", java.time.LocalDate.of(2026, 10, 1), setOf(parcel))) as com.isivoltpro.maginaolivo.core.common.AppResult.Success).value
+                    assertTrue(local.campaignRepository.activate(campaign) is com.isivoltpro.maginaolivo.core.common.AppResult.Success)
+                }
             }
             composeRule.onNodeWithTag("bottom-Cuaderno").performClick()
             chooseNotebookFarm("Finca teclado P1")
             val before = agriculturalCounts()
-            for (action in listOf("work", "irrigation", "treatment")) {
-                openGlobalQuickAction(action)
+            for (action in actions) {
+                openGlobalQuickAction(if (action.startsWith("labour")) "labour" else action)
                 if (action == "work") {
                     waitForTag("register-activity-type-pruning")
                     composeRule.onNodeWithTag("register-activity-type-pruning").performClick()
                 }
-                waitForTag("activity-description")
-                composeRule.onNodeWithTag("activity-description").performScrollTo().performClick().performTextInput("Revisión sin guardar")
+                if (action == "labour-recollection") {
+                    clickByTag("quick-labour-campaign")
+                    clickByTag("labour-unit-HOURS")
+                }
+                val field = when (action) {
+                    "labour-general" -> "expense-concept"
+                    "labour-recollection" -> "labour-hours"
+                    else -> "activity-description"
+                }
+                val save = when (action) {
+                    "labour-general" -> "save-expense"
+                    "labour-recollection" -> "labour-save"
+                    else -> "save-activity"
+                }
+                waitForTag(field)
+                composeRule.onNodeWithTag(field).performScrollTo().performClick().performTextInput(if (action == "labour-recollection") "3" else "Revisión sin guardar")
                 composeRule.waitUntil(UI_TIMEOUT_MS) { keyboardTop() > 0 }
-                for (button in listOf(composeRule.onNodeWithTag("save-activity"), composeRule.onNodeWithText("Cancelar"))) {
+                for (button in listOf(composeRule.onNodeWithTag(save), composeRule.onNodeWithText("Cancelar"))) {
                     button.performScrollTo().assertIsDisplayed()
                     composeRule.waitForIdle()
                     val top = keyboardTop()
@@ -239,7 +267,7 @@ class AppNavigationTest {
                 // A real touch while IME remains open; cancellation must remove the editor,
                 // retain Farm context and create no Activity, day, weighing or Expense.
                 composeRule.onNodeWithText("Cancelar").performClick()
-                composeRule.waitUntil(UI_TIMEOUT_MS) { composeRule.onAllNodesWithTag("activity-description").fetchSemanticsNodes().isEmpty() }
+                composeRule.waitUntil(UI_TIMEOUT_MS) { composeRule.onAllNodesWithTag(field).fetchSemanticsNodes().isEmpty() }
                 safeCloseSoftKeyboard()
                 composeRule.onNodeWithTag("bottom-Cuaderno").performClick()
                 waitForTag("notebook-context")

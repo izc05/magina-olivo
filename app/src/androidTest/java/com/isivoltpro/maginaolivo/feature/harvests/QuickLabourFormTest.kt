@@ -98,6 +98,7 @@ class QuickLabourFormTest {
         campaignJornal(closed = true, linked = true)
         compose.onNodeWithTag("cycle-parent-notice").assertIsDisplayed().assertTextContains("está cerrada", substring = true)
         compose.onNodeWithTag("cycle-write-choice").assertDoesNotExist()
+        capture(false, "campaign-closed-cycle-notice")
         compose.onNodeWithTag("labour-new-person").performScrollTo().performClick()
         compose.onNodeWithTag("labour-new-name").performScrollTo().performTextInput("Persona QA")
         compose.onNodeWithTag("labour-add-worker").performScrollTo().assertIsDisplayed().performClick()
@@ -107,6 +108,7 @@ class QuickLabourFormTest {
         campaignJornal(closed = false, linked = false)
         compose.onNodeWithTag("cycle-parent-notice").assertIsDisplayed()
             .assertTextContains("Vincula primero la recolección", substring = true)
+        capture(false, "campaign-unlinked-recollection-notice")
     }
     @Test fun campaignJornalLinkedToTheOpenCycleShowsNoNotice() {
         campaignJornal(closed = false, linked = true)

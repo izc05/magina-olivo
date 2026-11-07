@@ -54,6 +54,7 @@ fun CadastreImportRoute(
     persistence: LocalPersistence,
     preselectedFarmId: UUID?,
     onParcelImported: (UUID) -> Unit,
+    onExistingParcel: (UUID) -> Unit = onParcelImported,
     lockFarm: Boolean = false,
 ) {
     val model: CadastreImportViewModel = viewModel(key = "catastro-$preselectedFarmId", factory = viewModelFactory {
@@ -68,7 +69,7 @@ fun CadastreImportRoute(
     CadastreImportScreen(state, preselectedFarmId, model::search,
         { selected, alias -> model.import(if (lockFarm) preselectedFarmId else selected, alias) },
         onNear = model::searchNear, onSelect = model::selectCandidate,
-        onFile = { file.launch(arrayOf("*/*")) }, onOpenExisting = onParcelImported,
+        onFile = { file.launch(arrayOf("*/*")) }, onOpenExisting = onExistingParcel,
         onPlaceChanged = model::editPlace, lockFarm = lockFarm)
 
 }

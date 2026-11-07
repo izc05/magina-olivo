@@ -323,7 +323,10 @@ fun AppNavigation(
                 val persistence = compositionRoot.localPersistence
                 val farmId = entry.arguments?.getString("farmId")?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                 if (persistence == null || farmId == null) PersistenceUnavailableScreen()
-                else CadastreImportRoute(persistence, farmId, onParcelImported = { navController.popBackStack() }, lockFarm = true)
+                else CadastreImportRoute(persistence, farmId,
+                    onParcelImported = { navController.popBackStack() },
+                    onExistingParcel = { navController.navigate(AppDestination.parcel(it.toString())) },
+                    lockFarm = true)
             }
             composable(RootDestination.Notebook.route) { entry ->
                 val persistence = compositionRoot.localPersistence

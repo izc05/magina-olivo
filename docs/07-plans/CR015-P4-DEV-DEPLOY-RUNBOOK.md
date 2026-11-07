@@ -55,3 +55,16 @@ En dos AVD desechables `MaginaOlivo_AB_A2/B2`, con la misma cuenta:
 3. A cierra el ciclo; B lo recibe cerrado.
 4. Cierre concurrente: conflicto visible en el segundo, sin sobrescritura.
 5. Repetir la recepción: sin cambios.
+
+## Preparación del 07/11 (tarde)
+
+- Orden, SHA-256 y versión de cada archivo: `supabase/tests/cr015-p4-dev-rehearsal/deploy-order.txt`. Son 15 versiones
+  únicas y crecientes, sin colisión con las 10 de DEV (13 nuevas, de `20261107120003` a `20261107120015`).
+- Scripts locales, fuera de Git, en `%USERPROFILE%\.codex\tmp\magina-dev-restore\`:
+  - `backup-dev-pre-p4.ps1`: solo lectura, contraseña interactiva sin guardarla, cifrado `age` con verificación de ida y vuelta.
+  - `rehearse-restore.ps1`: restaura, aplica los 15 archivos registrando cada versión, ejecuta la prueba funcional y
+    compara huellas. Ensayado con la copia del 29/10: `REHEARSAL_OK`, 25 versiones.
+  - `copy-external.ps1`: copia solo los `.age` y el manifiesto a `D:\MaginaOlivo-Backups\supabase-dev\` y verifica los hashes.
+  - `verify-key-copy.ps1`: comprueba la copia de la clave guardada en el gestor.
+  - `build-dev-auth-apk.ps1`: APK DEV con Auth; pide la clave pública en pantalla y no la guarda.
+- AVD `MaginaOlivo_AB_A2/B2_Disposable_API35`: arrancan con datos borrados en API 35.

@@ -66,6 +66,53 @@ class QuickLabourFormTest {
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("labour-worker").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("labour-worker").performScrollTo().assertIsDisplayed()
     }
+    private fun cycleRepository(snapshot: CycleSnapshot) = object : AgriculturalCycleRepository {
+        override fun observe(farmId: UUID) = flowOf(AppResult.Success(snapshot))
+        override suspend fun create(scope: CycleScope, label: String, start: LocalDate, operationId: UUID): AppResult<UUID> = error("Unused")
+        override suspend fun previewClose(cycleId: UUID, end: LocalDate, noRecollection: Boolean): AppResult<CycleClosePreview> = error("Unused")
+        override suspend fun close(preview: CycleClosePreview, operationId: UUID): AppResult<Unit> = error("Unused")
+        override suspend fun assign(scope: CycleScope, cycleId: UUID, kind: CycleRecordKind, recordId: UUID,
+            reason: String, operationId: UUID): AppResult<Unit> = error("Unused")
+    }
+    private fun campaignJornal(closed: Boolean, linked: Boolean) {
+        val farm = UUID.randomUUID()
+        val campaign = UUID.randomUUID()
+        val scope = CycleScope(UUID.randomUUID(), farm, null, 1)
+        val cycle = AgriculturalCycle(UUID.randomUUID(), scope.workspaceId, farm, "2026/27", LocalDate.of(2026, 1, 1),
+            if (closed) LocalDate.of(2026, 9, 30) else null, null, false, 1)
+        val record = CycleRecord(campaign, "RECOLLECTION", "Recogida", LocalDate.of(2026, 1, 2), LocalDate.of(2026, 1, 2),
+            cycle.id.takeIf { linked }, "ACTIVE", 1)
+        val workers = mutableStateOf(emptyList<Worker>())
+        val draft = mutableStateOf(ExpenseForm(date = "2026-10-13", farmId = farm))
+        val contexts = listOf(HarvestContext(farm, "Finca", campaign, "2026/27", CampaignStatus.ACTIVE,
+            LocalDate.of(2026, 1, 1), emptyList()))
+        compose.setContent { MaginaOlivoTheme(AppearanceMode.LIGHT) {
+            QuickLabourScreen(farm, draft, RelationOptions(campaignsFor = farm), contexts, workers.value,
+                null, true, false, ExpenseFormErrors(), null, {}, { _, _, _ -> },
+                { name -> workers.value = workers.value + Worker(UUID.randomUUID(), name) }, {},
+                agriculturalCycles = cycleRepository(CycleSnapshot(scope, listOf(cycle), listOf(record))))
+        } }
+        scopeControl("quick-labour-campaign").performClick()
+    }
+    @Test fun campaignJornalShowsACompactNoticeWhenItsCycleIsClosedAndStillReachesTheWorkerForm() {
+        campaignJornal(closed = true, linked = true)
+        compose.onNodeWithTag("cycle-parent-notice").assertIsDisplayed().assertTextContains("está cerrada", substring = true)
+        compose.onNodeWithTag("cycle-write-choice").assertDoesNotExist()
+        compose.onNodeWithTag("labour-new-person").performScrollTo().performClick()
+        compose.onNodeWithTag("labour-new-name").performScrollTo().performTextInput("Persona QA")
+        compose.onNodeWithTag("labour-add-worker").performScrollTo().assertIsDisplayed().performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("labour-worker").fetchSemanticsNodes().isNotEmpty() }
+    }
+    @Test fun campaignJornalAsksToLinkTheRecollectionFirst() {
+        campaignJornal(closed = false, linked = false)
+        compose.onNodeWithTag("cycle-parent-notice").assertIsDisplayed()
+            .assertTextContains("Vincula primero la recolección", substring = true)
+    }
+    @Test fun campaignJornalLinkedToTheOpenCycleShowsNoNotice() {
+        campaignJornal(closed = false, linked = true)
+        compose.onNodeWithTag("quick-labour-date").assertExists()
+        compose.onNodeWithTag("cycle-parent-notice").assertDoesNotExist()
+    }
     @Test fun lightScopeSwitchRetainsDraftsAndSavesCorrectContract() = verify(false)
     @Test fun darkScopeSwitchRetainsDraftsAndSavesCorrectContract() = verify(true)
     @Test fun firstConfirmedCurrencyDoesNotAskToConvertAnEmptyDraft() {

@@ -267,6 +267,67 @@ class AgriculturalCycleRoomTest {
         assertNull(repo.observe(farm).first().value().records.single {it.id==campaign.id}.cycleId)
     }
 
+    private fun operationCount(): Int =
+        db.openHelper.readableDatabase.query("SELECT COUNT(*) FROM agricultural_cycle_operations").use { c -> c.moveToFirst(); c.getInt(0) }
+
+    @Test fun expenseLinkedToAClosedCycleCannotBeMovedToAnotherCycle() = runBlocking {
+        val repo=repository()
+        val closed=repo.create(repo.observe(farm).first().value().scope,"2026/27",date("2026-02-01"),UUID.randomUUID()).value()
+        val expenses=OfflineFirstExpenseRepository(db,scope,clock,UuidGenerator(),DefaultAppDispatchers())
+        val expense=expenses.create(ExpenseDraft(date("2026-03-15"),"Abonado cerrado",ExpenseCategory.OTHER,1234,
+            farmId=farm,agriculturalCycleId=closed)).value()
+        repo.close(repo.previewClose(closed,date("2027-01-20"),true).value(),UUID.randomUUID()).value()
+        val next=repo.create(repo.observe(farm).first().value().scope,"2027/28",date("2027-01-21"),UUID.randomUUID()).value()
+        val operations=operationCount()
+        val before=db.expenseDao().findById(expense)
+
+        val result=repo.assign(repo.observe(farm).first().value().scope,next,CycleRecordKind.EXPENSE,expense,
+            "Mover gasto",UUID.randomUUID())
+
+        assertTrue(result.toString(),result is AppResult.Failure)
+        assertEquals("source_cycle_closed",((result as AppResult.Failure).error as com.isivoltpro.maginaolivo.core.common.AppError.Validation).code)
+        assertEquals(closed,repo.observe(farm).first().value().records.single { it.id==expense }.cycleId)
+        assertEquals(before,db.expenseDao().findById(expense))
+        assertEquals(operations,operationCount())
+    }
+
+    @Test fun unassignedExpenseCannotBeAssignedToAClosedCycle() = runBlocking {
+        val repo=repository()
+        val closed=repo.create(repo.observe(farm).first().value().scope,"2026/27",date("2026-02-01"),UUID.randomUUID()).value()
+        repo.close(repo.previewClose(closed,date("2027-01-20"),true).value(),UUID.randomUUID()).value()
+        val meta=LocalMetadata(clock.nowInstant(),clock.nowInstant())
+        val expense=ExpenseEntity(UUID.randomUUID(),workspace,farmId=farm,expenseDate=date("2026-06-01"),
+            concept="Factura tardía",category="OTHER",amountMinor=500,currency="EUR",status="POSTED",origin="MANUAL",metadata=meta)
+        db.expenseDao().upsert(expense)
+        val operations=operationCount()
+
+        val result=repo.assign(repo.observe(farm).first().value().scope,closed,CycleRecordKind.EXPENSE,expense.id,
+            "Asignar factura tardía",UUID.randomUUID())
+
+        assertTrue(result.toString(),result is AppResult.Failure)
+        assertEquals("cycle_closed",((result as AppResult.Failure).error as com.isivoltpro.maginaolivo.core.common.AppError.Validation).code)
+        assertNull(repo.observe(farm).first().value().records.single { it.id==expense.id }.cycleId)
+        assertEquals(expense,db.expenseDao().findById(expense.id))
+        assertEquals(operations,operationCount())
+    }
+
+    @Test fun unassignedExpenseCanStillBeAssignedToTheOpenCycleWithATrace() = runBlocking {
+        val repo=repository()
+        val open=repo.create(repo.observe(farm).first().value().scope,"2026/27",date("2026-02-01"),UUID.randomUUID()).value()
+        val meta=LocalMetadata(clock.nowInstant(),clock.nowInstant())
+        val expense=ExpenseEntity(UUID.randomUUID(),workspace,farmId=farm,expenseDate=date("2026-06-01"),
+            concept="Factura",category="OTHER",amountMinor=500,currency="EUR",status="POSTED",origin="MANUAL",metadata=meta)
+        db.expenseDao().upsert(expense)
+        val operations=operationCount()
+
+        repo.assign(repo.observe(farm).first().value().scope,open,CycleRecordKind.EXPENSE,expense.id,
+            "Confirmo la factura",UUID.randomUUID()).value()
+
+        assertEquals(open,repo.observe(farm).first().value().records.single { it.id==expense.id }.cycleId)
+        assertEquals(expense,db.expenseDao().findById(expense.id))
+        assertEquals(operations+1,operationCount())
+    }
+
     @Test fun assignedExpenseCannotChangeFarmAndLoseItsCycleContext() = runBlocking {
         val repo=repository()
         val cycle=repo.create(repo.observe(farm).first().value().scope,"Abierta",date("2026-02-01"),UUID.randomUUID()).value()

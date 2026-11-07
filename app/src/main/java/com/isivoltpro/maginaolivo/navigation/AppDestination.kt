@@ -87,6 +87,7 @@ object AppDestination {
 
     const val FarmPattern = "farm/{farmId}"
     const val ParcelPattern = "parcel/{parcelId}"
+    const val ParcelEditPattern = "parcel-edit/{parcelId}"
     const val CampaignPattern = "campaign/{campaignId}"
     /** #408: Días de recolección scoped to the campaign the user came from. */
     const val CampaignHarvestsPattern = "campaign/{campaignId}/harvests"
@@ -122,6 +123,7 @@ object AppDestination {
     fun farmSetup(farmId: String): String = nestedRoute(FarmSetup, farmId)
     fun farmSetupMap(farmId: String, method: String): String = "farm-setup-map/${android.net.Uri.encode(farmId)}/${android.net.Uri.encode(method)}"
     fun farmSetupCatastro(farmId: String): String = nestedRoute("farm-setup-catastro", farmId)
+    fun parcelEdit(parcelId: String): String = nestedRoute("parcel-edit", parcelId)
 
     fun farm(farmId: String): String = nestedRoute("farm", farmId)
     fun farmMap(farmId: String): String = nestedRoute("farm-map", farmId)

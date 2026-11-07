@@ -21,6 +21,10 @@ class FarmSetupCheckpointStoreTest {
         val reopened = FarmSetupCheckpointStore(context)
         assertEquals(farmId, reopened.load(workspaceA, ownerA))
         assertEquals(farmId, reopened.reserve(workspaceA, ownerA))
+        val concurrent = (1..8).map { java.util.concurrent.CompletableFuture.supplyAsync {
+            FarmSetupCheckpointStore(context).reserve(workspaceA, ownerA)
+        } }
+        assertTrue(concurrent.all { it.get() == farmId })
         assertNull(reopened.load(workspaceB, ownerA))
         assertNull(reopened.load(workspaceA, ownerB))
         assertTrue(reopened.clear(workspaceA, ownerA))

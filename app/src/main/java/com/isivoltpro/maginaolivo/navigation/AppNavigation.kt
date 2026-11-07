@@ -286,7 +286,7 @@ fun AppNavigation(
                     onSearch = { navController.navigate(AppDestination.farmSetupCatastro(it.toString())) },
                     onPolygonSearch = { navController.navigate(AppDestination.farmSetupMap(it.toString(), "polygon")) },
                     onGps = { navController.navigate(AppDestination.farmSetupMap(it.toString(), "gps")) },
-                    onEditParcel = { navController.navigate(AppDestination.parcel(it.toString())) },
+                    onEditParcel = { navController.navigate(AppDestination.parcelEdit(it.toString())) },
                     onLater = { navController.navigate(AppDestination.farm(it.toString())) {
                         popUpTo(AppDestination.FarmSetup) { inclusive = true }
                     } },
@@ -301,7 +301,7 @@ fun AppNavigation(
                     onSearch = { navController.navigate(AppDestination.farmSetupCatastro(it.toString())) },
                     onPolygonSearch = { navController.navigate(AppDestination.farmSetupMap(it.toString(), "polygon")) },
                     onGps = { navController.navigate(AppDestination.farmSetupMap(it.toString(), "gps")) },
-                    onEditParcel = { navController.navigate(AppDestination.parcel(it.toString())) },
+                    onEditParcel = { navController.navigate(AppDestination.parcelEdit(it.toString())) },
                     onLater = { navController.navigate(AppDestination.farm(it.toString())) {
                         popUpTo(AppDestination.FarmSetupPattern) { inclusive = true }
                     } },
@@ -587,6 +587,13 @@ fun AppNavigation(
                         onRegister = { farmId, parcelName -> openNotebookOn(farmId, parcelId, parcelName, NotebookOrigin.PARCEL_CONTEXT) },
                     )
                 }
+            }
+            composable(AppDestination.ParcelEditPattern) { entry ->
+                val persistence = compositionRoot.localPersistence
+                val parcelId = entry.arguments?.getString("parcelId")?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+                if (persistence == null || parcelId == null) PersistenceUnavailableScreen()
+                else ParcelDetailRoute(parcelId, persistence, onArchived = { navController.popBackStack() },
+                    openEditorInitially = true)
             }
             composable(AppDestination.CampaignPattern) { backStackEntry ->
                 val persistence = compositionRoot.localPersistence

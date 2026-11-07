@@ -80,6 +80,7 @@ internal class ExpenseLedgerWriter(
             recorded = current,
         )
         requireEditableCampaign(expense)
+        cycles.preserveExpenseAssociation(current, expense, draft.agriculturalCycleId, now)
         database.expenseDao().upsert(expense)
         writePurchase(current.id, current.workspaceId, draft, now)
         database.enqueueCollapsed(idGenerator, SyncEntityType.EXPENSE, current.id, OutboxOperation.UPDATE, now)
@@ -124,6 +125,7 @@ internal class ExpenseLedgerWriter(
     /** #429: the money stays exactly as counted; only its tie to a work (and that origin) goes. */
     suspend fun detachFromActivity(current: ExpenseEntity, now: Instant) {
         requireEditableCampaign(current)
+        cycles.preserveExpenseAssociation(current, current.copy(activityId = null), null, now)
         database.expenseDao().upsert(
             current.copy(activityId = null, origin = ExpenseOrigin.MANUAL.name, metadata = current.metadata.next(now)),
         )

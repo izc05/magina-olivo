@@ -202,6 +202,8 @@ internal fun cycleCodeMessage(code: String): String = when(code) {
     "records_after_end"->"Hay trabajos o recolecciones posteriores al cierre elegido. Revísalos antes de confirmar."
     "recollections_not_closed"->"Finaliza primero las recolecciones vinculadas a esta campaña."
     "confirm_no_recollection"->"Confirma si esta finca no ha tenido recolección."
+    "historical_cycle_review_required"->"Este cambio alteraría la campaña agrícola del registro histórico. Revisa primero su vinculación en Campaña."
+    "has_no_recollection"->"Este cierre se confirmó sin recolección. No se puede añadir una recolección después."
     "has_recollection"->"Esta campaña ya tiene una recolección vinculada."
     "assign_parent_first"->"Vincula primero su recolección o trabajo a una campaña agrícola."
     "cycle_closed","already_closed"->"Esta campaña está cerrada. Los trabajos nuevos necesitan una campaña abierta."

@@ -20,6 +20,28 @@ internal class AgriculturalCycleWriter(
 ) {
     private val dao get() = db.agriculturalCycleDao()
 
+    /** Editing money never silently changes the agricultural UUID, even when its parent is removed. */
+    suspend fun preserveExpenseAssociation(before: ExpenseEntity, after: ExpenseEntity, selected: UUID?, now: java.time.Instant) {
+        val old = before.farmId?.let { farm -> dao.records(farm,before.workspaceId).firstOrNull { it.id==before.id && it.kind=="EXPENSE" }?.cycleId }
+        val records = after.farmId?.let { dao.records(it,after.workspaceId) }.orEmpty()
+        val parentId = after.activityId ?: after.campaignId
+        val parent = parentId?.let { id -> records.firstOrNull { it.id==id && it.kind==if(after.activityId!=null) "ACTIVITY" else "RECOLLECTION" }?.cycleId }
+        requireCycle(selected==null || selected==old,"historical_cycle_review_required")
+        if(old==null) {
+            requireCycle(parent==null,"historical_cycle_review_required")
+            return
+        }
+        requireCycle(before.farmId==after.farmId && before.workspaceId==after.workspaceId,"context_mismatch")
+        if(parentId!=null) requireCycle(parent==old,"historical_cycle_review_required")
+        else if(before.activityId!=null || before.campaignId!=null) {
+            // The existing explicit «keep independent» command retains the same cycle and money.
+            dao.link(AgriculturalCycleExpenseEntity(before.id,old))
+            dao.insert(AgriculturalCycleOperationEntity(UUID.randomUUID(),old,workspaces?.currentOwnerId(),
+                "KEEP_EXPENSE:${before.id}",now,"Se conserva el ciclo al desvincular el gasto de su trabajo."))
+            dao.setRevision(AgriculturalCycleFarmStateEntity(after.farmId!!,Math.addExact(dao.revision(after.farmId) ?: 0,1)))
+        }
+    }
+
     suspend fun validateActivityDate(current: ActivityEntity, date: LocalDate, lastDate: LocalDate=date,
                                      requireOpen: Boolean=false) {
         val farm=current.farmId ?: return

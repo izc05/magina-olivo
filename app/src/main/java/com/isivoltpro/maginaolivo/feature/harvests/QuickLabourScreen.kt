@@ -28,6 +28,7 @@ internal fun QuickLabourScreen(
     ready: Boolean, isSaving: Boolean, errors: ExpenseFormErrors, error: String?,
     onSaveGeneral: (ExpenseForm) -> Unit,
     onSaveCrew: (UUID, LocalDate, CrewDraft) -> Unit, onAddWorker: (String) -> Unit, onCancel: () -> Unit,
+    agriculturalCycles: com.isivoltpro.maginaolivo.domain.cycle.AgriculturalCycleRepository? = null,
     campaignReady: Boolean = true, currency: String? = rates?.currency ?: "EUR", alreadyRecorded: Set<UUID> = emptySet(),
 ) {
     var scope by rememberSaveable { mutableStateOf("GENERAL") }
@@ -75,7 +76,7 @@ internal fun QuickLabourScreen(
                     isSaving || !ready, "Guardar jornal general", {},
                     { onSaveGeneral(it.copy(category = ExpenseCategory.LABOR, campaignId = null, harvestId = null)) }, onCancel,
                     subtitle = "Mano de obra general: importe y concepto. Persona y horas todavía no disponibles.",
-                    farmLocked = true, draftState = generalDraft, categoryLocked = true,
+                    farmLocked = true, draftState = generalDraft, categoryLocked = true, agriculturalCycles = agriculturalCycles,
                     scrollable = !scrollWithKeyboard)
             } else if (campaign != null && ready && selectedCampaignId == campaign.campaignId.toString()) {
                 holder.SaveableStateProvider(campaign.campaignId.toString()) {
@@ -91,6 +92,7 @@ internal fun QuickLabourScreen(
                     val currencyChanged = currency != null && draftCurrency.value != null && currency != draftCurrency.value
                     val blocked = isSaving || !campaignReady || date == null || currency == null || currencyChanged
                     Column(if (scrollWithKeyboard) Modifier.fillMaxWidth() else Modifier.fillMaxSize()) {
+                        com.isivoltpro.maginaolivo.feature.campaignhub.AgriculturalCycleWriteChoice(agriculturalCycles, farmId, null, {}, campaign.campaignId, !isSaving)
                         MoDateInputField(generalDraft.value.date, { generalDraft.value = generalDraft.value.copy(date = it) },
                             "Fecha", modifier = Modifier.padding(horizontal = MoSpacing.screen).testTag("quick-labour-date"), enabled = !isSaving)
                         if (currencyChanged) {

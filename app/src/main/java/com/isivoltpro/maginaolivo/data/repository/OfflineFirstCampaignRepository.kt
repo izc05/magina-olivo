@@ -134,6 +134,9 @@ class OfflineFirstCampaignRepository(
         if (name.isEmpty()) return AppResult.Failure(AppError.Validation("name", "blank"))
         return mutate(id, "update_campaign") { current, now ->
             if (current.status != CampaignStatus.PREPARATION) return@mutate conflict("campaign_not_in_preparation")
+            if (database.agriculturalCycleDao().recollectionCycle(id) != null) {
+                requireOperationalAgriculturalCycle(database, current, changes.startDate)
+            }
             database.campaignDao().upsert(current.copy(name = name, startDate = changes.startDate,
                 notes = changes.notes.normalized(), metadata = current.metadata.next(now)))
             replaceSnapshots(id, changes.parcelIds, now)

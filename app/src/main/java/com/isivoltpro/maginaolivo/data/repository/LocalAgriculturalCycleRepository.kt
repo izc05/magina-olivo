@@ -88,6 +88,10 @@ class LocalAgriculturalCycleRepository(
             else -> null
         }
         check(parent==null,"recordId","assign_parent_first")
+        if(kind==CycleRecordKind.RECOLLECTION && cycle.effectiveEndDate!=null) {
+            check(!cycle.noRecollection,"recordId","has_no_recollection")
+            check(source.status=="CLOSED","recordId","recollections_not_closed")
+        }
         if(kind!=CycleRecordKind.EXPENSE) check(cycle.interval().contains(source.date,source.lastDate),"recordId","outside_cycle")
         val original=source.cycleId?.toString() ?: "sin asignar"
         when(kind) {

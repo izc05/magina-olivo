@@ -234,6 +234,50 @@ class AgriculturalCycleRoomTest {
         db.openHelper.readableDatabase.query("SELECT COUNT(*) FROM deliveries").use {c->c.moveToFirst();assertEquals(1,c.getInt(0))}
     }
 
+    @Test fun openAgriculturalCyclePreventsArchivingItsFarm() = runBlocking {
+        val repo=repository()
+        repo.create(repo.observe(farm).first().value().scope,"Abierta",date("2026-02-01"),UUID.randomUUID()).value()
+        val farms=com.isivoltpro.maginaolivo.data.repository.OfflineFirstFarmRepository(db,clock,UuidGenerator(),DefaultAppDispatchers(),scope)
+        val before=db.farmDao().findById(farm)
+        assertTrue(farms.archive(farm) is AppResult.Failure)
+        assertEquals(before,db.farmDao().findById(farm))
+    }
+
+    @Test fun preparationDateCannotMoveBeforeItsExplicitCycle() = runBlocking {
+        val repo=repository()
+        val cycle=repo.create(repo.observe(farm).first().value().scope,"Abierta",date("2026-02-01"),UUID.randomUUID()).value()
+        val campaigns=OfflineFirstCampaignRepository(db,clock,UuidGenerator(),DefaultAppDispatchers(),workspaceRepository=scope)
+        val id=campaigns.create(NewCampaign(farm,"QA",date("2026-03-01"),emptySet(),agriculturalCycleId=cycle)).value()
+        val before=db.campaignDao().findById(id)
+        assertTrue(campaigns.updatePreparation(id,com.isivoltpro.maginaolivo.domain.campaign.CampaignPreparationChanges(
+            "QA",date("2026-01-31"),emptySet())) is AppResult.Failure)
+        assertEquals(before,db.campaignDao().findById(id))
+    }
+
+    @Test fun aClosedCycleDeclaredWithoutRecollectionCannotAcquireOneLater() = runBlocking {
+        val repo=repository()
+        val cycle=repo.create(repo.observe(farm).first().value().scope,"Sin recolección",date("2026-02-01"),UUID.randomUUID()).value()
+        repo.close(repo.previewClose(cycle,date("2027-01-25"),true).value(),UUID.randomUUID()).value()
+        val meta=LocalMetadata(clock.nowInstant(),clock.nowInstant())
+        val campaign=CampaignEntity(UUID.randomUUID(),workspace,farm,"Histórica",date("2026-12-01"),
+            endDate=date("2027-01-15"),status=CampaignStatus.CLOSED,metadata=meta)
+        db.campaignDao().upsert(campaign)
+        assertTrue(repo.assign(repo.observe(farm).first().value().scope,cycle,CycleRecordKind.RECOLLECTION,
+            campaign.id,"Revisión",UUID.randomUUID()) is AppResult.Failure)
+        assertNull(repo.observe(farm).first().value().records.single {it.id==campaign.id}.cycleId)
+    }
+
+    @Test fun assignedExpenseCannotChangeFarmAndLoseItsCycleContext() = runBlocking {
+        val repo=repository()
+        val cycle=repo.create(repo.observe(farm).first().value().scope,"Abierta",date("2026-02-01"),UUID.randomUUID()).value()
+        val expenses=OfflineFirstExpenseRepository(db,scope,clock,UuidGenerator(),DefaultAppDispatchers())
+        val draft=ExpenseDraft(date("2026-03-01"),"QA",ExpenseCategory.OTHER,1000,farmId=farm,agriculturalCycleId=cycle)
+        val id=expenses.create(draft).value()
+        val before=db.expenseDao().findById(id)
+        assertTrue(expenses.update(id,draft.copy(farmId=otherFarm,agriculturalCycleId=null)) is AppResult.Failure)
+        assertEquals(before,db.expenseDao().findById(id))
+    }
+
     @Test fun editingAnAssignedWorkDateCannotSilentlyMoveItOutsideItsCycle() = runBlocking {
         val repo=repository()
         val cycle=repo.create(repo.observe(farm).first().value().scope,"Flexible",date("2026-02-01"),UUID.randomUUID()).value()

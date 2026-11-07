@@ -62,9 +62,28 @@ class QuickLabourFormTest {
         scopeControl("quick-labour-campaign").performClick()
         compose.onNodeWithTag("labour-new-person").performScrollTo().performClick()
         compose.onNodeWithTag("labour-new-name").performScrollTo().performTextInput("Persona QA")
+        closeKeyboardAndWait()
         compose.onNodeWithTag("labour-add-worker").performScrollTo().performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("labour-worker").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("labour-worker").performScrollTo().assertIsDisplayed()
+    }
+    /**
+     * On a cold device the first IME can appear after the text input; the form then switches to
+     * keyboard scrolling while a click is dispatched. Touch only once the real insets say it is hidden.
+     */
+    private fun closeKeyboardAndWait() {
+        androidx.test.espresso.Espresso.closeSoftKeyboard()
+        compose.waitUntil(15_000) {
+            var hidden = false
+            InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                val view = compose.activity.window.decorView
+                val insets = androidx.core.view.ViewCompat.getRootWindowInsets(view)
+                hidden = view.hasWindowFocus() && insets != null &&
+                    !insets.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime())
+            }
+            hidden
+        }
+        compose.waitForIdle()
     }
     private fun cycleRepository(snapshot: CycleSnapshot) = object : AgriculturalCycleRepository {
         override fun observe(farmId: UUID) = flowOf(AppResult.Success(snapshot))
@@ -101,6 +120,7 @@ class QuickLabourFormTest {
         capture(false, "campaign-closed-cycle-notice")
         compose.onNodeWithTag("labour-new-person").performScrollTo().performClick()
         compose.onNodeWithTag("labour-new-name").performScrollTo().performTextInput("Persona QA")
+        closeKeyboardAndWait()
         compose.onNodeWithTag("labour-add-worker").performScrollTo().assertIsDisplayed().performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("labour-worker").fetchSemanticsNodes().isNotEmpty() }
     }

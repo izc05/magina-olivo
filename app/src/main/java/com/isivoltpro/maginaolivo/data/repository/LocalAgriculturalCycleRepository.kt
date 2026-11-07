@@ -88,6 +88,13 @@ class LocalAgriculturalCycleRepository(
             else -> null
         }
         check(parent==null,"recordId","assign_parent_first")
+        // A closed cycle keeps its history: no record leaves it, and no money enters it by assignment.
+        // Controlled reopening is out of scope; operations already recorded are never rewritten.
+        source.cycleId?.takeIf { it!=cycleId }?.let { previous ->
+            val origin=dao.find(previous) ?: reject(AppError.NotFound("cycle"))
+            check(origin.effectiveEndDate==null,"recordId","source_cycle_closed")
+        }
+        if(kind==CycleRecordKind.EXPENSE) check(cycle.effectiveEndDate==null,"cycleId","cycle_closed")
         if(kind==CycleRecordKind.RECOLLECTION && cycle.effectiveEndDate!=null) {
             check(!cycle.noRecollection,"recordId","has_no_recollection")
             check(source.status=="CLOSED","recordId","recollections_not_closed")

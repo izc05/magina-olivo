@@ -127,7 +127,9 @@ private fun CyclePanelContent(repository: AgriculturalCycleRepository, snapshot:
                 "records","assign" -> if(selected!=null) {
                     Text(if(view=="assign") "Vincular a ${selected.label}" else "Registros de ${selected.label}",style=MaterialTheme.typography.titleMedium)
                     if(view=="assign") Text("Elige un registro y confirma su destino. No cambiamos fechas ni cantidades.")
-                    val rows=snapshot.records.filter {if(view=="assign") it.cycleId==null else it.cycleId==selected.id}
+                    // A closed cycle never receives money by assignment; do not offer an expense it would reject.
+                    val rows=snapshot.records.filter {if(view=="assign") it.cycleId==null &&
+                        (selected.effectiveEndDate==null || it.kind!=CycleRecordKind.EXPENSE.name) else it.cycleId==selected.id}
                         .sortedBy {when(it.kind) {"RECOLLECTION"->0;"ACTIVITY"->1;else->2}}
                     if(rows.isEmpty()) Text(if(view=="assign") "No quedan registros sin asignar." else "Todavía no hay registros vinculados.")
                     rows.forEach { row -> MoCompactListItem(title=row.title,subtitle="${row.date.cycleDate()} · ${row.kind.cycleKind()}",
@@ -207,6 +209,7 @@ internal fun cycleCodeMessage(code: String): String = when(code) {
     "has_recollection"->"Esta campaña ya tiene una recolección vinculada."
     "assign_parent_first"->"Vincula primero su recolección o trabajo a una campaña agrícola."
     "cycle_closed","already_closed"->"Esta campaña está cerrada. Los trabajos nuevos necesitan una campaña abierta."
+    "source_cycle_closed"->"Este registro pertenece a una campaña cerrada y conserva su historial. No se puede mover a otra campaña."
     "cycle_selection_required"->"Selecciona una campaña abierta o créala en Campaña antes de guardar."
     "idempotency_conflict"->"Esta confirmación ya corresponde a otros datos. Revisa la campaña guardada."
     else->"No se puede confirmar con estos datos. Revisa la finca, las fechas y los registros elegidos."

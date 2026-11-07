@@ -18,6 +18,8 @@ import com.isivoltpro.maginaolivo.domain.harvest.*
 import com.isivoltpro.maginaolivo.domain.labour.*
 import com.isivoltpro.maginaolivo.domain.farm.Farm
 import com.isivoltpro.maginaolivo.domain.parcel.*
+import com.isivoltpro.maginaolivo.domain.cycle.*
+import com.isivoltpro.maginaolivo.core.common.AppResult
 import com.isivoltpro.maginaolivo.feature.expenses.*
 import com.isivoltpro.maginaolivo.ui.theme.MaginaOlivoTheme
 import com.isivoltpro.maginaolivo.ui.components.*
@@ -26,12 +28,44 @@ import java.io.File
 import com.isivoltpro.maginaolivo.app.AppearanceMode
 import java.time.LocalDate
 import java.util.UUID
+import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 
 class QuickLabourFormTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
+    @Test fun campaignJornalCanAddWorkerWithAgriculturalCycleContext() {
+        val farm = UUID.randomUUID()
+        val campaign = UUID.randomUUID()
+        val scope = CycleScope(UUID.randomUUID(), farm, null, 1)
+        val cycle = AgriculturalCycle(UUID.randomUUID(), scope.workspaceId, farm, "2026/27",
+            LocalDate.of(2026, 1, 1), null, null, false, 1)
+        val repository = object : AgriculturalCycleRepository {
+            override fun observe(farmId: UUID) = flowOf(AppResult.Success(CycleSnapshot(scope, listOf(cycle), emptyList())))
+            override suspend fun create(scope: CycleScope, label: String, start: LocalDate, operationId: UUID): AppResult<UUID> = error("Unused")
+            override suspend fun previewClose(cycleId: UUID, end: LocalDate, noRecollection: Boolean): AppResult<CycleClosePreview> = error("Unused")
+            override suspend fun close(preview: CycleClosePreview, operationId: UUID): AppResult<Unit> = error("Unused")
+            override suspend fun assign(scope: CycleScope, cycleId: UUID, kind: CycleRecordKind, recordId: UUID,
+                reason: String, operationId: UUID): AppResult<Unit> = error("Unused")
+        }
+        val workers = mutableStateOf(emptyList<Worker>())
+        val draft = mutableStateOf(ExpenseForm(date = "2026-10-13", farmId = farm))
+        val contexts = listOf(HarvestContext(farm, "Finca", campaign, "2026/27", CampaignStatus.ACTIVE,
+            LocalDate.of(2026, 1, 1), emptyList()))
+        compose.setContent { MaginaOlivoTheme(AppearanceMode.LIGHT) {
+            QuickLabourScreen(farm, draft, RelationOptions(campaignsFor = farm), contexts, workers.value,
+                null, true, false, ExpenseFormErrors(), null, {}, { _, _, _ -> },
+                { name -> workers.value = workers.value + Worker(UUID.randomUUID(), name) }, {},
+                agriculturalCycles = repository)
+        } }
+        scopeControl("quick-labour-campaign").performClick()
+        compose.onNodeWithTag("labour-new-person").performScrollTo().performClick()
+        compose.onNodeWithTag("labour-new-name").performScrollTo().performTextInput("Persona QA")
+        compose.onNodeWithTag("labour-add-worker").performScrollTo().performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("labour-worker").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("labour-worker").performScrollTo().assertIsDisplayed()
+    }
     @Test fun lightScopeSwitchRetainsDraftsAndSavesCorrectContract() = verify(false)
     @Test fun darkScopeSwitchRetainsDraftsAndSavesCorrectContract() = verify(true)
     @Test fun firstConfirmedCurrencyDoesNotAskToConvertAnEmptyDraft() {

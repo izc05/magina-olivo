@@ -92,7 +92,6 @@ internal fun QuickLabourScreen(
                     val currencyChanged = currency != null && draftCurrency.value != null && currency != draftCurrency.value
                     val blocked = isSaving || !campaignReady || date == null || currency == null || currencyChanged
                     Column(if (scrollWithKeyboard) Modifier.fillMaxWidth() else Modifier.fillMaxSize()) {
-                        com.isivoltpro.maginaolivo.feature.campaignhub.AgriculturalCycleWriteChoice(agriculturalCycles, farmId, null, {}, campaign.campaignId, !isSaving)
                         MoDateInputField(generalDraft.value.date, { generalDraft.value = generalDraft.value.copy(date = it) },
                             "Fecha", modifier = Modifier.padding(horizontal = MoSpacing.screen).testTag("quick-labour-date"), enabled = !isSaving)
                         if (currencyChanged) {

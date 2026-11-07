@@ -114,6 +114,14 @@ object AppDestination {
     const val FarmMapPattern = "farm-map/{farmId}"
     const val FarmMapLocatePattern = "farm-map/{farmId}/locate/{parcelId}"
     const val CatastroPattern = "map-catastro/{farmId}"
+    const val FarmSetup = "farm-setup"
+    const val FarmSetupPattern = "farm-setup/{farmId}"
+    const val FarmSetupMapPattern = "farm-setup-map/{farmId}/{method}"
+    const val FarmSetupCatastroPattern = "farm-setup-catastro/{farmId}"
+
+    fun farmSetup(farmId: String): String = nestedRoute(FarmSetup, farmId)
+    fun farmSetupMap(farmId: String, method: String): String = "farm-setup-map/${android.net.Uri.encode(farmId)}/${android.net.Uri.encode(method)}"
+    fun farmSetupCatastro(farmId: String): String = nestedRoute("farm-setup-catastro", farmId)
 
     fun farm(farmId: String): String = nestedRoute("farm", farmId)
     fun farmMap(farmId: String): String = nestedRoute("farm-map", farmId)

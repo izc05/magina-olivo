@@ -820,7 +820,7 @@ class AppNavigationTest {
             composeRule.onAllNodesWithTag("parcel-detail-root").fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithTag("parcel-detail-root").assertIsDisplayed()
-        composeRule.onNodeWithText("Entrada manual").assertIsDisplayed()
+        assertTextVisible("Entrada manual")
         composeRule.waitUntil(UI_TIMEOUT_MS) {
             // No area, trees or variety were given: the tiles say "—", never a number.
             composeRule.onAllNodesWithText("—", useUnmergedTree = true)

@@ -5,10 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -43,8 +39,8 @@ fun AssistantChatScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.clearHistory() }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Limpiar historial")
+                    TextButton(onClick = { viewModel.clearHistory() }) {
+                        Text("Limpiar", fontSize = 12.sp)
                     }
                 }
             )
@@ -197,8 +193,11 @@ fun AssistantChatInputBar(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { /* Fase E: Micrófono / Voz */ }) {
-                Icon(Icons.Default.Mic, contentDescription = "Voz", tint = MaterialTheme.colorScheme.primary)
+            TextButton(
+                onClick = { /* Fase E: Micrófono / Voz */ },
+                modifier = Modifier.padding(end = 4.dp)
+            ) {
+                Text("Voz", fontSize = 12.sp)
             }
             TextField(
                 value = text,
@@ -214,15 +213,12 @@ fun AssistantChatInputBar(
                 ),
                 maxLines = 3
             )
-            IconButton(
+            Button(
                 onClick = onSend,
-                enabled = text.isNotBlank() && !isSending
+                enabled = text.isNotBlank() && !isSending,
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
             ) {
-                Icon(
-                    Icons.Default.Send,
-                    contentDescription = "Enviar",
-                    tint = if (text.isNotBlank() && !isSending) MaterialTheme.colorScheme.primary else Color.Gray
-                )
+                Text("Enviar", fontSize = 12.sp)
             }
         }
     }

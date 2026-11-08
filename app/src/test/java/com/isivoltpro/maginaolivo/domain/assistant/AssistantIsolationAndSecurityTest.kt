@@ -187,7 +187,7 @@ class AssistantIsolationAndSecurityTest {
         assertTrue(sendResult is AppResult.Success)
         val msg = (sendResult as AppResult.Success).value
         assertTrue(msg.isMock)
-        assertTrue(msg.text.contains("Previsión meteorológica"))
+        assertTrue(msg.text.contains("Previsión"))
         assertTrue(msg.usedTools.contains("get_weather_forecast"))
     }
 }

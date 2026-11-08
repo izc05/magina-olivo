@@ -46,7 +46,8 @@ object AgriculturalDomainClassifier {
         "repilo", "verticilosis", "mosca", "prays", "glifosato", "cobre", "abono", "nitrógeno",
         "potasio", "foliar", "tratamiento", "fitosanitario", "plaga", "enfermedad", "materia activa",
         "cuaderno", "siex", "sigpac", "catastro", "pac", "ayuda", "subvención", "jornal", "gasto",
-        "finca", "parcela", "polígono", "término", "clima", "aemet", "lluvia", "helada", "temperatura"
+        "finca", "parcela", "polígono", "término", "clima", "tiempo", "meteorología", "aemet", "lluvia", "helada", "temperatura",
+        "trabajo", "labor", "labores", "pendiente"
     )
 
     private val PHYTOSANITARY_KEYWORDS = setOf(

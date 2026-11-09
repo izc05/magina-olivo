@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#3d5a2e">
+<title>Magina Olivo — Gestión del Olivar</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   MAGINA OLIVO v2 — DESIGN SYSTEM
+   Sierra Mágina palette: crema + verde olivo
+   ═══════════════════════════════════════ */
+:root {
+  /* Core palette */
+  --crema: #faf6f0;
+  --crema-dark: #f0e8da;
+  --verde-olivo: #3d5a2e;
+  --verde-olivo-light: #5a7d42;
+  --verde-olivo-dark: #2a3f1f;
+  --verde-hoja: #6b8f4e;
+  --dorado: #c8a84e;
+  --dorado-light: #e8d48e;
+  --dorado-warm: #b8922e;
+  --tierra: #8b6f47;
+  --tierra-light: #a8916b;
+  --rojo-alerta: #c0392b;
+  --naranja: #e67e22;
+  --azul-agua: #2980b9;
+
+  /* Neutrals */
+  --gris-50: #fafafa;
+  --gris-100: #f5f1ec;
+  --gris-200: #e8e2d8;
+  --gris-300: #d4cbc0;
+  --gris-400: #a89f94;
+  --gris-500: #7a7268;
+  --gris-600: #5c554c;
+  --gris-700: #3e3832;
+  --gris-800: #2a2520;
+
+  /* Layout */
+  --sidebar-w: 260px;
+  --header-h: 64px;
+  --bottom-nav-h: 64px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,.12);
+  --shadow-xl: 0 12px 40px rgba(0,0,0,.15);
+  --transition: .25s cubic-bezier(.4,0,.2,1);
+}
+
+/* ═══════ RESET ═══════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--crema);
+  color: var(--gris-700);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; border: none; background: none; font: inherit; color: inherit; }
+img { max-width: 100%; display: block; }
+ul { list-style: none; }
+
+/* ═══════ TYPOGRAPHY ═══════ */
+.font-display { font-family: 'Playfair Display', Georgia, serif; }
+h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; color: var(--gris-800); }
+h1 { font-size: 1.75rem; font-weight: 700; }
+h2 { font-size: 1.35rem; font-weight: 600; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+.label { font-size: .7rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--gris-500); }
+.caption { font-size: .8rem; color: var(--gris-500); }
+
+/* ═══════ TOP HEADER ═══════ */
+.top-header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: var(--header-h);
+  background: var(--verde-olivo);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.2);
+}
+.top-header .logo {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--crema); font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700;
+}
+.logo-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--dorado);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+}
+.top-nav { display: flex; gap: 4px; }
+.top-nav a {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: var(--radius-sm);
+  color: rgba(255,255,255,.7); font-size: .85rem; font-weight: 500;
+  transition: var(--transition);
+}
+.top-nav a:hover, .top-nav a.active { background: rgba(255,255,255,.12); color: #fff; }
+.top-nav a .nav-icon { font-size: 1.1rem; }
+.header-actions { display: flex; align-items: center; gap: 8px; }
+.header-actions button {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,.8); font-size: 1.1rem;
+  transition: var(--transition);
+}
+.header-actions button:hover { background: rgba(255,255,255,.12); color: #fff; }
+.avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--dorado); color: var(--verde-olivo-dark);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: .85rem;
+}
+.badge {
+  position: relative;
+}
+.badge::after {
+  content: attr(data-count); position: absolute; top: 2px; right: 2px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--rojo-alerta); color: #fff;
+  font-size: .6rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ═══════ BOTTOM NAV (MOBILE) ═══════ */
+.bottom-nav {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  height: var(--bottom-nav-h);
+  background: #fff; border-top: 1px solid var(--gris-200);
+  box-shadow: 0 -2px 10px rgba(0,0,0,.06);
+}
+.bottom-nav-inner {
+  display: flex; align-items: center; justify-content: space-around;
+  height: 100%; max-width: 500px; margin: 0 auto;
+}
+.bottom-nav a {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-size: .65rem; font-weight: 500; color: var(--gris-400);
+  padding: 4px 8px; transition: var(--transition);
+}
+.bottom-nav a.active { color: var(--verde-olivo); }
+.bottom-nav a .bnav-icon { font-size: 1.3rem; }
+.fab-btn {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--dorado); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; font-weight: 700;
+  box-shadow: var(--shadow-lg);
+  margin-top: -20px;
+}
+
+/* ═══════ MAIN LAYOUT ═══════ */
+.app-body {
+  margin-top: var(--header-h);
+  min-height: calc(100vh - var(--header-h));
+}
+.page { display: none; animation: fadeIn .3s ease; }
+.page.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ═══════ CARDS ═══════ */
+.card {
+  background: #fff; border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm); border: 1px solid var(--gris-200);
+  overflow: hidden; transition: var(--transition);
+}
+.card:hover { box-shadow: var(--shadow-md); }
+.card-body { padding: 20px; }
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--gris-200);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+/* ═══════ BUTTONS ═══════ */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 20px; border-radius: var(--radius-sm);
+  font-size: .85rem; font-weight: 600;
+  transition: var(--transition);
+}
+.btn-primary { background: var(--verde-olivo); color: #fff; }
+.btn-primary:hover { background: var(--verde-olivo-dark); }
+.btn-gold { background: var(--dorado); color: #fff; }
+.btn-gold:hover { background: var(--dorado-warm); }
+.btn-outline {
+  border: 1.5px solid var(--gris-300); color: var(--gris-600);
+  background: #fff;
+}
+.btn-outline:hover { border-color: var(--verde-olivo); color: var(--verde-olivo); }
+.btn-sm { padding: 6px 12px; font-size: .78rem; }
+
+/* ═══════ TAGS / PILLS ═══════ */
+.tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: .75rem; font-weight: 600;
+}
+.tag-green { background: rgba(61,90,46,.1); color: var(--verde-olivo); }
+.tag-gold { background: rgba(200,168,78,.15); color: var(--dorado-warm); }
+.tag-red { background: rgba(192,57,43,.1); color: var(--rojo-alerta); }
+.tag-blue { background: rgba(41,128,185,.1); color: var(--azul-agua); }
+
+/* ═══════ DASHBOARD PAGE ═══════ */
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.dash-main { display: flex; flex-direction: column; gap: 20px; }
+.dash-aside { display: flex; flex-direction: column; gap: 20px; }
+
+/* Hero greeting */
+.hero-greeting {
+  background: linear-gradient(135deg, var(--verde-olivo) 0%, var(--verde-olivo-light) 100%);
+  border-radius: var(--radius-xl);
+  padding: 28px 32px;
+  color: #fff;
+  position: relative; overflow: hidden;
+}
+.hero-greeting::after {
+  content: ''; position: absolute; right: -40px; top: -40px;
+  width: 200px; height: 200px; border-radius: 50%;
+  background: rgba(255,255,255,.06);
+}
+.hero-greeting h1 { color: #fff; margin-bottom: 4px; font-size: 1.5rem; }
+.hero-greeting .subtitle { opacity: .8; font-size: .9rem; }
+.hero-location {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 8px; font-size: .85rem; opacity: .85;
+}
+
+/* Weather card */
+.weather-card {
+  background: linear-gradient(135deg, #e8f4fd 0%, #d4eaf8 100%);
+  border-radius: var(--radius-lg); padding: 20px;
+  border: 1px solid rgba(41,128,185,.15);
+}
+.weather-main {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.weather-temp { font-size: 2.8rem; font-weight: 300; color: var(--gris-800); }
+.weather-temp span { font-size: 1rem; display: block; line-height: 1.3; }
+.weather-icon { font-size: 3rem; }
+.weather-details {
+  display: flex; gap: 16px; margin-top: 12px;
+  font-size: .8rem; color: var(--gris-600);
+}
+.weather-details span { display: flex; align-items: center; gap: 4px; }
+
+/* Treatment alert */
+.treatment-alert {
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.treatment-alert.ok { background: rgba(61,90,46,.08); border: 1px solid rgba(61,90,46,.15); }
+.treatment-alert.warning { background: rgba(230,126,34,.08); border: 1px solid rgba(230,126,34,.15); }
+.treatment-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.treatment-dot.green { background: var(--verde-hoja); }
+.treatment-dot.orange { background: var(--naranja); }
+.treatment-info { display: flex; align-items: center; gap: 10px; }
+.treatment-info strong { font-size: .95rem; }
+.treatment-info p { font-size: .82rem; color: var(--gris-500); margin-top: 2px; }
+
+/* Finca cards */
+.finca-card {
+  display: flex; align-items: center; gap: 16px;
+  padding: 20px; border-radius: var(--radius-lg);
+  background: #fff; border: 1px solid var(--gris-200);
+  transition: var(--transition); cursor: pointer;
+}
+.finca-card:hover { border-color: var(--verde-olivo); box-shadow: var(--shadow-md); }
+.finca-icon {
+  width: 56px; height: 56px; border-radius: var(--radius-md);
+  background: rgba(61,90,46,.08);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; flex-shrink: 0;
+}
+.finca-meta { flex: 1; }
+.finca-meta .location { font-size: .72rem; color: var(--gris-500); text-transform: uppercase; letter-spacing: .05em; }
+.finca-meta h3 { margin: 2px 0 4px; font-size: 1.05rem; }
+.finca-meta .stats { font-size: .82rem; color: var(--gris-500); }
+.finca-arrow { color: var(--gris-400); font-size: 1.2rem; }
+
+.add-finca-card {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  padding: 24px; border-radius: var(--radius-lg);
+  border: 2px dashed var(--gris-300);
+  color: var(--gris-500); font-weight: 500; font-size: .9rem;
+  transition: var(--transition); cursor: pointer;
+}
+.add-finca-card:hover { border-color: var(--verde-olivo); color: var(--verde-olivo); }
+
+/* Stats sidebar */
+.stat-card { padding: 20px; }
+.stat-card .stat-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.stat-value { font-size: 2rem; font-weight: 700; color: var(--verde-olivo); }
+.stat-value small { font-size: .9rem; font-weight: 400; color: var(--gris-500); }
+.stat-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-top: 1px solid var(--gris-100);
+  font-size: .85rem;
+}
+.stat-row:first-child { border-top: none; }
+
+/* Oil price */
+.oil-price-card { padding: 20px; }
+.oil-prices {
+  display: flex; gap: 8px; margin: 12px 0;
+}
+.oil-pill {
+  flex: 1; padding: 10px 8px; border-radius: var(--radius-sm);
+  text-align: center; font-size: .78rem;
+  border: 1px solid var(--gris-200);
+}
+.oil-pill .price { font-size: 1.1rem; font-weight: 700; color: var(--gris-800); display: block; margin: 2px 0; }
+.oil-pill .change { font-size: .72rem; }
+.oil-pill .change.negative { color: var(--rojo-alerta); }
+.oil-pill .change.positive { color: var(--verde-olivo); }
+
+/* Forecast bar */
+.forecast-strip {
+  display: flex; gap: 2px; overflow-x: auto; padding: 4px 0;
+  scrollbar-width: none;
+}
+.forecast-strip::-webkit-scrollbar { display: none; }
+.forecast-day {
+  flex: 0 0 60px; text-align: center; padding: 8px 4px;
+  border-radius: var(--radius-sm); font-size: .72rem;
+}
+.forecast-day .day-name { font-weight: 600; color: var(--gris-600); }
+.forecast-day .day-num { font-size: 1.1rem; font-weight: 700; color: var(--gris-800); margin: 2px 0; }
+.forecast-day .day-icon { font-size: 1.3rem; margin: 4px 0; }
+.forecast-day .temps { color: var(--gris-500); }
+.forecast-day .temps strong { color: var(--gris-700); }
+.forecast-day .rain { color: var(--azul-agua); font-weight: 600; }
+.forecast-day.apt { border-bottom: 3px solid var(--verde-hoja); }
+.forecast-day.just { border-bottom: 3px solid var(--dorado); }
+.forecast-day.nope { border-bottom: 3px solid var(--rojo-alerta); }
+
+/* Tasks */
+.task-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 0; border-bottom: 1px solid var(--gris-100);
+}
+.task-item:last-child { border-bottom: none; }
+.task-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .9rem; flex-shrink: 0;
+}
+.task-icon.urgent { background: rgba(192,57,43,.1); color: var(--rojo-alerta); }
+.task-icon.normal { background: rgba(200,168,78,.12); color: var(--dorado-warm); }
+.task-content h4 { font-family: 'Inter', sans-serif; font-size: .88rem; font-weight: 600; }
+.task-content p { font-size: .78rem; color: var(--gris-500); margin-top: 2px; }
+.task-actions { margin-top: 6px; display: flex; gap: 8px; }
+
+/* ═══════ MIS FINCAS PAGE ═══════ */
+.portfolio-page { padding: 24px; max-width: 1400px; margin: 0 auto; }
+.campaign-banner {
+  background: linear-gradient(135deg, var(--verde-olivo) 0%, var(--verde-hoja) 100%);
+  border-radius: var(--radius-xl); padding: 28px 32px; color: #fff;
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 24px;
+}
+.campaign-info h2 { color: #fff; font-size: 1.4rem; }
+.campaign-info .campaign-meta { display: flex; gap: 16px; margin-top: 6px; font-size: .85rem; opacity: .85; }
+.campaign-stats {
+  display: flex; gap: 24px; text-align: center;
+}
+.campaign-stat .stat-num { font-size: 2rem; font-weight: 700; }
+.campaign-stat .stat-label { font-size: .72rem; opacity: .8; text-transform: uppercase; letter-spacing: .05em; }
+
+.portfolio-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px; margin-top: 20px;
+}
+.portfolio-tabs {
+  display: flex; gap: 4px; margin-bottom: 16px;
+  background: var(--gris-100); border-radius: var(--radius-sm); padding: 4px;
+  width: fit-content;
+}
+.portfolio-tabs button {
+  padding: 8px 16px; border-radius: 6px; font-size: .82rem; font-weight: 500;
+  transition: var(--transition);
+}
+.portfolio-tabs button.active { background: #fff; color: var(--verde-olivo); box-shadow: var(--shadow-sm); }
+
+/* Finca detail */
+.finca-detail-card {
+  border-radius: var(--radius-lg); overflow: hidden;
+  border: 1px solid var(--gris-200); background: #fff;
+}
+.finca-detail-header {
+  height: 120px;
+  background: linear-gradient(135deg, rgba(61,90,46,.85), rgba(90,125,66,.7)),
+              url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200"><circle cx="100" cy="80" r="60" fill="%23456832" opacity=".3"/><circle cx="250" cy="120" r="80" fill="%23567a3e" opacity=".2"/><circle cx="350" cy="60" r="40" fill="%23689050" opacity=".3"/></svg>');
+  background-size: cover;
+  padding: 16px 20px; display: flex; flex-direction: column; justify-content: flex-end;
+  color: #fff;
+}
+.finca-detail-header .loc { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; opacity: .8; }
+.finca-detail-header h3 { color: #fff; font-size: 1.2rem; margin: 4px 0; }
+.finca-detail-body { padding: 16px 20px; }
+.finca-detail-stats {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 12px;
+  margin-bottom: 16px;
+}
+.finca-detail-stat { text-align: center; }
+.finca-detail-stat .val { font-size: 1.1rem; font-weight: 700; color: var(--verde-olivo); }
+.finca-detail-stat .lbl { font-size: .7rem; color: var(--gris-500); }
+
+/* ═══════ CUADERNO PAGE ═══════ */
+.cuaderno-page { padding: 24px; max-width: 1200px; margin: 0 auto; }
+.cuaderno-header-card {
+  background: linear-gradient(135deg, var(--tierra) 0%, var(--tierra-light) 100%);
+  border-radius: var(--radius-xl); padding: 24px 28px; color: #fff;
+  margin-bottom: 20px;
+}
+.cuaderno-header-card h2 { color: #fff; }
+.cuaderno-header-card .meta { display: flex; gap: 16px; margin-top: 6px; font-size: .85rem; opacity: .85; }
+.cuaderno-tabs {
+  display: flex; gap: 4px; margin-bottom: 20px;
+  border-bottom: 2px solid var(--gris-200); padding-bottom: 0;
+}
+.cuaderno-tabs button {
+  padding: 10px 18px; font-size: .85rem; font-weight: 500;
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+  transition: var(--transition);
+}
+.cuaderno-tabs button.active { border-bottom-color: var(--verde-olivo); color: var(--verde-olivo); }
+.cuaderno-tabs button .tab-badge {
+  background: var(--rojo-alerta); color: #fff; border-radius: 10px;
+  padding: 1px 7px; font-size: .65rem; margin-left: 6px;
+}
+
+.alert-banner {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; border-radius: var(--radius-sm);
+  background: rgba(192,57,43,.06); border: 1px solid rgba(192,57,43,.12);
+  margin-bottom: 16px; font-size: .85rem;
+}
+.alert-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--rojo-alerta); flex-shrink: 0; }
+
+.empty-state {
+  text-align: center; padding: 60px 20px;
+}
+.empty-state .empty-icon { font-size: 3rem; margin-bottom: 16px; }
+.empty-state h3 { font-family: 'Inter', sans-serif; font-size: 1.1rem; margin-bottom: 8px; }
+.empty-state p { font-size: .88rem; color: var(--gris-500); max-width: 400px; margin: 0 auto 20px; }
+
+/* ═══════ EL AÑO PAGE ═══════ */
+.anio-page { padding: 24px; max-width: 1400px; margin: 0 auto; }
+.anio-grid { display: grid; grid-template-columns: 1fr 360px; gap: 20px; }
+.anio-main { display: flex; flex-direction: column; gap: 20px; }
+
+/* Pheno phases */
+.phase-timeline {
+  display: flex; gap: 0; overflow-x: auto;
+  border-radius: var(--radius-md); overflow: hidden;
+  scrollbar-width: none;
+}
+.phase-timeline::-webkit-scrollbar { display: none; }
+.phase-item {
+  flex: 1; min-width: 90px; padding: 12px 8px; text-align: center;
+  font-size: .75rem; font-weight: 500; cursor: pointer;
+  transition: var(--transition);
+  background: var(--gris-100); color: var(--gris-500);
+  border-right: 1px solid var(--gris-200);
+}
+.phase-item:last-child { border-right: none; }
+.phase-item.active { background: var(--verde-olivo); color: #fff; }
+.phase-item:hover:not(.active) { background: var(--gris-200); }
+
+.phase-detail-card {
+  background: linear-gradient(135deg, rgba(61,90,46,.06), rgba(107,143,78,.04));
+  border: 1px solid rgba(61,90,46,.12);
+  border-radius: var(--radius-lg); padding: 24px;
+}
+.phase-name { font-size: .7rem; color: var(--gris-500); text-transform: uppercase; letter-spacing: .06em; }
+.phase-title { font-size: 1.6rem; margin: 4px 0 6px; }
+.phase-subtitle { font-size: .9rem; color: var(--gris-600); }
+
+/* Treatment calendar */
+.treat-calendar {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 4px; margin-top: 8px;
+}
+.treat-day-header {
+  text-align: center; font-size: .65rem; font-weight: 600; color: var(--gris-500);
+  padding: 4px;
+}
+.treat-day {
+  aspect-ratio: 1; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .85rem; font-weight: 600; cursor: pointer;
+  transition: var(--transition);
+}
+.treat-day.apt { background: rgba(61,90,46,.12); color: var(--verde-olivo); }
+.treat-day.just { background: rgba(200,168,78,.15); color: var(--dorado-warm); }
+.treat-day.nope { background: rgba(192,57,43,.1); color: var(--rojo-alerta); }
+.treat-day.today { box-shadow: 0 0 0 2px var(--verde-olivo); }
+
+/* ═══════ CENTRO DE DATOS PAGE ═══════ */
+.datos-page { display: flex; min-height: calc(100vh - var(--header-h)); }
+.datos-sidebar {
+  width: var(--sidebar-w); background: #fff;
+  border-right: 1px solid var(--gris-200);
+  overflow-y: auto; flex-shrink: 0;
+  padding: 16px 0;
+}
+.datos-sidebar .section-title {
+  padding: 8px 20px; font-size: .65rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .1em;
+  color: var(--gris-400); margin-top: 16px;
+}
+.datos-sidebar .section-title:first-child { margin-top: 0; }
+.datos-sidebar button {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 10px 20px; font-size: .85rem;
+  transition: var(--transition); text-align: left;
+}
+.datos-sidebar button:hover { background: var(--gris-100); }
+.datos-sidebar button.active {
+  background: rgba(61,90,46,.08); color: var(--verde-olivo);
+  border-right: 3px solid var(--verde-olivo); font-weight: 600;
+}
+.datos-sidebar button .sidebar-icon { font-size: 1rem; width: 20px; text-align: center; }
+
+.datos-content {
+  flex: 1; padding: 24px; overflow-y: auto;
+}
+.datos-toolbar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.datos-toolbar .search-input {
+  flex: 0 0 200px; padding: 8px 12px 8px 36px;
+  border: 1px solid var(--gris-300); border-radius: var(--radius-sm);
+  font-size: .85rem; background: #fff;
+  transition: var(--transition);
+}
+.datos-toolbar .search-input:focus { outline: none; border-color: var(--verde-olivo); }
+.filter-btn {
+  padding: 6px 12px; border: 1px solid var(--gris-300);
+  border-radius: var(--radius-sm); font-size: .78rem;
+  background: #fff; display: flex; align-items: center; gap: 4px;
+}
+.filter-btn:hover { border-color: var(--verde-olivo); }
+.col-tabs {
+  display: flex; gap: 2px; margin-bottom: 16px;
+}
+.col-tabs button {
+  padding: 6px 14px; border-radius: 20px;
+  font-size: .78rem; font-weight: 500;
+  background: var(--gris-100); transition: var(--transition);
+}
+.col-tabs button.active { background: var(--verde-olivo); color: #fff; }
+
+/* Data table */
+.data-table-wrap { overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--gris-200); }
+.data-table {
+  width: 100%; border-collapse: collapse; font-size: .82rem;
+}
+.data-table th {
+  background: var(--gris-100); padding: 10px 14px;
+  text-align: left; font-weight: 600; color: var(--gris-600);
+  border-bottom: 2px solid var(--gris-200);
+  white-space: nowrap; position: sticky; top: 0;
+}
+.data-table td {
+  padding: 10px 14px; border-bottom: 1px solid var(--gris-100);
+}
+.data-table tr:hover td { background: rgba(61,90,46,.02); }
+
+/* ═══════ RESPONSIVE ═══════ */
+@media (max-width: 1024px) {
+  .dash-grid { grid-template-columns: 1fr; }
+  .anio-grid { grid-template-columns: 1fr; }
+  .datos-sidebar { width: 200px; }
+}
+@media (max-width: 768px) {
+  .top-nav { display: none; }
+  .bottom-nav { display: block; }
+  .app-body { margin-bottom: var(--bottom-nav-h); }
+  .dash-grid { padding: 16px; gap: 16px; }
+  .portfolio-page, .cuaderno-page, .anio-page { padding: 16px; }
+  .datos-page { flex-direction: column; }
+  .datos-sidebar {
+    width: 100%; border-right: none; border-bottom: 1px solid var(--gris-200);
+    display: flex; overflow-x: auto; padding: 8px; gap: 4px;
+    white-space: nowrap;
+  }
+  .datos-sidebar .section-title { display: none; }
+  .datos-sidebar button { padding: 8px 12px; font-size: .78rem; flex-shrink: 0; width: auto; }
+  .datos-sidebar button.active { border-right: none; border-bottom: 2px solid var(--verde-olivo); }
+  .hero-greeting { padding: 20px; border-radius: var(--radius-lg); }
+  .campaign-banner { flex-direction: column; gap: 16px; text-align: center; }
+  .campaign-stats { justify-content: center; }
+  .portfolio-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .forecast-day { flex: 0 0 52px; }
+  .finca-detail-stats { grid-template-columns: repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════ TOP HEADER ═══════ -->
+<header class="top-header">
+  <div class="logo">
+    <div class="logo-icon">🫒</div>
+    <span>Mágina Olivo</span>
+  </div>
+  <nav class="top-nav">
+    <a href="#" class="active" data-page="dashboard"><span class="nav-icon">📊</span> Inicio</a>
+    <a href="#" data-page="portfolio"><span class="nav-icon">🏡</span> Mis Fincas</a>
+    <a href="#" data-page="cuaderno"><span class="nav-icon">📖</span> Cuaderno</a>
+    <a href="#" data-page="anio"><span class="nav-icon">📅</span> El Año</a>
+    <a href="#" data-page="datos"><span class="nav-icon">📋</span> Centro de Datos</a>
+  </nav>
+  <div class="header-actions">
+    <button title="Buscar">🔍</button>
+    <button class="badge" data-count="3" title="Notificaciones">🔔</button>
+    <div class="avatar">IS</div>
+  </div>
+</header>
+
+<!-- ═══════ BOTTOM NAV (MOBILE) ═══════ -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <a href="#" class="active" data-page="dashboard"><span class="bnav-icon">📊</span>Inicio</a>
+    <a href="#" data-page="portfolio"><span class="bnav-icon">🏡</span>Fincas</a>
+    <button class="fab-btn" data-page="datos" title="Apuntar">+</button>
+    <a href="#" data-page="cuaderno"><span class="bnav-icon">📖</span>Cuaderno</a>
+    <a href="#" data-page="anio"><span class="bnav-icon">📅</span>El Año</a>
+  </div>
+</nav>
+
+<!-- ═══════ APP BODY ═══════ -->
+<div class="app-body">
+
+<!-- ════════════════════════════════
+     PAGE: DASHBOARD / INICIO
+     ════════════════════════════════ -->
+<div class="page active" id="page-dashboard">
+  <div class="dash-grid">
+    <div class="dash-main">
+
+      <!-- Greeting -->
+      <div class="hero-greeting">
+        <h1>Buenas tardes, Isicio 👋</h1>
+        <div class="hero-location">📍 Salinilla · Bedmar y Garcíez, Jaén · <span class="tag tag-green" style="color:#fff;background:rgba(255,255,255,.2)">Maduración</span> · Picual</div>
+      </div>
+
+      <!-- Treatment alert -->
+      <div class="treatment-alert ok">
+        <div class="treatment-info">
+          <div class="treatment-dot green"></div>
+          <div>
+            <strong>Hoy no hace falta tratar</strong>
+            <p>Si tienes que tratar, hoy ya no: mañana de 8 a 12 h.</p>
+          </div>
+        </div>
+        <button class="btn btn-sm btn-outline">Asistente →</button>
+      </div>
+
+      <!-- Pest status -->
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <span class="tag tag-green">🛡️ Antracnosis · Cerrado</span>
+        <span class="tag tag-green">🪰 Mosca · Cerrado</span>
+        <span class="tag tag-green">🍂 Repilo · Cerrado</span>
+        <button class="btn btn-sm btn-outline" style="margin-left:auto">Ver plan completo →</button>
+      </div>
+
+      <!-- Fincas -->
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h2>Mis fincas</h2>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="finca-card">
+            <div class="finca-icon">🌳</div>
+            <div class="finca-meta">
+              <div class="location">Bedmar y Garcíez · 15-596</div>
+              <h3>Salinilla</h3>
+              <div class="stats">~13 olivos (estimado) · 0,13 ha</div>
+            </div>
+            <div class="finca-arrow">→</div>
+          </div>
+          <div class="add-finca-card">
+            <span style="font-size:1.5rem;color:var(--dorado)">+</span>
+            <div>
+              <strong>Añadir finca</strong>
+              <div class="caption">Con la referencia catastral se rellena sola</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tasks -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Tienes que hacer</h3>
+          <button class="btn btn-sm btn-outline">Agenda →</button>
+        </div>
+        <div class="card-body">
+          <div class="task-item">
+            <div class="task-icon urgent">⏰</div>
+            <div class="task-content">
+              <div class="label">Para hoy</div>
+              <h4>Haz el plan de abonado 2027/28</h4>
+              <p>Falta en 1 finca: es obligatorio (RD 1051/2022, art. 4.2)</p>
+              <div class="task-actions">
+                <button class="btn btn-sm btn-primary">Hacer el plan →</button>
+                <button class="btn btn-sm btn-outline">Luego</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Exploitation cards -->
+      <div>
+        <h2 style="margin-bottom:12px">Tu explotación</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
+          <div class="card card-body" style="text-align:center;">
+            <div style="font-size:1.5rem;margin-bottom:8px;">👷</div>
+            <div class="label">Faena</div>
+            <p style="font-size:.85rem;margin-top:4px;">Esta semana, sin jornales</p>
+          </div>
+          <div class="card card-body" style="text-align:center;">
+            <div style="font-size:1.5rem;margin-bottom:8px;">📅</div>
+            <div class="label">Planificar</div>
+            <p style="font-size:.85rem;margin-top:4px;">Mañana libre</p>
+            <button class="btn btn-sm btn-gold" style="margin-top:8px">Mañana</button>
+          </div>
+          <div class="card card-body" style="text-align:center;">
+            <div style="font-size:1.5rem;margin-bottom:8px;">👥</div>
+            <div class="label">Cuadrilla</div>
+            <p style="font-size:.85rem;margin-top:4px;">1 en tu cuadrilla</p>
+          </div>
+          <div class="card card-body" style="text-align:center;">
+            <div style="font-size:1.5rem;margin-bottom:8px;">🏷️</div>
+            <div class="label">Pasaporte</div>
+            <p style="font-size:.85rem;margin-top:4px;">El pasaporte de tu aceite</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Forecast -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Próximos 14 días</h3>
+          <span class="caption">Salinilla</span>
+        </div>
+        <div class="card-body">
+          <div class="forecast-strip">
+            <div class="forecast-day nope"><div class="day-name">Hoy</div><div class="day-num">9</div><div class="day-icon">🌧️</div><div class="temps"><strong>25°</strong> 13°</div><div class="rain">2mm</div></div>
+            <div class="forecast-day apt"><div class="day-name">Mar</div><div class="day-num">10</div><div class="day-icon">⛅</div><div class="temps"><strong>24°</strong> 11°</div></div>
+            <div class="forecast-day nope"><div class="day-name">Mié</div><div class="day-num">11</div><div class="day-icon">🌧️</div><div class="temps"><strong>22°</strong> 13°</div><div class="rain">17mm</div></div>
+            <div class="forecast-day nope"><div class="day-name">Jue</div><div class="day-num">12</div><div class="day-icon">🌧️</div><div class="temps"><strong>22°</strong> 12°</div><div class="rain">4mm</div></div>
+            <div class="forecast-day apt"><div class="day-name">Vie</div><div class="day-num">13</div><div class="day-icon">☀️</div><div class="temps"><strong>19°</strong> 9°</div></div>
+            <div class="forecast-day apt"><div class="day-name">Sáb</div><div class="day-num">14</div><div class="day-icon">☀️</div><div class="temps"><strong>19°</strong> 6°</div></div>
+            <div class="forecast-day apt"><div class="day-name">Dom</div><div class="day-num">15</div><div class="day-icon">⛅</div><div class="temps"><strong>20°</strong> 9°</div></div>
+            <div class="forecast-day nope"><div class="day-name">Lun</div><div class="day-num">16</div><div class="day-icon">🌧️</div><div class="temps"><strong>19°</strong> 9°</div><div class="rain">2mm</div></div>
+            <div class="forecast-day nope"><div class="day-name">Mar</div><div class="day-num">17</div><div class="day-icon">🌧️</div><div class="temps"><strong>17°</strong> 9°</div></div>
+            <div class="forecast-day apt"><div class="day-name">Mié</div><div class="day-num">18</div><div class="day-icon">⛅</div><div class="temps"><strong>21°</strong> 9°</div><div class="rain">2mm</div></div>
+            <div class="forecast-day nope"><div class="day-name">Jue</div><div class="day-num">19</div><div class="day-icon">🌧️</div><div class="temps"><strong>20°</strong> 8°</div><div class="rain">4mm</div></div>
+            <div class="forecast-day nope"><div class="day-name">Vie</div><div class="day-num">20</div><div class="day-icon">🌧️</div><div class="temps"><strong>14°</strong> 5°</div></div>
+            <div class="forecast-day nope"><div class="day-name">Sáb</div><div class="day-num">21</div><div class="day-icon">🌧️</div><div class="temps"><strong>15°</strong> 8°</div><div class="rain">4mm</div></div>
+            <div class="forecast-day nope"><div class="day-name">Dom</div><div class="day-num">22</div><div class="day-icon">🌧️</div><div class="temps"><strong>19°</strong> 10°</div><div class="rain">22mm</div></div>
+          </div>
+          <div style="display:flex;gap:16px;margin-top:12px;font-size:.78rem;">
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:3px;background:var(--verde-hoja);border-radius:2px;"></span> Apto</span>
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:3px;background:var(--dorado);border-radius:2px;"></span> Justo</span>
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:3px;background:var(--rojo-alerta);border-radius:2px;"></span> No tratar</span>
+          </div>
+          <p class="caption" style="margin-top:8px">3 de 7 días para tratar · Seco desde mañana · 1 día</p>
+        </div>
+      </div>
+
+      <!-- Oil prices -->
+      <div class="card oil-price-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <h3>Precio del aceite</h3>
+          <span class="caption">🇪🇸 26 oct</span>
+        </div>
+        <div class="oil-prices">
+          <div class="oil-pill">
+            <span style="color:var(--verde-olivo);font-weight:600;">● AOVE</span>
+            <span class="price">3,17 €/kg</span>
+            <span class="change negative">-2,3%</span>
+          </div>
+          <div class="oil-pill">
+            <span style="color:var(--azul-agua);font-weight:600;">● Virgen</span>
+            <span class="price">2,93 €/kg</span>
+            <span class="change negative">-2,6%</span>
+          </div>
+          <div class="oil-pill">
+            <span style="color:var(--dorado-warm);font-weight:600;">● Lampante</span>
+            <span class="price">2,79 €/kg</span>
+            <span class="change negative">-2,7%</span>
+          </div>
+        </div>
+        <div style="text-align:center;">
+          <canvas id="oilChart" height="140" style="width:100%;max-height:140px;"></canvas>
+          <div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--gris-500);margin-top:4px;">
+            <span>3 ago – 26 oct</span>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-sm btn-outline" style="padding:3px 10px;font-size:.7rem;">1M</button>
+              <button class="btn btn-sm btn-outline" style="padding:3px 10px;font-size:.7rem;background:var(--verde-olivo);color:#fff;border-color:var(--verde-olivo);">3M</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Sidebar -->
+    <div class="dash-aside">
+      <!-- Weather -->
+      <div class="weather-card">
+        <div class="weather-main">
+          <div>
+            <div class="weather-temp">23°<span>↑ 25° ↓ 13°</span></div>
+            <div class="caption">14:15 · 9 nov</div>
+          </div>
+          <div class="weather-icon">🌥️</div>
+        </div>
+        <div class="weather-details">
+          <span>💧 49%</span>
+          <span>💨 13 km/h</span>
+          <span>🌧️ 2 mm hoy</span>
+        </div>
+      </div>
+
+      <!-- Quick stats -->
+      <div class="card stat-card">
+        <div class="stat-header">
+          <div class="label">Cosecha 2026/27</div>
+        </div>
+        <div class="stat-value">1.000 <small>kg</small></div>
+        <div class="stat-row"><span>kg/olivo</span><strong>76,9</strong></div>
+        <div class="stat-row"><span>Riego</span><strong class="tag tag-blue" style="font-size:.75rem;">Regadío</strong></div>
+        <div class="stat-row"><span>Olivos</span><strong>~13</strong></div>
+        <div class="stat-row"><span>Superficie</span><strong>0,13 ha</strong></div>
+        <div class="stat-row"><span>Último apunte</span><strong>hace 35 días</strong></div>
+      </div>
+
+      <!-- Activity -->
+      <div class="card card-body">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div class="label">Actividad</div>
+          <button class="btn btn-sm btn-outline">Ver toda →</button>
+        </div>
+        <p class="caption">Nada nuevo de otros</p>
+        <div class="task-item" style="border:none;padding-top:8px;">
+          <div class="task-icon normal">👤</div>
+          <div class="task-content">
+            <h4>Invitaste a Isicio</h4>
+            <p>Eventual · 1 nov</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Campaign finance -->
+      <div class="card card-body">
+        <div class="label">Tu campaña 2027/28</div>
+        <p style="font-size:.88rem;margin-top:8px;">Aún no hay gastos ni ventas en 2027/28</p>
+        <p class="caption" style="margin-top:4px;">Apunta lo que gastas en productos, gasoil o jornales y lo que cobras por la aceituna.</p>
+        <button class="btn btn-primary" style="margin-top:12px;width:100%;justify-content:center;">Apuntar un gasto</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     PAGE: MIS FINCAS / PORTFOLIO
+     ════════════════════════════════ -->
+<div class="page" id="page-portfolio">
+  <div class="portfolio-page">
+    <div class="campaign-banner">
+      <div class="campaign-info">
+        <h2>Tu campaña 2026/27</h2>
+        <div class="campaign-meta">
+          <span>🌳 ~13 olivos</span>
+          <span>📍 Jaén</span>
+          <span>🫒 Picual</span>
+        </div>
+        <p style="font-size:.85rem;opacity:.8;margin-top:8px;">Época de cosecha — Apunta lo que llevas a la almazara, el trabajo, las compras y los gastos.</p>
+      </div>
+      <div class="campaign-stats">
+        <div class="campaign-stat">
+          <div class="stat-num">1.000</div>
+          <div class="stat-label">kg cosecha</div>
+        </div>
+        <div class="campaign-stat">
+          <div class="stat-num">76,9</div>
+          <div class="stat-label">kg/olivo</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fincas -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h2>Mis fincas</h2>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+      <div class="finca-card">
+        <div class="finca-icon">🌳</div>
+        <div class="finca-meta">
+          <div class="location">Bedmar y Garcíez · 15-596</div>
+          <h3>Salinilla</h3>
+          <div class="stats">~13 olivos (estimado) · 0,13 ha</div>
+        </div>
+        <div class="finca-arrow">→</div>
+      </div>
+      <div class="add-finca-card">
+        <span style="font-size:1.5rem;color:var(--dorado)">+</span>
+        <div>
+          <strong>Añadir finca</strong>
+          <div class="caption">Con la referencia catastral se rellena sola</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alert -->
+    <div class="alert-banner">
+      <div class="alert-dot"></div>
+      <span><strong>A tu finca le faltan datos</strong> — Falta decir si hay un pozo a menos de 50 m · Sin año de plantación · Sin conectar a tu cuaderno oficial</span>
+      <button class="btn btn-sm btn-outline" style="margin-left:auto;flex-shrink:0;">Completar</button>
+    </div>
+
+    <!-- Portfolio tabs -->
+    <div class="portfolio-tabs">
+      <button class="active">📍 Fincas</button>
+      <button>🫒 Cosecha</button>
+      <button>€ Dinero</button>
+    </div>
+    <div class="portfolio-tabs" style="background:none;gap:8px;padding:0;">
+      <button class="active" style="background:var(--verde-olivo);color:#fff;border-radius:20px;">📍 Mis fincas</button>
+      <button style="background:var(--gris-100);border-radius:20px;">🏛️ PAC</button>
+    </div>
+
+    <!-- Finca table -->
+    <div style="margin-top:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span class="caption">1 finca</span>
+        <button class="btn btn-sm btn-primary">+ Añadir</button>
+      </div>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Finca ↑</th>
+              <th>Olivos</th>
+              <th>Superficie</th>
+              <th>Producción media</th>
+              <th>Última cosecha</th>
+              <th>Rendimiento medio</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <strong>Salinilla</strong><br>
+                <span class="caption">Bedmar y Garcíez · Picual · Goteo</span>
+              </td>
+              <td>~13<br><span class="caption">estimados · 98 olivos/ha</span></td>
+              <td>0,13 ha</td>
+              <td>76,9 kg/olivo<br><span class="caption">7.541 kg/ha</span></td>
+              <td>1.000 kg</td>
+              <td>—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     PAGE: CUADERNO DE CAMPO
+     ════════════════════════════════ -->
+<div class="page" id="page-cuaderno">
+  <div class="cuaderno-page">
+    <div class="cuaderno-header-card">
+      <h2>Cuaderno de campo 2027/28</h2>
+      <div class="meta">
+        <span>🌳 13 olivos</span>
+        <span>📐 0,13 ha</span>
+        <span>💧 Regadío</span>
+        <span>📍 Jaén</span>
+      </div>
+    </div>
+
+    <!-- Notices -->
+    <div class="card card-body" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span class="caption">⏱️ La 2026/27 cerró con 1 labor · todas en plazo</span>
+        <button class="btn btn-sm btn-outline">Ver →</button>
+      </div>
+    </div>
+
+    <div class="alert-banner" style="margin-bottom:20px;">
+      <div class="alert-dot"></div>
+      <span><strong>1 grave · 2 avisos</strong> en En regla — Lo que falta y cómo arreglarlo</span>
+      <span style="margin-left:auto;cursor:pointer;">→</span>
+    </div>
+
+    <!-- Cuaderno right panel -->
+    <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;">
+      <div>
+        <!-- Tabs -->
+        <div class="cuaderno-tabs">
+          <button class="active">📋 Registro</button>
+          <button>🧪 Abonado</button>
+          <button>🏪 Almacén</button>
+          <button>✅ En regla <span class="tab-badge">3</span></button>
+        </div>
+
+        <!-- Filters -->
+        <div class="datos-toolbar">
+          <input type="text" class="search-input" placeholder="Producto, plaga, finca...">
+          <button class="filter-btn">Finca: Todas las fincas ▾</button>
+          <button class="filter-btn">Campaña 2027/28 (actual) ▾</button>
+          <button class="filter-btn">Estado: Todas ▾</button>
+        </div>
+
+        <!-- Empty state -->
+        <div class="empty-state">
+          <div class="empty-icon">📖</div>
+          <h3>Nada apuntado en 2027/28</h3>
+          <p>Los tratamientos, los abonados y los riegos se apuntan antes de un mes.</p>
+          <button class="btn btn-gold">Apuntar labor</button>
+        </div>
+      </div>
+
+      <!-- Right panel -->
+      <div class="card card-body">
+        <div class="label">Cuaderno 2027/28</div>
+        <p style="font-size:.88rem;margin-top:8px;">Aquí verás si cada labor se apuntó a tiempo, con sus datos, papeles y firmas.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     PAGE: EL AÑO / ASISTENTE
+     ════════════════════════════════ -->
+<div class="page" id="page-anio">
+  <div class="anio-page">
+    <div class="anio-grid">
+      <div class="anio-main">
+        <!-- Title -->
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:48px;height:48px;border-radius:var(--radius-md);background:var(--verde-olivo);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.3rem;">📅</div>
+          <div>
+            <h1>El año</h1>
+            <span class="caption">Salinilla</span>
+          </div>
+        </div>
+
+        <!-- Treatment alert -->
+        <div class="treatment-alert ok">
+          <div class="treatment-info">
+            <div class="treatment-dot green"></div>
+            <div>
+              <strong>Hoy no hace falta tratar</strong>
+              <p>Si tienes que tratar, hoy ya no: mañana de 8 a 12 h.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Weather inline -->
+        <div class="weather-card" style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:20px;">
+            <div>
+              <div class="weather-temp" style="font-size:2.2rem;">23°<span>↑ 25° ↓ 13°</span></div>
+              <div class="caption">14:15 · 9 nov</div>
+            </div>
+            <div style="font-size:2.5rem;">🌥️</div>
+          </div>
+          <div>
+            <strong>La aceituna está madura</strong>
+            <p class="caption">¿Por qué? ▾</p>
+          </div>
+        </div>
+
+        <!-- Phase detail -->
+        <div class="phase-detail-card">
+          <div class="phase-name">Salinilla · BBCH 89</div>
+          <div class="phase-title font-display">Maduración</div>
+          <div class="phase-subtitle">Madurez de cosecha</div>
+        </div>
+
+        <!-- Phase timeline -->
+        <div class="phase-timeline">
+          <div class="phase-item">Reposo</div>
+          <div class="phase-item">Brotación</div>
+          <div class="phase-item">Prefloración</div>
+          <div class="phase-item">Floración</div>
+          <div class="phase-item">Cuajado</div>
+          <div class="phase-item">Engorde</div>
+          <div class="phase-item">Envero</div>
+          <div class="phase-item active">Maduración</div>
+        </div>
+
+        <!-- Phase tasks -->
+        <div class="card">
+          <div class="card-header"><h3>En esta fase</h3></div>
+          <div class="card-body">
+            <div class="task-item">
+              <div class="task-icon normal">✂️</div>
+              <div class="task-content">
+                <h4>Poda</h4>
+                <p>Fuera de su ventana: se abre con el olivo en reposo</p>
+              </div>
+            </div>
+            <div class="task-item">
+              <div class="task-icon normal">📅</div>
+              <div class="task-content">
+                <h4>Ventana de recolección</h4>
+                <p>Consulta el momento óptimo de recogida</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aside -->
+      <div class="dash-aside">
+        <!-- Treatment calendar -->
+        <div class="card card-body">
+          <div class="label" style="margin-bottom:4px;">Salinilla</div>
+          <div class="stat-value" style="font-size:1.5rem;">3 <small style="font-size:.8rem;color:var(--gris-500)">de los próximos 7 días deja tratar el tiempo</small></div>
+          <div class="label" style="margin-top:16px;margin-bottom:8px;">Próximos 14 días</div>
+          <div class="treat-calendar">
+            <div class="treat-day-header">Hoy</div><div class="treat-day-header">M</div><div class="treat-day-header">X</div><div class="treat-day-header">J</div><div class="treat-day-header">V</div><div class="treat-day-header">S</div><div class="treat-day-header">D</div>
+            <div class="treat-day nope today">9</div><div class="treat-day apt">10</div><div class="treat-day nope">11</div><div class="treat-day nope">12</div><div class="treat-day apt">13</div><div class="treat-day apt">14</div><div class="treat-day apt">15</div>
+            <div class="treat-day nope">16</div><div class="treat-day nope">17</div><div class="treat-day nope">18</div><div class="treat-day nope">19</div><div class="treat-day nope">20</div><div class="treat-day nope">21</div><div class="treat-day nope">22</div>
+          </div>
+          <p class="caption" style="margin-top:8px;">Hoy · No tratar · el tiempo no deja tratar</p>
+        </div>
+
+        <!-- Finca selector -->
+        <div class="card card-body">
+          <button class="filter-btn" style="width:100%;justify-content:center;">Finca: Salinilla · la principal ▾</button>
+        </div>
+
+        <!-- Phase tips -->
+        <div class="card card-body">
+          <div class="label">Para esta fase</div>
+          <div style="margin-top:12px;padding:12px;background:rgba(61,90,46,.05);border-radius:var(--radius-sm);">
+            <strong style="font-size:.88rem;">Saber cuándo recoger</strong>
+            <p class="caption" style="margin-top:4px;">Cuenta 100 aceitunas por su color y sabrás cómo de madura está frente a la referencia de recogida.</p>
+          </div>
+        </div>
+
+        <!-- What's next -->
+        <div class="card card-body">
+          <div class="label">Lo que viene</div>
+          <h3 style="margin-top:8px;">Reposo</h3>
+          <p class="caption">Suele llegar en diciembre</p>
+          <ul style="margin-top:8px;font-size:.85rem;list-style:disc;padding-left:16px;color:var(--gris-600);">
+            <li>Se abre la ventana de poda</li>
+            <li>Siguen: repilo y emplomado</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     PAGE: CENTRO DE DATOS
+     ════════════════════════════════ -->
+<div class="page" id="page-datos">
+  <div class="datos-page">
+    <!-- Sidebar -->
+    <aside class="datos-sidebar" id="datosSidebar">
+      <div class="section-title">Infraestructura</div>
+      <button class="active" data-sheet="fincas"><span class="sidebar-icon">📍</span> Fincas</button>
+      <button data-sheet="sigpac"><span class="sidebar-icon">🗺️</span> Recintos SIGPAC</button>
+      <button data-sheet="trabajadores"><span class="sidebar-icon">👷</span> Trabajadores y empresas</button>
+      <button data-sheet="maquinaria"><span class="sidebar-icon">🚜</span> Maquinaria</button>
+
+      <div class="section-title">Actividad</div>
+      <button data-sheet="jornales"><span class="sidebar-icon">📋</span> Jornales</button>
+      <button data-sheet="operaciones"><span class="sidebar-icon">⚙️</span> Operaciones</button>
+      <button data-sheet="fitosanitarios"><span class="sidebar-icon">🧪</span> Fitosanitarios</button>
+      <button data-sheet="fertilizaciones"><span class="sidebar-icon">🌱</span> Fertilizaciones</button>
+      <button data-sheet="riegos"><span class="sidebar-icon">💧</span> Riegos</button>
+      <button data-sheet="labores"><span class="sidebar-icon">🔧</span> Labores</button>
+      <button data-sheet="podas"><span class="sidebar-icon">✂️</span> Podas</button>
+      <button data-sheet="ecoregimen"><span class="sidebar-icon">🌿</span> Ecorégimen</button>
+      <button data-sheet="recoleccion"><span class="sidebar-icon">🫒</span> Recolección</button>
+
+      <div class="section-title">Producción</div>
+      <button data-sheet="estimaciones"><span class="sidebar-icon">📊</span> Estimaciones</button>
+      <button data-sheet="cosechas"><span class="sidebar-icon">🫒</span> Cosechas</button>
+      <button data-sheet="entregas"><span class="sidebar-icon">🏭</span> Entregas</button>
+      <button data-sheet="existencias"><span class="sidebar-icon">🛢️</span> Existencias de aceite</button>
+      <button data-sheet="almacen"><span class="sidebar-icon">📦</span> Almacén de insumos</button>
+
+      <div class="section-title">Finanzas</div>
+      <button data-sheet="costes"><span class="sidebar-icon">📒</span> Libro de costes</button>
+      <button data-sheet="ingresos"><span class="sidebar-icon">📗</span> Libro de ingresos</button>
+      <button data-sheet="gastos"><span class="sidebar-icon">💶</span> Gastos</button>
+      <button data-sheet="gastos-fijos"><span class="sidebar-icon">🔁</span> Gastos fijos</button>
+      <button data-sheet="movimientos"><span class="sidebar-icon">↔️</span> Movimientos</button>
+      <button data-sheet="liquidaciones"><span class="sidebar-icon">🧾</span> Liquidaciones</button>
+      <button data-sheet="facturas"><span class="sidebar-icon">🧾</span> Facturas</button>
+
+      <div class="section-title">Cumplimiento legal</div>
+      <button data-sheet="documentos"><span class="sidebar-icon">📄</span> Documentos</button>
+      <button data-sheet="contratos"><span class="sidebar-icon">📝</span> Mis contratos</button>
+      <button data-sheet="siex"><span class="sidebar-icon">📤</span> Envíos a SIEX</button>
+      <button data-sheet="pac"><span class="sidebar-icon">🏛️</span> Declaraciones PAC</button>
+      <button data-sheet="abonado"><span class="sidebar-icon">🧪</span> Planes de abonado</button>
+      <button data-sheet="carnes"><span class="sidebar-icon">🪪</span> Carnés de aplicador</button>
+      <button data-sheet="concesiones"><span class="sidebar-icon">💧</span> Concesiones de agua</button>
+      <button data-sheet="contadores"><span class="sidebar-icon">🔢</span> Contadores de agua</button>
+      <button data-sheet="lecturas"><span class="sidebar-icon">📈</span> Lecturas de agua</button>
+    </aside>
+
+    <!-- Content area -->
+    <div class="datos-content">
+      <!-- Header bar -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:1.2rem;">📋</span>
+          <h2>Centro de Datos</h2>
+        </div>
+        <span class="caption">Trabajando en</span>
+        <button class="filter-btn">Mis explotaciones ▾</button>
+        <button class="btn btn-sm btn-outline" style="margin-left:auto;">📥 Importar mi histórico</button>
+        <span class="caption">Sin campaña</span>
+      </div>
+
+      <!-- Sheet content -->
+      <div id="sheetContent">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px;">
+          <h2 id="sheetTitle">Fincas</h2>
+        </div>
+        <p class="caption" id="sheetDesc" style="margin-bottom:16px;">Tus fincas y parcelas con datos catastrales, SIGPAC y producción.</p>
+
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <button class="btn btn-sm btn-outline">❓ Qué introducir aquí</button>
+          <button class="btn btn-sm btn-outline">📖 Cómo trabajar en esta tabla</button>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="datos-toolbar">
+          <input type="text" class="search-input" placeholder="Buscar…">
+          <button class="filter-btn">Disponibilidad: todos ▾</button>
+          <button class="filter-btn">Categoría: todos ▾</button>
+          <button class="filter-btn">Tipo: todos ▾</button>
+          <button class="filter-btn">Estado: todos ▾</button>
+        </div>
+
+        <!-- Column tabs -->
+        <div class="col-tabs">
+          <button class="active">Todo</button>
+          <button>Identificación</button>
+          <button>Datos</button>
+          <button>Producción</button>
+          <button>SIGPAC</button>
+        </div>
+
+        <!-- Action bar -->
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+          <button class="btn btn-sm btn-outline">📥 Importar</button>
+          <button class="btn btn-sm btn-outline">+ Añadir fila</button>
+          <button class="btn btn-sm btn-primary">💾 Guardar</button>
+          <button class="btn btn-sm btn-gold">+ Nueva finca</button>
+        </div>
+
+        <!-- Table -->
+        <div class="data-table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Municipio</th>
+                <th>Polígono</th>
+                <th>Parcela</th>
+                <th>Superficie (ha)</th>
+                <th>Olivos</th>
+                <th>Variedad</th>
+                <th>Riego</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Salinilla</strong></td>
+                <td>Bedmar y Garcíez</td>
+                <td>15</td>
+                <td>596</td>
+                <td>0,13</td>
+                <td>~13</td>
+                <td>Picual</td>
+                <td><span class="tag tag-blue">Regadío</span></td>
+                <td><span class="tag tag-green">Activa</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end app-body -->
+
+<!-- ═══════ JAVASCRIPT ═══════ -->
+<script>
+// Sheet data definitions
+const sheetData = {
+  fincas: { title: 'Fincas', desc: 'Tus fincas y parcelas con datos catastrales, SIGPAC y producción.', cols: ['Nombre','Municipio','Polígono','Parcela','Superficie (ha)','Olivos','Variedad','Riego','Estado'], tabs: ['Todo','Identificación','Datos','Producción','SIGPAC'] },
+  sigpac: { title: 'Recintos SIGPAC', desc: 'Recintos declarados ante SIGPAC con uso, superficie y código.', cols: ['Recinto','Uso SIGPAC','Superficie','Código','Campaña','Estado'], tabs: ['Todo','Datos','Declaración'] },
+  trabajadores: { title: 'Trabajadores y empresas', desc: 'Personal contratado y empresas de servicios.', cols: ['Nombre','NIF/CIF','Tipo','Teléfono','Dirección','Alta','Baja','Estado'], tabs: ['Todo','Datos','Contratos'] },
+  maquinaria: { title: 'Maquinaria', desc: 'Máquinas disponibles, propiedad y datos de identificación.', cols: ['Máquina','Categoría','Tipo','Matrícula','ROMA','Seguro','Inspección','Estado'], tabs: ['Todo','Identificación','Circulación','Seguro','ROMA','Inspección','Estado'] },
+  jornales: { title: 'Jornales', desc: 'Registro diario de jornales y horas trabajadas.', cols: ['Fecha','Trabajador','Finca','Tarea','Horas','Coste','Observaciones'], tabs: ['Todo','Por finca','Por trabajador'] },
+  operaciones: { title: 'Operaciones', desc: 'Todas las operaciones realizadas en tus fincas.', cols: ['Fecha','Finca','Tipo','Producto','Dosis','Superficie','Maquinaria','Observaciones'], tabs: ['Todo','Fitosanitarios','Fertilizaciones','Riegos','Labores'] },
+  fitosanitarios: { title: 'Fitosanitarios', desc: 'Tratamientos fitosanitarios aplicados.', cols: ['Fecha','Finca','Plaga','Producto','Materia activa','Dosis','Plazo seguridad','Aplicador'], tabs: ['Todo','Por plaga','Por producto'] },
+  fertilizaciones: { title: 'Fertilizaciones', desc: 'Abonados y fertilizaciones realizadas.', cols: ['Fecha','Finca','Producto','Tipo','Dosis','Superficie','Método','Observaciones'], tabs: ['Todo','Orgánico','Mineral'] },
+  riegos: { title: 'Riegos', desc: 'Registro de riegos y consumo de agua.', cols: ['Fecha','Finca','Sistema','Duración','Caudal','Consumo m³','Observaciones'], tabs: ['Todo','Por sistema'] },
+  labores: { title: 'Labores', desc: 'Labores de suelo y mantenimiento.', cols: ['Fecha','Finca','Labor','Maquinaria','Superficie','Duración','Coste','Observaciones'], tabs: ['Todo','Por tipo'] },
+  podas: { title: 'Podas', desc: 'Registro de podas realizadas.', cols: ['Fecha','Finca','Tipo poda','Olivos podados','Leña (kg)','Destino leña','Empresa','Coste'], tabs: ['Todo'] },
+  ecoregimen: { title: 'Ecorégimen', desc: 'Compromisos de ecorégimen y biodiversidad.', cols: ['Campaña','Finca','Tipo','Compromiso','Estado','Verificación','Observaciones'], tabs: ['Todo'] },
+  recoleccion: { title: 'Recolección', desc: 'Registro de recogida de aceituna.', cols: ['Fecha','Finca','Sistema','kg recogidos','Jornales','Maquinaria','Almazara','Observaciones'], tabs: ['Todo','Por finca'] },
+  estimaciones: { title: 'Estimaciones', desc: 'Estimaciones de producción por campaña.', cols: ['Campaña','Finca','kg estimados','kg reales','Desviación','Fecha estimación','Método','Notas'], tabs: ['Todo'] },
+  cosechas: { title: 'Cosechas', desc: 'Resumen de cosechas por campaña.', cols: ['Campaña','Finca','kg totales','kg/olivo','kg/ha','Días recogida','Inicio','Fin'], tabs: ['Todo','Por campaña'] },
+  entregas: { title: 'Entregas', desc: 'Entregas a almazara o cooperativa.', cols: ['Fecha','Almazara','kg entregados','Variedad','Acidez','Rendimiento','Tipo aceite','Ticket'], tabs: ['Todo','Por almazara'] },
+  existencias: { title: 'Existencias de aceite', desc: 'Stock de aceite producido y movimientos.', cols: ['Fecha','Tipo aceite','Litros','Depósito','Movimiento','Destino','Precio','Observaciones'], tabs: ['Todo','AOVE','Virgen','Lampante'] },
+  almacen: { title: 'Almacén de insumos', desc: 'Stock de productos, fitosanitarios y fertilizantes.', cols: ['Producto','Categoría','Stock actual','Unidad','Caducidad','Lote','Proveedor','Precio'], tabs: ['Todo','Fitosanitarios','Fertilizantes','Otros'] },
+  costes: { title: 'Libro de costes', desc: 'Resumen y detalle de costes por campaña y concepto.', cols: ['Campaña','Concepto','Categoría','Importe','Fecha','Finca','Proveedor','Observaciones'], tabs: ['Todo','Por categoría','Por finca'] },
+  ingresos: { title: 'Libro de ingresos', desc: 'Ingresos por venta de aceite, subvenciones y otros.', cols: ['Campaña','Concepto','Categoría','Importe','Fecha','Pagador','Factura','Observaciones'], tabs: ['Todo','Ventas','Subvenciones'] },
+  gastos: { title: 'Gastos', desc: 'Registro de gastos variables.', cols: ['Fecha','Concepto','Categoría','Importe','IVA','Total','Proveedor','Factura'], tabs: ['Todo','Por categoría'] },
+  'gastos-fijos': { title: 'Gastos fijos', desc: 'Gastos recurrentes: seguros, cuotas, comunidades.', cols: ['Concepto','Frecuencia','Importe','Inicio','Fin','Proveedor','Observaciones'], tabs: ['Todo'] },
+  movimientos: { title: 'Movimientos', desc: 'Movimientos de entrada y salida.', cols: ['Fecha','Tipo','Concepto','Importe','Saldo','Cuenta','Categoría','Observaciones'], tabs: ['Todo','Entradas','Salidas'] },
+  liquidaciones: { title: 'Liquidaciones', desc: 'Liquidaciones de cooperativa o almazara.', cols: ['Campaña','Almazara','Fecha','kg liquidados','Precio','Importe','Retenciones','Neto'], tabs: ['Todo'] },
+  facturas: { title: 'Facturas', desc: 'Facturas emitidas y recibidas.', cols: ['Número','Fecha','Tipo','Emisor/Receptor','Base','IVA','Total','Estado'], tabs: ['Todo','Emitidas','Recibidas'] },
+  documentos: { title: 'Documentos', desc: 'Documentos y certificados archivados.', cols: ['Nombre','Tipo','Fecha','Caducidad','Finca','Archivo','Estado'], tabs: ['Todo'] },
+  contratos: { title: 'Mis contratos', desc: 'Contratos con trabajadores, empresas y servicios.', cols: ['Contraparte','Tipo','Inicio','Fin','Importe','Finca','Estado','Archivo'], tabs: ['Todo'] },
+  siex: { title: 'Envíos a SIEX', desc: 'Registro de envíos al Sistema de Información de Explotaciones.', cols: ['Fecha envío','Tipo','Campaña','Estado','Referencia','Observaciones'], tabs: ['Todo'] },
+  pac: { title: 'Declaraciones PAC', desc: 'Declaraciones de la Política Agraria Común.', cols: ['Campaña','Tipo','Fecha','Superficie','Importe','Estado','Observaciones'], tabs: ['Todo'] },
+  abonado: { title: 'Planes de abonado', desc: 'Planes de abonado por campaña y finca.', cols: ['Campaña','Finca','Tipo','Producto','Dosis','Superficie','Fecha','Estado'], tabs: ['Todo'] },
+  carnes: { title: 'Carnés de aplicador', desc: 'Carnés de aplicador de fitosanitarios.', cols: ['Titular','Tipo','Número','Expedición','Caducidad','Organismo','Estado'], tabs: ['Todo'] },
+  concesiones: { title: 'Concesiones de agua', desc: 'Concesiones administrativas de agua.', cols: ['Expediente','Cuenca','Caudal','Uso','Finca','Vigencia','Estado'], tabs: ['Todo'] },
+  contadores: { title: 'Contadores de agua', desc: 'Contadores instalados y datos de medición.', cols: ['Contador','Ubicación','Finca','Lectura actual','Fecha','Consumo acumulado','Estado'], tabs: ['Todo'] },
+  lecturas: { title: 'Lecturas de agua', desc: 'Histórico de lecturas de contadores.', cols: ['Fecha','Contador','Lectura','Consumo periodo','Finca','Observaciones'], tabs: ['Todo'] }
+};
+
+// Navigation
+document.querySelectorAll('[data-page]').forEach(el => {
+  el.addEventListener('click', e => {
+    e.preventDefault();
+    const page = el.dataset.page;
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    document.querySelectorAll('.top-nav a, .bottom-nav a').forEach(a => {
+      a.classList.toggle('active', a.dataset.page === page);
+    });
+    window.scrollTo(0, 0);
+  });
+});
+
+// Sidebar sheet navigation
+document.querySelectorAll('#datosSidebar button[data-sheet]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#datosSidebar button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const key = btn.dataset.sheet;
+    const data = sheetData[key];
+    if (!data) return;
+    document.getElementById('sheetTitle').textContent = data.title;
+    document.getElementById('sheetDesc').textContent = data.desc;
+    // Update column tabs
+    const tabsEl = document.querySelector('.col-tabs');
+    tabsEl.innerHTML = data.tabs.map((t, i) =>
+      `<button class="${i === 0 ? 'active' : ''}" onclick="this.parentNode.querySelectorAll('button').forEach(b=>b.classList.remove('active'));this.classList.add('active');">${t}</button>`
+    ).join('');
+    // Update table headers
+    const thead = document.querySelector('.data-table thead tr');
+    thead.innerHTML = data.cols.map(c => `<th>${c}</th>`).join('');
+    const tbody = document.querySelector('.data-table tbody');
+    tbody.innerHTML = `<tr><td colspan="${data.cols.length}" style="text-align:center;padding:40px;color:var(--gris-400);">
+      <div style="font-size:2rem;margin-bottom:8px;">📭</div>
+      Sin datos todavía — Añade el primer registro
+    </td></tr>`;
+  });
+});
+
+// Simple oil price chart
+function drawOilChart() {
+  const canvas = document.getElementById('oilChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.offsetWidth * 2;
+  const h = canvas.height = 280;
+  ctx.scale(1, 1);
+  ctx.clearRect(0, 0, w, h);
+  const prices = [3.56,3.50,3.48,3.52,3.45,3.38,3.42,3.40,3.38,3.36,3.35,3.30,3.28,3.25,3.20,3.22,3.20,3.18,3.17];
+  const minP = 3.10, maxP = 3.60;
+  const padX = 10, padY = 20;
+  const stepX = (w - padX * 2) / (prices.length - 1);
+  ctx.beginPath();
+  ctx.moveTo(padX, padY + (maxP - prices[0]) / (maxP - minP) * (h - padY * 2));
+  prices.forEach((p, i) => {
+    const x = padX + i * stepX;
+    const y = padY + (maxP - p) / (maxP - minP) * (h - padY * 2);
+    ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = '#3d5a2e';
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  // Fill area
+  const lastX = padX + (prices.length - 1) * stepX;
+  const lastY = padY + (maxP - prices[prices.length - 1]) / (maxP - minP) * (h - padY * 2);
+  ctx.lineTo(lastX, h - padY);
+  ctx.lineTo(padX, h - padY);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(61,90,46,.08)';
+  ctx.fill();
+}
+setTimeout(drawOilChart, 100);
+window.addEventListener('resize', drawOilChart);
+</script>
+</body>
+</html>
